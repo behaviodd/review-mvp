@@ -1,0 +1,73 @@
+import { create } from 'zustand';
+import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+
+type ToastType = 'success' | 'warning' | 'error' | 'info';
+interface ToastItem { id: string; type: ToastType; message: string; }
+interface ToastState {
+  toasts: ToastItem[];
+  show: (type: ToastType, message: string) => void;
+  remove: (id: string) => void;
+}
+
+export const useToast = create<ToastState>((set) => ({
+  toasts: [],
+  show: (type, message) => {
+    const id = `toast_${Date.now()}`;
+    set(s => ({ toasts: [...s.toasts, { id, type, message }] }));
+    setTimeout(() => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 4000);
+  },
+  remove: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+}));
+
+// Catalyst-style: white card + subtle ring + colored icon
+const CONFIG: Record<ToastType, {
+  icon: typeof CheckCircle2;
+  iconCls: string;
+}> = {
+  success: { icon: CheckCircle2, iconCls: 'text-emerald-600' },
+  warning: { icon: AlertTriangle, iconCls: 'text-amber-500'  },
+  error:   { icon: XCircle,      iconCls: 'text-red-600'     },
+  info:    { icon: Info,         iconCls: 'text-indigo-600'  },
+};
+
+function Toast({ toast }: { toast: ToastItem }) {
+  const { remove } = useToast();
+  const { icon: Icon, iconCls } = CONFIG[toast.type];
+
+  return (
+    <div className="
+      flex items-start gap-3 bg-white rounded-xl
+      shadow-[0_3px_10px_rgb(0,0,0,0.1),0_1px_3px_rgb(0,0,0,0.06)]
+      ring-1 ring-zinc-950/5
+      px-4 py-3 min-w-72 max-w-sm
+      animate-[fadeSlideDown_0.2s_ease]
+    ">
+      <Icon size={16} className={`flex-shrink-0 mt-0.5 ${iconCls}`} />
+      <p className="flex-1 text-sm/6 text-zinc-950 font-medium">{toast.message}</p>
+      <button
+        onClick={() => remove(toast.id)}
+        className="flex-shrink-0 mt-0.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+        aria-label="닫기"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+export function ToastContainer() {
+  const { toasts } = useToast();
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className="pointer-events-auto">
+          <Toast toast={t} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function useShowToast() {
+  return useToast(s => s.show);
+}

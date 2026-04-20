@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
-  const { isLeader, isAdmin } = usePermission();
+  const { isAdmin } = usePermission();
   const { currentUser, logout } = useAuthStore();
   const { notifications } = useNotificationStore();
   const navigate = useNavigate();

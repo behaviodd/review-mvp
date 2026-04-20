@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useFeedbackStore } from '../stores/feedbackStore';
+import { useTeamStore } from '../stores/teamStore';
+import type { Feedback } from '../types';
 import { useShowToast } from '../components/ui/Toast';
-import { MOCK_USERS } from '../data/mockData';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { formatDateTime } from '../utils/dateUtils';
@@ -19,7 +20,7 @@ const TYPE_CONFIG: Record<FeedbackType, {
   activeClass: string; badgeClass: string;
 }> = {
   praise:     { label: '칭찬',   emoji: '🌟', icon: Heart,     activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-700', badgeClass: 'bg-emerald-50 text-emerald-700' },
-  suggestion: { label: '제안',   emoji: '💡', icon: Lightbulb, activeClass: 'border-indigo-400 bg-indigo-50 text-indigo-700',   badgeClass: 'bg-indigo-50 text-indigo-700'   },
+  suggestion: { label: '제안',   emoji: '💡', icon: Lightbulb, activeClass: 'border-indigo-400 bg-indigo-50 text-primary-700',   badgeClass: 'bg-indigo-50 text-primary-700'   },
   note:       { label: '일반',   emoji: '📝', icon: ThumbsUp,  activeClass: 'border-zinc-400 bg-zinc-100 text-zinc-700',        badgeClass: 'bg-zinc-100 text-zinc-600'      },
 };
 
@@ -32,12 +33,13 @@ const FEEDBACK_TIPS = [
 
 // ─── 피드백 카드 ─────────────────────────────────────────────────────────────
 function FeedbackCard({ fb, mode, onQuickWrite }: {
-  fb: ReturnType<typeof useFeedbackStore>['feedbacks'][0];
+  fb: Feedback;
   mode: 'received' | 'sent';
   onQuickWrite?: (toUserId: string) => void;
 }) {
-  const fromUser = MOCK_USERS.find(u => u.id === fb.fromUserId);
-  const toUser   = MOCK_USERS.find(u => u.id === fb.toUserId);
+  const { users } = useTeamStore();
+  const fromUser = users.find(u => u.id === fb.fromUserId);
+  const toUser   = users.find(u => u.id === fb.toUserId);
   const cfg      = TYPE_CONFIG[fb.type];
 
   return (
@@ -71,7 +73,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => onQuickWrite(mode === 'received' ? fb.fromUserId : fb.toUserId)}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+            className="text-xs text-primary-600 hover:text-indigo-800 font-medium transition-colors"
           >
             {mode === 'received' ? '감사 전하기 →' : '이 사람에게 다시 보내기 →'}
           </button>
@@ -89,9 +91,10 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 }) {
   const { currentUser } = useAuthStore();
   const { feedbacks, addFeedback } = useFeedbackStore();
+  const { users } = useTeamStore();
   const showToast = useShowToast();
 
-  const recipients = MOCK_USERS.filter(u => u.id !== currentUser?.id);
+  const recipients = users.filter(u => u.id !== currentUser?.id && u.isActive !== false);
   const [toUserId, setToUserId]         = useState(initialToUserId ?? '');
   const [type, setType]                 = useState<FeedbackType>('praise');
   const [content, setContent]           = useState('');
@@ -109,15 +112,15 @@ function WriteView({ initialToUserId, onBack, onSent }: {
       )
     : recipients;
 
-  const selectedUser = MOCK_USERS.find(u => u.id === toUserId);
+  const selectedUser = users.find(u => u.id === toUserId);
   const recentWithUser = feedbacks.filter(
     f => (f.fromUserId === currentUser?.id && f.toUserId === toUserId)
       || (f.toUserId === currentUser?.id && f.fromUserId === toUserId)
   ).slice(0, 5);
 
   const handleSubmit = () => {
-    if (!toUserId)                    { showToast('받는 사람을 선택해주세요.', 'error'); return; }
-    if (content.trim().length < 10)  { showToast('10자 이상 작성해주세요.', 'error'); return; }
+    if (!toUserId)                    { showToast('error', '받는 사람을 선택해주세요.'); return; }
+    if (content.trim().length < 10)  { showToast('error', '10자 이상 작성해주세요.'); return; }
     if (!currentUser) return;
 
     addFeedback({
@@ -129,7 +132,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
       isAnonymous,
       createdAt: new Date().toISOString(),
     });
-    showToast('피드백을 전달했습니다! 🎉', 'success');
+    showToast('success', '피드백을 전달했습니다! 🎉');
     onSent();
   };
 
@@ -157,7 +160,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="이름, 부서 검색..."
-              className="w-full pl-7 pr-7 py-1.5 text-xs border border-zinc-200 rounded-lg bg-zinc-50 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 focus:bg-white placeholder:text-zinc-300"
+              className="w-full pl-7 pr-7 py-1.5 text-xs border border-zinc-200 rounded-lg bg-zinc-50 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300"
             />
             {search && (
               <button
@@ -172,7 +175,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 
         {/* 수신자 목록 */}
         <div className="flex-1 overflow-y-auto">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider px-4 py-3">받는 사람</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-4 py-3">받는 사람</p>
           {filteredRecipients.length === 0 ? (
             <div className="px-4 py-6 text-center">
               <p className="text-xs text-zinc-400">검색 결과가 없습니다.</p>
@@ -185,16 +188,16 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 onClick={() => setToUserId(user.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left ${
                   isSel
-                    ? 'bg-indigo-50 border-r-2 border-indigo-500'
+                    ? 'bg-primary-50 border-r-2 border-primary-500'
                     : 'hover:bg-zinc-50'
                 }`}
               >
                 <UserAvatar user={user} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${isSel ? 'text-indigo-700' : 'text-zinc-800'}`}>
+                  <p className={`text-sm font-medium truncate ${isSel ? 'text-primary-700' : 'text-zinc-800'}`}>
                     {user.name}
                   </p>
-                  <p className="text-[11px] text-zinc-400 truncate">{user.department} · {user.position}</p>
+                  <p className="text-xs text-zinc-400 truncate">{user.department} · {user.position}</p>
                 </div>
               </button>
             );
@@ -204,7 +207,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         {/* 최근 대화 */}
         {selectedUser && recentWithUser.length > 0 && (
           <div className="border-t border-zinc-950/5 p-3">
-            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 px-1">
               {selectedUser.name}님과 최근 피드백
             </p>
             <div className="space-y-1.5">
@@ -214,12 +217,12 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 return (
                   <div key={fb.id} className="p-2 bg-zinc-50 rounded-lg">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-[10px]">{cfg.emoji}</span>
-                      <span className={`text-[10px] font-medium ${isMine ? 'text-indigo-600' : 'text-zinc-500'}`}>
+                      <span className="text-xs">{cfg.emoji}</span>
+                      <span className={`text-xs font-medium ${isMine ? 'text-primary-600' : 'text-zinc-500'}`}>
                         {isMine ? '내가 보냄' : '받음'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-600 line-clamp-2 leading-relaxed">{fb.content}</p>
+                    <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed">{fb.content}</p>
                   </div>
                 );
               })}
@@ -235,11 +238,11 @@ function WriteView({ initialToUserId, onBack, onSent }: {
           {selectedUser ? (
             <div className="flex items-center gap-2.5 px-3 py-2 bg-indigo-50 rounded-lg border border-indigo-200">
               <UserAvatar user={selectedUser} size="sm" />
-              <span className="flex-1 text-sm font-medium text-indigo-700 truncate">{selectedUser.name}</span>
+              <span className="flex-1 text-sm font-medium text-primary-700 truncate">{selectedUser.name}</span>
               <span className="text-xs text-indigo-400 truncate hidden sm:block">{selectedUser.department}</span>
               <button
                 onClick={() => { setToUserId(''); setSearch(''); }}
-                className="text-indigo-400 hover:text-indigo-600 transition-colors flex-shrink-0"
+                className="text-indigo-400 hover:text-primary-600 transition-colors flex-shrink-0"
                 aria-label="선택 해제"
               >
                 <X className="size-4" />
@@ -254,7 +257,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 onChange={e => { setSearch(e.target.value); setMobileSearchOpen(true); }}
                 onFocus={() => setMobileSearchOpen(true)}
                 placeholder="받는 사람 검색..."
-                className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg bg-zinc-50 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:bg-white placeholder:text-zinc-300"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg bg-zinc-50 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300"
               />
               {mobileSearchOpen && filteredRecipients.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-zinc-200 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto">
@@ -262,7 +265,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                     <button
                       key={u.id}
                       onMouseDown={() => { setToUserId(u.id); setSearch(''); setMobileSearchOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 transition-colors text-left"
                     >
                       <UserAvatar user={u} size="sm" />
                       <div className="flex-1 min-w-0">
@@ -298,7 +301,6 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-3">피드백 유형</p>
             <div className="flex gap-3">
               {(Object.entries(TYPE_CONFIG) as [FeedbackType, typeof TYPE_CONFIG['praise']][]).map(([key, cfg]) => {
-                const Icon = cfg.icon;
                 const isActive = type === key;
                 return (
                   <button
@@ -326,7 +328,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
               rows={8}
               maxLength={500}
               placeholder="구체적인 상황과 행동을 포함해 작성하면 더 큰 도움이 됩니다."
-              className="w-full px-4 py-3 border border-zinc-200 rounded-xl bg-white text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-zinc-300 resize-none"
+              className="w-full px-4 py-3 border border-zinc-200 rounded-xl bg-white text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-zinc-300 resize-none"
             />
             <div className="flex justify-between mt-1.5">
               {content.length > 0 && content.length < 10 && (
@@ -347,7 +349,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 type="checkbox"
                 checked={isAnonymous}
                 onChange={e => setAnonymous(e.target.checked)}
-                className="w-4 h-4 rounded accent-indigo-500"
+                className="w-4 h-4 rounded accent-primary-500"
               />
               <span className="text-sm text-zinc-700">익명으로 보내기</span>
               <span className="text-xs text-zinc-400 hidden sm:inline">(받는 사람이 보낸 사람을 알 수 없습니다)</span>
@@ -364,7 +366,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             <button
               onClick={handleSubmit}
               disabled={!toUserId || content.trim().length < 10}
-              className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="w-4 h-4" /> 피드백 보내기
             </button>
@@ -396,7 +398,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             {FEEDBACK_TIPS.map((tip, i) => (
               <li key={i} className="space-y-0.5">
                 <p className="text-xs font-semibold text-zinc-700">{tip.title}</p>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">{tip.desc}</p>
+                <p className="text-xs text-zinc-500 leading-relaxed">{tip.desc}</p>
               </li>
             ))}
           </ul>
@@ -404,15 +406,15 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 
         {/* 유형별 예시 */}
         <div className="border-t border-zinc-950/5 p-4 space-y-3">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">유형별 예시</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">유형별 예시</p>
           <div className="space-y-2.5">
             <div className="p-2.5 bg-emerald-50 rounded-lg">
-              <p className="text-[10px] font-semibold text-emerald-700 mb-1">🌟 칭찬 예시</p>
-              <p className="text-[11px] text-emerald-600 leading-relaxed">"지난 스프린트에서 API 병목 문제를 신속하게 발견하고 해결해 팀 전체 일정을 지킬 수 있었습니다."</p>
+              <p className="text-xs font-semibold text-emerald-700 mb-1">🌟 칭찬 예시</p>
+              <p className="text-xs text-emerald-600 leading-relaxed">"지난 스프린트에서 API 병목 문제를 신속하게 발견하고 해결해 팀 전체 일정을 지킬 수 있었습니다."</p>
             </div>
             <div className="p-2.5 bg-indigo-50 rounded-lg">
-              <p className="text-[10px] font-semibold text-indigo-700 mb-1">💡 제안 예시</p>
-              <p className="text-[11px] text-indigo-600 leading-relaxed">"회의 전 안건을 미리 공유해 주시면 더 효율적인 논의가 될 것 같습니다."</p>
+              <p className="text-xs font-semibold text-primary-700 mb-1">💡 제안 예시</p>
+              <p className="text-xs text-primary-600 leading-relaxed">"회의 전 안건을 미리 공유해 주시면 더 효율적인 논의가 될 것 같습니다."</p>
             </div>
           </div>
         </div>
@@ -466,7 +468,7 @@ export function Feedback() {
           <h1 className="text-xl font-semibold text-zinc-900">피드백</h1>
           <button
             onClick={() => goToWrite()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Plus className="w-4 h-4" /> 피드백 보내기
           </button>

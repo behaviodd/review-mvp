@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ReviewCycle, ReviewTemplate, ReviewSubmission, Answer } from '../types';
-import { MOCK_CYCLES, MOCK_TEMPLATES, MOCK_SUBMISSIONS, MOCK_USERS } from '../data/mockData';
-import { syncSubmission } from '../utils/sheetsSync';
+import { cycleWriter, templateWriter, submissionWriter } from '../utils/reviewSheetWriter';
 import { useSheetsSyncStore } from './sheetsSyncStore';
+import { DEFAULT_TEMPLATE } from '../data/defaultTemplate';
 
 type PersistedState = {
   cycles: ReviewCycle[];
@@ -15,6 +15,10 @@ interface ReviewState {
   cycles: ReviewCycle[];
   templates: ReviewTemplate[];
   submissions: ReviewSubmission[];
+  isLoading: boolean;
+  reviewSyncError: string | null;
+
+  // CRUD
   addCycle: (cycle: ReviewCycle) => void;
   updateCycle: (id: string, updates: Partial<ReviewCycle>) => void;
   addTemplate: (template: ReviewTemplate) => void;
@@ -24,34 +28,67 @@ interface ReviewState {
   saveAnswer: (submissionId: string, answer: Answer) => void;
   submitSubmission: (submissionId: string, overallRating?: number) => void;
   getSubmission: (cycleId: string, reviewerId: string, revieweeId: string, type: 'self' | 'downward') => ReviewSubmission | undefined;
+
+  // 시트 동기화
+  syncFromSheet: (data: { cycles?: ReviewCycle[]; templates?: ReviewTemplate[]; submissions?: ReviewSubmission[] }) => void;
+  setLoading: (v: boolean) => void;
+}
+
+function isReviewSyncEnabled() {
+  return useSheetsSyncStore.getState().reviewSyncEnabled;
 }
 
 export const useReviewStore = create<ReviewState>()(
   persist(
     (set, get) => ({
-      cycles: MOCK_CYCLES,
-      templates: MOCK_TEMPLATES,
-      submissions: MOCK_SUBMISSIONS,
+      cycles:     [],
+      templates:  [DEFAULT_TEMPLATE],
+      submissions: [],
+      isLoading:  false,
+      reviewSyncError: null,
 
-      addCycle: (cycle) => set(s => ({ cycles: [...s.cycles, cycle] })),
+      /* ── 사이클 ───────────────────────────────────────────────── */
+      addCycle: (cycle) => {
+        set(s => ({ cycles: [...s.cycles, cycle] }));
+        if (isReviewSyncEnabled()) cycleWriter.upsert(cycle);
+      },
 
-      updateCycle: (id, updates) =>
-        set(s => ({ cycles: s.cycles.map(c => c.id === id ? { ...c, ...updates } : c) })),
+      updateCycle: (id, updates) => {
+        set(s => ({ cycles: s.cycles.map(c => c.id === id ? { ...c, ...updates } : c) }));
+        if (isReviewSyncEnabled()) {
+          const updated = get().cycles.find(c => c.id === id);
+          if (updated) cycleWriter.upsert(updated);
+        }
+      },
 
-      addTemplate: (template) => set(s => ({ templates: [...s.templates, template] })),
+      /* ── 템플릿 ───────────────────────────────────────────────── */
+      addTemplate: (template) => {
+        set(s => ({ templates: [...s.templates, template] }));
+        if (isReviewSyncEnabled()) templateWriter.upsert(template);
+      },
 
-      updateTemplate: (id, updates) =>
-        set(s => ({ templates: s.templates.map(t => t.id === id ? { ...t, ...updates } : t) })),
+      updateTemplate: (id, updates) => {
+        set(s => ({ templates: s.templates.map(t => t.id === id ? { ...t, ...updates } : t) }));
+        if (isReviewSyncEnabled()) {
+          const updated = get().templates.find(t => t.id === id);
+          if (updated) templateWriter.upsert(updated);
+        }
+      },
 
-      deleteTemplate: (id) =>
-        set(s => ({ templates: s.templates.filter(t => t.id !== id) })),
+      deleteTemplate: (id) => {
+        set(s => ({ templates: s.templates.filter(t => t.id !== id) }));
+        if (isReviewSyncEnabled()) templateWriter.delete(id);
+      },
 
-      upsertSubmission: (submission) =>
+      /* ── 제출 ─────────────────────────────────────────────────── */
+      upsertSubmission: (submission) => {
         set(s => {
           const exists = s.submissions.find(sub => sub.id === submission.id);
           if (exists) return { submissions: s.submissions.map(sub => sub.id === submission.id ? submission : sub) };
           return { submissions: [...s.submissions, submission] };
-        }),
+        });
+        if (isReviewSyncEnabled()) submissionWriter.upsert(submission);
+      },
 
       saveAnswer: (submissionId, answer) =>
         set(s => ({
@@ -74,53 +111,39 @@ export const useReviewStore = create<ReviewState>()(
               : sub
           ),
         }));
-
-        // Google Sheets 자동 동기화 (fire-and-forget)
-        const { scriptUrl, enabled } = useSheetsSyncStore.getState();
-        if (enabled && scriptUrl) {
-          const { submissions, cycles } = get();
-          const sub = submissions.find(s => s.id === submissionId);
-          if (sub) {
-            const updated = { ...sub, status: 'submitted' as const, submittedAt, overallRating };
-            const cycle   = cycles.find(c => c.id === sub.cycleId);
-            const template: ReviewTemplate | undefined = MOCK_TEMPLATES.find(t => t.id === cycle?.templateId);
-            if (cycle && template) {
-              syncSubmission(updated, cycle, template, MOCK_USERS, scriptUrl).catch(
-                err => console.warn('[SheetsSync] 동기화 실패:', err),
-              );
-            }
-          }
+        if (isReviewSyncEnabled()) {
+          const sub = get().submissions.find(s => s.id === submissionId);
+          if (sub) submissionWriter.upsert(sub);
         }
       },
 
-      getSubmission: (cycleId, reviewerId, revieweeId, type) => {
-        return get().submissions.find(
-          s => s.cycleId === cycleId && s.reviewerId === reviewerId && s.revieweeId === revieweeId && s.type === type
-        );
-      },
+      getSubmission: (cycleId, reviewerId, revieweeId, type) =>
+        get().submissions.find(
+          s => s.cycleId === cycleId && s.reviewerId === reviewerId &&
+               s.revieweeId === revieweeId && s.type === type
+        ),
+
+      /* ── 시트 동기화 ──────────────────────────────────────────── */
+      syncFromSheet: ({ cycles, templates, submissions }) =>
+        set(s => ({
+          cycles:      cycles      ?? s.cycles,
+          templates:   templates   ?? s.templates,
+          submissions: submissions ?? s.submissions,
+        })),
+
+      setLoading: (isLoading) => set({ isLoading }),
     }),
     {
-      name: 'review-data-v2',
+      name: 'review-data-v3',
       partialize: (state): PersistedState => ({
-        cycles: state.cycles,
-        templates: state.templates,
+        cycles:      state.cycles,
+        templates:   state.templates,
         submissions: state.submissions,
       }),
-      merge: (persistedState, currentState) => {
-        const ps = (persistedState ?? {}) as Partial<PersistedState>;
-        if (!ps.submissions) {
-          // No persisted state — use fresh mock data as-is
-          return { ...currentState };
+      onRehydrateStorage: () => (state) => {
+        if (state && state.templates.length === 0) {
+          state.templates = [DEFAULT_TEMPLATE];
         }
-        // Merge: keep persisted submissions, add any new mock submissions not yet in localStorage
-        const persistedSubIds = new Set(ps.submissions.map(s => s.id));
-        const missingSubmissions = MOCK_SUBMISSIONS.filter(s => !persistedSubIds.has(s.id));
-        return {
-          ...currentState,
-          cycles: ps.cycles ?? currentState.cycles,
-          templates: ps.templates ?? currentState.templates,
-          submissions: [...ps.submissions, ...missingSubmissions],
-        };
       },
     }
   )

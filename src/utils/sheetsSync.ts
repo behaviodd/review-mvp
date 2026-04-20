@@ -46,7 +46,7 @@ function shortLabel(text: string, max = 18) {
 
 function buildSelfHeaders(template: ReviewTemplate): string[] {
   const qCols = template.questions
-    .filter(q => q.target !== 'manager')
+    .filter(q => q.target !== 'leader')
     .sort((a, b) => a.order - b.order)
     .map(q => `Q${q.order}_${shortLabel(q.text)}`);
 
@@ -94,7 +94,7 @@ function buildSelfRow(
   const member  = allUsers.find(u => u.id === sub.revieweeId);
   const manager = allUsers.find(u => u.id === member?.managerId);
   const questions = template.questions
-    .filter(q => q.target !== 'manager')
+    .filter(q => q.target !== 'leader')
     .sort((a, b) => a.order - b.order);
 
   return [

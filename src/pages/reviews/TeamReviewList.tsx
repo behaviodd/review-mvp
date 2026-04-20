@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
-import { MOCK_USERS, MOCK_TEMPLATES } from '../../data/mockData';
+import { useTeamStore } from '../../stores/teamStore';
+import type { ReviewTemplate } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
@@ -11,13 +12,14 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { exportCycleToCSV } from '../../utils/exportUtils';
+import type { ReviewCycle } from '../../types';
 
 type Filter = 'all' | 'active' | 'done';
 
 // ─── 사이클별 통계 타입 ──────────────────────────────────────────────────────
 interface CycleData {
-  cycle: ReturnType<typeof useReviewStore>['cycles'][0];
-  template: typeof MOCK_TEMPLATES[0] | undefined;
+  cycle: ReviewCycle;
+  template: ReviewTemplate | undefined;
   total: number;
   submitted: number;
   inProgress: number;
@@ -61,10 +63,10 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
 function SectionHeader() {
   return (
     <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-neutral-100 bg-neutral-50/50">
-      <div className="flex-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">상태</div>
+      <div className="flex-1 text-xs font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-neutral-400 uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">상태</div>
       <div className="w-24" />
     </div>
   );
@@ -75,18 +77,40 @@ export function TeamReviewList() {
   const [filter, setFilter] = useState<Filter>('all');
   const { currentUser } = useAuthStore();
   const isAdmin = currentUser?.role === 'admin';
-  const { cycles, submissions } = useReviewStore();
+  const { cycles, submissions, templates } = useReviewStore();
+  const { users, orgUnits } = useTeamStore();
   const navigate = useNavigate();
 
-  // 관리자: 전체 팀원, 매니저: 직속 팀원
-  const teamMembers = isAdmin
-    ? MOCK_USERS.filter(u => u.role === 'employee')
-    : MOCK_USERS.filter(u => u.managerId === currentUser?.id);
+  // 조직장의 팀원 계산
+  // - admin: admin을 제외한 모든 구성원
+  // - leader: ① managerId로 지정된 구성원 + ② headId 기반 조직 소속 구성원 (OR)
+  const teamMembers = useMemo(() => {
+    if (isAdmin) return users.filter(u => u.role !== 'admin');
+
+    const byManagerId = new Set(
+      users.filter(u => u.managerId === currentUser?.id).map(u => u.id)
+    );
+    const headOrgNames = new Set(
+      orgUnits.filter(o => o.headId === currentUser?.id).map(o => o.name)
+    );
+
+    return users.filter(u =>
+      u.id !== currentUser?.id &&
+      u.role !== 'admin' &&
+      (
+        byManagerId.has(u.id) ||
+        headOrgNames.has(u.department) ||
+        headOrgNames.has(u.subOrg  ?? '__') ||
+        headOrgNames.has(u.team    ?? '__') ||
+        headOrgNames.has(u.squad   ?? '__')
+      )
+    );
+  }, [isAdmin, users, orgUnits, currentUser?.id]);
 
   if (!isAdmin && teamMembers.length === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-semibold text-neutral-900">팀원 평가</h1>
+        <h1 className="text-xl font-semibold text-neutral-900">하향 평가</h1>
         <EmptyState
           icon={Users}
           title="등록된 팀원이 없습니다."
@@ -107,7 +131,7 @@ export function TeamReviewList() {
       );
     })
     .map(cycle => {
-      const template = MOCK_TEMPLATES.find(t => t.id === cycle.templateId);
+      const template = templates.find(t => t.id === cycle.templateId);
 
       const stats = teamMembers.map(member => {
         const reviewerId = isAdmin
@@ -257,7 +281,7 @@ export function TeamReviewList() {
             {!isCompleted ? (
               <div>
                 <ProgressBar value={pct} max={100} size="sm" />
-                <p className="text-[11px] text-neutral-400 mt-1">
+                <p className="text-xs text-neutral-400 mt-1">
                   {submitted}/{total} 완료
                 </p>
               </div>
@@ -271,7 +295,7 @@ export function TeamReviewList() {
             <p className={`text-xs font-medium ${urgent && !isCompleted ? 'text-primary-600' : 'text-neutral-600'}`}>
               {deadlineLabel(cycle.managerReviewDeadline)}
             </p>
-            <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
+            <p className="text-xs text-neutral-400 mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
           </div>
 
           {/* 상태 */}
@@ -283,7 +307,7 @@ export function TeamReviewList() {
           <div className="flex-shrink-0 w-24 flex justify-end items-center gap-2">
             {isAdmin && template && (
               <button
-                onClick={e => { e.stopPropagation(); exportCycleToCSV(cycle, template, submissions, MOCK_USERS); }}
+                onClick={e => { e.stopPropagation(); exportCycleToCSV(cycle, template, submissions, users); }}
                 title="엑셀 다운로드"
                 className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
               >
@@ -315,7 +339,7 @@ export function TeamReviewList() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold text-neutral-900">팀원 평가</h1>
+      <h1 className="text-xl font-semibold text-neutral-900">하향 평가</h1>
 
       {/* 필터 탭 */}
       {cycleData.length > 0 && (

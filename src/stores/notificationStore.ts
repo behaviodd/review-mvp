@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Notification } from '../types';
-import { MOCK_NOTIFICATIONS } from '../data/mockData';
 
 interface NotificationState {
   notifications: Notification[];
@@ -14,7 +13,7 @@ interface NotificationState {
 export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({
-      notifications: MOCK_NOTIFICATIONS,
+      notifications: [],
       addNotification: (n) => set(s => ({ notifications: [n, ...s.notifications] })),
       markAsRead: (id) =>
         set(s => ({ notifications: s.notifications.map(n => n.id === id ? { ...n, isRead: true } : n) })),
@@ -22,6 +21,6 @@ export const useNotificationStore = create<NotificationState>()(
         set(s => ({ notifications: s.notifications.map(n => n.userId === userId ? { ...n, isRead: true } : n) })),
       getUnread: (userId) => get().notifications.filter(n => n.userId === userId && !n.isRead),
     }),
-    { name: 'review-notifications' }
+    { name: 'review-notifications-v2' }
   )
 );

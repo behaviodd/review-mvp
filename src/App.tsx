@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import { useOrgSync } from './hooks/useOrgSync';
+import { useReviewSync } from './hooks/useReviewSync';
 import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -12,10 +14,20 @@ import { CycleNew } from './pages/reviews/CycleNew';
 import { CycleDetail } from './pages/reviews/CycleDetail';
 import { TemplateList } from './pages/reviews/TemplateList';
 import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
-import { Feedback } from './pages/Feedback';
 import { Team } from './pages/Team';
 import { Notifications } from './pages/Notifications';
 import { Settings } from './pages/Settings';
+
+// 로그인 상태일 때만 시트 동기화 실행
+function OrgSyncProvider() {
+  useOrgSync();
+  return null;
+}
+
+function ReviewSyncProvider() {
+  useReviewSync();
+  return null;
+}
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuthStore();
@@ -34,12 +46,14 @@ function RequireRole({ roles, children }: { roles: string[]; children: React.Rea
 export default function App() {
   return (
     <BrowserRouter>
+      <OrgSyncProvider />
       <Routes>
         <Route path="/login" element={<Login />} />
 
         <Route
           element={
             <RequireAuth>
+              <ReviewSyncProvider />
               <AppLayout />
             </RequireAuth>
           }
@@ -54,7 +68,7 @@ export default function App() {
           <Route
             path="reviews/team"
             element={
-              <RequireRole roles={['admin', 'manager']}>
+              <RequireRole roles={['admin', 'leader']}>
                 <TeamReviewList />
               </RequireRole>
             }
@@ -62,7 +76,7 @@ export default function App() {
           <Route
             path="reviews/team/:cycleId/:userId"
             element={
-              <RequireRole roles={['admin', 'manager']}>
+              <RequireRole roles={['admin', 'leader']}>
                 <TeamReviewWrite />
               </RequireRole>
             }
@@ -113,11 +127,10 @@ export default function App() {
           />
 
           {/* Other pages */}
-          <Route path="feedback" element={<Feedback />} />
           <Route
             path="team"
             element={
-              <RequireRole roles={['admin', 'manager']}>
+              <RequireRole roles={['admin', 'leader']}>
                 <Team />
               </RequireRole>
             }

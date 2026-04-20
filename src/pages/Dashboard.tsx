@@ -1,25 +1,27 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useReviewStore } from '../stores/reviewStore';
-import { useFeedbackStore } from '../stores/feedbackStore';
-import { MOCK_USERS, DEPARTMENT_STATS, GRADE_FROM_RATING } from '../data/mockData';
+import { useTeamStore } from '../stores/teamStore';
+import { timeAgo } from '../utils/dateUtils';
+
+const GRADE_FROM_RATING = (r: number) => r >= 4.5 ? 'S' : r >= 3.5 ? 'A' : r >= 2.5 ? 'B' : r >= 1.5 ? 'C' : 'D';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../utils/dateUtils';
-import { AlertCircle, Users, TrendingUp, Clock, Plus, Bell, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertCircle, Users, TrendingUp, Clock, Plus } from 'lucide-react';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useShowToast } from '../components/ui/Toast';
-import { OrgReviewPanel } from '../components/common/OrgReviewPanel';
+
 
 function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
   label: string; value: string | number; sub?: string;
   icon: typeof AlertCircle; color: string; iconBg: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-4 md:p-5">
+    <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">{label}</p>
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
@@ -35,47 +37,77 @@ function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 function AdminDashboard() {
   const { cycles, submissions } = useReviewStore();
+  const { users } = useTeamStore();
   const { addNotification } = useNotificationStore();
   const showToast = useShowToast();
   const navigate = useNavigate();
 
   const activeCycles = cycles.filter(c => c.status !== 'draft' && c.status !== 'closed');
+
+  const deptStats = useMemo(() => {
+    const active = activeCycles[0];
+    if (!active) return [];
+    const activeUsers = users.filter(u => u.isActive !== false && u.role !== 'admin');
+    const depts = Array.from(new Set(activeUsers.map(u => u.department))).filter(Boolean);
+    return depts.map(dept => {
+      const members = activeUsers.filter(u => u.department === dept);
+      const submitted = members.filter(u =>
+        submissions.some(s => s.cycleId === active.id && s.revieweeId === u.id && s.type === 'self' && s.status === 'submitted')
+      ).length;
+      return { department: dept, completionRate: members.length ? Math.round(submitted / members.length * 100) : 0 };
+    });
+  }, [activeCycles, submissions, users]);
   const avgCompletion = Math.round(activeCycles.reduce((s, c) => s + c.completionRate, 0) / (activeCycles.length || 1));
   const pendingCount = submissions.filter(s => s.status === 'not_started').length;
   const urgentCount = activeCycles.filter(c => isUrgent(c.selfReviewDeadline)).length;
 
   const barColor = (rate: number) => rate >= 80 ? '#059669' : rate >= 50 ? '#4f46e5' : '#e11d48';
 
-  const handleNudge = (cycleId: string) => {
-    const cycle = cycles.find(c => c.id === cycleId);
-    const pending = submissions.filter(s => s.cycleId === cycleId && s.status === 'not_started');
-    pending.forEach((s, i) => {
-      addNotification({
-        id: `nudge_${Date.now()}_${i}_${s.revieweeId}`,
-        userId: s.revieweeId,
-        title: '리뷰 작성 독촉',
-        message: `${cycle?.title} 마감이 다가오고 있습니다. 지금 바로 작성해 주세요!`,
-        type: 'nudge',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/reviews/me/${s.id}`,
-      });
-    });
-    showToast(`${pending.length}명에게 독촉 알림을 발송했습니다.`, 'success');
-  };
+  const activityFeed = useMemo(() => {
+    type Event = { key: string; text: string; time: string; timestamp: string };
+    const events: Event[] = [];
 
-  const activityFeed = [
-    { text: '최백엔드님이 셀프 리뷰를 제출했습니다.', time: '오늘 11:00' },
-    { text: '오UX님이 셀프 리뷰를 제출했습니다.', time: '어제 16:30' },
-    { text: '이개발님이 팀원 리뷰를 시작했습니다.', time: '어제 10:00' },
-    { text: '김관리님이 2025년 상반기 리뷰를 배포했습니다.', time: '7월 1일' },
-  ];
+    for (const s of submissions) {
+      const reviewee = users.find(u => u.id === s.revieweeId);
+      const reviewer = users.find(u => u.id === s.reviewerId);
+      if (!reviewee) continue;
+
+      if (s.status === 'submitted') {
+        const ts = s.submittedAt ?? s.lastSavedAt;
+        const text = s.type === 'self'
+          ? `${reviewee.name}님이 자기평가를 제출했습니다.`
+          : `${reviewer?.name ?? '조직장'}님이 ${reviewee.name}님 팀원 평가를 제출했습니다.`;
+        events.push({ key: `${s.id}_sub`, text, time: timeAgo(ts), timestamp: ts });
+      } else if (s.status === 'in_progress') {
+        const ts = s.lastSavedAt;
+        const text = s.type === 'self'
+          ? `${reviewee.name}님이 자기평가를 작성 중입니다.`
+          : `${reviewer?.name ?? '조직장'}님이 ${reviewee.name}님 팀원 평가를 작성 중입니다.`;
+        events.push({ key: `${s.id}_prog`, text, time: timeAgo(ts), timestamp: ts });
+      }
+    }
+
+    for (const c of cycles) {
+      if (c.status !== 'draft') {
+        events.push({
+          key: `${c.id}_pub`,
+          text: `"${c.title}" 리뷰가 발행되었습니다.`,
+          time: timeAgo(c.createdAt),
+          timestamp: c.createdAt,
+        });
+      }
+    }
+
+    return events
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 8);
+  }, [submissions, users, cycles]);
 
   return (
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">관리자 대시보드</h1>
-        <button onClick={() => navigate('/cycles/new')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors">
+        <button onClick={() => navigate('/cycles/new')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
           <Plus className="w-4 h-4" /> 새 리뷰 생성
         </button>
       </div>
@@ -90,16 +122,16 @@ function AdminDashboard() {
 
       {/* 차트 섹션 — 모바일 1열, 데스크톱 3열 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
           <h2 className="text-sm font-semibold text-neutral-800 mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={DEPARTMENT_STATS} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+            <BarChart data={deptStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="department" tick={{ fontSize: 12, fill: '#64748b' }} />
               <YAxis tick={{ fontSize: 11, fill: '#64748b' }} domain={[0, 100]} />
               <Tooltip formatter={(v) => [`${v}%`, '완료율']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: 12, color: '#0f172a' }} />
-              <Bar dataKey="completionRate" radius={[6, 6, 0, 0]} label={{ position: 'top', fontSize: 11, formatter: (v: number) => `${v}%` }}>
-                {DEPARTMENT_STATS.map((entry, i) => (
+              <Bar dataKey="completionRate" radius={[6, 6, 0, 0]} label={{ position: 'top', fontSize: 11, formatter: (v: unknown) => `${v}%` }}>
+                {deptStats.map((entry, i) => (
                   <Cell key={i} fill={barColor(entry.completionRate)} />
                 ))}
               </Bar>
@@ -107,11 +139,11 @@ function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+        <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
           <h2 className="text-sm font-semibold text-neutral-800 mb-4">액션 필요</h2>
           <div className="space-y-3">
             {activeCycles.map(c => (
-              <div key={c.id} className="p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+              <div key={c.id} className="p-3 bg-neutral-50 rounded-lg border border-zinc-950/5">
                 <button
                   onClick={() => navigate(`/cycles/${c.id}`)}
                   className="text-xs font-medium text-neutral-800 mb-1 line-clamp-1 hover:text-primary-600 hover:underline text-left w-full"
@@ -120,35 +152,35 @@ function AdminDashboard() {
                 </button>
                 <p className="text-xs text-neutral-500 mb-2">완료율 {c.completionRate}% · {deadlineLabel(c.selfReviewDeadline)}</p>
                 <ProgressBar value={c.completionRate} size="sm" />
-                <button onClick={() => handleNudge(c.id)} className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 bg-neutral-100 text-neutral-700 text-xs font-medium rounded hover:bg-neutral-200 transition-colors border border-neutral-200">
-                  <Bell className="w-3.5 h-3.5" /> 미제출자 독촉 발송
-                </button>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800">최근 활동</h2>
           <button onClick={() => navigate('/cycles')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
             전체 보기
           </button>
         </div>
-        <div className="space-y-1">
-          {activityFeed.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => navigate('/cycles')}
-              className="w-full flex items-center gap-3 py-2 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 rounded-lg px-1 transition-colors text-left"
-            >
-              <div className="w-1.5 h-1.5 bg-neutral-300 rounded-full flex-shrink-0" />
-              <p className="text-sm text-neutral-700 flex-1">{item.text}</p>
-              <span className="text-xs text-neutral-400 flex-shrink-0">{item.time}</span>
-            </button>
-          ))}
-        </div>
+        {activityFeed.length === 0 ? (
+          <p className="text-sm text-neutral-400 py-2">아직 활동 이력이 없습니다.</p>
+        ) : (
+          <div className="space-y-1">
+            {activityFeed.map(item => (
+              <div
+                key={item.key}
+                className="flex items-center gap-3 py-2 border-b border-neutral-50 last:border-0 px-1"
+              >
+                <div className="w-1.5 h-1.5 bg-neutral-300 rounded-full flex-shrink-0" />
+                <p className="text-sm text-neutral-700 flex-1">{item.text}</p>
+                <span className="text-xs text-neutral-400 flex-shrink-0 whitespace-nowrap">{item.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -158,15 +190,31 @@ function AdminDashboard() {
 function ManagerDashboard() {
   const { currentUser } = useAuthStore();
   const { cycles, submissions } = useReviewStore();
-  const { getFeedbackForUser } = useFeedbackStore();
+  const { users, orgUnits } = useTeamStore();
   const navigate = useNavigate();
 
-  const teamMembers = MOCK_USERS.filter(u => u.managerId === currentUser?.id);
+  const teamMembers = useMemo(() => {
+    const byManagerId = new Set(
+      users.filter(u => u.managerId === currentUser?.id && u.isActive !== false).map(u => u.id)
+    );
+    const headOrgNames = new Set(
+      orgUnits.filter(o => o.headId === currentUser?.id).map(o => o.name)
+    );
+    return users.filter(u =>
+      u.isActive !== false &&
+      u.role !== 'admin' &&
+      u.id !== currentUser?.id &&
+      (byManagerId.has(u.id) ||
+       headOrgNames.has(u.department) ||
+       headOrgNames.has(u.subOrg  ?? '__') ||
+       headOrgNames.has(u.team    ?? '__') ||
+       headOrgNames.has(u.squad   ?? '__'))
+    );
+  }, [users, orgUnits, currentUser?.id]);
   const activeCycle = cycles.find(c => c.status !== 'draft' && c.status !== 'closed');
 
   const mySelfs = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self');
   const myDownwards = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'downward');
-  const { received } = getFeedbackForUser(currentUser?.id || '');
 
   const getMemberStatus = (memberId: string) => {
     const sub = submissions.find(s => s.reviewerId === currentUser?.id && s.revieweeId === memberId && s.type === 'downward' && s.cycleId === activeCycle?.id);
@@ -181,7 +229,7 @@ function ManagerDashboard() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">팀장 대시보드</h1>
+      <h1 className="text-xl font-semibold text-neutral-900">조직장 대시보드</h1>
 
       {/* 할 일 — 모바일 1열, 태블릿+ 2열 */}
       <div>
@@ -190,9 +238,9 @@ function ManagerDashboard() {
           {mySelfs.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/me')}
-              className="bg-white rounded-xl border border-neutral-200 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
             >
-              <span className="inline-flex px-2 py-0.5 rounded text-[11px] font-semibold mb-2 bg-primary-50 text-primary-700">
+              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-primary-50 text-primary-700">
                 자기평가
               </span>
               <p className="text-sm font-semibold text-neutral-900 group-hover:text-primary-700 line-clamp-1">{activeCycle?.title}</p>
@@ -204,9 +252,9 @@ function ManagerDashboard() {
           {myDownwards.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/team')}
-              className="bg-white rounded-xl border border-neutral-200 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
             >
-              <span className="inline-flex px-2 py-0.5 rounded text-[11px] font-semibold mb-2 bg-success-50 text-success-700">팀원 평가</span>
+              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-success-50 text-success-700">팀원 평가</span>
               <p className="text-sm font-semibold text-neutral-900 group-hover:text-primary-700">
                 {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
               </p>
@@ -217,7 +265,7 @@ function ManagerDashboard() {
       </div>
 
       {/* 팀원 현황 — 모바일 2열, 데스크톱 3열 */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800">팀원 리뷰 현황</h2>
           <button onClick={() => navigate('/reports')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
@@ -243,52 +291,24 @@ function ManagerDashboard() {
         </div>
       </div>
 
-      {/* 하단 카드 — 모바일 1열, 데스크톱 2열 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-4">팀 리뷰 완료율</h2>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
-                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip formatter={(v) => [`${v}명`, '']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: 12, color: '#0f172a' }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex gap-3 justify-center mt-2 flex-wrap">
-            {pieData.map(d => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                <span className="text-xs text-neutral-500">{d.name} {d.value}명</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-neutral-800">최근 받은 피드백</h2>
-            <button onClick={() => navigate('/feedback')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
-              전체 보기
-            </button>
-          </div>
-          <div className="space-y-2">
-            {received.slice(0, 3).map(fb => {
-              const sender = MOCK_USERS.find(u => u.id === fb.fromUserId);
-              return (
-                <button
-                  key={fb.id}
-                  onClick={() => navigate('/feedback')}
-                  className="w-full p-3 bg-neutral-50 rounded-lg text-left hover:bg-neutral-100 transition-colors border border-transparent hover:border-neutral-200"
-                >
-                  <p className="text-xs font-medium text-neutral-800 line-clamp-2">{fb.content}</p>
-                  <p className="text-[10px] text-neutral-400 mt-1">{fb.isAnonymous ? '익명' : sender?.name}</p>
-                </button>
-              );
-            })}
-            {received.length === 0 && (
-              <p className="text-xs text-neutral-400 py-2">받은 피드백이 없습니다.</p>
-            )}
-          </div>
+      {/* 하단 카드 */}
+      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+        <h2 className="text-sm font-semibold text-neutral-800 mb-4">팀 리뷰 완료율</h2>
+        <ResponsiveContainer width="100%" height={160}>
+          <PieChart>
+            <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
+              {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+            </Pie>
+            <Tooltip formatter={(v) => [`${v}명`, '']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: 12, color: '#0f172a' }} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="flex gap-3 justify-center mt-2 flex-wrap">
+          {pieData.map(d => (
+            <div key={d.name} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+              <span className="text-xs text-neutral-500">{d.name} {d.value}명</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -299,12 +319,10 @@ function ManagerDashboard() {
 function EmployeeDashboard() {
   const { currentUser } = useAuthStore();
   const { cycles, submissions } = useReviewStore();
-  const { getFeedbackForUser } = useFeedbackStore();
   const navigate = useNavigate();
 
   const activeCycle = cycles.find(c => c.status !== 'draft' && c.status !== 'closed');
   const mySelf = submissions.find(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.cycleId === activeCycle?.id);
-  const { received } = getFeedbackForUser(currentUser?.id || '');
   const pastSubmissions = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.status === 'submitted');
 
   return (
@@ -325,7 +343,7 @@ function EmployeeDashboard() {
             </div>
             <button
               onClick={() => navigate(`/reviews/me/${mySelf.id}`)}
-              className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white font-medium text-sm rounded hover:bg-primary-700 transition-colors"
+              className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white font-medium text-sm rounded-lg hover:bg-primary-700 transition-colors"
             >
               {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
             </button>
@@ -333,37 +351,9 @@ function EmployeeDashboard() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-neutral-800">최근 받은 피드백</h2>
-            <button onClick={() => navigate('/feedback')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
-              전체 보기
-            </button>
-          </div>
-          <div className="space-y-3">
-            {received.slice(0, 3).map(fb => {
-              const sender = MOCK_USERS.find(u => u.id === fb.fromUserId);
-              const typeColors = { praise: 'bg-success-50 text-success-700', suggestion: 'bg-primary-50 text-primary-700', note: 'bg-neutral-100 text-neutral-600' };
-              const typeLabels = { praise: '칭찬 🌟', suggestion: '제안 💡', note: '기록 📝' };
-              return (
-                <button
-                  key={fb.id}
-                  onClick={() => navigate('/feedback')}
-                  className="w-full p-3 bg-neutral-50 rounded-lg text-left hover:bg-neutral-100 transition-colors border border-transparent hover:border-neutral-200"
-                >
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[fb.type]}`}>{typeLabels[fb.type]}</span>
-                  <p className="text-xs text-neutral-700 mt-1.5 line-clamp-2">{fb.content}</p>
-                  <p className="text-[10px] text-neutral-400 mt-1">{fb.isAnonymous ? '익명' : sender?.name}</p>
-                </button>
-              );
-            })}
-            {received.length === 0 && <p className="text-sm text-neutral-400">받은 피드백이 없습니다.</p>}
-          </div>
-        </div>
-
       {/* 이전 리뷰 타임라인 */}
       {pastSubmissions.length > 0 && (
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+        <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-neutral-800">리뷰 이력</h2>
             <button onClick={() => navigate('/reviews/me')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
@@ -400,6 +390,6 @@ export function Dashboard() {
   const { currentUser } = useAuthStore();
   if (!currentUser) return null;
   if (currentUser.role === 'admin') return <AdminDashboard />;
-  if (currentUser.role === 'manager') return <ManagerDashboard />;
+  if (currentUser.role === 'leader') return <ManagerDashboard />;
   return <EmployeeDashboard />;
 }

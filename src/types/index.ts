@@ -1,21 +1,55 @@
-export type UserRole = 'admin' | 'manager' | 'employee';
+export type UserRole = 'admin' | 'leader' | 'member';
+export type OrgUnitType = 'mainOrg' | 'subOrg' | 'team' | 'squad';
 export type ReviewStatus = 'draft' | 'active' | 'self_review' | 'manager_review' | 'calibration' | 'closed';
 export type ReviewType = 'scheduled' | 'adhoc';
 export type FeedbackType = 'praise' | 'suggestion' | 'note';
 export type QuestionType = 'rating' | 'text' | 'competency';
 export type SubmissionStatus = 'not_started' | 'in_progress' | 'submitted';
 export type GoalStatus = 'on_track' | 'at_risk' | 'completed' | 'cancelled';
-export type NotificationType = 'deadline' | 'feedback' | 'review_result' | 'nudge' | 'system';
+export type NotificationType = 'deadline' | 'feedback' | 'review_result' | 'system';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  department: string;
+  department: string;   // 주조직명 (backward compat + 리뷰 타겟팅 기준)
   position: string;
   managerId?: string;
   avatarColor: string;
+  // 계층 조직 (다단계)
+  subOrg?: string;      // 부조직명
+  team?: string;        // 팀명
+  squad?: string;       // 스쿼드명
+  // 시트 연동 확장 필드
+  nameEn?: string;
+  phone?: string;
+  joinDate?: string;
+  jobFunction?: string;
+  secondaryDept?: string;
+  secondaryPosition?: string;
+  isActive?: boolean;
+  leaveDate?: string;
+}
+
+export interface OrgUnit {
+  id: string;
+  name: string;
+  type: OrgUnitType;
+  parentId?: string;
+  headId?: string;   // 조직장 사번
+  order: number;
+}
+
+export interface SecondaryOrgAssignment {
+  userId: string;
+  orgId: string;
+  orgName?: string;   // 겸임조직명 (비정규화 표시용)
+  position: string;   // 겸임직책
+  startDate: string;
+  endDate?: string;
+  ratio?: number;     // 겸임 비율 %
+  note?: string;
 }
 
 export interface ReviewCycle {
@@ -46,7 +80,7 @@ export interface TemplateQuestion {
   id: string;
   text: string;
   type: QuestionType;
-  target: 'self' | 'manager' | 'both';
+  target: 'self' | 'leader' | 'both';
   isPrivate: boolean;
   ratingScale?: number;
   isRequired: boolean;

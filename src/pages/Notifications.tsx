@@ -2,13 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { formatDateTime } from '../utils/dateUtils';
-import { Bell, Clock, MessageSquare, AlertCircle, CheckCheck, ChevronRight } from 'lucide-react';
+import { Bell, Clock, MessageSquare, CheckCheck, ChevronRight } from 'lucide-react';
 import type { NotificationType } from '../types';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: typeof Bell; color: string; bg: string }> = {
   deadline: { icon: Clock, color: 'text-primary-600', bg: 'bg-primary-50' },
   feedback: { icon: MessageSquare, color: 'text-primary-600', bg: 'bg-primary-50' },
-  nudge: { icon: AlertCircle, color: 'text-neutral-500', bg: 'bg-neutral-100' },
   review_result: { icon: Bell, color: 'text-success-600', bg: 'bg-success-50' },
   system: { icon: Bell, color: 'text-neutral-500', bg: 'bg-neutral-100' },
 };

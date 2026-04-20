@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ClipboardList, MessageSquare,
+  LayoutDashboard, ClipboardList,
   Settings, ChevronLeft, ChevronRight, Star, Bell, Users, RefreshCw, Building2,
-  LogOut,
+  LogOut, UserCheck,
 } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
-  const { isManager, isAdmin } = usePermission();
+  const { isLeader, isAdmin } = usePermission();
   const { currentUser, logout } = useAuthStore();
   const { notifications } = useNotificationStore();
   const navigate = useNavigate();
@@ -29,11 +29,10 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
   const navItems = [
     { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                 badge: false },
     { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: true,                 badge: false },
-    { to: '/reviews/team',  icon: Users,           label: '팀원 평가', show: isManager,            badge: false },
-    { to: '/team',          icon: Building2,       label: '팀 구성',   show: isAdmin || isManager, badge: false },
+    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: isLeader,             badge: false },
+    { to: '/team',          icon: Building2,       label: '구성원',    show: isAdmin || isLeader,  badge: false },
     { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,              badge: false },
     { to: '/templates',     icon: ClipboardList,   label: '템플릿',    show: isAdmin,              badge: false },
-    { to: '/feedback',      icon: MessageSquare,   label: '피드백',    show: true,                 badge: false },
     { to: '/notifications', icon: Bell,            label: '알림',      show: true,                 badge: true  },
   ].filter(i => i.show);
 

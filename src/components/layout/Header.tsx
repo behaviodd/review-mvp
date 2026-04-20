@@ -9,7 +9,7 @@ import { NotificationPanel } from '../common/NotificationPanel';
 
 const ROLE_META: Record<string, { label: string; color: 'indigo' | 'emerald' | 'zinc' }> = {
   admin:    { label: '관리자', color: 'indigo'  },
-  manager:  { label: '팀장',   color: 'emerald' },
+  manager:  { label: '조직장',   color: 'emerald' },
   employee: { label: '팀원',   color: 'zinc'    },
 };
 

@@ -13,7 +13,7 @@ export function TemplateList() {
   const handleDelete = (id: string, name: string) => {
     if (confirm(`"${name}" 템플릿을 삭제하시겠습니까?`)) {
       deleteTemplate(id);
-      showToast('템플릿이 삭제되었습니다.', 'success');
+      showToast('success', '템플릿이 삭제되었습니다.');
     }
   };
 
@@ -38,7 +38,7 @@ export function TemplateList() {
         <h1 className="text-xl font-semibold text-neutral-900">평가 템플릿</h1>
         <button
           onClick={() => navigate('/templates/new')}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" /> 새 템플릿
         </button>
@@ -46,7 +46,7 @@ export function TemplateList() {
 
       <div className="space-y-3">
         {templates.map(tmpl => (
-          <div key={tmpl.id} className="bg-white rounded-xl border border-neutral-200 shadow-card p-5 hover:shadow-sm transition-all">
+          <div key={tmpl.id} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5 hover:shadow-card-hover transition-all">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -67,7 +67,7 @@ export function TemplateList() {
               <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                 <button
                   onClick={() => navigate(`/templates/${tmpl.id}`)}
-                  className="px-3 py-1.5 text-xs font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
                 >
                   편집
                 </button>
@@ -82,7 +82,7 @@ export function TemplateList() {
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-neutral-50">
+            <div className="mt-3 pt-3 border-t border-zinc-950/5">
               <div className="flex items-center gap-4 text-xs text-neutral-400 mb-2">
                 <span>{tmpl.questions.length}개 문항</span>
                 <span>생성 {formatDate(tmpl.createdAt)}</span>

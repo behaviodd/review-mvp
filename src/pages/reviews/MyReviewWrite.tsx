@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Check, HelpCircle, Lock,
@@ -9,17 +9,20 @@ import {
 import { LoadingButton } from '../../components/ui/LoadingButton';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useReviewStore } from '../../stores/reviewStore';
-import { MOCK_TEMPLATES, MOCK_USERS } from '../../data/mockData';
+import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
+import { submissionWriter } from '../../utils/reviewSheetWriter';
 import { exportSubmissionToCSV } from '../../utils/exportUtils';
+import { DEFAULT_TEMPLATE } from '../../data/defaultTemplate';
 import { AutoSaveIndicator } from '../../components/ui/AutoSaveIndicator';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { formatDate } from '../../utils/dateUtils';
-import type { TemplateQuestion, Answer } from '../../types';
+import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User } from '../../types';
 
 // ─── 별점 선택기 ──────────────────────────────────────────────────────────────
-function RatingSelector({ question, value, onChange, disabled }: {
+function RatingSelector({ question: _question, value, onChange, disabled }: {
   question: TemplateQuestion; value?: number; onChange: (v: number) => void; disabled?: boolean;
 }) {
   const LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
@@ -36,17 +39,17 @@ function RatingSelector({ question, value, onChange, disabled }: {
             aria-pressed={value === n}
             className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
               value === n
-                ? 'border-indigo-500 bg-indigo-600 text-white'
+                ? 'border-primary-500 bg-primary-600 text-white'
                 : disabled
                   ? 'border-zinc-100 bg-zinc-50 text-zinc-300 cursor-not-allowed'
-                  : 'border-zinc-200 hover:border-indigo-300 text-zinc-600'
+                  : 'border-zinc-200 hover:border-primary-300 text-zinc-600'
             }`}
           >
             {n}
           </button>
         ))}
       </div>
-      {value && <p className="text-xs text-indigo-600 mt-1.5 font-medium">{LABELS[value]}</p>}
+      {value && <p className="text-xs text-primary-600 mt-1.5 font-medium">{LABELS[value]}</p>}
     </div>
   );
 }
@@ -91,13 +94,13 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
       </div>
 
       {helpOpen && question.helpText && (
-        <div className="mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-          <p className="text-xs text-indigo-700 mb-1.5 font-medium">이 질문의 의도</p>
-          <p className="text-xs text-indigo-600">{question.helpText}</p>
+        <div className="mb-3 p-3 bg-primary-50 rounded-xl border border-primary-100">
+          <p className="text-xs text-primary-700 mb-1.5 font-medium">이 질문의 의도</p>
+          <p className="text-xs text-primary-600">{question.helpText}</p>
           {question.exampleAnswer && (
             <>
-              <p className="text-xs text-indigo-700 font-medium mt-2 mb-1">예시 답변</p>
-              <p className="text-xs text-indigo-600 italic">{question.exampleAnswer}</p>
+              <p className="text-xs text-primary-700 font-medium mt-2 mb-1">예시 답변</p>
+              <p className="text-xs text-primary-600 italic">{question.exampleAnswer}</p>
             </>
           )}
         </div>
@@ -120,11 +123,11 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
             rows={5}
             maxLength={1000}
             placeholder={readOnly ? '' : '구체적인 사례와 수치를 포함해 작성하세요.'}
-            className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:bg-white disabled:bg-zinc-50 disabled:text-zinc-500 placeholder:text-zinc-300 resize-none"
+            className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 focus:bg-white disabled:bg-zinc-50 disabled:text-zinc-500 placeholder:text-zinc-300 resize-none"
           />
           <div className="flex justify-between mt-1">
             {!readOnly && answer?.textValue && answer.textValue.length < 50 && (
-              <p className="text-xs text-indigo-600">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>
+              <p className="text-xs text-primary-600">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>
             )}
             {!readOnly && answer?.textValue && answer.textValue.length >= 50 && (
               <p className="text-xs text-emerald-600">잘 작성하고 계십니다!</p>
@@ -146,89 +149,43 @@ type RefLink = { id: string; kind: 'link'; title: string; url: string };
 type RefFile = { id: string; kind: 'file'; name: string; size: string };
 type RefItem = RefLink | RefFile;
 
-// ─── 평가 결과 플랫 카드 (팀장 평가 읽기 전용 표시용) ─────────────────────────
-const RATING_LABELS_FLAT = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
+// ─── 병렬 보기용 공통 상수 ────────────────────────────────────────────────────
+const FLAT_RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
 
-function FlatAnswerCard({ question, answer }: {
+// ─── 병렬 보기 — 자기평가 셀 (zinc/neutral 톤, 읽기 전용) ────────────────────
+function InputAnswerContent({ question, answer }: {
   question: TemplateQuestion;
   answer?: Answer;
 }) {
   const rating = answer?.ratingValue;
   const text   = answer?.textValue;
 
-  return (
-    <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5 space-y-2.5">
-      <p className="text-sm font-semibold text-zinc-800 leading-snug">{question.text}</p>
-
-      {(question.type === 'rating' || question.type === 'competency') && (
-        rating ? (
-          <div className="flex items-center gap-3">
-            {/* 5단계 도트 */}
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map(n => (
-                <span
-                  key={n}
-                  className={`inline-block w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center ${
-                    n === rating
-                      ? 'bg-indigo-600 text-white'
-                      : n < rating
-                        ? 'bg-indigo-100 text-indigo-400'
-                        : 'bg-zinc-100 text-zinc-300'
-                  }`}
-                >
-                  {n}
-                </span>
-              ))}
-            </div>
-            <span className="text-sm font-semibold text-zinc-700">{rating}점</span>
-            <span className="text-xs text-indigo-600 font-medium">{RATING_LABELS_FLAT[rating]}</span>
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-400 italic">미응답</p>
-        )
-      )}
-
-      {question.type === 'text' && (
-        text?.trim() ? (
-          <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{text}</p>
-        ) : (
-          <p className="text-sm text-zinc-400 italic">미응답</p>
-        )
-      )}
-    </div>
-  );
-}
-
-// ─── 병렬 보기용 인풋 답변 렌더러 (자기평가 셀, 카드 래퍼 없음) ──────────────
-function InputAnswerContent({ question, answer }: {
-  question: TemplateQuestion;
-  answer?: Answer;
-}) {
   if (question.type === 'rating' || question.type === 'competency') {
-    return (
-      <RatingSelector
-        question={question}
-        value={answer?.ratingValue}
-        onChange={() => {}}
-        disabled
-      />
+    return rating ? (
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(n => (
+            <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${
+              n === rating ? 'bg-zinc-700 text-white'
+              : n < rating  ? 'bg-zinc-200 text-zinc-500'
+              : 'bg-zinc-100 text-zinc-300'
+            }`}>{n}</span>
+          ))}
+        </div>
+        <span className="text-sm font-semibold text-zinc-700">{rating}점</span>
+        <span className="text-xs text-zinc-500 font-medium">{FLAT_RATING_LABELS[rating]}</span>
+      </div>
+    ) : (
+      <p className="text-sm text-zinc-400 italic">미응답</p>
     );
   }
-  if (question.type === 'text') {
-    return (
-      <textarea
-        value={answer?.textValue || ''}
-        disabled
-        rows={5}
-        placeholder=""
-        className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 text-sm text-zinc-500 resize-none"
-      />
-    );
-  }
-  return null;
+
+  return text?.trim()
+    ? <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{text}</p>
+    : <p className="text-sm text-zinc-400 italic">미응답</p>;
 }
 
-// ─── 병렬 보기용 플랫 답변 렌더러 (팀장 평가 셀, 카드 래퍼 없음) ─────────────
+// ─── 병렬 보기 — 조직장 평가 셀 (primary 톤, 읽기 전용) ───────────────────────
 function FlatAnswerContent({ question, answer }: {
   question: TemplateQuestion;
   answer?: Answer;
@@ -241,33 +198,24 @@ function FlatAnswerContent({ question, answer }: {
       <div className="flex items-center gap-3">
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map(n => (
-            <span
-              key={n}
-              className={`inline-flex w-5 h-5 rounded-full text-[11px] font-bold items-center justify-center ${
-                n === rating
-                  ? 'bg-indigo-600 text-white'
-                  : n < rating
-                    ? 'bg-indigo-100 text-indigo-400'
-                    : 'bg-zinc-100 text-zinc-300'
-              }`}
-            >
-              {n}
-            </span>
+            <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${
+              n === rating ? 'bg-primary-600 text-white'
+              : n < rating  ? 'bg-primary-100 text-primary-400'
+              : 'bg-zinc-100 text-zinc-300'
+            }`}>{n}</span>
           ))}
         </div>
         <span className="text-sm font-semibold text-zinc-700">{rating}점</span>
-        <span className="text-xs text-indigo-600 font-medium">{RATING_LABELS_FLAT[rating]}</span>
+        <span className="text-xs text-primary-600 font-medium">{FLAT_RATING_LABELS[rating]}</span>
       </div>
     ) : (
       <p className="text-sm text-zinc-400 italic">미응답</p>
     );
   }
 
-  return text?.trim() ? (
-    <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{text}</p>
-  ) : (
-    <p className="text-sm text-zinc-400 italic">미응답</p>
-  );
+  return text?.trim()
+    ? <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{text}</p>
+    : <p className="text-sm text-zinc-400 italic">미응답</p>;
 }
 
 // ─── 우측 패널 ────────────────────────────────────────────────────────────────
@@ -295,11 +243,11 @@ function RightPanel({
   isDownward,
   reviewerId,
 }: {
-  cycle: NonNullable<ReturnType<typeof useReviewStore>['cycles'][0]> | undefined;
+  cycle: ReviewCycle | undefined;
   isReadOnly: boolean;
-  submission: ReturnType<typeof useReviewStore>['submissions'][0] | undefined;
-  template: typeof MOCK_TEMPLATES[0] | undefined;
-  currentUser: typeof MOCK_USERS[0] | null;
+  submission: ReviewSubmission | undefined;
+  template: ReviewTemplate | undefined;
+  currentUser: User | null;
   completedCount: number;
   totalSections: number;
   inReview: boolean;
@@ -347,23 +295,23 @@ function RightPanel({
       {/* 리뷰 정보 */}
       <div className="p-4 border-b border-zinc-950/5 space-y-4">
         <div className="flex items-center gap-2">
-          <div className="size-6 rounded bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <FileText className="size-3.5 text-indigo-600" />
+          <div className="size-6 rounded bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <FileText className="size-3.5 text-primary-600" />
           </div>
           <p className="text-xs font-semibold text-zinc-950">리뷰 정보</p>
         </div>
 
-        {/* 팀장 평가: 작성자 정보 */}
+        {/* 조직장 평가: 작성자 정보 */}
         {isDownward && reviewerId && (() => {
-          const reviewer = MOCK_USERS.find(u => u.id === reviewerId);
+          const reviewer = users.find(u => u.id === reviewerId);
           if (!reviewer) return null;
           return (
             <div className="flex items-center gap-2.5 p-2.5 bg-zinc-50 rounded-lg border border-zinc-950/5">
               <UserAvatar user={reviewer} size="sm" />
               <div className="min-w-0">
-                <p className="text-[10px] text-zinc-400 leading-none mb-0.5">작성자</p>
+                <p className="text-xs text-zinc-400 leading-none mb-0.5">작성자</p>
                 <p className="text-xs font-semibold text-zinc-700 truncate">{reviewer.name}</p>
-                <p className="text-[11px] text-zinc-400 truncate">{reviewer.position}</p>
+                <p className="text-xs text-zinc-400 truncate">{reviewer.position}</p>
               </div>
             </div>
           );
@@ -371,7 +319,7 @@ function RightPanel({
 
         {/* 리뷰 주기명 */}
         <div>
-          <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mb-0.5">리뷰 주기</p>
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-0.5">리뷰 주기</p>
           <p className="text-xs font-medium text-zinc-700 leading-snug">{cycle?.title ?? '—'}</p>
         </div>
 
@@ -379,7 +327,7 @@ function RightPanel({
         <div className="flex items-start gap-2 p-2.5 bg-zinc-50 rounded-lg">
           <Calendar className="size-3.5 text-zinc-400 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-[10px] text-zinc-400">자기평가 마감</p>
+            <p className="text-xs text-zinc-400">자기평가 마감</p>
             <p className="text-xs font-medium text-zinc-700">
               {cycle ? formatDate(cycle.selfReviewDeadline) : '—'}
             </p>
@@ -390,9 +338,9 @@ function RightPanel({
         <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-950/5">
           <div className="flex items-center gap-1.5 mb-2">
             <ShieldCheck className="size-3.5 text-zinc-500" />
-            <p className="text-[10px] font-semibold text-zinc-600">개인정보 보호</p>
+            <p className="text-xs font-semibold text-zinc-600">개인정보 보호</p>
           </div>
-          <p className="text-[11px] text-zinc-500 leading-relaxed">
+          <p className="text-xs text-zinc-500 leading-relaxed">
             작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 매니저와 관리자만 열람합니다.
           </p>
         </div>
@@ -400,9 +348,9 @@ function RightPanel({
         {/* 진행률 */}
         {!isReadOnly && (
           <div>
-            <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mb-2">작성 진행률</p>
+            <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">작성 진행률</p>
             <ProgressBar value={completedCount} max={totalSections} showPercent />
-            <p className="text-[11px] text-zinc-400 mt-1.5">{completedCount}/{totalSections} 섹션 완료</p>
+            <p className="text-xs text-zinc-400 mt-1.5">{completedCount}/{totalSections} 섹션 완료</p>
           </div>
         )}
 
@@ -411,7 +359,7 @@ function RightPanel({
           <button
             onClick={() => exportSubmissionToCSV(
               submission, template, cycle,
-              MOCK_USERS.find(u => u.id === submission.revieweeId) ?? currentUser,
+              users.find(u => u.id === submission.revieweeId) ?? currentUser,
               currentUser,
             )}
             className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
@@ -431,7 +379,7 @@ function RightPanel({
           <LoadingButton
             loading={submitting}
             onClick={onSubmit}
-            className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+            className="w-full py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
           >
             최종 제출하기
           </LoadingButton>
@@ -454,7 +402,7 @@ function RightPanel({
             <Paperclip className="size-3.5 text-zinc-400" />
             <span className="text-xs font-medium text-zinc-700">참고자료</span>
             {refs.length > 0 && (
-              <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">
+              <span className="text-xs font-bold bg-primary-100 text-primary-600 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">
                 {refs.length}
               </span>
             )}
@@ -472,17 +420,17 @@ function RightPanel({
                 {refs.map(item => (
                   <li key={item.id} className="flex items-center gap-2 group">
                     {item.kind === 'link' ? (
-                      <Link2 className="size-3.5 text-indigo-400 flex-shrink-0" />
+                      <Link2 className="size-3.5 text-primary-400 flex-shrink-0" />
                     ) : (
                       <Paperclip className="size-3.5 text-zinc-400 flex-shrink-0" />
                     )}
-                    <span className="flex-1 min-w-0 text-[11px] text-zinc-600 truncate leading-snug">
+                    <span className="flex-1 min-w-0 text-xs text-zinc-600 truncate leading-snug">
                       {item.kind === 'link' ? (
                         <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:text-indigo-600 hover:underline inline-flex items-center gap-0.5"
+                          className="hover:text-primary-600 hover:underline inline-flex items-center gap-0.5"
                         >
                           {item.title}
                           <ExternalLink className="size-2.5 flex-shrink-0 ml-0.5" />
@@ -514,7 +462,7 @@ function RightPanel({
                     <button
                       key={tab}
                       onClick={() => setRefTab(tab)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                         refTab === tab ? 'bg-white text-zinc-800 shadow-sm' : 'text-zinc-500'
                       }`}
                     >
@@ -532,7 +480,7 @@ function RightPanel({
                       onChange={e => setLinkUrl(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && addLink()}
                       placeholder="https://..."
-                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-[11px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 focus:bg-white placeholder:text-zinc-300"
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-xs focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300"
                     />
                     <input
                       type="text"
@@ -540,22 +488,22 @@ function RightPanel({
                       onChange={e => setLinkTitle(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && addLink()}
                       placeholder="제목 (선택)"
-                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-[11px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 focus:bg-white placeholder:text-zinc-300"
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-xs focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300"
                     />
                     <button
                       onClick={addLink}
                       disabled={!linkUrl.trim()}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 bg-indigo-600 text-white text-[11px] font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="w-full flex items-center justify-center gap-1 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       <Plus className="size-3" /> 링크 추가
                     </button>
                   </div>
                 ) : (
                   <div>
-                    <label className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border-2 border-dashed border-zinc-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer transition-colors">
+                    <label className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border-2 border-dashed border-zinc-200 rounded-lg hover:border-primary-300 hover:bg-primary-50/30 cursor-pointer transition-colors">
                       <Paperclip className="size-4 text-zinc-400" />
-                      <span className="text-[11px] text-zinc-500 font-medium">파일 선택</span>
-                      <span className="text-[10px] text-zinc-400">클릭하여 업로드</span>
+                      <span className="text-xs text-zinc-500 font-medium">파일 선택</span>
+                      <span className="text-xs text-zinc-400">클릭하여 업로드</span>
                       <input
                         type="file"
                         multiple
@@ -569,7 +517,7 @@ function RightPanel({
             )}
 
             {refs.length === 0 && isReadOnly && (
-              <p className="text-[11px] text-zinc-400 text-center py-1">참고자료가 없습니다.</p>
+              <p className="text-xs text-zinc-400 text-center py-1">참고자료가 없습니다.</p>
             )}
           </div>
         )}
@@ -596,7 +544,7 @@ function RightPanel({
               {WRITING_TIPS.map((tip, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="size-1.5 rounded-full bg-zinc-300 flex-shrink-0 mt-1.5" />
-                  <p className="text-[11px] text-zinc-500 leading-relaxed">{tip}</p>
+                  <p className="text-xs text-zinc-500 leading-relaxed">{tip}</p>
                 </li>
               ))}
             </ul>
@@ -612,39 +560,56 @@ export function MyReviewWrite() {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
-  const { submissions, saveAnswer, submitSubmission, cycles } = useReviewStore();
+  const { submissions, saveAnswer, submitSubmission, cycles, templates } = useReviewStore();
+  const { users } = useTeamStore();
+  const { reviewSyncEnabled } = useSheetsSyncStore();
 
   const submission = submissions.find(s => s.id === submissionId);
   const cycle = cycles.find(c => c.id === submission?.cycleId);
-  const template = MOCK_TEMPLATES.find(t => t.id === cycle?.templateId);
+  const template = templates.find(t => t.id === cycle?.templateId) ?? DEFAULT_TEMPLATE;
 
   const [currentSection, setCurrentSection] = useState(0);
   const [inReview, setInReview] = useState(false);
+
+  useEffect(() => {
+    setCurrentSection(0);
+    setInReview(false);
+  }, [submissionId]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [refs, setRefs] = useState<RefItem[]>([]);
 
-  // 팀장이 나에 대해 작성한 하향 리뷰 여부 (얼리 리턴 전에 선언해야 visibleQuestions에서 참조 가능)
+  // 조직장이 나에 대해 작성한 하향 리뷰 여부 (얼리 리턴 전에 선언해야 visibleQuestions에서 참조 가능)
   const isDownward = submission?.type === 'downward';
 
   // 셀프: 매니저 전용 질문 제외 / 하향(팀장이 작성): 비공개(매니저 전용) 질문 제외하고 공개 질문만 표시
   const visibleQuestions = isDownward
     ? (template?.questions.filter(q => !q.isPrivate) ?? [])
-    : (template?.questions.filter(q => q.target !== 'manager') ?? []);
-  const SECTION_RANGES = [[0, 2], [2, 4], [4, 6]];
-  const sectionNames = ['성과 돌아보기', '역량 자기평가', '성장 계획'];
-  const totalSections = Math.ceil(visibleQuestions.length / 2);
+    : (template?.questions.filter(q => q.target !== 'leader') ?? []);
 
-  const sectionQuestions = visibleQuestions.slice(
-    SECTION_RANGES[currentSection][0],
-    SECTION_RANGES[currentSection][1],
+  const PAGE_SIZE = 2;
+  const NAMED_SECTIONS = ['성과 돌아보기', '역량 자기평가', '성장 계획'];
+  const totalSections = Math.max(1, Math.ceil(visibleQuestions.length / PAGE_SIZE));
+  const sectionRanges: [number, number][] = Array.from({ length: totalSections }, (_, i) => [
+    i * PAGE_SIZE,
+    Math.min((i + 1) * PAGE_SIZE, visibleQuestions.length),
+  ]);
+  const sectionNames = Array.from({ length: totalSections }, (_, i) =>
+    NAMED_SECTIONS[i] ?? `섹션 ${i + 1}`
   );
+
+  const safeSection = Math.min(currentSection, totalSections - 1);
+  const sectionQuestions = visibleQuestions.slice(sectionRanges[safeSection][0], sectionRanges[safeSection][1]);
 
   const getAnswer = (qId: string) => submission?.answers.find(a => a.questionId === qId);
 
-  const onSave = useCallback(() => {}, []);
+  const onSave = useCallback(async () => {
+    if (!submissionId || !reviewSyncEnabled) return;
+    const latest = useReviewStore.getState().submissions.find(s => s.id === submissionId);
+    if (latest) submissionWriter.upsert(latest);
+  }, [submissionId, reviewSyncEnabled]);
   const { saveState, savedTime, triggerSave } = useAutoSave(onSave);
 
   const handleChange = useCallback((answer: Answer) => {
@@ -653,7 +618,7 @@ export function MyReviewWrite() {
     triggerSave();
   }, [submissionId, saveAnswer, triggerSave]);
 
-  const completedSections = SECTION_RANGES.slice(0, totalSections).map(([start, end]) =>
+  const completedSections = sectionRanges.map(([start, end]) =>
     visibleQuestions.slice(start, end).every(q => {
       if (!q.isRequired) return true;
       const a = getAnswer(q.id);
@@ -678,7 +643,7 @@ export function MyReviewWrite() {
     }
   };
 
-  if (!submission || !template) {
+  if (!submission) {
     return <div className="text-center py-20 text-zinc-400">제출물을 찾을 수 없습니다.</div>;
   }
 
@@ -687,9 +652,15 @@ export function MyReviewWrite() {
     return <div className="text-center py-20 text-zinc-400">접근 권한이 없습니다.</div>;
   }
 
-  const isReadOnly = submission.status === 'submitted' || isDownward;
+  // 사이클이 조직장 리뷰 또는 종료 단계에 진입하면 자기평가 잠금
+  const cyclePastSelfReview =
+    !isDownward &&
+    submission.status !== 'submitted' &&
+    (cycle?.status === 'manager_review' || cycle?.status === 'closed');
 
-  // 셀프 리뷰를 보는 경우, 같은 주기에 제출 완료된 팀장 하향 평가 찾기
+  const isReadOnly = submission.status === 'submitted' || isDownward || cyclePastSelfReview;
+
+  // 셀프 리뷰를 보는 경우, 같은 주기에 제출 완료된 조직장 하향 평가 찾기
   const managerReview = (!isDownward && isReadOnly)
     ? submissions.find(s =>
         s.revieweeId === currentUser?.id &&
@@ -702,7 +673,7 @@ export function MyReviewWrite() {
     ? (template.questions.filter(q => !q.isPrivate))
     : [];
   const getManagerAnswer = (qId: string) => managerReview?.answers.find(a => a.questionId === qId);
-  const managerUser = managerReview ? MOCK_USERS.find(u => u.id === managerReview.reviewerId) : undefined;
+  const managerUser = managerReview ? users.find(u => u.id === managerReview.reviewerId) : undefined;
 
   // ── 제출 완료 화면 ──
   if (showSuccess) {
@@ -717,7 +688,7 @@ export function MyReviewWrite() {
           <p className="text-sm text-zinc-400 mb-8">리뷰가 안전하게 제출되었습니다.</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold"
           >
             대시보드로 돌아가기
           </button>
@@ -725,10 +696,10 @@ export function MyReviewWrite() {
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
             <button
               onClick={() => navigate('/feedback')}
-              className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-indigo-200 shadow-card hover:shadow-card-hover transition-all text-left"
+              className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-primary-200 shadow-card hover:shadow-card-hover transition-all text-left"
             >
-              <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="w-[18px] h-[18px] text-indigo-600" />
+              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-[18px] h-[18px] text-primary-600" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-zinc-800">받은 피드백 확인</p>
@@ -737,7 +708,7 @@ export function MyReviewWrite() {
             </button>
             <button
               onClick={() => navigate('/reviews/me')}
-              className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-indigo-200 shadow-card hover:shadow-card-hover transition-all text-left"
+              className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-primary-200 shadow-card hover:shadow-card-hover transition-all text-left"
             >
               <div className="w-9 h-9 bg-zinc-50 rounded-lg flex items-center justify-center flex-shrink-0">
                 <ChevronLeft className="w-[18px] h-[18px] text-zinc-500" />
@@ -771,7 +742,7 @@ export function MyReviewWrite() {
 
         {/* 섹션 목록 */}
         <nav className="flex-1 py-3 px-2 space-y-0.5">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider px-2.5 mb-2">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-2.5 mb-2">
             {isDownward ? '평가 내용' : '섹션'}
           </p>
           {sectionNames.slice(0, totalSections).map((name, i) => {
@@ -783,7 +754,7 @@ export function MyReviewWrite() {
                 onClick={() => { setInReview(false); setCurrentSection(i); }}
                 className={`w-full text-left flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700'
+                    ? 'bg-primary-50 text-primary-700'
                     : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
                 }`}
               >
@@ -791,7 +762,7 @@ export function MyReviewWrite() {
                   isDone
                     ? 'border-emerald-500 bg-emerald-500'
                     : isActive
-                      ? 'border-indigo-500'
+                      ? 'border-primary-500'
                       : 'border-zinc-300'
                 }`}>
                   {isDone && <Check className="size-2.5 text-white stroke-[3]" />}
@@ -807,7 +778,7 @@ export function MyReviewWrite() {
               onClick={() => { if (completedCount === totalSections) setInReview(true); }}
               className={`w-full text-left flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-xs font-medium transition-colors mt-2 ${
                 inReview
-                  ? 'bg-indigo-50 text-indigo-700'
+                  ? 'bg-primary-50 text-primary-700'
                   : completedCount === totalSections
                     ? 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
                     : 'text-zinc-300 cursor-not-allowed'
@@ -816,7 +787,7 @@ export function MyReviewWrite() {
               title={completedCount < totalSections ? '모든 섹션을 완료해야 합니다.' : undefined}
             >
               <span className={`size-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                inReview ? 'border-indigo-500' : 'border-zinc-200'
+                inReview ? 'border-primary-500' : 'border-zinc-200'
               }`} />
               전체 검토
             </button>
@@ -826,7 +797,7 @@ export function MyReviewWrite() {
         {/* 진행률 (하단) */}
         {!isReadOnly && (
           <div className="p-4 border-t border-zinc-950/5">
-            <p className="text-[10px] text-zinc-400 mb-1.5">{completedCount}/{totalSections} 섹션 완료</p>
+            <p className="text-xs text-zinc-400 mb-1.5">{completedCount}/{totalSections} 섹션 완료</p>
             <ProgressBar value={completedCount} max={totalSections} />
           </div>
         )}
@@ -843,7 +814,7 @@ export function MyReviewWrite() {
               onClick={() => { setInReview(false); setCurrentSection(i); }}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
                 !inReview && currentSection === i
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  ? 'bg-primary-50 text-primary-700 border-primary-200'
                   : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
               }`}
             >
@@ -859,7 +830,7 @@ export function MyReviewWrite() {
             <div>
               <h2 className="text-base font-semibold text-zinc-900">
                 {isDownward
-                  ? `${MOCK_USERS.find(u => u.id === submission.reviewerId)?.name ?? '팀장'}님의 평가`
+                  ? `${users.find(u => u.id === submission.reviewerId)?.name ?? '조직장'}님의 평가`
                   : (isReadOnly && managerReview)
                     ? '리뷰 결과'
                     : isReadOnly
@@ -869,12 +840,12 @@ export function MyReviewWrite() {
                         : sectionNames[currentSection]}
               </h2>
               {isDownward && (
-                <p className="text-xs text-zinc-400 mt-0.5">팀장이 작성한 평가입니다. 수정할 수 없습니다.</p>
+                <p className="text-xs text-zinc-400 mt-0.5">조직장이 작성한 평가입니다. 수정할 수 없습니다.</p>
               )}
               {!isDownward && isReadOnly && managerReview && (
-                <p className="text-xs text-zinc-400 mt-0.5">자기평가와 팀장 평가를 함께 확인하세요.</p>
+                <p className="text-xs text-zinc-400 mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
               )}
-              {!isDownward && isReadOnly && !managerReview && (
+              {!isDownward && isReadOnly && !managerReview && !cyclePastSelfReview && (
                 <p className="text-xs text-zinc-400 mt-0.5">제출된 내용입니다. 수정할 수 없습니다.</p>
               )}
               {!isDownward && !isReadOnly && inReview && (
@@ -883,7 +854,20 @@ export function MyReviewWrite() {
             </div>
           </div>
 
-          {/* ── 셀프 + 팀장 평가 병렬 보기 ── */}
+          {/* ── 자기평가 기간 마감 배너 ── */}
+          {cyclePastSelfReview && (
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <Lock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">자기평가 기간이 종료되었습니다</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  리뷰가 조직장 평가 단계로 전환되었습니다. 자기평가를 더 이상 수정하거나 제출할 수 없습니다.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── 셀프 + 조직장 평가 병렬 보기 ── */}
           {!isDownward && isReadOnly && managerReview && managerUser ? (
             <div className="rounded-xl overflow-hidden border border-zinc-950/5 shadow-card">
               {/* 컬럼 헤더 (데스크톱) */}
@@ -892,14 +876,14 @@ export function MyReviewWrite() {
                   {currentUser && <UserAvatar user={currentUser} size="sm" />}
                   <div>
                     <p className="text-xs font-semibold text-zinc-700">내 자기평가</p>
-                    <p className="text-[11px] text-zinc-400">읽기 전용</p>
+                    <p className="text-xs text-zinc-400">읽기 전용</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 px-5 py-3 bg-indigo-50/60 border-b border-zinc-950/5">
+                <div className="flex items-center gap-2.5 px-5 py-3 bg-primary-50/60 border-b border-zinc-950/5">
                   <UserAvatar user={managerUser} size="sm" />
                   <div>
-                    <p className="text-xs font-semibold text-indigo-700">{managerUser.name}님의 평가</p>
-                    <p className="text-[11px] text-indigo-500/70">팀장 평가</p>
+                    <p className="text-xs font-semibold text-primary-700">{managerUser.name}님의 평가</p>
+                    <p className="text-xs text-primary-500/70">조직장 평가</p>
                   </div>
                 </div>
               </div>
@@ -920,12 +904,12 @@ export function MyReviewWrite() {
                     <div className={`grid grid-cols-1 md:grid-cols-2 ${!isLast ? 'border-b border-zinc-950/5' : ''}`}>
                       {/* 셀프 답변 */}
                       <div className="px-5 py-4 bg-zinc-50/30 md:border-r border-zinc-950/5">
-                        <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-2 md:hidden">내 자기평가</p>
+                        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2 md:hidden">내 자기평가</p>
                         <InputAnswerContent question={q} answer={selfAns} />
                       </div>
                       {/* 팀장 답변 */}
                       <div className="px-5 py-4 bg-white">
-                        <p className="text-[11px] font-semibold text-indigo-500 uppercase tracking-wide mb-2 md:hidden">{managerUser.name}님 평가</p>
+                        <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2 md:hidden">{managerUser.name}님 평가</p>
                         <FlatAnswerContent question={q} answer={mgrAns} />
                       </div>
                     </div>
@@ -965,16 +949,16 @@ export function MyReviewWrite() {
             <div className="flex items-center gap-2.5 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
               <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
               <p className="text-sm font-medium text-emerald-700">
-                {isDownward ? '팀장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
+                {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
               </p>
             </div>
           )}
 
-          {/* 팀장 평가 대기 안내 */}
+          {/* 조직장 평가 대기 안내 */}
           {!isDownward && isReadOnly && !managerReview && (
             <div className="flex items-center gap-2.5 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
               <UserCheck className="w-5 h-5 text-zinc-400 flex-shrink-0" />
-              <p className="text-sm text-zinc-500">팀장 평가가 제출되면 여기에 표시됩니다.</p>
+              <p className="text-sm text-zinc-500">조직장 평가가 제출되면 여기에 표시됩니다.</p>
             </div>
           )}
         </div>
@@ -996,18 +980,18 @@ export function MyReviewWrite() {
               {currentSection < totalSections - 1 ? (
                 <button
                   onClick={() => { setShowValidation(false); setCurrentSection(s => Math.min(s + 1, totalSections - 1)); }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors"
                 >
                   다음 <ChevronRight className="w-4 h-4" />
                 </button>
               ) : (
                 <button
                   onClick={() => {
-                    if (!completedSections[currentSection]) { setShowValidation(true); return; }
+                    if (!completedSections[safeSection]) { setShowValidation(true); return; }
                     setShowValidation(false);
                     setInReview(true);
                   }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors"
                 >
                   전체 검토하기
                 </button>
@@ -1029,7 +1013,7 @@ export function MyReviewWrite() {
               <LoadingButton
                 loading={submitting}
                 onClick={handleSubmit}
-                className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700"
+                className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700"
               >
                 최종 제출하기
               </LoadingButton>
@@ -1062,8 +1046,8 @@ export function MyReviewWrite() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-modal max-w-sm w-full p-6">
             <div className="text-center mb-5">
-              <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Check className="w-6 h-6 text-indigo-600" />
+              <div className="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold text-zinc-900 mb-2">최종 제출하시겠습니까?</h3>
               <p className="text-sm text-zinc-500">제출 후에는 수정할 수 없습니다.</p>
@@ -1079,7 +1063,7 @@ export function MyReviewWrite() {
               <LoadingButton
                 loading={submitting}
                 onClick={handleSubmit}
-                className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700"
+                className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700"
               >
                 제출
               </LoadingButton>

@@ -60,7 +60,7 @@ export function exportSubmissionToCSV(
 ): void {
   const isSelf = submission.type === 'self';
   const questions = [...template.questions]
-    .filter(q => isSelf ? q.target !== 'manager' : q.target !== 'self')
+    .filter(q => isSelf ? q.target !== 'leader' : q.target !== 'self')
     .sort((a, b) => a.order - b.order);
 
   const getAnswer = (sub: ReviewSubmission | undefined, qId: string) =>
@@ -178,7 +178,7 @@ export function exportCycleToCSV(
     if (q.target === 'self' || q.target === 'both') {
       questionCols.push(`${label}${suffix}_자기평가`);
     }
-    if (q.target === 'manager' || q.target === 'both') {
+    if (q.target === 'leader' || q.target === 'both') {
       questionCols.push(`${label}${suffix}_매니저평가`);
     }
   }
@@ -223,7 +223,7 @@ export function exportCycleToCSV(
         const a = getAnswer(selfSub, q.id);
         answers.push(a?.ratingValue ?? a?.textValue ?? '');
       }
-      if (q.target === 'manager' || q.target === 'both') {
+      if (q.target === 'leader' || q.target === 'both') {
         const a = getAnswer(mgrSub, q.id);
         answers.push(a?.ratingValue ?? a?.textValue ?? '');
       }

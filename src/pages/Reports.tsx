@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useReviewStore } from '../stores/reviewStore';
 import { useFeedbackStore } from '../stores/feedbackStore';
+import { useTeamStore } from '../stores/teamStore';
 import { usePermission } from '../hooks/usePermission';
-import { MOCK_USERS, DEPARTMENT_STATS, GRADE_FROM_RATING, RATING_LABELS } from '../data/mockData';
+
+const GRADE_FROM_RATING = (r: number) => r >= 4.5 ? 'S' : r >= 3.5 ? 'A' : r >= 2.5 ? 'B' : r >= 1.5 ? 'C' : 'D';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -27,13 +30,23 @@ export function Reports() {
   const { feedbacks } = useFeedbackStore();
   const { isAdmin, isManager } = usePermission();
 
+  const { users } = useTeamStore();
+  const activeUsers = users.filter(u => u.isActive !== false && u.role !== 'admin');
+
   const activeCycle = cycles.find(c => c.status === 'self_review' || c.status === 'manager_review');
 
-  // Admin: department distribution
-  const deptData = DEPARTMENT_STATS.map(d => ({
-    name: d.department,
-    제출률: d.completionRate,
-  }));
+  // Admin: department distribution (real data)
+  const deptData = useMemo(() => {
+    if (!activeCycle) return [];
+    const depts = Array.from(new Set(activeUsers.map(u => u.department))).filter(Boolean);
+    return depts.map(dept => {
+      const members = activeUsers.filter(u => u.department === dept);
+      const submitted = members.filter(u =>
+        submissions.some(s => s.cycleId === activeCycle.id && s.revieweeId === u.id && s.type === 'self' && s.status === 'submitted')
+      ).length;
+      return { name: dept, 제출률: members.length ? Math.round(submitted / members.length * 100) : 0 };
+    });
+  }, [activeCycle, submissions, activeUsers]);
 
   // Rating distribution for admin
   const allSubmitted = submissions.filter(s => s.status === 'submitted' && s.overallRating);
@@ -44,7 +57,7 @@ export function Reports() {
   const distData = Object.entries(ratingDist).map(([grade, count]) => ({ grade, count }));
 
   // Manager: team member ratings
-  const teamMembers = MOCK_USERS.filter(u => u.managerId === currentUser?.id);
+  const teamMembers = users.filter(u => u.managerId === currentUser?.id && u.isActive !== false);
   const teamData = teamMembers.map(m => {
     const selfSub = submissions.find(s => s.revieweeId === m.id && s.type === 'self' && s.status === 'submitted');
     const managerSub = submissions.find(s => s.revieweeId === m.id && s.type === 'downward' && s.reviewerId === currentUser?.id);
@@ -78,11 +91,11 @@ export function Reports() {
           {/* Stat cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[
-              { icon: Users, label: '총 구성원', value: `${MOCK_USERS.filter(u => u.role !== 'admin').length}명` },
+              { icon: Users, label: '총 구성원', value: `${activeUsers.length}명` },
               { icon: BarChart2, label: '진행 중 리뷰', value: `${cycles.filter(c => c.status !== 'closed' && c.status !== 'draft').length}개` },
               { icon: TrendingUp, label: '전체 제출률', value: `${Math.round(allSubmitted.length / Math.max(submissions.filter(s => s.type === 'self').length, 1) * 100)}%` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-white rounded-xl border border-neutral-200 shadow-card p-4">
+              <div key={label} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="w-4 h-4 text-neutral-400" />
                   <span className="text-xs text-neutral-500">{label}</span>
@@ -93,7 +106,7 @@ export function Reports() {
           </div>
 
           {/* Dept completion bar chart */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+          <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
             <h2 className="text-sm font-semibold text-neutral-700 mb-4">부서별 제출률</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={deptData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -107,7 +120,7 @@ export function Reports() {
           </div>
 
           {/* Rating distribution */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+          <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
             <h2 className="text-sm font-semibold text-neutral-700 mb-4">등급 분포</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -128,7 +141,7 @@ export function Reports() {
         <>
           {/* Team completion pie */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
               <h2 className="text-sm font-semibold text-neutral-700 mb-3">자기평가 제출 현황</h2>
               {teamMembers.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
@@ -146,7 +159,7 @@ export function Reports() {
             </div>
 
             {/* Team member stats */}
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
               <h2 className="text-sm font-semibold text-neutral-700 mb-3">팀원 현황</h2>
               <div className="space-y-2">
                 {teamMembers.map(m => {
@@ -180,7 +193,7 @@ export function Reports() {
 
           {/* Self vs Manager comparison */}
           {teamData.some(d => d.자기평가 > 0) && (
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
               <h2 className="text-sm font-semibold text-neutral-700 mb-4">자기평가 vs 매니저평가 비교</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={teamData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -214,7 +227,7 @@ export function Reports() {
                 { icon: MessageSquare, label: '받은 피드백', value: `${myReceived.length}개`, action: () => navigate('/feedback'), actionLabel: '확인하기' },
                 { icon: TrendingUp, label: '보낸 피드백', value: `${mySent.length}개`, action: () => navigate('/feedback'), actionLabel: '보내기' },
               ].map(({ icon: Icon, label, value, action, actionLabel }) => (
-                <div key={label} className="bg-white rounded-xl border border-neutral-200 shadow-card p-4 flex flex-col gap-2">
+                <div key={label} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-neutral-400" />
                     <span className="text-xs text-neutral-500">{label}</span>
@@ -226,7 +239,7 @@ export function Reports() {
             </div>
 
             {myAvg && (
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+              <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
                 <h2 className="text-sm font-semibold text-neutral-700 mb-1">최근 자기평가 평균 점수</h2>
                 <p className="text-3xl font-bold text-primary-600">{myAvg} <span className="text-base font-normal text-neutral-400">/ 5.0</span></p>
                 <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-primary-600 hover:underline">

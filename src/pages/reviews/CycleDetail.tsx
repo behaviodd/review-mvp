@@ -2,18 +2,52 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useNotificationStore } from '../../stores/notificationStore';
-import { MOCK_USERS, MOCK_TEMPLATES } from '../../data/mockData';
+import { useTeamStore } from '../../stores/teamStore';
+import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
-import { ChevronLeft, Bell, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useShowToast } from '../../components/ui/Toast';
+import { LoadingButton } from '../../components/ui/LoadingButton';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import { syncCycle } from '../../utils/sheetsSync';
 import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
+import type { ReviewCycle, ReviewStatus } from '../../types';
 
-const DEPARTMENTS = ['개발팀', '디자인팀', '마케팅팀', '영업팀', '인사팀'];
+// 상태 전환 정의
+const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
+  next: ReviewStatus;
+  label: string;
+  isDanger: boolean;
+  msg: string;
+}>> = {
+  draft: {
+    next: 'self_review',
+    label: '발행하기',
+    isDanger: false,
+    msg: '발행하면 대상 구성원들이 자기평가를 시작할 수 있습니다.',
+  },
+  self_review: {
+    next: 'manager_review',
+    label: '조직장 리뷰 시작',
+    isDanger: false,
+    msg: '자기평가 단계를 마감하고 조직장 하향리뷰 단계로 전환합니다.',
+  },
+  manager_review: {
+    next: 'closed',
+    label: '리뷰 종료',
+    isDanger: true,
+    msg: '모든 리뷰를 종료합니다. 종료 후에는 되돌릴 수 없습니다.',
+  },
+  active: {
+    next: 'closed',
+    label: '리뷰 종료',
+    isDanger: true,
+    msg: '모든 리뷰를 종료합니다. 종료 후에는 되돌릴 수 없습니다.',
+  },
+};
 
 // ─── 편집 모달 ────────────────────────────────────────────────────────────────
 function CycleEditModal({
@@ -21,10 +55,13 @@ function CycleEditModal({
   onSave,
   onClose,
 }: {
-  cycle: ReturnType<typeof import('../../stores/reviewStore').useReviewStore>['cycles'][0];
+  cycle: ReviewCycle;
   onSave: (updates: Partial<typeof cycle>) => void;
   onClose: () => void;
 }) {
+  const { users } = useTeamStore();
+  const { templates } = useReviewStore();
+  const departments = Array.from(new Set(users.filter(u => u.role !== 'admin').map(u => u.department))).sort();
   const toDateInput = (iso: string) => iso.slice(0, 10);
 
   const [form, setForm] = useState({
@@ -36,7 +73,7 @@ function CycleEditModal({
     managerReviewDeadline: toDateInput(cycle.managerReviewDeadline),
   });
 
-  const targetMembers = MOCK_USERS.filter(
+  const targetMembers = users.filter(
     u => form.targetDepartments.includes(u.department) && u.role !== 'admin'
   );
 
@@ -111,7 +148,7 @@ function CycleEditModal({
           <div>
             <label className="block text-xs font-semibold text-neutral-600 mb-1.5">평가 템플릿</label>
             <div className="space-y-2">
-              {MOCK_TEMPLATES.map(t => (
+              {templates.map(t => (
                 <button
                   key={t.id}
                   type="button"
@@ -141,9 +178,9 @@ function CycleEditModal({
           <div>
             <label className="block text-xs font-semibold text-neutral-600 mb-1.5">대상 부서</label>
             <div className="flex flex-wrap gap-2">
-              {DEPARTMENTS.map(dept => {
+              {departments.map(dept => {
                 const selected = form.targetDepartments.includes(dept);
-                const count = MOCK_USERS.filter(u => u.department === dept && u.role !== 'admin').length;
+                const count = users.filter(u => u.department === dept && u.role !== 'admin').length;
                 return (
                   <button
                     key={dept}
@@ -219,7 +256,8 @@ function CycleEditModal({
 
 export function CycleDetail() {
   const { cycleId } = useParams<{ cycleId: string }>();
-  const { cycles, submissions, updateCycle } = useReviewStore();
+  const { cycles, submissions, updateCycle, upsertSubmission, templates } = useReviewStore();
+  const { users, orgUnits } = useTeamStore();
   const { addNotification } = useNotificationStore();
   const navigate = useNavigate();
   const showToast = useShowToast();
@@ -227,6 +265,9 @@ export function CycleDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showEdit, setShowEdit] = useState(searchParams.get('edit') === '1');
   const [syncing, setSyncing] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const { scriptUrl, enabled, markSynced, lastSyncAt } = useSheetsSyncStore();
 
   useEffect(() => {
@@ -241,7 +282,7 @@ export function CycleDetail() {
     return <div className="text-center py-20 text-neutral-400">리뷰를 찾을 수 없습니다.</div>;
   }
 
-  const targetMembers = MOCK_USERS.filter(u => cycle.targetDepartments.includes(u.department) && u.role !== 'admin');
+  const targetMembers = users.filter(u => cycle.targetDepartments.includes(u.department) && u.role !== 'admin');
 
   const getMemberStatus = (userId: string) => {
     const selfSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === userId && s.type === 'self');
@@ -265,18 +306,18 @@ export function CycleDetail() {
   // Google Sheets 전체 동기화
   const handleSheetSync = async () => {
     if (!scriptUrl) {
-      showToast('설정 > Google Sheets 연동에서 URL을 먼저 등록해주세요.', 'info');
+      showToast('info', '설정 > Google Sheets 연동에서 URL을 먼저 등록해주세요.');
       return;
     }
-    const template = MOCK_TEMPLATES.find(t => t.id === cycle.templateId);
+    const template = templates.find(t => t.id === cycle.templateId);
     if (!template) return;
     setSyncing(true);
     try {
-      await syncCycle(cycle, submissions, template, MOCK_USERS, scriptUrl);
+      await syncCycle(cycle, submissions, template, users, scriptUrl);
       markSynced(cycle.id);
-      showToast('Google Sheets 동기화가 완료되었습니다.', 'success');
+      showToast('success', 'Google Sheets 동기화가 완료되었습니다.');
     } catch {
-      showToast('동기화 중 오류가 발생했습니다.', 'error');
+      showToast('error', '동기화 중 오류가 발생했습니다.');
     } finally {
       setSyncing(false);
     }
@@ -284,49 +325,71 @@ export function CycleDetail() {
 
   // CSV 내보내기
   const handleExport = () => {
-    const template = MOCK_TEMPLATES.find(t => t.id === cycle.templateId);
-    if (!template) { showToast('템플릿 정보를 찾을 수 없습니다.', 'error'); return; }
-    exportCycleToCSV(cycle, template, submissions, MOCK_USERS);
-    showToast('스프레드시트로 내보내기를 시작합니다.', 'success');
+    const template = templates.find(t => t.id === cycle.templateId);
+    if (!template) { showToast('error', '템플릿 정보를 찾을 수 없습니다.'); return; }
+    exportCycleToCSV(cycle, template, submissions, users);
+    showToast('success', '스프레드시트로 내보내기를 시작합니다.');
   };
 
-  // 전체 미완료자 일괄 독촉
-  const handleNudgeAll = () => {
-    const pending = filteredMembers.filter(m => getMemberStatus(m.id).self !== 'submitted');
-    pending.forEach((m, i) => {
-      const sub = submissions.find(
-        s => s.cycleId === cycle.id && s.revieweeId === m.id && s.type === 'self'
-      );
-      addNotification({
-        id: `nudge_${Date.now()}_${i}_${m.id}`,
-        userId: m.id,
-        title: '리뷰 작성 독촉',
-        message: `${cycle.title} 마감이 다가오고 있습니다. 지금 바로 작성해 주세요!`,
-        type: 'nudge',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: sub ? `/reviews/me/${sub.id}` : '/reviews/me',
-      });
-    });
-    showToast(`${pending.length}명에게 독촉 알림을 발송했습니다.`, 'success');
+  // 사이클 상태 전환
+  const transition = STATUS_TRANSITIONS[cycle.status];
+
+  const handleTransition = async () => {
+    if (!transition || transitioning) return;
+    setTransitioning(true);
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      // draft 발행 시 submission 일괄 생성
+      if (cycle.status === 'draft') {
+        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits);
+        subs.forEach(sub => upsertSubmission(sub));
+      }
+      // self_review → manager_review: 조직장에게 알림 발송
+      if (cycle.status === 'self_review') {
+        const leaderIds = new Set<string>();
+        for (const m of targetMembers) {
+          const mgr = users.find(u => u.id === m.managerId && u.role !== 'admin');
+          if (mgr) { leaderIds.add(mgr.id); continue; }
+          const org = orgUnits.find(o =>
+            o.headId && o.headId !== m.id &&
+            (o.name === m.department || o.name === m.subOrg || o.name === m.team || o.name === m.squad)
+          );
+          if (org?.headId) leaderIds.add(org.headId);
+        }
+        leaderIds.forEach((leaderId, i) => {
+          addNotification({
+            id: `mgr_review_${Date.now()}_${i}_${leaderId}`,
+            userId: leaderId,
+            title: '조직장 리뷰 단계 시작',
+            message: `${cycle.title} 사이클이 조직장 리뷰 단계로 전환되었습니다. 지금 팀원 평가를 작성해주세요.`,
+            type: 'system',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            actionUrl: '/reviews/team',
+          });
+        });
+      }
+      updateCycle(cycle.id, { status: transition.next });
+      showToast('success', `${transition.label} 완료`);
+      setShowConfirm(false);
+    } finally {
+      setTransitioning(false);
+    }
   };
 
-  // 개별 독촉
-  const handleNudgeMember = (memberId: string, memberName: string) => {
-    const sub = submissions.find(
-      s => s.cycleId === cycle.id && s.revieweeId === memberId && s.type === 'self'
-    );
-    addNotification({
-      id: `nudge_${Date.now()}_${memberId}`,
-      userId: memberId,
-      title: '리뷰 작성 독촉',
-      message: `${cycle.title} 마감이 다가오고 있습니다. 지금 바로 작성해 주세요!`,
-      type: 'nudge',
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      actionUrl: sub ? `/reviews/me/${sub.id}` : '/reviews/me',
+  // 제출 누락 구성원에게 재생성
+  const handleRegenerateSubmissions = async () => {
+    if (!cycle || regenerating) return;
+    setRegenerating(true);
+    await new Promise(r => setTimeout(r, 300));
+    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits);
+    let added = 0;
+    subs.forEach(sub => {
+      const exists = submissions.some(s => s.id === sub.id);
+      if (!exists) { upsertSubmission(sub); added++; }
     });
-    showToast(`${memberName}님에게 독촉 알림을 발송했습니다.`, 'success');
+    setRegenerating(false);
+    showToast('success', added > 0 ? `${added}건의 제출이 추가되었습니다.` : '누락된 제출이 없습니다.');
   };
 
   return (
@@ -341,6 +404,18 @@ export function CycleDetail() {
           <p className="text-xs text-neutral-400">{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'} · 생성 {formatDate(cycle.createdAt)}</p>
         </div>
         <StatusBadge type="review" value={cycle.status} />
+        {transition && (
+          <button
+            onClick={() => setShowConfirm(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
+              transition.isDanger
+                ? 'text-danger-600 border-danger-200 hover:bg-danger-50'
+                : 'text-primary-600 border-primary-200 hover:bg-primary-50'
+            }`}
+          >
+            {transition.label}
+          </button>
+        )}
         {enabled && (
           <button
             onClick={handleSheetSync}
@@ -368,13 +443,48 @@ export function CycleDetail() {
         )}
       </div>
 
+      {/* 상태 전환 확인 배너 */}
+      {showConfirm && transition && (
+        <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${
+          transition.isDanger
+            ? 'bg-danger-50 border-danger-200'
+            : 'bg-amber-50 border-amber-200'
+        }`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle className={`w-4 h-4 shrink-0 ${transition.isDanger ? 'text-danger-500' : 'text-amber-500'}`} />
+            <p className={`text-sm ${transition.isDanger ? 'text-danger-800' : 'text-amber-800'}`}>
+              {transition.msg}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+            >
+              취소
+            </button>
+            <LoadingButton
+              loading={transitioning}
+              onClick={handleTransition}
+              className={`px-3 py-1.5 text-sm font-semibold text-white rounded transition-colors ${
+                transition.isDanger
+                  ? 'bg-danger-600 hover:bg-danger-700'
+                  : 'bg-primary-600 hover:bg-primary-700'
+              }`}
+            >
+              {transition.label}
+            </LoadingButton>
+          </div>
+        </div>
+      )}
+
       {/* 편집 모달 */}
       {showEdit && (
         <CycleEditModal
           cycle={cycle}
           onSave={(updates) => {
             updateCycle(cycle.id, updates);
-            showToast('리뷰가 수정되었습니다.', 'success');
+            showToast('success', '리뷰가 수정되었습니다.');
             setShowEdit(false);
           }}
           onClose={() => setShowEdit(false)}
@@ -419,7 +529,18 @@ export function CycleDetail() {
       <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-700">부서별 진행 현황</h2>
-          <p className="text-xs text-neutral-400">클릭하면 해당 부서 구성원만 표시됩니다</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-neutral-400">클릭하면 해당 부서 구성원만 표시됩니다</p>
+            <button
+              onClick={handleRegenerateSubmissions}
+              disabled={regenerating}
+              title="구성원 제출 누락 시 재생성"
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 border border-neutral-200 rounded hover:bg-neutral-50 disabled:opacity-40 transition-colors"
+            >
+              <RefreshCw className={`w-3 h-3 ${regenerating ? 'animate-spin' : ''}`} />
+              제출 재생성
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
           {byDept.map(({ dept, members, submitted, rate }) => {
@@ -461,14 +582,6 @@ export function CycleDetail() {
               </span>
             )}
           </div>
-          {cycle.status !== 'closed' && (
-            <button
-              onClick={handleNudgeAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
-            >
-              <Bell className="w-3.5 h-3.5" /> {selectedDept ? `${selectedDept} 독촉` : '미완료자 독촉'}
-            </button>
-          )}
         </div>
         <div className="space-y-1">
           {filteredMembers.map(member => {
@@ -490,14 +603,6 @@ export function CycleDetail() {
                     <span className="text-xs text-neutral-400">매니저</span>
                     <StatusBadge type="submission" value={manager} />
                   </div>
-                  {isPending && (
-                    <button
-                      onClick={() => handleNudgeMember(member.id, member.name)}
-                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all"
-                    >
-                      <Bell className="w-3 h-3" /> 독촉
-                    </button>
-                  )}
                 </div>
               </div>
             );

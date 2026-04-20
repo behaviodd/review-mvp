@@ -7,6 +7,7 @@ import type { ReviewStatus } from '../../types';
 
 const STATUS_CONFIG: Record<ReviewStatus, { label: string; dot: string; text: string }> = {
   draft:          { label: '초안',        dot: 'bg-neutral-300',  text: 'text-neutral-500' },
+  active:         { label: '진행 중',     dot: 'bg-primary-500',  text: 'text-primary-700' },
   self_review:    { label: '자기평가 중', dot: 'bg-primary-500',  text: 'text-primary-700' },
   manager_review: { label: '매니저 리뷰', dot: 'bg-primary-400',  text: 'text-primary-600' },
   calibration:    { label: '조율 중',     dot: 'bg-primary-400',  text: 'text-primary-600' },
@@ -33,7 +34,7 @@ export function CycleList() {
   const Row = ({ cycle }: { cycle: typeof cycles[0] }) => (
     <div
       onClick={() => navigate(`/cycles/${cycle.id}`)}
-      className="group flex items-center gap-4 px-5 py-3.5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50/60 cursor-pointer transition-colors"
+      className="group flex items-center gap-4 px-5 py-3.5 border-b border-zinc-950/5 last:border-0 hover:bg-neutral-50/60 cursor-pointer transition-colors"
     >
       {/* 이름 + 유형 */}
       <div className="flex-1 min-w-0">
@@ -70,13 +71,13 @@ export function CycleList() {
       {/* 마감일 */}
       <div className="w-24 flex-shrink-0 text-right">
         <p className="text-xs text-neutral-600">{formatDate(cycle.selfReviewDeadline)}</p>
-        <p className="text-[10px] text-neutral-400 mt-0.5">자기평가 마감</p>
+        <p className="text-xs text-neutral-400 mt-0.5">자기평가 마감</p>
       </div>
 
       {cycle.status !== 'closed' && (
         <button
           onClick={e => { e.stopPropagation(); navigate(`/cycles/${cycle.id}?edit=1`); }}
-          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded transition-all"
+          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-all"
         >
           <Pencil className="w-3 h-3" /> 편집
         </button>
@@ -86,11 +87,11 @@ export function CycleList() {
   );
 
   const ColHeader = () => (
-    <div className="flex items-center gap-4 px-5 py-2.5 border-b border-neutral-100 bg-neutral-50/50">
-      <div className="flex-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
-      <div className="w-28 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">단계</div>
-      <div className="w-28 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">완료율</div>
-      <div className="w-24 text-right text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">마감일</div>
+    <div className="flex items-center gap-4 px-5 py-2.5 border-b border-zinc-950/5 bg-neutral-50/50">
+      <div className="flex-1 text-xs font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
+      <div className="w-28 text-xs font-semibold text-neutral-400 uppercase tracking-wide">단계</div>
+      <div className="w-28 text-xs font-semibold text-neutral-400 uppercase tracking-wide">완료율</div>
+      <div className="w-24 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">마감일</div>
       <div className="w-4" />
     </div>
   );
@@ -101,7 +102,7 @@ export function CycleList() {
         <h1 className="text-xl font-semibold text-neutral-900">리뷰 관리</h1>
         <button
           onClick={() => navigate('/cycles/new')}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" /> 새 리뷰
         </button>
@@ -116,20 +117,20 @@ export function CycleList() {
           onAction={() => navigate('/cycles/new')}
         />
       ) : (
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card overflow-hidden">
+        <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card overflow-hidden">
           <ColHeader />
           {active.length > 0 && (
             <>
-              <div className="px-5 py-2 bg-white border-b border-neutral-100">
-                <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">진행 중 {active.length}</span>
+              <div className="px-5 py-2 bg-white border-b border-zinc-950/5">
+                <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">진행 중 {active.length}</span>
               </div>
               {active.map(c => <Row key={c.id} cycle={c} />)}
             </>
           )}
           {closed.length > 0 && (
             <>
-              <div className="px-5 py-2 bg-neutral-50/40 border-b border-neutral-100">
-                <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">완료 {closed.length}</span>
+              <div className="px-5 py-2 bg-neutral-50/40 border-b border-zinc-950/5">
+                <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">완료 {closed.length}</span>
               </div>
               {closed.map(c => <Row key={c.id} cycle={c} />)}
             </>

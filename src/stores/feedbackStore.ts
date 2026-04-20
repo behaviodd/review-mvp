@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Feedback } from '../types';
-import { MOCK_FEEDBACK } from '../data/mockData';
 
 interface FeedbackState {
   feedbacks: Feedback[];
@@ -12,7 +11,7 @@ interface FeedbackState {
 export const useFeedbackStore = create<FeedbackState>()(
   persist(
     (set, get) => ({
-      feedbacks: MOCK_FEEDBACK,
+      feedbacks: [],
       addFeedback: (feedback) => set(s => ({ feedbacks: [feedback, ...s.feedbacks] })),
       getFeedbackForUser: (userId) => {
         const all = get().feedbacks;
@@ -22,6 +21,6 @@ export const useFeedbackStore = create<FeedbackState>()(
         };
       },
     }),
-    { name: 'review-feedback' }
+    { name: 'review-feedback-v2' }
   )
 );

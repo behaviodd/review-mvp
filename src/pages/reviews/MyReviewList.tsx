@@ -6,7 +6,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
 import { Star, ChevronRight, CheckCircle2, Clock, Circle, AlertTriangle, UserCheck, ShieldCheck, Users, BarChart2, FileText } from 'lucide-react';
-import { MOCK_TEMPLATES, MOCK_USERS } from '../../data/mockData';
+import { useTeamStore } from '../../stores/teamStore';
 
 type Filter = 'all' | 'active' | 'done';
 
@@ -34,7 +34,8 @@ function StatusDot({ status }: { status: string }) {
 
 export function MyReviewList() {
   const { currentUser } = useAuthStore();
-  const { cycles, submissions } = useReviewStore();
+  const { cycles, submissions, templates } = useReviewStore();
+  const { users } = useTeamStore();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -125,12 +126,12 @@ export function MyReviewList() {
   // ── 셀프 리뷰 행 ─────────────────────────────────────────────────────────────
   const ReviewRow = ({ sub }: { sub: typeof mySubmissions[number] }) => {
     const cycle         = cycles.find(c => c.id === sub.cycleId);
-    const template      = MOCK_TEMPLATES.find(t => t.id === cycle?.templateId);
+    const template      = templates.find(t => t.id === cycle?.templateId);
     const urgent        = cycle ? isUrgent(cycle.selfReviewDeadline) : false;
-    const selfQCount    = template?.questions.filter(q => q.target !== 'manager').length ?? 1;
+    const selfQCount    = template?.questions.filter(q => q.target !== 'leader').length ?? 1;
     const progress      = Math.round((sub.answers.length / selfQCount) * 100);
     const isSubmitted   = sub.status === 'submitted';
-    // 제출 완료된 자기평가에 대해 팀장 하향 평가 존재 여부 확인
+    // 제출 완료된 자기평가에 대해 조직장 하향 평가 존재 여부 확인
     const managerEval   = isSubmitted
       ? receivedReviews.find(r => r.cycleId === sub.cycleId)
       : undefined;
@@ -164,14 +165,14 @@ export function MyReviewList() {
               )}
               {isSubmitted && (
                 managerEval
-                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600"><UserCheck className="w-2.5 h-2.5" /> 팀장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 팀장 평가 대기</span>
+                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 완료</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 대기</span>
               )}
             </div>
             {!isSubmitted && (
               <div className="mt-2">
                 <ProgressBar value={progress} size="sm" />
-                <p className="text-[11px] text-neutral-400 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
+                <p className="text-xs text-neutral-400 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
               </div>
             )}
           </div>
@@ -205,8 +206,8 @@ export function MyReviewList() {
               </p>
               {isSubmitted && (
                 managerEval
-                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600"><UserCheck className="w-2.5 h-2.5" /> 팀장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 팀장 평가 대기</span>
+                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 완료</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 대기</span>
               )}
             </div>
           </div>
@@ -215,7 +216,7 @@ export function MyReviewList() {
             {!isSubmitted ? (
               <div>
                 <ProgressBar value={progress} size="sm" />
-                <p className="text-[11px] text-neutral-400 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
+                <p className="text-xs text-neutral-400 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
               </div>
             ) : (
               <div className="h-1.5 rounded-full bg-success-200" />
@@ -228,7 +229,7 @@ export function MyReviewList() {
                 <p className={`text-xs font-medium ${urgent && !isSubmitted ? 'text-primary-600' : 'text-neutral-600'}`}>
                   {deadlineLabel(cycle.selfReviewDeadline)}
                 </p>
-                <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(cycle.selfReviewDeadline)}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{formatDate(cycle.selfReviewDeadline)}</p>
               </>
             )}
           </div>
@@ -260,10 +261,10 @@ export function MyReviewList() {
     );
   };
 
-  // ── 팀장 하향 평가 행 ────────────────────────────────────────────────────────
+  // ── 조직장 하향 평가 행 ────────────────────────────────────────────────────────
   const ReceivedReviewRow = ({ sub }: { sub: typeof receivedReviews[number] }) => {
     const cycle    = cycles.find(c => c.id === sub.cycleId);
-    const reviewer = MOCK_USERS.find(u => u.id === sub.reviewerId);
+    const reviewer = users.find(u => u.id === sub.reviewerId);
 
     return (
       <div
@@ -277,8 +278,8 @@ export function MyReviewList() {
               <p className="text-sm font-semibold text-neutral-900 truncate group-hover:text-primary-700">
                 {cycle?.title ?? '–'}
               </p>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 flex-shrink-0">
-                <UserCheck className="w-2.5 h-2.5" /> 팀장 평가
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
+                <UserCheck className="w-2.5 h-2.5" /> 조직장 평가
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">{reviewer?.name} 작성</p>
@@ -293,8 +294,8 @@ export function MyReviewList() {
               <p className="text-sm font-semibold text-neutral-900 truncate group-hover:text-primary-700">
                 {cycle?.title ?? '–'}
               </p>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 flex-shrink-0">
-                <UserCheck className="w-2.5 h-2.5" /> 팀장 평가
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
+                <UserCheck className="w-2.5 h-2.5" /> 조직장 평가
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
@@ -302,7 +303,7 @@ export function MyReviewList() {
             </p>
           </div>
 
-          {/* 진행도 자리 — 팀장 평가는 완료 바 표시 */}
+          {/* 진행도 자리 — 조직장 평가는 완료 바 표시 */}
           <div className="w-32 flex-shrink-0">
             <div className="h-1.5 rounded-full bg-indigo-100" />
           </div>
@@ -331,10 +332,10 @@ export function MyReviewList() {
 
   const SectionHeader = () => (
     <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-neutral-100 bg-neutral-50/50">
-      <div className="flex-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">상태</div>
+      <div className="flex-1 text-xs font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-neutral-400 uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">상태</div>
       <div className="w-24" />
     </div>
   );
@@ -392,7 +393,7 @@ export function MyReviewList() {
           {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
         </div>
       ) : filter === 'done' ? (
-        /* 완료 필터: 셀프 리뷰 + 팀장 평가 통합 */
+        /* 완료 필터: 셀프 리뷰 + 조직장 평가 통합 */
         <div className="bg-white rounded-xl border border-neutral-200 shadow-card overflow-hidden">
           <SectionHeader />
           {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}

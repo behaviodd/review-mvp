@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Goal } from '../types';
-import { MOCK_GOALS } from '../data/mockData';
 
 interface GoalState {
   goals: Goal[];
@@ -13,12 +12,12 @@ interface GoalState {
 export const useGoalStore = create<GoalState>()(
   persist(
     (set, get) => ({
-      goals: MOCK_GOALS,
+      goals: [],
       addGoal: (goal) => set(s => ({ goals: [...s.goals, goal] })),
       updateGoal: (id, updates) =>
         set(s => ({ goals: s.goals.map(g => g.id === id ? { ...g, ...updates } : g) })),
       getGoalsForUser: (userId) => get().goals.filter(g => g.userId === userId),
     }),
-    { name: 'review-goals' }
+    { name: 'review-goals-v2' }
   )
 );

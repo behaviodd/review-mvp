@@ -1,0 +1,70 @@
+/**
+ * Vercel Edge Function — Apps Script CORS 프록시 (읽기 + 쓰기)
+ *
+ * GET  ?action=getOrg   → 조직 데이터 조회
+ * POST { action, data } → 구성원 추가/수정/삭제 (Apps Script doPost 호출)
+ *
+ * 환경변수 APPS_SCRIPT_URL 필요
+ */
+export const config = { runtime: 'edge' };
+
+const CORS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+}
+
+export default async function handler(request: Request): Promise<Response> {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+
+  const scriptUrl = process.env.APPS_SCRIPT_URL;
+  if (!scriptUrl) return json({ error: 'APPS_SCRIPT_URL 환경변수가 설정되지 않았습니다.' }, 500);
+
+  /* ── GET: 조직 데이터 읽기 ──────────────────────────────────────── */
+  if (request.method === 'GET') {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action') ?? 'getOrg';
+    const etag   = searchParams.get('etag') ?? '';
+    const qs = etag ? `action=${action}&etag=${encodeURIComponent(etag)}` : `action=${action}`;
+    try {
+      const res  = await fetch(`${scriptUrl}?${qs}`, {
+        headers:  { Accept: 'application/json' },
+        redirect: 'follow',
+      });
+      const body = await res.text();
+      return new Response(body, {
+        headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      });
+    } catch (e) {
+      return json({ error: `읽기 오류: ${String(e)}` }, 502);
+    }
+  }
+
+  /* ── POST: 구성원 추가 / 수정 / 삭제 ───────────────────────────── */
+  if (request.method === 'POST') {
+    try {
+      const payload = await request.text();
+      const res = await fetch(scriptUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    payload,
+        redirect: 'follow',
+      });
+      const body = await res.text();
+      return new Response(body, {
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      return json({ error: `쓰기 오류: ${String(e)}` }, 502);
+    }
+  }
+
+  return json({ error: 'Method not allowed' }, 405);
+}

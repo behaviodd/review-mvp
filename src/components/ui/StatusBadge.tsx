@@ -19,9 +19,9 @@ const REVIEW_CONFIG: Record<ReviewStatus, { label: string; color: BadgeColor }> 
 };
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: BadgeColor }> = {
-  admin:    { label: '관리자', color: 'indigo'  },
-  manager:  { label: '팀장',   color: 'emerald' },
-  employee: { label: '팀원',   color: 'zinc'    },
+  admin:  { label: '관리자', color: 'indigo'  },
+  leader: { label: '조직장',   color: 'emerald' },
+  member: { label: '팀원',   color: 'zinc'    },
 };
 
 interface Props {

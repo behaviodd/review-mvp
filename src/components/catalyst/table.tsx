@@ -14,7 +14,7 @@ type TableProps = {
 export function Table({ dense = false, grid = false, striped = false, bleed = false, className, children }: TableProps) {
   return (
     <div className={cn('flow-root', className)}>
-      <div className={cn('-mx-[--gutter]', !bleed && '[--gutter:theme(spacing.4)]')}>
+      <div className={cn('-mx-[--gutter]', !bleed && '[--gutter:theme(spacing.5)]')}>
         <div className="inline-block min-w-full align-middle">
           <table
             className={cn(
@@ -78,8 +78,8 @@ export function TableHeader({ className, children }: { className?: string; child
   return (
     <th
       className={cn(
-        'border-b border-b-zinc-950/10 px-4 py-2 font-medium',
-        'first:pl-4 last:pr-4',
+        'border-b border-b-zinc-950/10 px-5 py-2 font-medium',
+        'first:pl-5 last:pr-5',
         className,
       )}
     >
@@ -94,8 +94,8 @@ export function TableCell({ className, children }: { className?: string; childre
   return (
     <td
       className={cn(
-        'relative px-4 py-4 align-middle',
-        'first:pl-4 last:pr-4',
+        'relative px-5 py-4 align-middle',
+        'first:pl-5 last:pr-5',
         className,
       )}
     >

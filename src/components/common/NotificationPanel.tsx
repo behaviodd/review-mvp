@@ -9,7 +9,6 @@ const TYPE_CONFIG = {
   deadline:      { cls: 'bg-primary-50 text-primary-700', label: '마감'      },
   feedback:      { cls: 'bg-primary-50 text-primary-700', label: '피드백'    },
   review_result: { cls: 'bg-success-50 text-success-700', label: '결과'      },
-  nudge:         { cls: 'bg-neutral-100 text-neutral-600', label: '독촉'     },
   system:        { cls: 'bg-neutral-100 text-neutral-600', label: '시스템'   },
 };
 

@@ -203,7 +203,7 @@ export function TemplateBuilder() {
                       <span className="text-neutral-600">매니저 전용</span>
                     </label>
                     <div className="flex gap-1.5 ml-auto">
-                      {(['both', 'self', 'manager'] as const).map(t => (
+                      {(['both', 'self', 'leader'] as const).map(t => (
                         <button
                           key={t}
                           type="button"

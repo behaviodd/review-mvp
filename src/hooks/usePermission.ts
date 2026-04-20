@@ -6,18 +6,17 @@ export function usePermission() {
   const role = currentUser?.role;
 
   return {
-    isAdmin: role === 'admin',
-    isManager: role === 'manager' || role === 'admin',
-    isEmployee: !!role,
+    isAdmin:   role === 'admin',
+    isLeader:  role === 'leader' || role === 'admin',
+    isMember:  !!role,
     hasRole: (requiredRoles: UserRole[]) => !!role && requiredRoles.includes(role),
     can: {
-      manageCycles: role === 'admin',
-      manageTemplates: role === 'admin',
-      writeDownwardReview: role === 'admin' || role === 'manager',
-      viewTeamReviews: role === 'admin' || role === 'manager',
-      viewAllReports: role === 'admin',
-      manageOrg: role === 'admin',
-      sendNudge: role === 'admin',
+      manageCycles:        role === 'admin',
+      manageTemplates:     role === 'admin',
+      writeDownwardReview: role === 'admin' || role === 'leader',
+      viewTeamReviews:     role === 'admin' || role === 'leader',
+      viewAllReports:      role === 'admin',
+      manageOrg:           role === 'admin',
     },
   };
 }

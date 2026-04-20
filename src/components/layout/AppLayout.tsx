@@ -4,12 +4,13 @@ import { Star, Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuthStore } from '../../stores/authStore';
 import { ToastContainer } from '../ui/Toast';
+import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 // 전체 창을 사용하는 풀블리드 레이아웃이 필요한 경로 prefix
 const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback'];
 
 export function AppLayout() {
-  const { currentUser } = useAuthStore();
+  const { currentUser, mustChangePassword } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -66,6 +67,10 @@ export function AppLayout() {
       </div>
 
       <ToastContainer />
+
+      {mustChangePassword && (
+        <ChangePasswordModal userId={currentUser.id} onDone={() => {}} />
+      )}
     </div>
   );
 }

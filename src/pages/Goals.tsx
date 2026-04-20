@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useGoalStore } from '../stores/goalStore';
+import { useTeamStore } from '../stores/teamStore';
 import { usePermission } from '../hooks/usePermission';
 import { useShowToast } from '../components/ui/Toast';
-import { MOCK_USERS } from '../data/mockData';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { formatDate } from '../utils/dateUtils';
-import { Target, Plus, Check, AlertTriangle, Clock, X, Edit2 } from 'lucide-react';
+import { Target, Plus, Check, AlertTriangle, Clock, X } from 'lucide-react';
 import type { GoalStatus } from '../types';
 
 const STATUS_CONFIG: Record<GoalStatus, { label: string; icon: typeof Check; color: string; bg: string }> = {
@@ -31,17 +31,17 @@ export function Goals() {
   const showToast = useShowToast();
 
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState(currentUser?.id ?? '');
   const [form, setForm] = useState<GoalForm>({ title: '', description: '', dueDate: '', progress: 0 });
 
-  const teamMembers = isManager ? MOCK_USERS.filter(u => u.managerId === currentUser?.id) : [];
+  const { users } = useTeamStore();
+  const teamMembers = isManager ? users.filter(u => u.managerId === currentUser?.id && u.isActive !== false) : [];
   const viewUserId = isManager ? selectedUserId : currentUser?.id ?? '';
   const userGoals = goals.filter(g => g.userId === viewUserId);
 
   const handleAddGoal = () => {
-    if (!form.title.trim()) { showToast('목표 제목을 입력해주세요.', 'error'); return; }
-    if (!form.dueDate) { showToast('기한을 입력해주세요.', 'error'); return; }
+    if (!form.title.trim()) { showToast('error', '목표 제목을 입력해주세요.'); return; }
+    if (!form.dueDate) { showToast('error', '기한을 입력해주세요.'); return; }
 
     addGoal({
       id: `g_${Date.now()}`,
@@ -52,7 +52,7 @@ export function Goals() {
       dueDate: form.dueDate,
       status: 'on_track',
     });
-    showToast('목표가 추가되었습니다!', 'success');
+    showToast('success', '목표가 추가되었습니다!');
     setForm({ title: '', description: '', dueDate: '', progress: 0 });
     setShowForm(false);
   };
@@ -61,7 +61,6 @@ export function Goals() {
     updateGoal(id, { progress, status: progress >= 100 ? 'completed' : 'on_track' });
   };
 
-  const groupByStatus = (status: GoalStatus) => userGoals.filter(g => g.status === status);
   const active = userGoals.filter(g => g.status !== 'completed' && g.status !== 'cancelled');
   const done = userGoals.filter(g => g.status === 'completed');
 
@@ -71,7 +70,7 @@ export function Goals() {
         <h1 className="text-xl font-semibold text-neutral-900">목표 관리</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" /> 목표 추가
         </button>
@@ -114,7 +113,7 @@ export function Goals() {
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="달성하고 싶은 목표를 입력하세요"
-              className="w-full px-3.5 py-2.5 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
+              className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
             />
           </div>
           <div>
@@ -124,7 +123,7 @@ export function Goals() {
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={2}
               placeholder="목표에 대한 구체적인 설명 (선택)"
-              className="w-full px-3.5 py-2.5 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
+              className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
             />
           </div>
           <div className="flex gap-3">
@@ -134,7 +133,7 @@ export function Goals() {
                 type="date"
                 value={form.dueDate}
                 onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                className="w-full px-3.5 py-2.5 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
+                className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
               />
             </div>
             <div className="flex-1">
@@ -151,8 +150,8 @@ export function Goals() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 border border-neutral-200 rounded-xl text-sm text-neutral-600 hover:bg-neutral-50">취소</button>
-            <button onClick={handleAddGoal} className="flex-1 py-2.5 bg-primary-600 text-white rounded text-sm font-semibold hover:bg-primary-700">추가</button>
+            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-600 hover:bg-neutral-50">취소</button>
+            <button onClick={handleAddGoal} className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">추가</button>
           </div>
         </div>
       )}
@@ -169,7 +168,7 @@ export function Goals() {
                 const cfg = STATUS_CONFIG[goal.status];
                 const Icon = cfg.icon;
                 return (
-                  <div key={goal.id} className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
+                  <div key={goal.id} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 pr-3">
                         <h3 className="text-sm font-semibold text-neutral-900">{goal.title}</h3>
@@ -210,7 +209,7 @@ export function Goals() {
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-neutral-500">완료 ({done.length})</h2>
               {done.map(goal => (
-                <div key={goal.id} className="bg-white rounded-xl border border-neutral-50 p-5 opacity-70">
+                <div key={goal.id} className="bg-white rounded-xl border border-zinc-950/5 p-5 opacity-60">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="text-sm font-semibold text-neutral-600 line-through">{goal.title}</h3>
                     <span className="flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded">

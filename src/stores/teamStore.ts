@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
@@ -56,7 +57,9 @@ interface TeamStore {
   setLoading: (v: boolean) => void;
 }
 
-export const useTeamStore = create<TeamStore>((set, get) => ({
+export const useTeamStore = create<TeamStore>()(
+  persist(
+    (set, get) => ({
   users: [],
   teams: [],
   orgUnits: [],
@@ -221,4 +224,15 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     })),
 
   setLoading: (isLoading) => set({ isLoading }),
-}));
+    }),
+    {
+      name: 'team-data-v1',
+      partialize: (s) => ({
+        users:         s.users,
+        teams:         s.teams,
+        orgUnits:      s.orgUnits,
+        secondaryOrgs: s.secondaryOrgs,
+      }),
+    },
+  ),
+);

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ClipboardList,
+  LayoutDashboard,
   Settings, ChevronLeft, ChevronRight, Star, Bell, RefreshCw, Building2,
   LogOut, UserCheck,
 } from 'lucide-react';
@@ -27,13 +27,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
   const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount);
 
   const navItems = [
-    { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                 badge: false },
-    { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: true,                 badge: false },
-    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: isLeader,             badge: false },
-    { to: '/team',          icon: Building2,       label: '구성원',    show: isAdmin || isLeader,  badge: false },
-    { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,              badge: false },
-    { to: '/templates',     icon: ClipboardList,   label: '템플릿',    show: isAdmin,              badge: false },
-    { to: '/notifications', icon: Bell,            label: '알림',      show: true,                 badge: true  },
+    { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                              badge: false },
+    { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: !isAdmin,                          badge: false },
+    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader',    badge: false },
+    { to: '/team',          icon: Building2,       label: '구성원',    show: true,                              badge: false },
+    { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,                           badge: false },
+    { to: '/notifications', icon: Bell,            label: '알림',      show: true,                              badge: true  },
   ].filter(i => i.show);
 
   const handleLogout = () => {

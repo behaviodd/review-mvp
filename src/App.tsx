@@ -60,15 +60,29 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
 
-          {/* Self reviews */}
-          <Route path="reviews/me" element={<MyReviewList />} />
-          <Route path="reviews/me/:submissionId" element={<MyReviewWrite />} />
+          {/* Self reviews (leader, member only) */}
+          <Route
+            path="reviews/me"
+            element={
+              <RequireRole roles={['leader', 'member']}>
+                <MyReviewList />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="reviews/me/:submissionId"
+            element={
+              <RequireRole roles={['leader', 'member']}>
+                <MyReviewWrite />
+              </RequireRole>
+            }
+          />
 
-          {/* Team reviews (manager+) */}
+          {/* Team reviews (leader only) */}
           <Route
             path="reviews/team"
             element={
-              <RequireRole roles={['admin', 'leader']}>
+              <RequireRole roles={['leader']}>
                 <TeamReviewList />
               </RequireRole>
             }
@@ -76,7 +90,7 @@ export default function App() {
           <Route
             path="reviews/team/:cycleId/:userId"
             element={
-              <RequireRole roles={['admin', 'leader']}>
+              <RequireRole roles={['leader']}>
                 <TeamReviewWrite />
               </RequireRole>
             }
@@ -126,15 +140,11 @@ export default function App() {
             }
           />
 
+          {/* Templates list → merged into cycles page */}
+          <Route path="templates" element={<Navigate to="/cycles" replace />} />
+
           {/* Other pages */}
-          <Route
-            path="team"
-            element={
-              <RequireRole roles={['admin', 'leader']}>
-                <Team />
-              </RequireRole>
-            }
-          />
+          <Route path="team" element={<Team />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
 

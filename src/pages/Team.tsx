@@ -786,7 +786,7 @@ function MemberRow({
   secondaryOrgs,
 }: {
   user: User;
-  onEdit: (u: User) => void;
+  onEdit: ((u: User) => void) | null;
   onTerminate?: (u: User) => void;
   secondaryOrgs: SecondaryOrgAssignment[];
 }) {
@@ -811,18 +811,20 @@ function MemberRow({
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onEdit(user)} title="정보 수정"
-          className="p-1.5 rounded-md text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
-          <Pencil className="size-3.5" />
-        </button>
-        {onTerminate && user.role !== 'admin' && (
-          <button onClick={() => onTerminate(user)} title="퇴사 처리"
-            className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-            <X className="size-3.5" />
+      {onEdit && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(user)} title="정보 수정"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+            <Pencil className="size-3.5" />
           </button>
-        )}
-      </div>
+          {onTerminate && user.role !== 'admin' && (
+            <button onClick={() => onTerminate(user)} title="퇴사 처리"
+              className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1177,8 +1179,51 @@ function ManagerView() {
   );
 }
 
+function MemberView() {
+  const { currentUser } = useAuthStore();
+  const { users, secondaryOrgs } = useTeamStore();
+  const [search, setSearch] = useState('');
+
+  if (!currentUser) return null;
+
+  const colleagues = useMemo(
+    () => users.filter(u => u.isActive !== false && u.department === currentUser.department && u.id !== currentUser.id),
+    [users, currentUser],
+  );
+  const displayed = search ? colleagues.filter(u => matchesSearch(u, search)) : colleagues;
+
+  return (
+    <div className="space-y-5">
+      <Heading>우리 팀</Heading>
+      <div className="bg-white rounded-xl ring-1 ring-zinc-950/5 shadow-card overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-950/5">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400 pointer-events-none" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="이름, 직책으로 검색..."
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white" />
+          </div>
+          <span className="text-xs text-zinc-400 flex-shrink-0">{currentUser.department} · {colleagues.length}명</span>
+        </div>
+        {displayed.length === 0 ? (
+          <p className="text-sm text-zinc-400 text-center py-12">같은 부서 구성원이 없습니다.</p>
+        ) : (
+          <div className="divide-y divide-zinc-950/3">
+            {displayed.map(u => (
+              <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs} onEdit={null} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Entry Point ────────────────────────────────────────────────────── */
 export function Team() {
+  const { currentUser } = useAuthStore();
   const { isAdmin } = usePermission();
-  return isAdmin ? <AdminView /> : <ManagerView />;
+  if (isAdmin) return <AdminView />;
+  if (currentUser?.role === 'leader') return <ManagerView />;
+  return <MemberView />;
 }

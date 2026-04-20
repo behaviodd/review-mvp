@@ -341,13 +341,14 @@ export function CycleNew() {
             ) : templates.length === 0 ? (
               <div className="text-center py-10 space-y-3">
                 <FileText className="w-10 h-10 text-neutral-200 mx-auto" />
-                <p className="text-sm text-neutral-400">등록된 템플릿이 없습니다.</p>
+                <p className="text-sm text-neutral-500 font-medium">저장된 템플릿이 없습니다</p>
+                <p className="text-xs text-neutral-400">템플릿을 먼저 만들어야 리뷰를 생성할 수 있습니다.</p>
                 <button
                   type="button"
                   onClick={() => navigate('/templates/new')}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4" /> 첫 템플릿 만들기
+                  <Plus className="w-4 h-4" /> 새 템플릿 만들기
                 </button>
               </div>
             ) : (
@@ -510,6 +511,15 @@ export function CycleNew() {
         </button>
 
         {step < STEPS.length - 1 ? (
+          step === 1 && templates.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => navigate('/templates/new')}
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> 템플릿 만들기
+            </button>
+          ) : (
           <button
             onClick={() => {
               if (step === 0) { touch('title'); if (!canNext()) return; }
@@ -522,6 +532,7 @@ export function CycleNew() {
           >
             다음 <ChevronRight className="w-4 h-4" />
           </button>
+          )
         ) : (
           <LoadingButton
             onClick={handlePublish}

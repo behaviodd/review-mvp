@@ -53,12 +53,24 @@ export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'POST') {
     try {
       const payload = await request.text();
-      const res = await fetch(scriptUrl, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    payload,
-        redirect: 'follow',
-      });
+
+      // Apps Script exec URL은 302 리다이렉트를 반환함.
+      // redirect:'follow' 시 POST→GET으로 변환되어 doPost가 실행되지 않음.
+      // 따라서 redirect:'manual'로 리다이렉트 위치를 추출한 뒤 POST를 재전송.
+      const postOnce = (url: string) =>
+        fetch(url, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    payload,
+          redirect: 'manual',
+        });
+
+      let res = await postOnce(scriptUrl);
+      if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
+        const location = res.headers.get('location');
+        if (location) res = await postOnce(location);
+      }
+
       const body = await res.text();
       return new Response(body, {
         headers: { ...CORS, 'Content-Type': 'application/json' },

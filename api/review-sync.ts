@@ -51,12 +51,21 @@ export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'POST') {
     try {
       const payload = await request.text();
-      const res = await fetch(scriptUrl, {
-        method:   'POST',
-        headers:  { 'Content-Type': 'application/json' },
-        body:     payload,
-        redirect: 'follow',
-      });
+
+      const postOnce = (url: string) =>
+        fetch(url, {
+          method:   'POST',
+          headers:  { 'Content-Type': 'application/json' },
+          body:     payload,
+          redirect: 'manual',
+        });
+
+      let res = await postOnce(scriptUrl);
+      if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
+        const location = res.headers.get('location');
+        if (location) res = await postOnce(location);
+      }
+
       const body = await res.text();
       return new Response(body, {
         headers: { ...CORS, 'Content-Type': 'application/json' },

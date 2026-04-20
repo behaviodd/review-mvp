@@ -8,7 +8,7 @@ import { useFieldValidation } from '../../hooks/useFieldValidation';
 import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import {
   Check, ChevronLeft, ChevronRight, FileText, Users,
-  Calendar, Eye, Rocket, PartyPopper,
+  Calendar, Eye, Rocket, PartyPopper, Plus, RefreshCw,
 } from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 
@@ -60,7 +60,11 @@ export function CycleNew() {
   const [publishedCount, setPublishedCount] = useState({ members: 0, submissions: 0 });
   const [publishing, setPublishing] = useState(false);
 
-  const initialTemplateId = searchParams.get('templateId') ?? templates[0]?.id ?? '';
+  const fromTemplateId = searchParams.get('templateId') ?? '';
+  const initialTemplateId = fromTemplateId || (templates[0]?.id ?? '');
+
+  // 템플릿 카드에서 진입 시 step 1(템플릿) 확인 상태 — 직접 변경 원하면 펼침
+  const [templateLocked, setTemplateLocked] = useState(!!fromTemplateId);
 
   const [form, setForm] = useState<FormState>({
     title:                '',
@@ -195,6 +199,7 @@ export function CycleNew() {
                 setPublished(false);
                 setPublishedId('');
                 setStep(0);
+                setTemplateLocked(false);
                 setForm({
                   title: '', type: 'scheduled', templateId: templates[0]?.id ?? '',
                   targetDepartments: [],
@@ -289,37 +294,93 @@ export function CycleNew() {
         {/* Step 1: 템플릿 */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-neutral-900">평가 템플릿을 선택하세요</h2>
-            {templates.length === 0 && (
-              <p className="text-sm text-neutral-400 py-4">등록된 템플릿이 없습니다. 먼저 템플릿을 만들어주세요.</p>
-            )}
-            {templates.map(t => (
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-neutral-900">평가 템플릿 선택</h2>
               <button
-                key={t.id} type="button"
-                onClick={() => setForm(f => ({ ...f, templateId: t.id }))}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${form.templateId === t.id ? 'border-primary-500 bg-primary-50' : 'border-neutral-200 hover:border-neutral-300'}`}
+                type="button"
+                onClick={() => navigate('/templates/new')}
+                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-semibold ${form.templateId === t.id ? 'text-primary-700' : 'text-neutral-700'}`}>{t.name}</p>
-                    <p className="text-xs text-neutral-400 mt-0.5">{t.description}</p>
+                <Plus className="w-3.5 h-3.5" /> 새 템플릿 만들기
+              </button>
+            </div>
+
+            {/* 템플릿에서 진입: 선택된 템플릿 확인 카드 */}
+            {templateLocked && selectedTemplate ? (
+              <div className="space-y-3">
+                <div className="p-4 rounded-xl border-2 border-primary-500 bg-primary-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-primary-800">{selectedTemplate.name}</p>
+                        <p className="text-xs text-primary-600 mt-0.5">{selectedTemplate.description}</p>
+                        <p className="text-xs text-primary-500 mt-1">{selectedTemplate.questions.length}문항</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateLocked(false)}
+                      className="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1 flex-shrink-0 ml-2"
+                    >
+                      <RefreshCw className="w-3 h-3" /> 변경
+                    </button>
                   </div>
-                  <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded flex-shrink-0 ml-2">
-                    {t.questions.length}문항
-                  </span>
-                </div>
-                {form.templateId === t.id && (
                   <div className="mt-3 pt-3 border-t border-primary-100 space-y-1">
-                    {t.questions.slice(0, 3).map(q => (
+                    {selectedTemplate.questions.slice(0, 3).map(q => (
                       <p key={q.id} className="text-xs text-primary-600">• {q.text}</p>
                     ))}
-                    {t.questions.length > 3 && (
-                      <p className="text-xs text-primary-400">+{t.questions.length - 3}개 더...</p>
+                    {selectedTemplate.questions.length > 3 && (
+                      <p className="text-xs text-primary-400">+{selectedTemplate.questions.length - 3}개 더...</p>
                     )}
                   </div>
-                )}
-              </button>
-            ))}
+                </div>
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-10 space-y-3">
+                <FileText className="w-10 h-10 text-neutral-200 mx-auto" />
+                <p className="text-sm text-neutral-400">등록된 템플릿이 없습니다.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/templates/new')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> 첫 템플릿 만들기
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {templates.map(t => (
+                  <button
+                    key={t.id} type="button"
+                    onClick={() => { setForm(f => ({ ...f, templateId: t.id })); setTemplateLocked(false); }}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${form.templateId === t.id ? 'border-primary-500 bg-primary-50' : 'border-neutral-200 hover:border-neutral-300'}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-semibold ${form.templateId === t.id ? 'text-primary-700' : 'text-neutral-700'}`}>{t.name}</p>
+                        <p className="text-xs text-neutral-400 mt-0.5">{t.description}</p>
+                      </div>
+                      <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded flex-shrink-0 ml-2">
+                        {t.questions.length}문항
+                      </span>
+                    </div>
+                    {form.templateId === t.id && (
+                      <div className="mt-3 pt-3 border-t border-primary-100 space-y-1">
+                        {t.questions.slice(0, 3).map(q => (
+                          <p key={q.id} className="text-xs text-primary-600">• {q.text}</p>
+                        ))}
+                        {t.questions.length > 3 && (
+                          <p className="text-xs text-primary-400">+{t.questions.length - 3}개 더...</p>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

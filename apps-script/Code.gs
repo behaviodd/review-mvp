@@ -101,6 +101,19 @@ function upsertRow(sheet, pkCol, pkValue, data) {
   }
 }
 
+/** 기존 행의 값을 유지하면서 지정한 컬럼만 덮어씀 (부분 업데이트) */
+function patchRow(sheet, pkCol, pkValue, patch) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var rowIdx  = findRowIndex(sheet, pkCol, pkValue);
+  if (rowIdx < 0) return false;
+  var existing = sheet.getRange(rowIdx, 1, 1, headers.length).getValues()[0];
+  var updated  = headers.map(function(h, i) {
+    return patch[h] !== undefined ? patch[h] : existing[i];
+  });
+  sheet.getRange(rowIdx, 1, 1, updated.length).setValues([updated]);
+  return true;
+}
+
 /** SHA-256 해시 (Apps Script 내장 Utilities 사용) */
 function sha256Hex(text) {
   var bytes = Utilities.computeDigest(
@@ -240,8 +253,7 @@ function doPost(e) {
 
     if (action === 'setPassword') {
       var sheet = getSheet(SHEET.ACCOUNTS);
-      upsertRow(sheet, '사번', data['userId'], {
-        '사번':         data['userId'],
+      patchRow(sheet, '사번', data['userId'], {
         '비밀번호해시': data['passwordHash'],
       });
       return jsonOk();
@@ -249,8 +261,7 @@ function doPost(e) {
 
     if (action === 'resetAccount') {
       var sheet = getSheet(SHEET.ACCOUNTS);
-      upsertRow(sheet, '사번', data['userId'], {
-        '사번':         data['userId'],
+      patchRow(sheet, '사번', data['userId'], {
         '비밀번호해시': '',
       });
       return jsonOk();

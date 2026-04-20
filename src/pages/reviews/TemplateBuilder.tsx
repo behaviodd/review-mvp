@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
-import { ChevronLeft, Plus, Trash2, GripVertical, Lock, Eye, HelpCircle } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, GripVertical, Lock, Eye, HelpCircle, X } from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 
 const inputCls = (hasErr: boolean) =>
@@ -79,7 +79,7 @@ export function TemplateBuilder() {
         updateTemplate(existing.id, { name, description, questions });
         showToast('success', '템플릿이 저장되었습니다.');
       }
-      navigate('/templates');
+      navigate('/cycles');
     } finally {
       setSaving(false);
     }
@@ -90,7 +90,7 @@ export function TemplateBuilder() {
       {/* Editor */}
       <div className="flex-1 min-w-0 space-y-5">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/templates')} className="p-2 hover:bg-neutral-100 rounded-xl transition-colors">
+          <button onClick={() => navigate('/cycles')} className="p-2 hover:bg-neutral-100 rounded-xl transition-colors">
             <ChevronLeft className="w-5 h-5 text-neutral-600" />
           </button>
           <h1 className="text-lg font-bold text-neutral-900 flex-1">{isNew ? '새 템플릿' : '템플릿 편집'}</h1>
@@ -149,13 +149,17 @@ export function TemplateBuilder() {
                     <div className="flex gap-1.5 ml-auto">
                       {([
                         ['text', '주관식'],
+                        ['multiple_choice', '객관식'],
                         ['rating', '평점'],
                         ['competency', '역량'],
                       ] as const).map(([val, label]) => (
                         <button
                           key={val}
                           type="button"
-                          onClick={() => updateQ(q.id, { type: val })}
+                          onClick={() => updateQ(q.id, {
+                            type: val,
+                            options: val === 'multiple_choice' ? (q.options ?? ['', '']) : undefined,
+                          })}
                           className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${q.type === val ? 'bg-primary-600 text-white font-semibold' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
                         >
                           {label}
@@ -177,6 +181,45 @@ export function TemplateBuilder() {
                     />
                     {questionErrors[q.id] && <p className="mt-1 text-xs text-danger-600">{questionErrors[q.id]}</p>}
                   </div>
+                  {/* 객관식 보기 편집 */}
+                  {q.type === 'multiple_choice' && (
+                    <div className="space-y-2">
+                      {(q.options ?? []).map((opt, oi) => (
+                        <div key={oi} className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center flex-shrink-0">
+                            <span className="w-2 h-2 rounded-full bg-neutral-300" />
+                          </span>
+                          <input
+                            type="text"
+                            value={opt}
+                            onChange={e => {
+                              const next = [...(q.options ?? [])];
+                              next[oi] = e.target.value;
+                              updateQ(q.id, { options: next });
+                            }}
+                            placeholder={`보기 ${oi + 1}`}
+                            className="flex-1 px-3 py-1.5 border border-neutral-200 rounded-lg bg-neutral-50 text-xs focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white"
+                          />
+                          {(q.options ?? []).length > 2 && (
+                            <button type="button" onClick={() => {
+                              const next = [...(q.options ?? [])];
+                              next.splice(oi, 1);
+                              updateQ(q.id, { options: next });
+                            }} className="p-1 text-neutral-300 hover:text-danger-400 transition-colors">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => updateQ(q.id, { options: [...(q.options ?? []), ''] })}
+                        className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" /> 보기 추가
+                      </button>
+                    </div>
+                  )}
                   <input
                     type="text"
                     value={q.helpText ?? ''}
@@ -258,6 +301,15 @@ export function TemplateBuilder() {
                 )}
                 {q.type === 'text' ? (
                   <div className="w-full h-14 bg-neutral-50 rounded-lg border border-neutral-200" />
+                ) : q.type === 'multiple_choice' ? (
+                  <div className="space-y-1.5">
+                    {(q.options ?? []).filter(o => o.trim()).map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2 text-xs text-neutral-600">
+                        <span className="w-4 h-4 rounded-full border border-neutral-300 flex-shrink-0" />
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <div className="flex gap-1">
                     {[1,2,3,4,5].map(n => (

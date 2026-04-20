@@ -7,20 +7,10 @@ import { useReviewSync } from '../hooks/useReviewSync';
 import { useReviewStore } from '../stores/reviewStore';
 import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
-import { Bell, User, Shield, Sheet, CheckCircle2, XCircle, RefreshCw, Info, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { User, Shield, Sheet, CheckCircle2, XCircle, RefreshCw, Info, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { Switch } from '../components/catalyst/switch';
 import { verifyLogin, changePassword } from '../utils/authApi';
 
-interface Toggle {
-  label: string;
-  desc: string;
-  key: string;
-}
-
-const NOTIF_TOGGLES: Toggle[] = [
-  { label: '마감 임박 알림', desc: '자기평가·리뷰 마감 3일 전 알림', key: 'deadline' },
-  { label: '피드백 수신 알림', desc: '새 피드백을 받았을 때 알림', key: 'feedback' },
-];
 
 /* ── 비밀번호 변경 섹션 ──────────────────────────────────────────────── */
 function PasswordChangeSection() {
@@ -162,7 +152,7 @@ export function Settings() {
   const { currentUser } = useAuthStore();
   const showToast = useShowToast();
   const {
-    scriptUrl, enabled, setScriptUrl, setEnabled,
+    scriptUrl, setScriptUrl,
     orgSyncEnabled, setOrgSyncEnabled,
     orgLastSyncedAt, orgSyncError,
     reviewSyncEnabled, setReviewSyncEnabled,
@@ -174,11 +164,6 @@ export function Settings() {
   const { refetch: refetchReview } = useReviewSync();
   const [urlDraft, setUrlDraft] = useState(scriptUrl);
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
-
-  const [notifToggles, setNotifToggles] = useState<Record<string, boolean>>({
-    deadline: true,
-    feedback: true,
-  });
 
   const handleSaveUrl = () => {
     setScriptUrl(urlDraft.trim());
@@ -211,10 +196,6 @@ export function Settings() {
     if (!iso) return null;
     const d = new Date(iso);
     return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} 동기화됨`;
-  };
-
-  const toggleNotif = (key: string) => {
-    setNotifToggles(t => ({ ...t, [key]: !t[key] }));
   };
 
   if (!currentUser) return null;
@@ -251,25 +232,6 @@ export function Settings() {
           >
             편집
           </button>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Bell className="w-4 h-4 text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700">알림 설정</h2>
-        </div>
-        <div className="space-y-4">
-          {NOTIF_TOGGLES.map(({ label, desc, key }) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-800">{label}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">{desc}</p>
-              </div>
-              <Switch checked={notifToggles[key]} onChange={() => toggleNotif(key)} />
-            </div>
-          ))}
         </div>
       </div>
 
@@ -393,14 +355,6 @@ export function Settings() {
               </div>
             )}
 
-            {/* 평가 결과 동기화 토글 */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-800">평가 결과 단방향 동기화 (구형)</p>
-                <p className="text-xs text-neutral-400 mt-0.5">평가 제출 시 결과 시트에 자동 반영</p>
-              </div>
-              <Switch checked={enabled} onChange={setEnabled} />
-            </div>
           </div>
 
           {/* 저장 버튼 */}

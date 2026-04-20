@@ -15,7 +15,6 @@ import { CycleDetail } from './pages/reviews/CycleDetail';
 import { TemplateList } from './pages/reviews/TemplateList';
 import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
 import { Team } from './pages/Team';
-import { Notifications } from './pages/Notifications';
 import { Settings } from './pages/Settings';
 
 // 로그인 상태일 때만 시트 동기화 실행
@@ -145,7 +144,6 @@ export default function App() {
 
           {/* Other pages */}
           <Route path="team" element={<Team />} />
-          <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
 
           {/* Catch-all */}

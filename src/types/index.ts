@@ -3,7 +3,7 @@ export type OrgUnitType = 'mainOrg' | 'subOrg' | 'team' | 'squad';
 export type ReviewStatus = 'draft' | 'active' | 'self_review' | 'manager_review' | 'calibration' | 'closed';
 export type ReviewType = 'scheduled' | 'adhoc';
 export type FeedbackType = 'praise' | 'suggestion' | 'note';
-export type QuestionType = 'rating' | 'text' | 'competency';
+export type QuestionType = 'rating' | 'text' | 'competency' | 'multiple_choice';
 export type SubmissionStatus = 'not_started' | 'in_progress' | 'submitted';
 export type GoalStatus = 'on_track' | 'at_risk' | 'completed' | 'cancelled';
 export type NotificationType = 'deadline' | 'feedback' | 'review_result' | 'system';
@@ -86,6 +86,7 @@ export interface TemplateQuestion {
   isRequired: boolean;
   helpText?: string;
   exampleAnswer?: string;
+  options?: string[];
   order: number;
 }
 

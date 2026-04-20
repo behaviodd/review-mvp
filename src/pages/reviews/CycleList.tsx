@@ -210,6 +210,12 @@ export function CycleList() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                     <button
+                      onClick={() => navigate(`/cycles/new?templateId=${tmpl.id}`)}
+                      className="px-3 py-1.5 text-xs font-medium text-primary-600 border border-primary-200 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
+                    >
+                      <Plus className="w-3 h-3 inline mr-1" />리뷰 생성
+                    </button>
+                    <button
                       onClick={() => navigate(`/templates/${tmpl.id}`)}
                       className="px-3 py-1.5 text-xs font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
                     >

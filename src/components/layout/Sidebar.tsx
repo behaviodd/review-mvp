@@ -1,12 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Settings, ChevronLeft, ChevronRight, Star, Bell, RefreshCw, Building2,
+  Settings, ChevronLeft, ChevronRight, Star, RefreshCw, Building2,
   LogOut, UserCheck,
 } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
-import { useNotificationStore } from '../../stores/notificationStore';
 import { UserAvatar } from '../ui/UserAvatar';
 import { cn } from '../ui/cn';
 
@@ -20,19 +19,14 @@ interface Props {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
   const { isAdmin } = usePermission();
   const { currentUser, logout } = useAuthStore();
-  const { notifications } = useNotificationStore();
   const navigate = useNavigate();
 
-  const unreadCount = notifications.filter(n => n.userId === currentUser?.id && !n.isRead).length;
-  const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount);
-
   const navItems = [
-    { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                              badge: false },
-    { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: !isAdmin,                          badge: false },
-    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader',    badge: false },
-    { to: '/team',          icon: Building2,       label: '구성원',    show: true,                              badge: false },
-    { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,                           badge: false },
-    { to: '/notifications', icon: Bell,            label: '알림',      show: true,                              badge: true  },
+    { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                              },
+    { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: !isAdmin,                          },
+    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader',    },
+    { to: '/team',          icon: Building2,       label: '구성원',    show: true,                              },
+    { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,  },
   ].filter(i => i.show);
 
   const handleLogout = () => {
@@ -68,7 +62,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
       {/* ── Nav ── */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {navItems.map(({ to, icon: Icon, label, badge }) => (
+        {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
@@ -85,21 +79,10 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
           >
             <span className="relative flex-shrink-0">
               <Icon size={16} />
-              {badge && unreadCount > 0 && collapsed && (
-                <span className="absolute -top-1 -right-1 w-[7px] h-[7px] bg-danger-500 rounded-full border border-neutral-950 hidden md:block" />
-              )}
             </span>
             <span className={cn('flex-1 leading-none', collapsed && 'md:hidden')}>
               {label}
             </span>
-            {badge && unreadCount > 0 && (
-              <span className={cn(
-                'text-[10px] font-bold bg-danger-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none',
-                collapsed && 'md:hidden',
-              )}>
-                {unreadLabel}
-              </span>
-            )}
           </NavLink>
         ))}
       </nav>

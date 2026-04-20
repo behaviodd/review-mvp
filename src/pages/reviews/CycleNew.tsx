@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -39,6 +39,7 @@ const addDays = (d: Date, n: number) => {
 
 export function CycleNew() {
   const navigate     = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuthStore();
   const { addCycle, upsertSubmission, templates } = useReviewStore();
   const { users, isLoading: usersLoading } = useTeamStore();
@@ -59,10 +60,12 @@ export function CycleNew() {
   const [publishedCount, setPublishedCount] = useState({ members: 0, submissions: 0 });
   const [publishing, setPublishing] = useState(false);
 
+  const initialTemplateId = searchParams.get('templateId') ?? templates[0]?.id ?? '';
+
   const [form, setForm] = useState<FormState>({
     title:                '',
     type:                 'scheduled',
-    templateId:           templates[0]?.id ?? '',
+    templateId:           initialTemplateId,
     targetDepartments:    [],
     selfReviewDeadline:   addDays(today, 14),
     managerReviewDeadline: addDays(today, 21),

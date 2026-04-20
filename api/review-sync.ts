@@ -24,8 +24,10 @@ function json(body: unknown, status = 200) {
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
-  const scriptUrl = process.env.REVIEW_SCRIPT_URL;
-  if (!scriptUrl) return json({ error: 'REVIEW_SCRIPT_URL 환경변수가 설정되지 않았습니다.' }, 500);
+  const headerUrl = request.headers.get('X-Script-Url') ?? '';
+  const scriptUrl = process.env.REVIEW_SCRIPT_URL
+    || (headerUrl.startsWith('https://script.google.com/') ? headerUrl : '');
+  if (!scriptUrl) return json({ error: 'Apps Script URL이 설정되지 않았습니다. 설정 → Google Sheets 연동에서 URL을 입력해 주세요.' }, 500);
 
   /* ── GET ─────────────────────────────────────────────────────── */
   if (request.method === 'GET') {

@@ -3,11 +3,12 @@
  * /api/review-sync 프록시 경유
  */
 import type { ReviewCycle, ReviewTemplate, ReviewSubmission } from '../types';
+import { getScriptHeaders } from './scriptHeaders';
 
 async function post(action: string, data: Record<string, unknown>): Promise<void> {
   const res = await fetch('/api/review-sync', {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify({ action, data }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

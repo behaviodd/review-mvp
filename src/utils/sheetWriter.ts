@@ -3,6 +3,7 @@
  * /api/org-sync 프록시를 통해 Apps Script doPost() 를 호출함.
  */
 import type { User, OrgUnit, SecondaryOrgAssignment } from '../types';
+import { getScriptHeaders } from './scriptHeaders';
 
 /* ── 사번 자동 생성 ────────────────────────────────────────────────── */
 export function generateEmployeeId(users: User[]): string {
@@ -77,7 +78,7 @@ async function post(action: string, data: Record<string, string>): Promise<void>
 async function postReturning(action: string, data: Record<string, string>): Promise<PostResult> {
   const res = await fetch('/api/org-sync', {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify({ action, data }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -87,7 +88,7 @@ async function postReturning(action: string, data: Record<string, string>): Prom
 async function postPayload(payload: PostPayload): Promise<void> {
   const res = await fetch('/api/org-sync', {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

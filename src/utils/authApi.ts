@@ -8,6 +8,8 @@
  *   - 관리자 초기화 = passwordHash를 다시 "" 로 설정
  */
 
+import { getScriptHeaders } from './scriptHeaders';
+
 export async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf))
@@ -18,7 +20,7 @@ export async function sha256(text: string): Promise<string> {
 async function post(action: string, data: Record<string, string | boolean>) {
   const res = await fetch('/api/org-sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body: JSON.stringify({ action, data }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

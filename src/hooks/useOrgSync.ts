@@ -11,6 +11,7 @@ import {
   parseOrgUnits,
   parseSecondaryOrgs,
 } from '../utils/sheetParser';
+import { getScriptHeaders } from '../utils/scriptHeaders';
 
 const POLL_MS = 60_000;
 
@@ -24,7 +25,7 @@ interface SheetResponse {
 
 async function fetchTab(action: string, etag?: string): Promise<SheetResponse> {
   const qs = etag ? `action=${action}&etag=${encodeURIComponent(etag)}` : `action=${action}`;
-  const res = await fetch(`/api/org-sync?${qs}`);
+  const res = await fetch(`/api/org-sync?${qs}`, { headers: getScriptHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data: SheetResponse = await res.json();
   if (data.error) throw new Error(data.error);

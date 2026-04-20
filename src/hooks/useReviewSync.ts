@@ -11,6 +11,7 @@ import {
   parseSheetTemplates,
   parseSheetSubmissions,
 } from '../utils/reviewSheetParser';
+import { getScriptHeaders } from '../utils/scriptHeaders';
 
 const POLL_MS = 5 * 60_000; // 5분
 
@@ -21,7 +22,7 @@ interface SheetResponse {
 }
 
 async function fetchTab(action: string): Promise<Record<string, unknown>[]> {
-  const res = await fetch(`/api/review-sync?action=${action}`);
+  const res = await fetch(`/api/review-sync?action=${action}`, { headers: getScriptHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data: SheetResponse = await res.json();
   if (data.error) throw new Error(data.error);

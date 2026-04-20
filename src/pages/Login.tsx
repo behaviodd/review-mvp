@@ -2,14 +2,34 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useTeamStore } from '../stores/teamStore';
+import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { verifyLogin } from '../utils/authApi';
-import { Star, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import type { User } from '../types';
+import { Star, Eye, EyeOff, ChevronDown, Settings2 } from 'lucide-react';
 
 /* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
 export function Login() {
   const { login } = useAuthStore();
   const { users } = useTeamStore();
+  const { scriptUrl } = useSheetsSyncStore();
   const navigate = useNavigate();
+
+  // Google Sheets 미연결 + 구성원 없음 → 초기 설정 모드
+  const isSetupMode = !scriptUrl && users.length === 0;
+
+  const handleSetupLogin = () => {
+    const bootstrapAdmin: User = {
+      id: 'setup_admin',
+      name: '초기 관리자',
+      email: 'admin@setup.local',
+      role: 'admin',
+      department: '관리',
+      position: '관리자',
+      avatarColor: '#4f46e5',
+    };
+    login(bootstrapAdmin);
+    navigate('/settings');
+  };
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -73,6 +93,30 @@ export function Login() {
           <h1 className="text-2xl/8 font-semibold text-zinc-950 tracking-tight">ReviewFlow</h1>
           <p className="text-sm/6 text-zinc-500 mt-1">이메일과 비밀번호로 로그인하세요</p>
         </div>
+
+        {/* 초기 설정 모드 배너 */}
+        {isSetupMode && (
+          <div className="bg-white rounded-2xl ring-1 ring-amber-200 shadow-sm p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="size-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Settings2 className="size-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">초기 설정이 필요합니다</p>
+                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                  Google Sheets 연동이 설정되지 않았습니다.<br />
+                  설정 모드로 진입해 Apps Script URL을 먼저 등록해 주세요.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleSetupLogin}
+              className="w-full py-2 text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+            >
+              설정 모드로 진입
+            </button>
+          </div>
+        )}
 
         {/* 로그인 폼 */}
         <div className="bg-white rounded-2xl ring-1 ring-zinc-950/5 shadow-sm">

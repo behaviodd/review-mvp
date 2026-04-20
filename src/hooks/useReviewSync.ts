@@ -30,7 +30,7 @@ async function fetchTab(action: string): Promise<Record<string, unknown>[]> {
 }
 
 export function useReviewSync() {
-  const { reviewSyncEnabled, setReviewLastSyncedAt, setReviewSyncError } = useSheetsSyncStore();
+  const { scriptUrl, reviewSyncEnabled, setReviewLastSyncedAt, setReviewSyncError } = useSheetsSyncStore();
   const { syncFromSheet, setLoading } = useReviewStore();
 
   const enabledRef = useRef(reviewSyncEnabled);
@@ -59,9 +59,11 @@ export function useReviewSync() {
     } finally {
       setLoading(false);
     }
-  }, [syncFromSheet, setLoading, setReviewLastSyncedAt, setReviewSyncError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncFromSheet, setLoading, setReviewLastSyncedAt, setReviewSyncError, scriptUrl]);
 
   useEffect(() => {
+    if (!scriptUrl) return;
     fetchAndSync();
     if (!reviewSyncEnabled) return;
     const interval = setInterval(fetchAndSync, POLL_MS);

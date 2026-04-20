@@ -33,7 +33,7 @@ async function fetchTab(action: string, etag?: string): Promise<SheetResponse> {
 }
 
 export function useOrgSync() {
-  const { orgSyncEnabled, setOrgLastSyncedAt, setOrgSyncError } = useSheetsSyncStore();
+  const { scriptUrl, orgSyncEnabled, setOrgLastSyncedAt, setOrgSyncError } = useSheetsSyncStore();
   const { syncFromSheet, setLoading } = useTeamStore();
   const orgEtagRef = useRef<string | undefined>(undefined);
 
@@ -71,9 +71,11 @@ export function useOrgSync() {
     } finally {
       setLoading(false);
     }
-  }, [syncFromSheet, setLoading, setOrgLastSyncedAt, setOrgSyncError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncFromSheet, setLoading, setOrgLastSyncedAt, setOrgSyncError, scriptUrl]);
 
   useEffect(() => {
+    if (!scriptUrl) return;
     fetchAndSync();
     if (!orgSyncEnabled) return;
 

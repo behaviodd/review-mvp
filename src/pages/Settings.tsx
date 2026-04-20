@@ -182,8 +182,9 @@ export function Settings() {
 
   const handleSaveUrl = () => {
     setScriptUrl(urlDraft.trim());
-    showToast('success', 'Apps Script URL이 저장되었습니다.');
+    showToast('success', 'Apps Script URL이 저장되었습니다. 동기화를 시작합니다...');
     setTestState('idle');
+    setTimeout(() => { refetchOrg(); refetchReview(); }, 100);
   };
 
   const handleTest = async () => {

@@ -242,6 +242,7 @@ function RightPanel({
   setRefs,
   isDownward,
   reviewerId,
+  users,
 }: {
   cycle: ReviewCycle | undefined;
   isReadOnly: boolean;

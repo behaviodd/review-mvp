@@ -12,7 +12,7 @@ const inputCls = (hasErr: boolean) =>
       ? 'border-danger-400 focus:border-danger-400 focus:ring-danger-100'
       : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-100'
   }`;
-import type { TemplateQuestion, QuestionType } from '../../types';
+import type { TemplateQuestion } from '../../types';
 
 const newQuestion = (order: number): TemplateQuestion => ({
   id: `q_${Date.now()}_${order}`,

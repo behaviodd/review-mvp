@@ -860,7 +860,6 @@ export function TeamReviewWrite() {
           mySubmission={mySubmission}
           actualManager={actualManager ?? undefined}
           isAdmin={isAdmin}
-          currentUser={currentUser ?? undefined}
           pastSubmissions={pastSubmissions}
           cycles={cycles}
         />

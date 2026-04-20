@@ -586,7 +586,6 @@ export function CycleDetail() {
         <div className="space-y-1">
           {filteredMembers.map(member => {
             const { self, manager } = getMemberStatus(member.id);
-            const isPending = self !== 'submitted' && cycle.status !== 'closed';
             return (
               <div key={member.id} className="group flex items-center gap-3 py-2.5 border-b border-neutral-50 last:border-0 rounded-xl px-1 hover:bg-neutral-50 transition-colors">
                 <UserAvatar user={member} size="sm" />

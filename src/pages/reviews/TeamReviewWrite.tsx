@@ -18,7 +18,6 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AutoSaveIndicator } from '../../components/ui/AutoSaveIndicator';
 import { useAutoSave } from '../../hooks/useAutoSave';
-import { useShowToast } from '../../components/ui/Toast';
 import { formatDate } from '../../utils/dateUtils';
 import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit } from '../../types';
 
@@ -74,7 +73,6 @@ function RightPanel({
   mySubmission,
   actualManager,
   isAdmin,
-  currentUser,
   pastSubmissions,
   cycles,
 }: {
@@ -85,7 +83,6 @@ function RightPanel({
   mySubmission: ReviewSubmission | undefined;
   actualManager: User | undefined;
   isAdmin: boolean;
-  currentUser: User | undefined;
   pastSubmissions: ReviewSubmission[];
   cycles: ReviewCycle[];
 }) {
@@ -418,8 +415,8 @@ export function TeamReviewWrite() {
   const isReadOnly = isAdminObserver || mySubmission?.status === 'submitted';
 
   // 조직장 리뷰 단계(manager_review, active)에서만 제출 가능
-  const isManagerReviewPhase = cycle.status === 'manager_review' || cycle.status === 'active';
-  const isPhaseBeforeManagerReview = cycle.status === 'self_review' || cycle.status === 'draft';
+  const isManagerReviewPhase = cycle?.status === 'manager_review' || cycle?.status === 'active';
+  const isPhaseBeforeManagerReview = cycle?.status === 'self_review' || cycle?.status === 'draft';
   const canSubmit = isAdmin || isManagerReviewPhase;
 
   useEffect(() => {
@@ -709,7 +706,7 @@ export function TeamReviewWrite() {
             {/* 질문별 병렬 행 */}
             {managerQuestions.map((q, idx) => {
               const answer = getAnswer(q.id);
-              const selfAnswer = q.target !== 'manager' ? getSelfAnswer(q.id) : undefined;
+              const selfAnswer = q.target !== 'leader' ? getSelfAnswer(q.id) : undefined;
               const isLastRow = idx === managerQuestions.length - 1;
 
               return (

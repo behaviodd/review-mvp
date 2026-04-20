@@ -14,12 +14,6 @@ const inputCls = (hasErr: boolean) =>
   }`;
 import type { TemplateQuestion, QuestionType } from '../../types';
 
-const TYPE_LABELS: Record<QuestionType, string> = {
-  text: '주관식',
-  rating: '평점 (1-5)',
-  competency: '역량 평점',
-};
-
 const newQuestion = (order: number): TemplateQuestion => ({
   id: `q_${Date.now()}_${order}`,
   text: '',
@@ -80,10 +74,10 @@ export function TemplateBuilder() {
           createdAt: new Date().toISOString(),
           questions,
         });
-        showToast('템플릿이 생성되었습니다!', 'success');
+        showToast('success', '템플릿이 생성되었습니다!');
       } else if (existing) {
         updateTemplate(existing.id, { name, description, questions });
-        showToast('템플릿이 저장되었습니다.', 'success');
+        showToast('success', '템플릿이 저장되었습니다.');
       }
       navigate('/templates');
     } finally {

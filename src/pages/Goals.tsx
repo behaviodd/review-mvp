@@ -27,7 +27,7 @@ interface GoalForm {
 export function Goals() {
   const { currentUser } = useAuthStore();
   const { goals, addGoal, updateGoal } = useGoalStore();
-  const { isManager } = usePermission();
+  const { isLeader } = usePermission();
   const showToast = useShowToast();
 
   const [showForm, setShowForm] = useState(false);
@@ -35,8 +35,8 @@ export function Goals() {
   const [form, setForm] = useState<GoalForm>({ title: '', description: '', dueDate: '', progress: 0 });
 
   const { users } = useTeamStore();
-  const teamMembers = isManager ? users.filter(u => u.managerId === currentUser?.id && u.isActive !== false) : [];
-  const viewUserId = isManager ? selectedUserId : currentUser?.id ?? '';
+  const teamMembers = isLeader ? users.filter(u => u.managerId === currentUser?.id && u.isActive !== false) : [];
+  const viewUserId = isLeader ? selectedUserId : currentUser?.id ?? '';
   const userGoals = goals.filter(g => g.userId === viewUserId);
 
   const handleAddGoal = () => {
@@ -77,7 +77,7 @@ export function Goals() {
       </div>
 
       {/* Manager: team member selector */}
-      {isManager && teamMembers.length > 0 && (
+      {isLeader && teamMembers.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSelectedUserId(currentUser?.id ?? '')}

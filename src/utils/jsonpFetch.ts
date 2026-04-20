@@ -18,12 +18,12 @@ export function jsonpFetch<T>(baseUrl: string, params: Record<string, string> = 
 
     function cleanup() {
       clearTimeout(timeout);
-      delete (window as Record<string, unknown>)[callbackName];
+      delete (window as unknown as Record<string, unknown>)[callbackName];
       script.parentNode?.removeChild(script);
     }
 
     // 전역에 콜백 등록 → Apps Script가 이 함수를 호출함
-    (window as Record<string, unknown>)[callbackName] = (data: T) => {
+    (window as unknown as Record<string, unknown>)[callbackName] = (data: T) => {
       cleanup();
       resolve(data);
     };

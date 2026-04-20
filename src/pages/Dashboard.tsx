@@ -12,8 +12,6 @@ import { UserAvatar } from '../components/ui/UserAvatar';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../utils/dateUtils';
 import { AlertCircle, Users, TrendingUp, Clock, Plus } from 'lucide-react';
-import { useNotificationStore } from '../stores/notificationStore';
-import { useShowToast } from '../components/ui/Toast';
 
 
 function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
@@ -38,8 +36,6 @@ function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
 function AdminDashboard() {
   const { cycles, submissions } = useReviewStore();
   const { users } = useTeamStore();
-  const { addNotification } = useNotificationStore();
-  const showToast = useShowToast();
   const navigate = useNavigate();
 
   const activeCycles = cycles.filter(c => c.status !== 'draft' && c.status !== 'closed');

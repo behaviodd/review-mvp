@@ -258,6 +258,7 @@ function RightPanel({
   setRefs: React.Dispatch<React.SetStateAction<RefItem[]>>;
   isDownward?: boolean;
   reviewerId?: string;
+  users: User[];
 }) {
   const [tipsOpen, setTipsOpen] = useState(true);
   const [refsOpen, setRefsOpen] = useState(true);
@@ -1039,6 +1040,7 @@ export function MyReviewWrite() {
         setRefs={setRefs}
         isDownward={isDownward}
         reviewerId={submission.reviewerId}
+        users={users}
       />
 
       {/* 제출 확인 모달 (읽기 전용 상태에서 직접 제출 시 fallback) */}

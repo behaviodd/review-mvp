@@ -28,7 +28,7 @@ export function Reports() {
   const { currentUser } = useAuthStore();
   const { cycles, submissions } = useReviewStore();
   const { feedbacks } = useFeedbackStore();
-  const { isAdmin, isManager } = usePermission();
+  const { isAdmin, isLeader } = usePermission();
 
   const { users } = useTeamStore();
   const activeUsers = users.filter(u => u.isActive !== false && u.role !== 'admin');
@@ -137,7 +137,7 @@ export function Reports() {
         </>
       )}
 
-      {isManager && (
+      {isLeader && (
         <>
           {/* Team completion pie */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -211,7 +211,7 @@ export function Reports() {
         </>
       )}
 
-      {!isAdmin && !isManager && (() => {
+      {!isAdmin && !isLeader && (() => {
         const mySubs = submissions.filter(s => s.revieweeId === currentUser?.id && s.status === 'submitted');
         const myReceived = feedbacks.filter(f => f.toUserId === currentUser?.id);
         const mySent = feedbacks.filter(f => f.fromUserId === currentUser?.id);

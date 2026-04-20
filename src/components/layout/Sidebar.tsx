@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardList,
-  Settings, ChevronLeft, ChevronRight, Star, Bell, Users, RefreshCw, Building2,
+  Settings, ChevronLeft, ChevronRight, Star, Bell, RefreshCw, Building2,
   LogOut, UserCheck,
 } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';

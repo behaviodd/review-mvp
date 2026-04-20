@@ -11,7 +11,7 @@ import { Heading } from '../components/catalyst/heading';
 import {
   Building2, Users, UserCheck, Plus, X, Pencil, Search,
   ChevronRight, ChevronDown, Trash2, KeyRound, RefreshCw,
-  ChevronUp, UserPlus, Layers,
+  UserPlus, Layers,
 } from 'lucide-react';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 
@@ -829,7 +829,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView() {
-  const { users, orgUnits, teams, deleteOrgUnit, reorderOrgUnit, isLoading, terminateMember, updateMember } = useTeamStore();
+  const { users, orgUnits, teams, deleteOrgUnit, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);

@@ -153,7 +153,7 @@ export function CycleList() {
               tab === t ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
             }`}
           >
-            {t === 'cycles' ? '리뷰 사이클' : '평가 템플릿'}
+            {t === 'cycles' ? '리뷰 목록' : '평가 템플릿'}
           </button>
         ))}
       </div>

@@ -327,7 +327,7 @@ export function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-neutral-800">리뷰 운영 데이터 자동 동기화</p>
-                <p className="text-xs text-neutral-400 mt-0.5">사이클·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
+                <p className="text-xs text-neutral-400 mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
               </div>
               <Switch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
             </div>
@@ -342,7 +342,7 @@ export function Settings() {
                   ) : reviewLastSyncedAt ? (
                     <p className="text-xs text-emerald-600 flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      {formatSyncTime(reviewLastSyncedAt)} · 사이클 {cycles.length}개 · 템플릿 {templates.length}개 · 제출 {submissions.length}건
+                      {formatSyncTime(reviewLastSyncedAt)} · 리뷰 {cycles.length}개 · 템플릿 {templates.length}개 · 제출 {submissions.length}건
                     </p>
                   ) : (
                     <p className="text-xs text-neutral-400">아직 동기화된 기록이 없습니다.</p>

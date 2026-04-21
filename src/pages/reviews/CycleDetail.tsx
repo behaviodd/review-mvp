@@ -509,7 +509,7 @@ export function CycleDetail() {
             id: `mgr_review_${Date.now()}_${i}_${leaderId}`,
             userId: leaderId,
             title: '조직장 리뷰 단계 시작',
-            message: `${cycle.title} 사이클이 조직장 리뷰 단계로 전환되었습니다. 지금 팀원 평가를 작성해주세요.`,
+            message: `${cycle.title} 리뷰가 조직장 리뷰 단계로 전환되었습니다. 지금 팀원 평가를 작성해주세요.`,
             type: 'system',
             isRead: false,
             createdAt: new Date().toISOString(),

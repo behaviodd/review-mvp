@@ -29,7 +29,8 @@ interface SheetsSyncState {
 export const useSheetsSyncStore = create<SheetsSyncState>()(
   persist(
     (set) => ({
-      scriptUrl: '',
+      // VITE_APPS_SCRIPT_URL이 있으면 기본값으로 사용 (로컬 개발용)
+      scriptUrl: import.meta.env.VITE_APPS_SCRIPT_URL ?? '',
       enabled: false,
       lastSyncAt: {},
       orgSyncEnabled: true,
@@ -59,6 +60,15 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
         orgSyncEnabled:    s.orgSyncEnabled,
         reviewSyncEnabled: s.reviewSyncEnabled,
       }),
+      // localStorage에 빈 scriptUrl이 저장돼 있어도 env var로 채움
+      merge: (persisted, current) => {
+        const p = persisted as Partial<SheetsSyncState>;
+        return {
+          ...current,
+          ...p,
+          scriptUrl: p.scriptUrl || (import.meta.env.VITE_APPS_SCRIPT_URL ?? '') || current.scriptUrl,
+        };
+      },
     },
   ),
 );

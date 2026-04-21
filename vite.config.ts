@@ -42,22 +42,27 @@ function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
               });
               const payload = Buffer.concat(chunks).toString();
 
-              // Apps Script exec URL은 302 리다이렉트 반환.
-              // redirect:'follow' 시 POST→GET 변환으로 doPost 미실행 → manual 처리
-              const postOnce = (url: string) =>
-                fetch(url, {
-                  method:   'POST',
-                  headers:  { 'Content-Type': 'application/json' },
-                  body:     payload,
-                  redirect: 'manual',
-                });
+              // Apps Script POST-Redirect-GET 패턴:
+              //   1) POST /exec  → Apps Script가 doPost 실행 후 302 반환
+              //   2) 리다이렉트 URL을 GET으로 따라가면 doPost 결과를 받음
+              // redirect:'follow' 는 302에서 POST→GET 변환 → 이것이 올바른 동작
+              const up = await fetch(scriptUrl, {
+                method:   'POST',
+                headers:  { 'Content-Type': 'application/json' },
+                body:     payload,
+                redirect: 'follow',
+              });
 
-              let up = await postOnce(scriptUrl);
-              if ([301, 302, 303, 307, 308].includes(up.status)) {
-                const location = up.headers.get('location');
-                if (location) up = await postOnce(location);
-              }
               const body = await up.text();
+
+              if (body.trimStart().startsWith('<')) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  error: `Apps Script URL이 HTML을 반환했습니다. Apps Script 배포 설정에서 [액세스: 모든 사용자]로 되어 있는지 확인하세요.`,
+                }));
+                return;
+              }
+
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(body);
               return;

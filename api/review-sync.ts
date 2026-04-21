@@ -52,21 +52,23 @@ export default async function handler(request: Request): Promise<Response> {
     try {
       const payload = await request.text();
 
-      const postOnce = (url: string) =>
-        fetch(url, {
-          method:   'POST',
-          headers:  { 'Content-Type': 'application/json' },
-          body:     payload,
-          redirect: 'manual',
-        });
-
-      let res = await postOnce(scriptUrl);
-      if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
-        const location = res.headers.get('location');
-        if (location) res = await postOnce(location);
-      }
+      // Apps Script POST-Redirect-GET 패턴: POST /exec → 302 → GET redirect URL
+      // redirect:'follow' 가 POST→GET 변환을 올바르게 처리함
+      const res = await fetch(scriptUrl, {
+        method:   'POST',
+        headers:  { 'Content-Type': 'application/json' },
+        body:     payload,
+        redirect: 'follow',
+      });
 
       const body = await res.text();
+
+      if (body.trimStart().startsWith('<')) {
+        return json({
+          error: 'Apps Script URL이 HTML을 반환했습니다. 배포 설정(액세스: 모든 사용자)을 확인하세요.',
+        });
+      }
+
       return new Response(body, {
         headers: { ...CORS, 'Content-Type': 'application/json' },
       });

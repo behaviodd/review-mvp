@@ -63,11 +63,17 @@ export const useReviewStore = create<ReviewState>()(
       },
 
       deleteCycle: (id) => {
+        if (isReviewSyncEnabled()) {
+          // DB에서 관련 제출 먼저 삭제 후 사이클 삭제
+          get().submissions
+            .filter(sub => sub.cycleId === id)
+            .forEach(sub => submissionWriter.delete(sub.id));
+          cycleWriter.delete(id);
+        }
         set(s => ({
           cycles: s.cycles.filter(c => c.id !== id),
           submissions: s.submissions.filter(sub => sub.cycleId !== id),
         }));
-        if (isReviewSyncEnabled()) cycleWriter.delete(id);
       },
 
       /* ── 템플릿 ───────────────────────────────────────────────── */

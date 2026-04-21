@@ -83,4 +83,7 @@ export const submissionWriter = {
   upsert: (submission: ReviewSubmission) =>
     post('upsertSubmission', submissionToRow(submission))
       .catch(e => console.error('[Sheet] submission upsert:', e)),
+  delete: (id: string) =>
+    post('deleteSubmission', { '제출ID': id })
+      .catch(e => console.error('[Sheet] submission delete:', e)),
 };

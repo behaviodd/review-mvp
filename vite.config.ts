@@ -4,7 +4,7 @@ import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 /** 로컬 개발용 org-sync 미들웨어 플러그인
- *  GET / POST 모두 지원. redirect: 'follow' 로 Apps Script 리다이렉트 처리.
+ *  GET: redirect:'follow' / POST: redirect:'manual' + 재POST (Vercel edge와 동일 로직)
  */
 function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
   return {
@@ -41,12 +41,22 @@ function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
                 req.on('end', resolve);
               });
               const payload = Buffer.concat(chunks).toString();
-              const up = await fetch(scriptUrl, {
-                method:   'POST',
-                headers:  { 'Content-Type': 'application/json' },
-                body:     payload,
-                redirect: 'follow',
-              });
+
+              // Apps Script exec URL은 302 리다이렉트 반환.
+              // redirect:'follow' 시 POST→GET 변환으로 doPost 미실행 → manual 처리
+              const postOnce = (url: string) =>
+                fetch(url, {
+                  method:   'POST',
+                  headers:  { 'Content-Type': 'application/json' },
+                  body:     payload,
+                  redirect: 'manual',
+                });
+
+              let up = await postOnce(scriptUrl);
+              if ([301, 302, 303, 307, 308].includes(up.status)) {
+                const location = up.headers.get('location');
+                if (location) up = await postOnce(location);
+              }
               const body = await up.text();
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(body);

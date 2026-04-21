@@ -987,7 +987,15 @@ function MemberRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-zinc-900">{user.name}</span>
-          {(user.role !== 'leader' || isOrgHeadHere) && <StatusBadge type="role" value={user.role} />}
+          {(() => {
+            // admin은 항상 관리자 배지
+            if (user.role === 'admin') return <StatusBadge type="role" value="admin" />;
+            // 이 조직의 조직장이면 조직장 배지 (실제 role과 무관)
+            if (isOrgHeadHere) return <StatusBadge type="role" value="leader" />;
+            // 다른 조직의 조직장이면 배지 숨김
+            if (user.role === 'leader') return null;
+            return <StatusBadge type="role" value={user.role} />;
+          })()}
           {secondaryAssignmentHere ? (
             <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
               겸임{secondaryAssignmentHere.position ? ` · ${secondaryAssignmentHere.position}` : ''}

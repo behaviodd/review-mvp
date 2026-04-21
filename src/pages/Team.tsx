@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { usePermission } from '../hooks/usePermission';
 import { useTeamStore } from '../stores/teamStore';
@@ -11,7 +11,7 @@ import { Heading } from '../components/catalyst/heading';
 import {
   Building2, Users, UserCheck, Plus, X, Pencil, Search,
   ChevronRight, ChevronDown, Trash2, KeyRound, RefreshCw,
-  UserPlus, Layers, GripVertical,
+  UserPlus, Layers, GripVertical, ArrowRight,
 } from 'lucide-react';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 
@@ -585,6 +585,91 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
   );
 }
 
+/* ── Bulk Move Modal ────────────────────────────────────────────────── */
+function BulkMoveModal({
+  selectedUsers,
+  onConfirm,
+  onClose,
+}: {
+  selectedUsers: User[];
+  onConfirm: (orgSel: {
+    mainOrgId: string; subOrgId: string; teamId: string; squadId: string;
+  }, managerId: string | null) => void;
+  onClose: () => void;
+}) {
+  const { orgUnits, users } = useTeamStore();
+  const allLeaders = users.filter(u => u.role !== 'member');
+  const [orgSel, setOrgSel] = useState({ mainOrgId: '', subOrgId: '', teamId: '', squadId: '' });
+  const [managerId, setManagerId] = useState<string>('__keep__');
+
+  const mostSpecificId = orgSel.squadId || orgSel.teamId || orgSel.subOrgId || orgSel.mainOrgId;
+  const mostSpecificUnit = orgUnits.find(u => u.id === mostSpecificId);
+
+  // 조직 선택 시 조직장을 자동 제안
+  useEffect(() => {
+    setManagerId(mostSpecificUnit?.headId ?? '__keep__');
+  }, [mostSpecificId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
+  const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
+
+  return (
+    <Modal title={`${selectedUsers.length}명 조직 이동`} onClose={onClose} wide>
+      <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+        {/* 선택된 구성원 미리보기 */}
+        <div>
+          <p className={lbl}>이동할 구성원</p>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+            {selectedUsers.map(u => (
+              <span key={u.id} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-white border border-zinc-200 rounded-full text-zinc-700 font-medium">
+                <span
+                  className="size-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                  style={{ backgroundColor: u.avatarColor }}
+                >
+                  {u.name[0]}
+                </span>
+                {u.name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 이동할 조직 선택 */}
+        {orgUnits.length > 0 ? (
+          <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
+        ) : (
+          <p className="text-xs text-zinc-400">등록된 조직 구조가 없습니다.</p>
+        )}
+
+        {/* 보고 대상 */}
+        <div>
+          <label className={lbl}>보고 대상</label>
+          <select value={managerId} onChange={e => setManagerId(e.target.value)} className={sel}>
+            <option value="__keep__">변경하지 않음</option>
+            <option value="">없음</option>
+            {allLeaders.map(u => (
+              <option key={u.id} value={u.id}>{u.name} · {u.position}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
+          <button type="button" onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+          <button
+            type="button"
+            disabled={!orgSel.mainOrgId}
+            onClick={() => onConfirm(orgSel, managerId === '__keep__' ? null : managerId)}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ArrowRight className="size-3.5" /> 이동 확정
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ── Org Unit Form Modal ────────────────────────────────────────────── */
 function OrgUnitFormModal({
   editing, addType, addParentId, onClose,
@@ -855,20 +940,42 @@ function OrgTreeNode({
 
 /* ── Member Row ─────────────────────────────────────────────────────── */
 function MemberRow({
-  user,
-  onEdit,
-  onTerminate,
-  secondaryOrgs,
+  user, onEdit, onTerminate, secondaryOrgs,
+  selected = false, onToggle, selectionActive = false,
 }: {
   user: User;
   onEdit: ((u: User) => void) | null;
   onTerminate?: (u: User) => void;
   secondaryOrgs: SecondaryOrgAssignment[];
+  selected?: boolean;
+  onToggle?: (id: string) => void;
+  selectionActive?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
+  const canSelect = onToggle && user.role !== 'admin';
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors group border-b border-zinc-950/3 last:border-0">
+    <div
+      className={`flex items-center gap-3 px-4 py-3 transition-colors group border-b border-zinc-950/3 last:border-0 ${
+        selected ? 'bg-primary-50/60' : 'hover:bg-zinc-50'
+      } ${canSelect ? 'cursor-pointer' : ''}`}
+      onClick={canSelect ? () => onToggle!(user.id) : undefined}
+    >
+      {/* 체크박스 */}
+      {canSelect && (
+        <div
+          className={`flex-shrink-0 transition-opacity ${selectionActive || selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          onClick={e => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggle!(user.id)}
+            className="size-4 rounded accent-indigo-600 cursor-pointer"
+          />
+        </div>
+      )}
+
       <UserAvatar user={user} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -887,7 +994,10 @@ function MemberRow({
         </p>
       </div>
       {onEdit && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={e => e.stopPropagation()}
+        >
           <button onClick={() => onEdit(user)} title="정보 수정"
             className="p-1.5 rounded-md text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
             <Pencil className="size-3.5" />
@@ -908,6 +1018,7 @@ function MemberRow({
 function AdminView() {
   const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
+  const showToast = useShowToast();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
   const [search, setSearch]                      = useState('');
@@ -919,6 +1030,49 @@ function AdminView() {
     | { mode: 'edit'; unit: OrgUnit }
     | null
   >(null);
+
+  /* ── 복수 선택 & 이동 ────────────────────────────────────────────── */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkMove, setShowBulkMove] = useState(false);
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const toggleMember = (id: string) =>
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+
+  const toggleSelectAll = (list: User[]) => {
+    const selectable = list.filter(u => u.role !== 'admin').map(u => u.id);
+    const allSelected = selectable.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      selectable.forEach(id => allSelected ? next.delete(id) : next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkMove = (
+    orgSel: { mainOrgId: string; subOrgId: string; teamId: string; squadId: string },
+    managerId: string | null
+  ) => {
+    const department = orgUnits.find(u => u.id === orgSel.mainOrgId)?.name ?? '미배정';
+    const subOrg  = orgSel.subOrgId  ? orgUnits.find(u => u.id === orgSel.subOrgId)?.name  : undefined;
+    const team    = orgSel.teamId    ? orgUnits.find(u => u.id === orgSel.teamId)?.name    : undefined;
+    const squad   = orgSel.squadId   ? orgUnits.find(u => u.id === orgSel.squadId)?.name   : undefined;
+
+    const patch: Partial<Omit<User, 'id'>> = { department, subOrg, team, squad };
+    if (managerId !== null) patch.managerId = managerId || undefined;
+
+    selectedIds.forEach(id => updateMember(id, patch));
+
+    const count = selectedIds.size;
+    clearSelection();
+    setShowBulkMove(false);
+    showToast('success', `${count}명이 ${department}으로 이동되었습니다.`);
+  };
 
   /* ── Drag-and-Drop ──────────────────────────────────────────────── */
   const [dndState, setDndState] = useState<DnDState>({ draggingId: null, dropTarget: null });
@@ -1148,7 +1302,7 @@ function AdminView() {
         </div>
         <div className="flex items-center gap-2">
           {terminatedUsers.length > 0 && (
-            <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); }}
+            <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); clearSelection(); }}
               className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                 showTerminated
                   ? 'bg-rose-50 text-rose-600 border-rose-200'
@@ -1190,7 +1344,8 @@ function AdminView() {
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" value={search}
+          onChange={e => { setSearch(e.target.value); clearSelection(); }}
           placeholder="이름, 직책, 팀으로 검색..."
           className="w-full pl-10 pr-4 py-2.5 text-sm border border-zinc-200 rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950/20" />
         {search && (
@@ -1242,7 +1397,7 @@ function AdminView() {
             <div className="flex-1 overflow-y-auto py-2">
               {/* 전체 보기 */}
               <button
-                onClick={() => { setSelectedOrgId(null); setShowTerminated(false); }}
+                onClick={() => { setSelectedOrgId(null); setShowTerminated(false); clearSelection(); }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                   !selectedOrgId && !showTerminated ? 'bg-primary-50 text-primary-700 font-medium' : 'text-zinc-600 hover:bg-zinc-50'
                 }`}
@@ -1268,7 +1423,7 @@ function AdminView() {
                       unit={unit}
                       allUnits={orgUnits}
                       selectedId={selectedOrgId}
-                      onSelect={id => { setSelectedOrgId(id); setShowTerminated(false); }}
+                      onSelect={id => { setSelectedOrgId(id); setShowTerminated(false); clearSelection(); }}
                       onEditUnit={unit => setOrgModal({ mode: 'edit', unit })}
                       onDeleteUnit={handleDeleteUnit}
                       onAddChild={(type, parentId) => setOrgModal({ mode: 'add', type, parentId })}
@@ -1303,16 +1458,27 @@ function AdminView() {
                 )}
                 <p className="text-xs text-zinc-400 mt-0.5">{panelUsers.length}명</p>
               </div>
-              {!showTerminated && (
-                <button
-                  onClick={() => {
-                    const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
-                    setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
-                  <UserPlus className="size-3.5" /> 구성원 추가
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
+                  <input
+                    type="checkbox"
+                    title="전체 선택"
+                    checked={panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
+                    onChange={() => toggleSelectAll(panelUsers)}
+                    className="size-4 rounded accent-indigo-600 cursor-pointer"
+                  />
+                )}
+                {!showTerminated && (
+                  <button
+                    onClick={() => {
+                      const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+                      setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
+                    <UserPlus className="size-3.5" /> 구성원 추가
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Member list */}
@@ -1347,8 +1513,24 @@ function AdminView() {
                 {panelUsers.map(u => (
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                     onEdit={setEditingMember}
-                    onTerminate={!showTerminated ? handleTerminate : undefined} />
+                    onTerminate={!showTerminated ? handleTerminate : undefined}
+                    selected={selectedIds.has(u.id)}
+                    onToggle={!showTerminated ? toggleMember : undefined}
+                    selectionActive={selectedIds.size > 0} />
                 ))}
+              </div>
+            )}
+            {selectedIds.size > 0 && !showTerminated && (
+              <div className="border-t border-zinc-950/5 px-4 py-3 bg-indigo-50 flex items-center justify-between flex-shrink-0">
+                <span className="text-sm font-medium text-indigo-700">{selectedIds.size}명 선택됨</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={clearSelection} className="text-xs text-zinc-500 hover:text-zinc-700 transition-colors">선택 해제</button>
+                  <button
+                    onClick={() => setShowBulkMove(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                    <ArrowRight className="size-3" /> 조직 이동
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1356,6 +1538,13 @@ function AdminView() {
       )}
 
       {/* Modals */}
+      {showBulkMove && (
+        <BulkMoveModal
+          selectedUsers={users.filter(u => selectedIds.has(u.id))}
+          onConfirm={handleBulkMove}
+          onClose={() => setShowBulkMove(false)}
+        />
+      )}
       {addMemberModal && (
         <AddMemberModal
           onClose={() => setAddMemberModal(null)}

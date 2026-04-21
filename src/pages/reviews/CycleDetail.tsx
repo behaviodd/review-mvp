@@ -8,13 +8,13 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
-import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle, Eye, Star } from 'lucide-react';
 import { useShowToast } from '../../components/ui/Toast';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import { syncCycle } from '../../utils/sheetsSync';
 import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
-import type { ReviewCycle, ReviewStatus } from '../../types';
+import type { ReviewCycle, ReviewStatus, ReviewSubmission, ReviewTemplate, User } from '../../types';
 
 // 상태 전환 정의
 const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
@@ -254,6 +254,152 @@ function CycleEditModal({
   );
 }
 
+// ─── 제출 리뷰 조회 모달 ─────────────────────────────────────────────────────
+const RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
+
+function SubmissionViewModal({
+  member,
+  selfSub,
+  managerSub,
+  reviewer,
+  template,
+  onClose,
+}: {
+  member: User;
+  selfSub: ReviewSubmission | undefined;
+  managerSub: ReviewSubmission | undefined;
+  reviewer: User | undefined;
+  template: ReviewTemplate | undefined;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<'self' | 'manager'>(
+    selfSub?.status === 'submitted' ? 'self' : 'manager'
+  );
+
+  const sub = tab === 'self' ? selfSub : managerSub;
+  const questions = template?.questions ?? [];
+  const visibleQuestions = questions.filter(q =>
+    tab === 'self' ? q.target !== 'leader' : q.target !== 'self'
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-modal w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <UserAvatar user={member} size="sm" />
+            <div>
+              <p className="text-sm font-semibold text-neutral-900">{member.name}</p>
+              <p className="text-xs text-neutral-400">{member.position} · {member.department}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-neutral-500" />
+          </button>
+        </div>
+
+        {/* 탭 */}
+        <div className="flex gap-1 px-5 py-2.5 border-b border-neutral-100 flex-shrink-0">
+          {([
+            { key: 'self', label: '자기평가', sub: selfSub },
+            { key: 'manager', label: '매니저 리뷰', sub: managerSub },
+          ] as const).map(({ key, label, sub: s }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                tab === key
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+              }`}
+            >
+              {label}
+              {s?.status === 'submitted'
+                ? <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
+                : <span className="w-1.5 h-1.5 rounded-full bg-neutral-200" />}
+            </button>
+          ))}
+          {tab === 'manager' && reviewer && (
+            <span className="ml-auto text-xs text-neutral-400 self-center">작성자: {reviewer.name}</span>
+          )}
+        </div>
+
+        {/* 본문 */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {!sub || sub.status !== 'submitted' ? (
+            <div className="py-12 text-center text-sm text-neutral-400">
+              {sub?.status === 'in_progress' ? '작성 중입니다.' : '아직 제출되지 않았습니다.'}
+            </div>
+          ) : (
+            <>
+              {sub.overallRating != null && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-primary-50 rounded-xl">
+                  <Star className="w-4 h-4 text-primary-500" />
+                  <span className="text-sm font-semibold text-primary-700">
+                    종합 평점 {sub.overallRating}점 — {RATING_LABELS[sub.overallRating] ?? ''}
+                  </span>
+                </div>
+              )}
+              {visibleQuestions.map((q, idx) => {
+                const ans = sub.answers.find(a => a.questionId === q.id);
+                return (
+                  <div key={q.id} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+                      Q{idx + 1}
+                    </p>
+                    <p className="text-sm font-medium text-neutral-800">{q.text}</p>
+                    {q.type === 'rating' ? (
+                      ans?.ratingValue != null ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <div
+                                key={n}
+                                className={`w-8 h-8 rounded-lg text-sm font-bold flex items-center justify-center ${
+                                  n === ans.ratingValue
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-neutral-100 text-neutral-300'
+                                }`}
+                              >
+                                {n}
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-xs text-neutral-500">{RATING_LABELS[ans.ratingValue]}</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-neutral-300 italic">미응답</p>
+                      )
+                    ) : q.type === 'multiple_choice' ? (
+                      ans?.textValue ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {ans.textValue.split(',').map(v => (
+                            <span key={v} className="px-2.5 py-1 text-xs font-medium bg-primary-50 text-primary-700 rounded-full">
+                              {v.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : <p className="text-sm text-neutral-300 italic">미응답</p>
+                    ) : (
+                      ans?.textValue
+                        ? <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed bg-neutral-50 rounded-xl px-4 py-3">{ans.textValue}</p>
+                        : <p className="text-sm text-neutral-300 italic">미응답</p>
+                    )}
+                  </div>
+                );
+              })}
+              <p className="text-xs text-neutral-300 text-right">
+                제출 {sub.submittedAt ? formatDate(sub.submittedAt) : '—'}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CycleDetail() {
   const { cycleId } = useParams<{ cycleId: string }>();
   const { cycles, submissions, updateCycle, upsertSubmission, templates } = useReviewStore();
@@ -262,6 +408,7 @@ export function CycleDetail() {
   const navigate = useNavigate();
   const showToast = useShowToast();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showEdit, setShowEdit] = useState(searchParams.get('edit') === '1');
   const [syncing, setSyncing] = useState(false);
@@ -478,6 +625,26 @@ export function CycleDetail() {
         </div>
       )}
 
+      {/* 리뷰 조회 모달 */}
+      {viewingMemberId && (() => {
+        const member = users.find(u => u.id === viewingMemberId);
+        if (!member) return null;
+        const template = templates.find(t => t.id === cycle.templateId);
+        const selfSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === viewingMemberId && s.type === 'self');
+        const managerSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === viewingMemberId && s.type === 'downward');
+        const reviewer = managerSub ? users.find(u => u.id === managerSub.reviewerId) : undefined;
+        return (
+          <SubmissionViewModal
+            member={member}
+            selfSub={selfSub}
+            managerSub={managerSub}
+            reviewer={reviewer}
+            template={template}
+            onClose={() => setViewingMemberId(null)}
+          />
+        );
+      })()}
+
       {/* 편집 모달 */}
       {showEdit && (
         <CycleEditModal
@@ -586,8 +753,12 @@ export function CycleDetail() {
         <div className="space-y-1">
           {filteredMembers.map(member => {
             const { self, manager } = getMemberStatus(member.id);
+            const hasAny = self === 'submitted' || manager === 'submitted' || self === 'in_progress' || manager === 'in_progress';
             return (
-              <div key={member.id} className="group flex items-center gap-3 py-2.5 border-b border-neutral-50 last:border-0 rounded-xl px-1 hover:bg-neutral-50 transition-colors">
+              <div
+                key={member.id}
+                className="group flex items-center gap-3 py-2.5 border-b border-neutral-50 last:border-0 rounded-xl px-1 hover:bg-neutral-50 transition-colors"
+              >
                 <UserAvatar user={member} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-neutral-800">{member.name}</p>
@@ -603,6 +774,14 @@ export function CycleDetail() {
                     <StatusBadge type="submission" value={manager} />
                   </div>
                 </div>
+                {hasAny && (
+                  <button
+                    onClick={() => setViewingMemberId(member.id)}
+                    className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-600 border border-primary-200 bg-primary-50 hover:bg-primary-100 rounded-lg transition-all"
+                  >
+                    <Eye className="w-3 h-3" /> 리뷰 보기
+                  </button>
+                )}
               </div>
             );
           })}

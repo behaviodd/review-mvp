@@ -213,7 +213,7 @@ export function CycleNew() {
             onClick={() => navigate(`/cycles/${publishedId}`)}
             className="w-full px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            사이클 상세 보기 →
+            리뷰 상세보기 →
           </button>
           <div className="flex gap-2">
             <button

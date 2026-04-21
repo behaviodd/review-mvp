@@ -1017,7 +1017,7 @@ function OrgTreeNode({
 function MemberRow({
   user, onEdit, onTerminate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
-  secondaryAssignmentHere, orgHeadId,
+  secondaryAssignmentHere, isOrgHeadHere = false, isAnyOrgHead = false,
 }: {
   user: User;
   onEdit: ((u: User) => void) | null;
@@ -1027,11 +1027,10 @@ function MemberRow({
   onToggle?: (id: string) => void;
   selectionActive?: boolean;
   secondaryAssignmentHere?: SecondaryOrgAssignment;
-  orgHeadId?: string;
+  isOrgHeadHere?: boolean;  // 현재 선택된 조직의 조직장
+  isAnyOrgHead?: boolean;   // 어느 조직이든 조직장 여부
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
-  // 현재 조직의 조직장 여부: headId가 지정되어 있고, 겸임이 아니며, id가 일치
-  const isOrgHeadHere = !!orgHeadId && !secondaryAssignmentHere && orgHeadId === user.id;
   const canSelect = onToggle && user.role !== 'admin';
 
   return (
@@ -1060,15 +1059,11 @@ function MemberRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-zinc-900">{user.name}</span>
-          {(() => {
-            if (user.role === 'admin') return <StatusBadge type="role" value="admin" />;
-            if (isOrgHeadHere) return <StatusBadge type="role" value="leader" />;
-            // 겸임으로 소속된 경우 실제 role 배지 그대로 표시 (다른 조직의 조직장일 수 있음)
-            if (secondaryAssignmentHere) return <StatusBadge type="role" value={user.role} />;
-            // 주소속 구성원 중 조직장이 지정된 조직의 타 leader는 배지 숨김
-            if (user.role === 'leader' && !!orgHeadId) return null;
-            return <StatusBadge type="role" value={user.role} />;
-          })()}
+          {user.role === 'admin'
+            ? <StatusBadge type="role" value="admin" />
+            : (isOrgHeadHere || isAnyOrgHead)
+              ? <StatusBadge type="role" value="leader" />
+              : null}
           {secondaryAssignmentHere ? (
             <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
               겸임{secondaryAssignmentHere.role ? ` · ${secondaryAssignmentHere.role}` : ''}
@@ -1631,7 +1626,8 @@ function AdminView() {
                     onToggle={!showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
                     secondaryAssignmentHere={secondaryMapHere.get(u.id)}
-                    orgHeadId={selectedUnit?.headId} />
+                    isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
+                    isAnyOrgHead={headIdsAll.has(u.id)} />
                 ))}
               </div>
             )}

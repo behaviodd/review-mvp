@@ -153,7 +153,19 @@ export const useTeamStore = create<TeamStore>()(
       if (!existing) return state;
       const updated = { ...existing, ...patch };
       orgUnitWriter.upsert(updated);
-      return { orgUnits: state.orgUnits.map(u => u.id === id ? updated : u) };
+
+      // 새 조직장이 지정되면 해당 구성원 역할을 '조직장'으로 자동 기입
+      let users = state.users;
+      if (patch.headId && patch.headId !== existing.headId) {
+        const headUser = state.users.find(u => u.id === patch.headId);
+        if (headUser) {
+          const updatedUser = { ...headUser, position: '조직장' };
+          sheetWriter.update(updatedUser);
+          users = state.users.map(u => u.id === patch.headId ? updatedUser : u);
+        }
+      }
+
+      return { orgUnits: state.orgUnits.map(u => u.id === id ? updated : u), users };
     }),
 
   deleteOrgUnit: (id) => {

@@ -779,7 +779,7 @@ function OrgTreeNode({
   depth: number;
   dnd: DnDCallbacks;
 }) {
-  const { users } = useTeamStore();
+  const { users, secondaryOrgs } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
   const [hovered, setHovered] = useState(false);
 
@@ -792,8 +792,12 @@ function OrgTreeNode({
     const key: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
-    return users.filter(u => u[key[unit.type]] === unit.name && u.isActive !== false).length;
-  }, [users, unit]);
+    const primaryIds = new Set(
+      users.filter(u => u[key[unit.type]] === unit.name && u.isActive !== false).map(u => u.id)
+    );
+    const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !primaryIds.has(a.userId)).length;
+    return primaryIds.size + secondaryExtra;
+  }, [users, unit, secondaryOrgs]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
   const isSelected = selectedId === unit.id;
@@ -942,6 +946,7 @@ function OrgTreeNode({
 function MemberRow({
   user, onEdit, onTerminate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
+  secondaryAssignmentHere,
 }: {
   user: User;
   onEdit: ((u: User) => void) | null;
@@ -950,6 +955,7 @@ function MemberRow({
   selected?: boolean;
   onToggle?: (id: string) => void;
   selectionActive?: boolean;
+  secondaryAssignmentHere?: SecondaryOrgAssignment;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   const canSelect = onToggle && user.role !== 'admin';
@@ -981,14 +987,18 @@ function MemberRow({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-zinc-900">{user.name}</span>
           <StatusBadge type="role" value={user.role} />
-          {mySecondary.length > 0 && (
+          {secondaryAssignmentHere ? (
+            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
+              겸임{secondaryAssignmentHere.position ? ` · ${secondaryAssignmentHere.position}` : ''}
+            </span>
+          ) : mySecondary.length > 0 && (
             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 text-violet-600 rounded border border-violet-100">
               겸임 {mySecondary.length}
             </span>
           )}
         </div>
         <p className="text-xs text-zinc-400 mt-0.5 truncate">
-          {user.position}
+          {secondaryAssignmentHere ? secondaryAssignmentHere.position || user.position : user.position}
           {user.email && <span className="ml-2 text-zinc-300">·</span>}
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
@@ -1250,8 +1260,15 @@ function AdminView() {
     const key: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
-    return activeUsers.filter(u => u[key[selectedUnit.type]] === selectedUnit.name);
-  }, [selectedUnit, activeUsers, terminatedUsers, showTerminated]);
+    const primaryIds = new Set(
+      activeUsers.filter(u => u[key[selectedUnit.type]] === selectedUnit.name).map(u => u.id)
+    );
+    // 겸임으로 이 조직에 소속된 구성원 추가
+    const secondaryIds = new Set(
+      secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => a.userId)
+    );
+    return activeUsers.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
+  }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, secondaryOrgs]);
 
   const searchResults = useMemo(() =>
     search.trim()
@@ -1261,6 +1278,14 @@ function AdminView() {
   );
 
   const { secondaryOrgs } = useTeamStore();
+
+  // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)
+  const secondaryMapHere = useMemo(() => {
+    if (!selectedUnit) return new Map<string, SecondaryOrgAssignment>();
+    return new Map(
+      secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => [a.userId, a])
+    );
+  }, [secondaryOrgs, selectedUnit]);
 
   const mainOrgs = useMemo(() =>
     orgUnits.filter(u => u.type === 'mainOrg').sort((a, b) => a.order - b.order),
@@ -1516,7 +1541,8 @@ function AdminView() {
                     onTerminate={!showTerminated ? handleTerminate : undefined}
                     selected={selectedIds.has(u.id)}
                     onToggle={!showTerminated ? toggleMember : undefined}
-                    selectionActive={selectedIds.size > 0} />
+                    selectionActive={selectedIds.size > 0}
+                    secondaryAssignmentHere={secondaryMapHere.get(u.id)} />
                 ))}
               </div>
             )}

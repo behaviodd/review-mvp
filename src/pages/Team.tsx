@@ -227,37 +227,42 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
 }
 
 /* ── Add Member Modal ───────────────────────────────────────────────── */
+
+// 클릭한 조직 노드로부터 계층 전체를 역추적해 orgSel 초기값 구성
+function buildInitOrgSel(orgId: string | undefined, orgUnits: OrgUnit[]) {
+  const result = { mainOrgId: '', subOrgId: '', teamId: '', squadId: '' };
+  if (!orgId) return result;
+  let unit = orgUnits.find(u => u.id === orgId);
+  while (unit) {
+    if (unit.type === 'mainOrg') result.mainOrgId = unit.id;
+    else if (unit.type === 'subOrg') result.subOrgId = unit.id;
+    else if (unit.type === 'team') result.teamId = unit.id;
+    else if (unit.type === 'squad') result.squadId = unit.id;
+    unit = unit.parentId ? orgUnits.find(u => u.id === unit!.parentId) : undefined;
+  }
+  return result;
+}
+
 function AddMemberModal({
   onClose,
   initialOrgId,
+  initialManagerId,
 }: {
   onClose: () => void;
   initialOrgId?: string;
+  initialManagerId?: string;
 }) {
   const { users, orgUnits, createMember } = useTeamStore();
   const allLeaders = users.filter(u => u.role !== 'member');
   const adminUser  = users.find(u => u.role === 'admin');
 
-  // Pre-select org from context
-  const initMain = initialOrgId
-    ? orgUnits.find(u => u.id === initialOrgId && u.type === 'mainOrg')?.id ?? ''
-    : '';
-  const initSub = initialOrgId
-    ? orgUnits.find(u => u.id === initialOrgId && u.type === 'subOrg')?.id ?? ''
-    : '';
-  const initTeam = initialOrgId
-    ? orgUnits.find(u => u.id === initialOrgId && u.type === 'team')?.id ?? ''
-    : '';
-
   const [form, setForm] = useState({
     name: '', nameEn: '', email: '', phone: '', joinDate: '',
     position: '', jobFunction: '',
     role: 'member' as 'leader' | 'member',
-    managerId: '',
+    managerId: initialManagerId ?? '',
   });
-  const [orgSel, setOrgSel] = useState({
-    mainOrgId: initMain, subOrgId: initSub, teamId: initTeam, squadId: '',
-  });
+  const [orgSel, setOrgSel] = useState(() => buildInitOrgSel(initialOrgId, orgUnits));
 
   const f = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -718,10 +723,15 @@ function OrgTreeNode({
     const dragged = allUnits.find(u => u.id === dnd.state.draggingId);
     if (!dragged) return;
 
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientY - rect.top) / rect.height;
+
     let pos: 'above' | 'below' | 'into';
     if (dragged.type === unit.type) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      pos = e.clientY - rect.top < rect.height / 2 ? 'above' : 'below';
+      // 같은 레벨: 위 25% → above, 아래 25% → below, 중간 → into(하위 이동)
+      const canHaveChild = ALLOWED_CHILD[unit.type] !== undefined;
+      if (canHaveChild && ratio >= 0.25 && ratio <= 0.75) pos = 'into';
+      else pos = ratio < 0.5 ? 'above' : 'below';
     } else if (ALLOWED_CHILD[unit.type] === dragged.type) {
       pos = 'into';
     } else {
@@ -902,7 +912,7 @@ function AdminView() {
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
   const [search, setSearch]                      = useState('');
   const [showTerminated, setShowTerminated]       = useState(false);
-  const [addMemberModal, setAddMemberModal]       = useState<{ unitId?: string } | null>(null);
+  const [addMemberModal, setAddMemberModal]       = useState<{ unitId?: string; managerId?: string } | null>(null);
   const [editingMember,  setEditingMember]        = useState<User | null>(null);
   const [orgModal, setOrgModal] = useState<
     | { mode: 'add'; type: OrgUnitType; parentId?: string }
@@ -931,9 +941,35 @@ function AdminView() {
 
     if (pos === 'into') {
       if (getDescendantIds(draggingId).includes(targetId)) return;
-      const children = orgUnits.filter(u => u.parentId === targetId);
-      const maxOrder = children.reduce((m, u) => Math.max(m, u.order), 0);
-      updateOrgUnit(draggingId, { parentId: targetId, order: maxOrder + 1 });
+
+      if (dragged.type === target.type) {
+        // 같은 레벨 → 하위 이동: 타입을 한 단계 내리고 하위 조직도 재귀적으로 조정
+        const newType = ALLOWED_CHILD[target.type];
+        if (!newType) return; // squad는 하위 불가
+
+        type Change = { id: string; parentId: string | undefined; type: OrgUnitType; order: number };
+        const computeChanges = (
+          unitId: string, newParentId: string | undefined, type: OrgUnitType, snapshot: OrgUnit[]
+        ): Change[] => {
+          const siblings = snapshot.filter(u => u.parentId === newParentId && u.id !== unitId);
+          const maxOrder = siblings.reduce((m, u) => Math.max(m, u.order), 0);
+          const changes: Change[] = [{ id: unitId, parentId: newParentId, type, order: maxOrder + 1 }];
+          const childType = ALLOWED_CHILD[type];
+          if (!childType) return changes;
+          snapshot.filter(u => u.parentId === unitId).forEach(child => {
+            changes.push(...computeChanges(child.id, unitId, childType, snapshot));
+          });
+          return changes;
+        };
+
+        computeChanges(draggingId, targetId, newType, orgUnits)
+          .forEach(({ id, parentId, type, order }) => updateOrgUnit(id, { parentId, type, order }));
+      } else {
+        // 호환 부모 타입 → 단순 reparent
+        const children = orgUnits.filter(u => u.parentId === targetId);
+        const maxOrder = children.reduce((m, u) => Math.max(m, u.order), 0);
+        updateOrgUnit(draggingId, { parentId: targetId, order: maxOrder + 1 });
+      }
     } else {
       // 같은 타입 siblings 재정렬
       if (dragged.type !== target.type) return;
@@ -1033,7 +1069,10 @@ function AdminView() {
               <X className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
             </button>
           )}
-          <button onClick={() => setAddMemberModal({})}
+          <button onClick={() => {
+              const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+              setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
+            }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
             <UserPlus className="size-4" /> 구성원 추가
           </button>
@@ -1145,7 +1184,10 @@ function AdminView() {
                       onEditUnit={unit => setOrgModal({ mode: 'edit', unit })}
                       onDeleteUnit={handleDeleteUnit}
                       onAddChild={(type, parentId) => setOrgModal({ mode: 'add', type, parentId })}
-                      onAddMember={unitId => setAddMemberModal({ unitId })}
+                      onAddMember={unitId => {
+                        const unit = orgUnits.find(u => u.id === unitId);
+                        setAddMemberModal({ unitId, managerId: unit?.headId });
+                      }}
                       depth={0}
                       dnd={dnd}
                     />
@@ -1175,7 +1217,10 @@ function AdminView() {
               </div>
               {!showTerminated && (
                 <button
-                  onClick={() => setAddMemberModal({ unitId: selectedOrgId ?? undefined })}
+                  onClick={() => {
+                    const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+                    setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
                   <UserPlus className="size-3.5" /> 구성원 추가
                 </button>
@@ -1227,6 +1272,7 @@ function AdminView() {
         <AddMemberModal
           onClose={() => setAddMemberModal(null)}
           initialOrgId={addMemberModal.unitId}
+          initialManagerId={addMemberModal.managerId}
         />
       )}
       {editingMember && (

@@ -20,11 +20,11 @@ export function TemplateList() {
   if (templates.length === 0) {
     return (
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900 mb-6">평가 템플릿</h1>
+        <h1 className="text-xl font-semibold text-neutral-900 mb-6">리뷰 템플릿</h1>
         <EmptyState
           icon={FileText}
           title="아직 생성된 템플릿이 없습니다."
-          description="평가 템플릿을 만들어 리뷰에 활용해보세요."
+          description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
           actionLabel="새 템플릿 만들기"
           onAction={() => navigate('/templates/new')}
         />
@@ -35,7 +35,7 @@ export function TemplateList() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">평가 템플릿</h1>
+        <h1 className="text-xl font-semibold text-neutral-900">리뷰 템플릿</h1>
         <button
           onClick={() => navigate('/templates/new')}
           className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"

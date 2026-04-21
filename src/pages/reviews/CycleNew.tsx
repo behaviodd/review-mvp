@@ -14,7 +14,7 @@ import { LoadingButton } from '../../components/ui/LoadingButton';
 
 const STEPS = [
   { label: '기본 정보',    icon: FileText },
-  { label: '평가 템플릿',  icon: FileText },
+  { label: '리뷰 템플릿',  icon: FileText },
   { label: '대상 구성원',  icon: Users    },
   { label: '일정 설정',    icon: Calendar },
   { label: '검토 및 발행', icon: Eye      },
@@ -323,7 +323,7 @@ export function CycleNew() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-neutral-900">평가 템플릿 선택</h2>
+              <h2 className="text-lg font-semibold text-neutral-900">리뷰 템플릿 선택</h2>
               <button
                 type="button"
                 onClick={handleGoCreateTemplate}

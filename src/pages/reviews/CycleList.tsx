@@ -153,7 +153,7 @@ export function CycleList() {
               tab === t ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
             }`}
           >
-            {t === 'cycles' ? '리뷰 목록' : '평가 템플릿'}
+            {t === 'cycles' ? '리뷰 목록' : '리뷰 템플릿'}
           </button>
         ))}
       </div>
@@ -191,13 +191,13 @@ export function CycleList() {
         )
       )}
 
-      {/* 평가 템플릿 탭 */}
+      {/* 리뷰 템플릿 탭 */}
       {tab === 'templates' && (
         templates.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="아직 생성된 템플릿이 없습니다."
-            description="평가 템플릿을 만들어 리뷰에 활용해보세요."
+            description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
             actionLabel="새 템플릿 만들기"
             onAction={() => navigate('/templates/new')}
           />

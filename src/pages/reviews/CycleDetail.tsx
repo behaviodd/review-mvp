@@ -144,9 +144,9 @@ function CycleEditModal({
             </div>
           </div>
 
-          {/* 평가 템플릿 */}
+          {/* 리뷰 템플릿 */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">평가 템플릿</label>
+            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">리뷰 템플릿</label>
             <div className="space-y-2">
               {templates.map(t => (
                 <button

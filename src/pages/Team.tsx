@@ -11,7 +11,7 @@ import { Heading } from '../components/catalyst/heading';
 import {
   Building2, Users, UserCheck, Plus, X, Pencil, Search,
   ChevronRight, ChevronDown, Trash2, KeyRound, RefreshCw,
-  UserPlus, Layers,
+  UserPlus, Layers, GripVertical,
 } from 'lucide-react';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 
@@ -647,7 +647,7 @@ function OrgUnitFormModal({
   );
 }
 
-/* ── Org Tree Node ──────────────────────────────────────────────────── */
+/* ── Org Tree ─────────────────────────────────────────────────────── */
 const ORG_TYPE_COLOR: Record<OrgUnitType, string> = {
   mainOrg: 'bg-indigo-500',
   subOrg:  'bg-emerald-400',
@@ -655,16 +655,28 @@ const ORG_TYPE_COLOR: Record<OrgUnitType, string> = {
   squad:   'bg-zinc-300',
 };
 
+// 드래그 타겟으로 허용되는 부모 타입
+const ALLOWED_CHILD: Partial<Record<OrgUnitType, OrgUnitType>> = {
+  mainOrg: 'subOrg', subOrg: 'team', team: 'squad',
+};
+
+interface DnDState {
+  draggingId: string | null;
+  dropTarget: { id: string; pos: 'above' | 'below' | 'into' } | null;
+}
+
+interface DnDCallbacks {
+  state: DnDState;
+  onDragStart: (id: string) => void;
+  onDragEnd:   () => void;
+  onDragOver:  (id: string, pos: 'above' | 'below' | 'into') => void;
+  onDrop:      (targetId: string) => void;
+}
+
 function OrgTreeNode({
-  unit,
-  allUnits,
-  selectedId,
-  onSelect,
-  onEditUnit,
-  onDeleteUnit,
-  onAddChild,
-  onAddMember,
-  depth,
+  unit, allUnits, selectedId, onSelect,
+  onEditUnit, onDeleteUnit, onAddChild, onAddMember,
+  depth, dnd,
 }: {
   unit: OrgUnit;
   allUnits: OrgUnit[];
@@ -675,6 +687,7 @@ function OrgTreeNode({
   onAddChild: (type: OrgUnitType, parentId: string) => void;
   onAddMember: (unitId: string) => void;
   depth: number;
+  dnd: DnDCallbacks;
 }) {
   const { users } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
@@ -694,18 +707,65 @@ function OrgTreeNode({
 
   const nextType = ORG_TYPE_NEXT[unit.type];
   const isSelected = selectedId === unit.id;
+  const isDragging = dnd.state.draggingId === unit.id;
+  const dropPos = dnd.state.dropTarget?.id === unit.id ? dnd.state.dropTarget.pos : null;
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dnd.state.draggingId || dnd.state.draggingId === unit.id) return;
+
+    const dragged = allUnits.find(u => u.id === dnd.state.draggingId);
+    if (!dragged) return;
+
+    let pos: 'above' | 'below' | 'into';
+    if (dragged.type === unit.type) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      pos = e.clientY - rect.top < rect.height / 2 ? 'above' : 'below';
+    } else if (ALLOWED_CHILD[unit.type] === dragged.type) {
+      pos = 'into';
+    } else {
+      return;
+    }
+    dnd.onDragOver(unit.id, pos);
+  };
 
   return (
-    <div>
+    <div className={isDragging ? 'opacity-40' : ''}>
+      {dropPos === 'above' && (
+        <div className="h-0.5 bg-primary-500 rounded-full mx-2 my-px pointer-events-none" />
+      )}
+
       <div
-        className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
-          isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-zinc-50 text-zinc-700'
+        draggable
+        onDragStart={e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); }}
+        onDragOver={handleDragOver}
+        onDragLeave={e => {
+          const rel = e.relatedTarget as Node | null;
+          if (!e.currentTarget.contains(rel)) { /* no-op — parent handles clear */ }
+        }}
+        onDrop={e => { e.preventDefault(); e.stopPropagation(); dnd.onDrop(unit.id); }}
+        onDragEnd={() => dnd.onDragEnd()}
+        className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors ${
+          dropPos === 'into'
+            ? 'ring-2 ring-primary-400 bg-primary-50'
+            : isSelected
+              ? 'bg-primary-50 text-primary-700'
+              : 'hover:bg-zinc-50 text-zinc-700'
         }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={() => onSelect(unit.id)}
       >
+        {/* Drag handle */}
+        <span
+          className={`flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
+          title="드래그로 순서·위치 변경"
+        >
+          <GripVertical className="size-3.5 text-zinc-300" />
+        </span>
+
         {/* expand toggle */}
         <button
           onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
@@ -729,7 +789,7 @@ function OrgTreeNode({
           </span>
         )}
 
-        {/* action buttons — show on hover */}
+        {/* action buttons */}
         {hovered && (
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
@@ -755,6 +815,10 @@ function OrgTreeNode({
         )}
       </div>
 
+      {dropPos === 'below' && (
+        <div className="h-0.5 bg-primary-500 rounded-full mx-2 my-px pointer-events-none" />
+      )}
+
       {/* Children */}
       {expanded && hasChildren && (
         <div>
@@ -770,6 +834,7 @@ function OrgTreeNode({
               onAddChild={onAddChild}
               onAddMember={onAddMember}
               depth={depth + 1}
+              dnd={dnd}
             />
           ))}
         </div>
@@ -831,7 +896,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView() {
-  const { users, orgUnits, teams, deleteOrgUnit, isLoading, terminateMember } = useTeamStore();
+  const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
@@ -844,6 +909,53 @@ function AdminView() {
     | { mode: 'edit'; unit: OrgUnit }
     | null
   >(null);
+
+  /* ── Drag-and-Drop ──────────────────────────────────────────────── */
+  const [dndState, setDndState] = useState<DnDState>({ draggingId: null, dropTarget: null });
+
+  const getDescendantIds = (id: string): string[] => {
+    const children = orgUnits.filter(u => u.parentId === id).map(u => u.id);
+    return [id, ...children.flatMap(getDescendantIds)];
+  };
+
+  const handleDrop = (targetId: string) => {
+    const { draggingId, dropTarget } = dndState;
+    setDndState({ draggingId: null, dropTarget: null });
+
+    if (!draggingId || draggingId === targetId || !dropTarget) return;
+    const dragged = orgUnits.find(u => u.id === draggingId);
+    const target  = orgUnits.find(u => u.id === targetId);
+    if (!dragged || !target) return;
+
+    const pos = dropTarget.pos;
+
+    if (pos === 'into') {
+      if (getDescendantIds(draggingId).includes(targetId)) return;
+      const children = orgUnits.filter(u => u.parentId === targetId);
+      const maxOrder = children.reduce((m, u) => Math.max(m, u.order), 0);
+      updateOrgUnit(draggingId, { parentId: targetId, order: maxOrder + 1 });
+    } else {
+      // 같은 타입 siblings 재정렬
+      if (dragged.type !== target.type) return;
+      const newParentId = target.parentId;
+      const siblings = orgUnits
+        .filter(u => u.type === target.type && u.parentId === newParentId && u.id !== draggingId)
+        .sort((a, b) => a.order - b.order);
+      const targetIdx = siblings.findIndex(u => u.id === targetId);
+      const insertIdx = pos === 'above' ? targetIdx : targetIdx + 1;
+      const ordered = [...siblings];
+      ordered.splice(insertIdx, 0, dragged);
+      ordered.forEach((u, i) => updateOrgUnit(u.id, { order: i + 1, parentId: newParentId }));
+    }
+  };
+
+  const dnd: DnDCallbacks = {
+    state: dndState,
+    onDragStart: (id) => setDndState({ draggingId: id, dropTarget: null }),
+    onDragEnd:   ()   => setDndState({ draggingId: null, dropTarget: null }),
+    onDragOver:  (id, pos) => setDndState(s => ({ ...s, dropTarget: { id, pos } })),
+    onDrop: handleDrop,
+  };
 
   const activeUsers     = useMemo(() => users.filter(u => u.isActive !== false), [users]);
   const terminatedUsers = useMemo(() => users.filter(u => u.isActive === false), [users]);
@@ -1035,6 +1147,7 @@ function AdminView() {
                       onAddChild={(type, parentId) => setOrgModal({ mode: 'add', type, parentId })}
                       onAddMember={unitId => setAddMemberModal({ unitId })}
                       depth={0}
+                      dnd={dnd}
                     />
                   ))}
                 </div>

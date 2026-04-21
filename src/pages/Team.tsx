@@ -906,7 +906,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView() {
-  const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, isLoading, terminateMember } = useTeamStore();
+  const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
@@ -928,11 +928,85 @@ function AdminView() {
     return [id, ...children.flatMap(getDescendantIds)];
   };
 
+  // 조직 이동 시 소속 구성원 org 필드도 함께 업데이트
+  type OrgChange = { id: string; parentId: string | undefined; type: OrgUnitType; order: number };
+
+  const TYPE_FIELD_MAP: Record<OrgUnitType, keyof User> = {
+    mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
+  };
+  const TYPE_DEPTH_MAP: Record<OrgUnitType, number> = {
+    mainOrg: 0, subOrg: 1, team: 2, squad: 3,
+  };
+
+  const getOrgPath = (unitId: string, snap: OrgUnit[]) => {
+    const path: OrgUnit[] = [];
+    let cur = snap.find(u => u.id === unitId);
+    while (cur) {
+      path.unshift(cur);
+      cur = cur.parentId ? snap.find(u => u.id === cur!.parentId) : undefined;
+    }
+    return {
+      department: path.find(u => u.type === 'mainOrg')?.name,
+      subOrg:     path.find(u => u.type === 'subOrg')?.name,
+      team:       path.find(u => u.type === 'team')?.name,
+      squad:      path.find(u => u.type === 'squad')?.name,
+    };
+  };
+
+  // 조직 변경 목록을 받아 ① 소속 구성원 org 필드 업데이트 ② 조직 단위 업데이트
+  const applyWithMemberSync = (orgChanges: OrgChange[]) => {
+    // 변경 후 org 단위 스냅샷 (가상)
+    const newSnap = orgUnits.map(u => {
+      const c = orgChanges.find(ch => ch.id === u.id);
+      return c ? { ...u, ...c } : u;
+    });
+
+    // 각 구성원이 변경된 조직 중 가장 하위 조직에 속하는지 확인 후 경로 재계산
+    for (const user of users.filter(u => u.isActive !== false && u.role !== 'admin')) {
+      let bestId: string | null = null;
+      let bestDepth = -1;
+      for (const c of orgChanges) {
+        const oldUnit = orgUnits.find(u => u.id === c.id);
+        if (!oldUnit) continue;
+        const field = TYPE_FIELD_MAP[oldUnit.type];
+        const depth = TYPE_DEPTH_MAP[oldUnit.type];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((user as any)[field] === oldUnit.name && depth > bestDepth) {
+          bestDepth = depth;
+          bestId = c.id;
+        }
+      }
+      if (!bestId) continue;
+
+      const p = getOrgPath(bestId, newSnap);
+      updateMember(user.id, {
+        department: p.department ?? user.department,
+        subOrg:     p.subOrg,
+        team:       p.team,
+        squad:      p.squad,
+      });
+    }
+
+    // 조직 단위 업데이트
+    orgChanges.forEach(({ id, parentId, type, order }) =>
+      updateOrgUnit(id, { parentId, type, order })
+    );
+  };
+
+  // 드래그된 유닛의 모든 하위 유닛을 OrgChange 형태로 수집 (parent/type 변경 없음 — 경로 재계산용)
+  const descendantChanges = (unitId: string): OrgChange[] =>
+    getDescendantIds(unitId)
+      .filter(id => id !== unitId)
+      .map(id => {
+        const u = orgUnits.find(u => u.id === id)!;
+        return { id: u.id, parentId: u.parentId, type: u.type, order: u.order };
+      });
+
   const handleDrop = (targetId: string) => {
     const { draggingId, dropTarget } = dndState;
     setDndState({ draggingId: null, dropTarget: null });
-
     if (!draggingId || draggingId === targetId || !dropTarget) return;
+
     const dragged = orgUnits.find(u => u.id === draggingId);
     const target  = orgUnits.find(u => u.id === targetId);
     if (!dragged || !target) return;
@@ -943,45 +1017,59 @@ function AdminView() {
       if (getDescendantIds(draggingId).includes(targetId)) return;
 
       if (dragged.type === target.type) {
-        // 같은 레벨 → 하위 이동: 타입을 한 단계 내리고 하위 조직도 재귀적으로 조정
+        // 같은 레벨 → 하위 이동 + 타입 재귀 조정 + 구성원 이동
         const newType = ALLOWED_CHILD[target.type];
-        if (!newType) return; // squad는 하위 불가
+        if (!newType) return;
 
-        type Change = { id: string; parentId: string | undefined; type: OrgUnitType; order: number };
-        const computeChanges = (
-          unitId: string, newParentId: string | undefined, type: OrgUnitType, snapshot: OrgUnit[]
-        ): Change[] => {
-          const siblings = snapshot.filter(u => u.parentId === newParentId && u.id !== unitId);
+        const computeOrgChanges = (
+          unitId: string, newParentId: string | undefined, type: OrgUnitType, snap: OrgUnit[]
+        ): OrgChange[] => {
+          const siblings = snap.filter(u => u.parentId === newParentId && u.id !== unitId);
           const maxOrder = siblings.reduce((m, u) => Math.max(m, u.order), 0);
-          const changes: Change[] = [{ id: unitId, parentId: newParentId, type, order: maxOrder + 1 }];
-          const childType = ALLOWED_CHILD[type];
-          if (!childType) return changes;
-          snapshot.filter(u => u.parentId === unitId).forEach(child => {
-            changes.push(...computeChanges(child.id, unitId, childType, snapshot));
-          });
-          return changes;
+          const result: OrgChange[] = [{ id: unitId, parentId: newParentId, type, order: maxOrder + 1 }];
+          const ct = ALLOWED_CHILD[type];
+          if (!ct) return result;
+          snap.filter(u => u.parentId === unitId).forEach(child =>
+            result.push(...computeOrgChanges(child.id, unitId, ct, snap))
+          );
+          return result;
         };
+        applyWithMemberSync(computeOrgChanges(draggingId, targetId, newType, orgUnits));
 
-        computeChanges(draggingId, targetId, newType, orgUnits)
-          .forEach(({ id, parentId, type, order }) => updateOrgUnit(id, { parentId, type, order }));
       } else {
-        // 호환 부모 타입 → 단순 reparent
-        const children = orgUnits.filter(u => u.parentId === targetId);
-        const maxOrder = children.reduce((m, u) => Math.max(m, u.order), 0);
-        updateOrgUnit(draggingId, { parentId: targetId, order: maxOrder + 1 });
+        // 호환 부모 타입 → reparent (type 유지, parent 변경) + 구성원 이동
+        const maxOrder = orgUnits.filter(u => u.parentId === targetId)
+          .reduce((m, u) => Math.max(m, u.order), 0);
+        applyWithMemberSync([
+          { id: draggingId, parentId: targetId, type: dragged.type, order: maxOrder + 1 },
+          ...descendantChanges(draggingId),
+        ]);
       }
+
     } else {
-      // 같은 타입 siblings 재정렬
+      // 형제 재정렬 (above / below)
       if (dragged.type !== target.type) return;
       const newParentId = target.parentId;
       const siblings = orgUnits
         .filter(u => u.type === target.type && u.parentId === newParentId && u.id !== draggingId)
         .sort((a, b) => a.order - b.order);
-      const targetIdx = siblings.findIndex(u => u.id === targetId);
-      const insertIdx = pos === 'above' ? targetIdx : targetIdx + 1;
       const ordered = [...siblings];
-      ordered.splice(insertIdx, 0, dragged);
-      ordered.forEach((u, i) => updateOrgUnit(u.id, { order: i + 1, parentId: newParentId }));
+      ordered.splice(pos === 'above'
+        ? siblings.findIndex(u => u.id === targetId)
+        : siblings.findIndex(u => u.id === targetId) + 1,
+        0, dragged);
+
+      if (dragged.parentId !== newParentId) {
+        // 크로스-parent 이동: 구성원 org 필드도 갱신
+        const reorderChanges: OrgChange[] = ordered.map((u, i) => ({
+          id: u.id, parentId: newParentId, type: u.type, order: i + 1,
+        }));
+        const desc = descendantChanges(draggingId).filter(d => !reorderChanges.some(r => r.id === d.id));
+        applyWithMemberSync([...reorderChanges, ...desc]);
+      } else {
+        // 순수 순서 변경: 구성원 업데이트 불필요
+        ordered.forEach((u, i) => updateOrgUnit(u.id, { order: i + 1, parentId: newParentId }));
+      }
     }
   };
 

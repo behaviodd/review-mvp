@@ -1252,6 +1252,7 @@ function AdminView() {
   const totalLeaders  = activeUsers.filter(u => u.role === 'leader').length;
 
   /* 선택된 조직의 구성원 */
+  const { secondaryOrgs } = useTeamStore();
   const selectedUnit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
   const panelUsers = useMemo(() => {
     if (showTerminated) return terminatedUsers;
@@ -1276,8 +1277,6 @@ function AdminView() {
       : [],
     [activeUsers, search]
   );
-
-  const { secondaryOrgs } = useTeamStore();
 
   // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)
   const secondaryMapHere = useMemo(() => {

@@ -140,11 +140,14 @@ export const useReviewStore = create<ReviewState>()(
 
       /* ── 시트 동기화 ──────────────────────────────────────────── */
       syncFromSheet: ({ cycles, templates, submissions }) =>
-        set(s => ({
-          cycles:      cycles      ?? s.cycles,
-          templates:   templates   ?? s.templates,
-          submissions: submissions ?? s.submissions,
-        })),
+        set(s => {
+          const syncEnabled = isReviewSyncEnabled();
+          return {
+            cycles:      cycles      !== undefined ? cycles      : (syncEnabled ? [] : s.cycles),
+            templates:   templates   !== undefined ? templates   : s.templates,
+            submissions: submissions !== undefined ? submissions : (syncEnabled ? [] : s.submissions),
+          };
+        }),
 
       setLoading: (isLoading) => set({ isLoading }),
     }),

@@ -459,6 +459,19 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
   const showToast = useShowToast();
   const headIds    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const allLeaders = users.filter(u => (u.role === 'admin' || headIds.has(u.id)) && u.id !== member.id);
+
+  const liveUser       = users.find(u => u.id === member.id) ?? member;
+  const isCurrentAdmin = currentUser?.role === 'admin';
+  const isSelf         = currentUser?.id === member.id;
+  const memberIsAdmin  = liveUser.role === 'admin';
+  const memberIsLeader = !memberIsAdmin && headIds.has(member.id);
+  const memberTier     = memberIsAdmin ? 'admin' : memberIsLeader ? 'leader' : 'member';
+  const TIER_LABEL: Record<string, string> = { admin: '관리자', leader: '조직장', member: '멤버' };
+  const TIER_COLOR: Record<string, string> = {
+    admin:  'bg-indigo-100 text-indigo-700 border-indigo-200',
+    leader: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    member: 'bg-zinc-100 text-zinc-500 border-zinc-200',
+  };
   const [showTerminate, setShowTerminate] = useState(false);
   const [leaveDate, setLeaveDate] = useState(new Date().toISOString().slice(0, 10));
   const [resetting, setResetting] = useState(false);
@@ -550,6 +563,29 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
   return (
     <Modal title={`${member.name} 정보 수정`} onClose={onClose} wide>
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+        {/* 권한 티어 */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">권한</span>
+            <span className={`px-2 py-0.5 text-xs font-semibold rounded border ${TIER_COLOR[memberTier]}`}>
+              {TIER_LABEL[memberTier]}
+            </span>
+          </div>
+          {isCurrentAdmin && !isSelf && (
+            <button
+              type="button"
+              onClick={() => updateMember(member.id, { role: memberIsAdmin ? 'member' : 'admin' })}
+              className={`text-xs font-medium px-2.5 py-1 rounded-md border transition-colors ${
+                memberIsAdmin
+                  ? 'text-rose-600 border-rose-200 hover:bg-rose-50'
+                  : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'
+              }`}
+            >
+              {memberIsAdmin ? '관리자 해제' : '관리자 지정'}
+            </button>
+          )}
+        </div>
+
         {/* 기본 정보 */}
         <div>
           <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">기본 정보</p>
@@ -862,7 +898,7 @@ interface DnDCallbacks {
 function OrgTreeNode({
   unit, allUnits, selectedId, onSelect,
   onEditUnit, onDeleteUnit, onAddChild, onAddMember,
-  depth, dnd,
+  depth, dnd, canEdit = false,
 }: {
   unit: OrgUnit;
   allUnits: OrgUnit[];
@@ -874,6 +910,7 @@ function OrgTreeNode({
   onAddMember: (unitId: string) => void;
   depth: number;
   dnd: DnDCallbacks;
+  canEdit?: boolean;
 }) {
   const { users, secondaryOrgs } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
@@ -932,15 +969,15 @@ function OrgTreeNode({
       )}
 
       <div
-        draggable
-        onDragStart={e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); }}
-        onDragOver={handleDragOver}
-        onDragLeave={e => {
+        draggable={canEdit}
+        onDragStart={canEdit ? e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); } : undefined}
+        onDragOver={canEdit ? handleDragOver : undefined}
+        onDragLeave={canEdit ? e => {
           const rel = e.relatedTarget as Node | null;
           if (!e.currentTarget.contains(rel)) { /* no-op — parent handles clear */ }
-        }}
-        onDrop={e => { e.preventDefault(); e.stopPropagation(); dnd.onDrop(unit.id); }}
-        onDragEnd={() => dnd.onDragEnd()}
+        } : undefined}
+        onDrop={canEdit ? e => { e.preventDefault(); e.stopPropagation(); dnd.onDrop(unit.id); } : undefined}
+        onDragEnd={canEdit ? () => dnd.onDragEnd() : undefined}
         className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors ${
           dropPos === 'into'
             ? 'ring-2 ring-primary-400 bg-primary-50'
@@ -954,12 +991,14 @@ function OrgTreeNode({
         onClick={() => onSelect(unit.id)}
       >
         {/* Drag handle */}
-        <span
-          className={`flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
-          title="드래그로 순서·위치 변경"
-        >
-          <GripVertical className="size-3.5 text-zinc-300" />
-        </span>
+        {canEdit && (
+          <span
+            className={`flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
+            title="드래그로 순서·위치 변경"
+          >
+            <GripVertical className="size-3.5 text-zinc-300" />
+          </span>
+        )}
 
         {/* expand toggle */}
         <button
@@ -985,7 +1024,7 @@ function OrgTreeNode({
         )}
 
         {/* action buttons */}
-        {hovered && (
+        {canEdit && hovered && (
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
               className="p-1 rounded text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
@@ -1030,6 +1069,7 @@ function OrgTreeNode({
               onAddMember={onAddMember}
               depth={depth + 1}
               dnd={dnd}
+              canEdit={canEdit}
             />
           ))}
         </div>
@@ -1127,7 +1167,7 @@ function MemberRow({
 }
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
-function AdminView() {
+function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
   const showToast = useShowToast();
@@ -1444,13 +1484,15 @@ function AdminView() {
               <X className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
             </button>
           )}
-          <button onClick={() => {
-              const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
-              setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
-            }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
-            <UserPlus className="size-4" /> 구성원 추가
-          </button>
+          {canEdit && (
+            <button onClick={() => {
+                const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+                setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
+              <UserPlus className="size-4" /> 구성원 추가
+            </button>
+          )}
         </div>
       </div>
 
@@ -1503,7 +1545,8 @@ function AdminView() {
             <div className="divide-y divide-zinc-950/3">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
-                  onEdit={setEditingMember} onTerminate={handleTerminate}
+                  onEdit={canEdit ? setEditingMember : null}
+                  onTerminate={canEdit ? handleTerminate : undefined}
                   isAnyOrgHead={headIdsAll.has(u.id)} />
               ))}
             </div>
@@ -1521,11 +1564,13 @@ function AdminView() {
                 <Layers className="size-3.5 text-zinc-400" />
                 <span className="text-xs font-semibold text-zinc-600">조직 구조</span>
               </div>
-              <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
-                title="주조직 추가"
-                className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
-                <Plus className="size-3.5" />
-              </button>
+              {canEdit && (
+                <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
+                  title="주조직 추가"
+                  className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                  <Plus className="size-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -1544,10 +1589,12 @@ function AdminView() {
               {orgUnits.length === 0 ? (
                 <div className="px-3 py-6 text-center">
                   <p className="text-xs text-zinc-400 mb-2">조직 구조가 없습니다.</p>
-                  <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium">
-                    + 주조직 추가
-                  </button>
+                  {canEdit && (
+                    <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
+                      className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                      + 주조직 추가
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="mt-1">
@@ -1567,6 +1614,7 @@ function AdminView() {
                       }}
                       depth={0}
                       dnd={dnd}
+                      canEdit={canEdit}
                     />
                   ))}
                 </div>
@@ -1593,7 +1641,7 @@ function AdminView() {
                 <p className="text-xs text-zinc-400 mt-0.5">{panelUsers.length}명</p>
               </div>
               <div className="flex items-center gap-2">
-                {!showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
+                {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
                   <input
                     type="checkbox"
                     title="전체 선택"
@@ -1602,7 +1650,7 @@ function AdminView() {
                     className="size-4 rounded accent-indigo-600 cursor-pointer"
                   />
                 )}
-                {!showTerminated && (
+                {canEdit && !showTerminated && (
                   <button
                     onClick={() => {
                       const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
@@ -1634,7 +1682,7 @@ function AdminView() {
                 <p className="text-sm text-zinc-400">
                   {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
                 </p>
-                {!showTerminated && (
+                {canEdit && !showTerminated && (
                   <button
                     onClick={() => setAddMemberModal({ unitId: selectedOrgId ?? undefined })}
                     className="text-xs font-medium text-primary-600 hover:text-primary-700">
@@ -1646,10 +1694,10 @@ function AdminView() {
               <div className="flex-1 overflow-y-auto">
                 {panelUsers.map(u => (
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
-                    onEdit={setEditingMember}
-                    onTerminate={!showTerminated ? handleTerminate : undefined}
+                    onEdit={canEdit ? setEditingMember : null}
+                    onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
                     selected={selectedIds.has(u.id)}
-                    onToggle={!showTerminated ? toggleMember : undefined}
+                    onToggle={canEdit && !showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
                     secondaryAssignmentHere={secondaryMapHere.get(u.id)}
                     isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
@@ -1657,7 +1705,7 @@ function AdminView() {
                 ))}
               </div>
             )}
-            {selectedIds.size > 0 && !showTerminated && (
+            {canEdit && selectedIds.size > 0 && !showTerminated && (
               <div className="border-t border-zinc-950/5 px-4 py-3 bg-indigo-50 flex items-center justify-between flex-shrink-0">
                 <span className="text-sm font-medium text-indigo-700">{selectedIds.size}명 선택됨</span>
                 <div className="flex items-center gap-2">
@@ -1798,9 +1846,6 @@ function MemberView() {
 
 /* ── Entry Point ────────────────────────────────────────────────────── */
 export function Team() {
-  const { currentUser } = useAuthStore();
   const { isAdmin } = usePermission();
-  if (isAdmin) return <AdminView />;
-  if (currentUser?.role === 'leader') return <ManagerView />;
-  return <MemberView />;
+  return <AdminView canEdit={isAdmin} />;
 }

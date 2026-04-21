@@ -26,8 +26,9 @@ var SHEET = {
 // ── 각 시트의 헤더 정의 ─────────────────────────────────────────
 var HEADERS = {};
 // '역할' = 자유 텍스트 역할 (구 '직책' 컬럼 대체). '직책' 컬럼 삭제.
+// '권한' = 앱 권한 컬럼 ('admin' | 'member'). 역할 컬럼과 분리.
 // '_겸임' 시트: '겸임직책' → '겸임역할'
-HEADERS[SHEET.USERS]       = ['사번','주조직','부조직','팀','스쿼드','역할','직무','성명','영문이름','입사일','연락처','이메일','재직 여부','보고대상(사번)'];
+HEADERS[SHEET.USERS]       = ['사번','주조직','부조직','팀','스쿼드','역할','권한','직무','성명','영문이름','입사일','연락처','이메일','재직 여부','보고대상(사번)'];
 HEADERS[SHEET.ORG_UNITS]   = ['조직ID','조직명','조직유형','상위조직ID','조직장사번','순서'];
 HEADERS[SHEET.SECONDARY]   = ['사번','겸임조직ID','겸임조직명','겸임역할','시작일','종료일','겸임비율','비고'];
 HEADERS[SHEET.ACCOUNTS]    = ['사번','이메일','비밀번호해시'];
@@ -127,7 +128,8 @@ function patchRow(sheet, pkCol, pkValue, patch) {
   Object.keys(patch).forEach(function(k) { normPatch[normalizeKey(k)] = patch[k]; });
   var updated = headers.map(function(h, i) {
     var v = normPatch[normalizeKey(h)];
-    return v !== undefined ? v : existing[i];
+    // undefined = 키 없음 → 기존 값 유지. '' = 빈 값 → 기존 값 유지 (우발적 소거 방지)
+    return (v !== undefined && v !== '') ? v : existing[i];
   });
   sheet.getRange(rowIdx, 1, 1, updated.length).setValues([updated]);
   return true;
@@ -390,7 +392,57 @@ function doPost(e) {
     }
 
     if (action === 'updateUser') {
-      upsertRow(getSheet(SHEET.USERS), '사번', data['사번'], data);
+      var sheet   = getSheet(SHEET.USERS);
+      var lastCol = sheet.getLastColumn();
+      var lastRow = sheet.getLastRow();
+      var userId  = String(data['사번'] || '').trim();
+
+      // 헤더 읽기
+      var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+      // 정규화된 data 키맵
+      var normData = {};
+      Object.keys(data).forEach(function(k) {
+        var v = data[k];
+        if (v !== undefined && v !== '') normData[normalizeKey(k)] = v;
+      });
+
+      // 사번 컬럼 위치 찾기
+      var idColIdx = -1;
+      for (var i = 0; i < headerRow.length; i++) {
+        if (normalizeKey(String(headerRow[i])) === '사번') { idColIdx = i; break; }
+      }
+      if (idColIdx < 0) return jsonErr('사번 컬럼 없음');
+
+      // 해당 사번 행 찾기
+      var idColVals = lastRow > 1
+        ? sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues()
+        : [];
+      var targetRow = -1;
+      for (var ri = 0; ri < idColVals.length; ri++) {
+        if (String(idColVals[ri][0]).trim() === userId) { targetRow = ri + 2; break; }
+      }
+
+      if (targetRow < 0) {
+        // 신규 행
+        var newRow = headerRow.map(function(h) {
+          var v = normData[normalizeKey(String(h))];
+          return v !== undefined ? v : '';
+        });
+        sheet.appendRow(newRow);
+        return jsonOk();
+      }
+
+      // 기존 행: 각 컬럼을 개별 셀에 직접 기록 (배열 오프셋 오류 원천 차단)
+      for (var ci = 0; ci < headerRow.length; ci++) {
+        var colKey = normalizeKey(String(headerRow[ci]));
+        if (!colKey) continue;
+        var val = normData[colKey];
+        if (val !== undefined) {
+          sheet.getRange(targetRow, ci + 1).setValue(val);
+        }
+      }
+
       return jsonOk();
     }
 

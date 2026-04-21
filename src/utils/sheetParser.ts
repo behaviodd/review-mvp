@@ -57,16 +57,19 @@ export function parseSheetUser(row: SheetRow): User | null {
   const name = str(row['성명']);
   if (!id || !name) return null;
 
-  // '역할' = 자유 텍스트 (구 '직책'). 레거시 '직책' 컬럼도 폴백으로 읽음.
-  const position   = str(row['역할']) || str(row['직책']);
+  // '역할' = 자유 텍스트 직책. 값이 권한 키워드(admin/leader/member)면 직책이 아님.
+  const rawPos = str(row['역할']) || str(row['직책']);
+  const position = VALID_ROLES.includes(rawPos as UserRole) ? '' : rawPos;
   const managerRaw = str(row['보고대상(사번)']);
 
-  // VALID_ROLES 값('admin'/'leader'/'member')이 역할 컬럼에 있으면 역할로 인식(레거시 호환)
-  // 그 외엔 직책 키워드로 파생하거나 'member'로 기본 처리
+  // '권한' 전용 컬럼 우선 → 없으면 레거시 '역할' 컬럼 → 없으면 직책 키워드로 파생
+  const permRaw = str(row['권한']);
   const roleRaw = str(row['역할']);
-  const role: UserRole = VALID_ROLES.includes(roleRaw as UserRole)
-    ? (roleRaw as UserRole)
-    : deriveRole(position);
+  const role: UserRole = VALID_ROLES.includes(permRaw as UserRole)
+    ? (permRaw as UserRole)
+    : VALID_ROLES.includes(roleRaw as UserRole)
+      ? (roleRaw as UserRole)
+      : deriveRole(position);
 
   return {
     id,

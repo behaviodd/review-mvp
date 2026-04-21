@@ -19,13 +19,13 @@ export function generateEmployeeId(users: User[]): string {
 
 /* ── User → 시트 행 매핑 ──────────────────────────────────────────── */
 function toSheetRow(user: User, active = true): Record<string, string> {
-  return {
+  const row: Record<string, string> = {
     '사번':           user.id,
     '주조직':         user.department,
     '부조직':         user.subOrg        ?? '',
     '팀':             user.team          ?? '',
     '스쿼드':         user.squad         ?? '',
-    '역할':           user.position,      // 자유 텍스트 역할 (구 직책)
+    '권한':           user.role,
     '직무':           user.jobFunction   ?? '',
     '성명':           user.name,
     '영문이름':       user.nameEn        ?? '',
@@ -35,6 +35,9 @@ function toSheetRow(user: User, active = true): Record<string, string> {
     '재직 여부':      active ? 'true' : 'false',
     '보고대상(사번)':  user.managerId     ?? '',
   };
+  // position이 비어 있으면 역할 키를 생략 → patchRow가 기존 시트 값 유지
+  if (user.position) row['역할'] = user.position;
+  return row;
 }
 
 function orgUnitToRow(u: OrgUnit): Record<string, string> {

@@ -34,7 +34,7 @@ interface TeamStore {
   deleteTeam: (teamId: string) => void;
   addMember: (userId: string, teamId: string, managerId?: string) => void;
   removeMember: (userId: string) => void;
-  createMember: (member: Omit<User, 'id'>) => Promise<void>;
+  createMember: (member: Omit<User, 'id'>) => Promise<string>;
   updateMember: (userId: string, patch: Partial<Omit<User, 'id'>>) => void;
   terminateMember: (userId: string, leaveDate: string) => void;
 
@@ -111,18 +111,13 @@ export const useTeamStore = create<TeamStore>()(
   },
 
   createMember: async (member) => {
-    // 1. Apps Script에 사번 생성 위임 (전체 탭 스캔 → 중복 없는 다음 번호 반환)
     const assignedId = await sheetWriter.create(member);
-
-    // 2. 네트워크 오류 등 실패 시 클라이언트 폴백
     const id = assignedId ?? generateEmployeeId(get().users);
     const newUser: User = { id, ...member };
-
-    // 3. 폴백으로 생성된 경우 시트에 명시적 기록
     if (!assignedId) sheetWriter.createWithId(newUser);
-
     set(s => ({ users: [...s.users, newUser] }));
     initAccount(id, member.email).catch(e => console.error('[Auth] initAccount:', e));
+    return id;
   },
 
   updateMember: (userId, patch) =>

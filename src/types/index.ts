@@ -45,7 +45,7 @@ export interface SecondaryOrgAssignment {
   userId: string;
   orgId: string;
   orgName?: string;   // 겸임조직명 (비정규화 표시용)
-  position: string;   // 겸임직책
+  role?: string;      // 겸임조직 내 역할 (자유 텍스트)
   startDate: string;
   endDate?: string;
   ratio?: number;     // 겸임 비율 %

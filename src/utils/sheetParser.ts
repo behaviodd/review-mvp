@@ -60,12 +60,12 @@ export function parseSheetUser(row: SheetRow): User | null {
   const name = str(row['성명']);
   if (!id || !name) return null;
 
-  const position      = str(row['직책']);
-  const managerRaw    = str(row['보고대상(사번)']);
-  const secondaryDept = str(row['겸임 조직'])      || undefined;
-  const secondaryPos  = str(row['겸임 조직 직책']) || undefined;
+  // '역할' = 자유 텍스트 (구 '직책'). 레거시 '직책' 컬럼도 폴백으로 읽음.
+  const position   = str(row['역할']) || str(row['직책']);
+  const managerRaw = str(row['보고대상(사번)']);
 
-  // '역할' 컬럼이 있으면 우선 사용, 없으면 직책 키워드로 파생
+  // VALID_ROLES 값('admin'/'leader'/'member')이 역할 컬럼에 있으면 역할로 인식(레거시 호환)
+  // 그 외엔 직책 키워드로 파생하거나 'member'로 기본 처리
   const roleRaw = str(row['역할']);
   const role: UserRole = VALID_ROLES.includes(roleRaw as UserRole)
     ? (roleRaw as UserRole)
@@ -87,8 +87,6 @@ export function parseSheetUser(row: SheetRow): User | null {
     phone:           str(row['연락처'])   || undefined,
     joinDate:        normalizeDate(str(row['입사일'])),
     jobFunction:     str(row['직무'])     || undefined,
-    secondaryDept,
-    secondaryPosition: secondaryPos,
     isActive: true,
   };
 }
@@ -121,11 +119,13 @@ export function parseSecondaryOrg(row: SheetRow): SecondaryOrgAssignment | null 
   const orgId  = str(row['겸임조직ID']);
   if (!userId || !orgId) return null;
   const ratioRaw = parseFloat(str(row['겸임비율']));
+  // '겸임역할' 컬럼 우선, 레거시 '겸임직책' 폴백
+  const role = str(row['겸임역할']) || str(row['겸임직책']) || undefined;
   return {
     userId,
     orgId,
     orgName:   str(row['겸임조직명']) || undefined,
-    position:  str(row['겸임직책']),
+    role,
     startDate: str(row['시작일']),
     endDate:   str(row['종료일'])    || undefined,
     ratio:     isNaN(ratioRaw)       ? undefined : ratioRaw,

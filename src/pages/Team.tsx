@@ -131,33 +131,41 @@ function OrgSelector({
 
 /* ── Secondary Org Section ──────────────────────────────────────────── */
 function SecondaryOrgSection({ userId }: { userId: string }) {
-  const { orgUnits, secondaryOrgs, upsertSecondaryOrg, removeSecondaryOrg } = useTeamStore();
+  const { orgUnits, secondaryOrgs, upsertSecondaryOrg, removeSecondaryOrg, updateOrgUnit } = useTeamStore();
   const myAssignments = secondaryOrgs.filter(a => a.userId === userId);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ orgId: '', position: '', startDate: '', endDate: '', ratio: '' });
+  const [form, setForm] = useState({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' });
 
   const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
   const inp = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white';
   const allOrgs = orgUnits.filter(u => u.type !== 'squad');
 
   const handleAdd = () => {
-    if (!form.orgId || !form.position) return;
+    if (!form.orgId) return;
     const org = orgUnits.find(u => u.id === form.orgId);
     upsertSecondaryOrg({
       userId, orgId: form.orgId, orgName: org?.name,
-      position:  form.position,
+      role:      form.role || undefined,
       startDate: form.startDate || new Date().toISOString().slice(0, 10),
       endDate:   form.endDate || undefined,
       ratio:     form.ratio ? parseFloat(form.ratio) : undefined,
     });
+    if (form.isHead) updateOrgUnit(form.orgId, { headId: userId });
+    else if (org?.headId === userId) updateOrgUnit(form.orgId, { headId: undefined });
     setAdding(false);
-    setForm({ orgId: '', position: '', startDate: '', endDate: '', ratio: '' });
+    setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' });
+  };
+
+  const toggleHead = (a: SecondaryOrgAssignment) => {
+    const unit = orgUnits.find(u => u.id === a.orgId);
+    if (unit?.headId === userId) updateOrgUnit(a.orgId, { headId: undefined });
+    else updateOrgUnit(a.orgId, { headId: userId });
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">겸임 발령</p>
+        <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">겸임 조직</p>
         {!adding && (
           <button onClick={() => setAdding(true)}
             className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium">
@@ -166,22 +174,42 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
         )}
       </div>
       {myAssignments.length === 0 && !adding && (
-        <p className="text-xs text-zinc-400 py-1">겸임 발령이 없습니다.</p>
+        <p className="text-xs text-zinc-400 py-1">겸임 조직이 없습니다.</p>
       )}
-      {myAssignments.map(a => (
-        <div key={`${a.userId}-${a.orgId}`}
-          className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-zinc-800">{a.orgName ?? a.orgId}</p>
-            <p className="text-xs text-zinc-500">{a.position}{a.ratio ? ` · ${a.ratio}%` : ''}</p>
-            <p className="text-xs text-zinc-400">{a.startDate}{a.endDate ? ` ~ ${a.endDate}` : ' ~'}</p>
+      {myAssignments.map(a => {
+        const isHead = orgUnits.find(u => u.id === a.orgId)?.headId === userId;
+        return (
+          <div key={`${a.userId}-${a.orgId}`}
+            className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium text-zinc-800">{a.orgName ?? a.orgId}</p>
+                {isHead && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded border border-emerald-200">조직장</span>
+                )}
+              </div>
+              {a.role && <p className="text-xs text-zinc-500 mt-0.5">{a.role}{a.ratio ? ` · ${a.ratio}%` : ''}</p>}
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => toggleHead(a)}
+                title={isHead ? '조직장 해제' : '조직장으로 지정'}
+                className={`px-2 py-1 text-[10px] font-semibold rounded border transition-colors ${
+                  isHead
+                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                    : 'bg-zinc-100 text-zinc-400 border-zinc-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200'
+                }`}
+              >
+                {isHead ? '조직장 ✓' : '조직장'}
+              </button>
+              <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
+                className="p-1 text-zinc-300 hover:text-rose-500 transition-colors">
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
           </div>
-          <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
-            className="p-1 text-zinc-300 hover:text-rose-500 transition-colors flex-shrink-0">
-            <Trash2 className="size-3.5" />
-          </button>
-        </div>
-      ))}
+        );
+      })}
       {adding && (
         <div className="p-3 rounded-lg border border-primary-100 bg-primary-50/40 space-y-2">
           <div className="grid grid-cols-2 gap-2">
@@ -193,9 +221,19 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-zinc-500 mb-1">겸임 직책</label>
-              <input type="text" value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
-                placeholder="예) 팀원" className={inp} />
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">역할</label>
+                  <input type="text" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                    placeholder="예) 프로덕트 디자이너" className={inp} />
+                </div>
+                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.isHead}
+                    onChange={e => setForm(f => ({ ...f, isHead: e.target.checked }))}
+                    className="size-3.5 rounded accent-emerald-600" />
+                  <span className="text-xs font-medium text-zinc-600">조직장</span>
+                </label>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1">시작일</label>
@@ -213,9 +251,9 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setAdding(false)}
+            <button type="button" onClick={() => { setAdding(false); setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' }); }}
               className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-            <button type="button" onClick={handleAdd} disabled={!form.orgId || !form.position}
+            <button type="button" onClick={handleAdd} disabled={!form.orgId}
               className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40">
               저장
             </button>
@@ -252,14 +290,14 @@ function AddMemberModal({
   initialOrgId?: string;
   initialManagerId?: string;
 }) {
-  const { users, orgUnits, createMember } = useTeamStore();
-  const allLeaders = users.filter(u => u.role !== 'member');
+  const { users, orgUnits, createMember, updateOrgUnit } = useTeamStore();
+  const headIds    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
+  const allLeaders = users.filter(u => u.role === 'admin' || headIds.has(u.id));
   const adminUser  = users.find(u => u.role === 'admin');
 
   const [form, setForm] = useState({
     name: '', nameEn: '', email: '', phone: '', joinDate: '',
-    position: '', jobFunction: '',
-    role: 'member' as 'leader' | 'member',
+    primaryRole: '', jobFunction: '', isPrimaryHead: false,
     managerId: initialManagerId ?? '',
   });
   const [orgSel, setOrgSel] = useState(() => buildInitOrgSel(initialOrgId, orgUnits));
@@ -273,7 +311,9 @@ function AddMemberModal({
   const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
   const hasOrgUnits = orgUnits.length > 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const mostSpecificOrgId = orgSel.squadId || orgSel.teamId || orgSel.subOrgId || orgSel.mainOrgId;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) return;
 
@@ -285,20 +325,24 @@ function AddMemberModal({
     const squad   = orgSel.squadId   ? orgUnits.find(u => u.id === orgSel.squadId)?.name   : undefined;
     const managerId = form.managerId || adminUser?.id || undefined;
 
-    createMember({
+    const newId = await createMember({
       name:        form.name.trim(),
-      nameEn:      form.nameEn.trim()   || undefined,
+      nameEn:      form.nameEn.trim()     || undefined,
       email:       form.email.trim(),
-      phone:       form.phone.trim()    || undefined,
-      joinDate:    form.joinDate        || undefined,
-      position:    form.position.trim() || '담당자',
+      phone:       form.phone.trim()      || undefined,
+      joinDate:    form.joinDate          || undefined,
+      position:    form.primaryRole.trim() || '',
       jobFunction: form.jobFunction.trim() || undefined,
-      role:        form.role,
+      role:        'member',
       department,
       subOrg, team, squad,
       managerId,
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
     });
+
+    if (form.isPrimaryHead && mostSpecificOrgId) {
+      updateOrgUnit(mostSpecificOrgId, { headId: newId });
+    }
     onClose();
   };
 
@@ -336,20 +380,24 @@ function AddMemberModal({
           </div>
         </div>
 
-        {/* 조직·직책 */}
+        {/* 조직 · 역할 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 직책</p>
+          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>직책</label>
-              <input type="text" value={form.position} onChange={f('position')} placeholder="개발자" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>역할</label>
-              <select value={form.role} onChange={f('role')} className={sel}>
-                <option value="member">팀원</option>
-                <option value="leader">조직장</option>
-              </select>
+            <div className="col-span-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className={lbl}>역할</label>
+                  <input type="text" value={form.primaryRole} onChange={f('primaryRole')} placeholder="예) iOS 개발자" className={inp} />
+                </div>
+                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.isPrimaryHead}
+                    disabled={!mostSpecificOrgId}
+                    onChange={e => setForm(p => ({ ...p, isPrimaryHead: e.target.checked }))}
+                    className="size-3.5 rounded accent-emerald-600 disabled:opacity-40" />
+                  <span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>
+                </label>
+              </div>
             </div>
             <div className="col-span-2">
               <label className={lbl}>보고 대상</label>
@@ -381,13 +429,34 @@ function AddMemberModal({
 
 /* ── Edit Member Modal ──────────────────────────────────────────────── */
 function EditMemberModal({ member, onClose }: { member: User; onClose: () => void }) {
-  const { users, orgUnits, updateMember, terminateMember } = useTeamStore();
+  const { users, orgUnits, updateMember, terminateMember, updateOrgUnit } = useTeamStore();
   const { currentUser } = useAuthStore();
   const showToast = useShowToast();
-  const allLeaders = users.filter(u => u.role !== 'member' && u.id !== member.id);
+  const headIds    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
+  const allLeaders = users.filter(u => (u.role === 'admin' || headIds.has(u.id)) && u.id !== member.id);
   const [showTerminate, setShowTerminate] = useState(false);
   const [leaveDate, setLeaveDate] = useState(new Date().toISOString().slice(0, 10));
   const [resetting, setResetting] = useState(false);
+
+  const [orgSel, setOrgSel] = useState(() => {
+    const mainOrg = orgUnits.find(u => u.type === 'mainOrg' && u.name === member.department);
+    const subOrg  = mainOrg && member.subOrg
+      ? orgUnits.find(u => u.type === 'subOrg' && u.parentId === mainOrg.id && u.name === member.subOrg)
+      : undefined;
+    const team    = member.team  ? orgUnits.find(u => u.type === 'team'  && u.name === member.team)  : undefined;
+    const squad   = member.squad ? orgUnits.find(u => u.type === 'squad' && u.name === member.squad) : undefined;
+    return { mainOrgId: mainOrg?.id ?? '', subOrgId: subOrg?.id ?? '', teamId: team?.id ?? '', squadId: squad?.id ?? '' };
+  });
+
+  const mostSpecificOrgId = orgSel.squadId || orgSel.teamId || orgSel.subOrgId || orgSel.mainOrgId;
+  const currentUnit = mostSpecificOrgId ? orgUnits.find(u => u.id === mostSpecificOrgId) : null;
+  const [isPrimaryHead, setIsPrimaryHead] = useState(() =>
+    !!(mostSpecificOrgId && orgUnits.find(u => u.id === mostSpecificOrgId)?.headId === member.id)
+  );
+  // 조직 선택이 바뀌면 조직장 체크 상태도 갱신
+  useEffect(() => {
+    setIsPrimaryHead(!!(currentUnit?.headId === member.id));
+  }, [mostSpecificOrgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [form, setForm] = useState({
     name:        member.name,
@@ -398,18 +467,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
     position:    member.position,
     jobFunction: member.jobFunction ?? '',
     department:  member.department,
-    role:        (member.role === 'leader' ? 'leader' : 'member') as 'leader' | 'member',
     managerId:   member.managerId   ?? '',
-  });
-
-  const [orgSel, setOrgSel] = useState(() => {
-    const mainOrg = orgUnits.find(u => u.type === 'mainOrg' && u.name === member.department);
-    const subOrg  = mainOrg && member.subOrg
-      ? orgUnits.find(u => u.type === 'subOrg' && u.parentId === mainOrg.id && u.name === member.subOrg)
-      : undefined;
-    const team    = member.team  ? orgUnits.find(u => u.type === 'team'  && u.name === member.team)  : undefined;
-    const squad   = member.squad ? orgUnits.find(u => u.type === 'squad' && u.name === member.squad) : undefined;
-    return { mainOrgId: mainOrg?.id ?? '', subOrgId: subOrg?.id ?? '', teamId: team?.id ?? '', squadId: squad?.id ?? '' };
   });
 
   const f = (k: keyof typeof form) =>
@@ -447,12 +505,20 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
       email:       form.email.trim()       || member.email,
       phone:       form.phone.trim()       || undefined,
       joinDate:    form.joinDate.trim()    || undefined,
-      position:    form.position.trim()    || member.position,
+      position:    form.position.trim(),
       jobFunction: form.jobFunction.trim() || undefined,
       department, subOrg, team, squad,
-      role:      form.role,
       managerId: form.managerId || undefined,
     });
+
+    // 조직장 설정/해제
+    if (mostSpecificOrgId) {
+      if (isPrimaryHead) {
+        updateOrgUnit(mostSpecificOrgId, { headId: member.id });
+      } else if (currentUnit?.headId === member.id) {
+        updateOrgUnit(mostSpecificOrgId, { headId: undefined });
+      }
+    }
     onClose();
   };
 
@@ -490,20 +556,24 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
           </div>
         </div>
 
-        {/* 조직·직책 */}
+        {/* 조직 · 역할 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 직책</p>
+          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>직책</label>
-              <input type="text" value={form.position} onChange={f('position')} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>역할</label>
-              <select value={form.role} onChange={f('role')} className={sel}>
-                <option value="member">팀원</option>
-                <option value="leader">조직장</option>
-              </select>
+            <div className="col-span-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className={lbl}>역할</label>
+                  <input type="text" value={form.position} onChange={f('position')} placeholder="예) iOS 개발자" className={inp} />
+                </div>
+                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
+                  <input type="checkbox" checked={isPrimaryHead}
+                    disabled={!mostSpecificOrgId}
+                    onChange={e => setIsPrimaryHead(e.target.checked)}
+                    className="size-3.5 rounded accent-emerald-600 disabled:opacity-40" />
+                  <span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>
+                </label>
+              </div>
             </div>
             <div className="col-span-2">
               <label className={lbl}>보고 대상</label>
@@ -521,7 +591,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
               </div>
             )}
             {hasOrgUnits && (
-              <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
+              <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={v => { setOrgSel(v); }} />
             )}
           </div>
         </div>
@@ -598,7 +668,8 @@ function BulkMoveModal({
   onClose: () => void;
 }) {
   const { orgUnits, users } = useTeamStore();
-  const allLeaders = users.filter(u => u.role !== 'member');
+  const headIds    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
+  const allLeaders = users.filter(u => u.role === 'admin' || headIds.has(u.id));
   const [orgSel, setOrgSel] = useState({ mainOrgId: '', subOrgId: '', teamId: '', squadId: '' });
   const [managerId, setManagerId] = useState<string>('__keep__');
 
@@ -688,7 +759,7 @@ function OrgUnitFormModal({
   const [name,   setName]   = useState(editing?.name   ?? '');
   const [headId, setHeadId] = useState(editing?.headId ?? '');
 
-  const eligibleHeads = users.filter(u => u.role !== 'member');
+  const eligibleHeads = users.filter(u => u.isActive !== false);
   const title = isEdit
     ? `${ORG_TYPE_LABEL[type]} 편집`
     : `${ORG_TYPE_LABEL[type]} 추가${parentUnit ? ` — ${parentUnit.name}` : ''}`;
@@ -1000,7 +1071,7 @@ function MemberRow({
           })()}
           {secondaryAssignmentHere ? (
             <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
-              겸임{secondaryAssignmentHere.position ? ` · ${secondaryAssignmentHere.position}` : ''}
+              겸임{secondaryAssignmentHere.role ? ` · ${secondaryAssignmentHere.role}` : ''}
             </span>
           ) : mySecondary.length > 0 && (
             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 text-violet-600 rounded border border-violet-100">
@@ -1009,7 +1080,7 @@ function MemberRow({
           )}
         </div>
         <p className="text-xs text-zinc-400 mt-0.5 truncate">
-          {secondaryAssignmentHere ? secondaryAssignmentHere.position || user.position : user.position}
+          {secondaryAssignmentHere ? secondaryAssignmentHere.role || user.position : user.position}
           {user.email && <span className="ml-2 text-zinc-300">·</span>}
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
@@ -1260,14 +1331,15 @@ function AdminView() {
   const terminatedUsers = useMemo(() => users.filter(u => u.isActive === false), [users]);
 
   const totalNonAdmin = activeUsers.filter(u => u.role !== 'admin').length;
-  const totalLeaders  = activeUsers.filter(u => u.role === 'leader').length;
+  const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
+  const totalLeaders  = activeUsers.filter(u => headIdsAll.has(u.id)).length;
 
   /* 선택된 조직의 구성원 */
   const { secondaryOrgs } = useTeamStore();
   const selectedUnit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
   const panelUsers = useMemo(() => {
     if (showTerminated) return terminatedUsers;
-    if (!selectedUnit) return activeUsers.filter(u => u.role !== 'admin');
+    if (!selectedUnit) return activeUsers.filter(u => u.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     const key: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
@@ -1280,11 +1352,11 @@ function AdminView() {
       secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => a.userId)
     );
     const members = activeUsers.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
-    // 조직장을 맨 위로 정렬
+    // 조직장 맨 위, 이후 가나다/abc 순
     return members.sort((a, b) => {
       if (a.id === selectedUnit.headId) return -1;
       if (b.id === selectedUnit.headId) return 1;
-      return 0;
+      return a.name.localeCompare(b.name, 'ko');
     });
   }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, secondaryOrgs]);
 

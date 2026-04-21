@@ -22,21 +22,18 @@ function toSheetRow(user: User, active = true): Record<string, string> {
   return {
     '사번':           user.id,
     '주조직':         user.department,
-    '부조직':         user.subOrg            ?? '',
-    '팀':             user.team              ?? '',
-    '스쿼드':         user.squad             ?? '',
-    '직책':           user.position,
-    '역할':           user.role,
-    '겸임 조직':      user.secondaryDept     ?? '',
-    '겸임 조직 직책':  user.secondaryPosition ?? '',
-    '직무':           user.jobFunction       ?? '',
+    '부조직':         user.subOrg        ?? '',
+    '팀':             user.team          ?? '',
+    '스쿼드':         user.squad         ?? '',
+    '역할':           user.position,      // 자유 텍스트 역할 (구 직책)
+    '직무':           user.jobFunction   ?? '',
     '성명':           user.name,
-    '영문이름':       user.nameEn            ?? '',
-    '입사일':         user.joinDate          ?? '',
-    '연락처':         user.phone             ?? '',
+    '영문이름':       user.nameEn        ?? '',
+    '입사일':         user.joinDate      ?? '',
+    '연락처':         user.phone         ?? '',
     '이메일':         user.email,
     '재직 여부':      active ? 'true' : 'false',
-    '보고대상(사번)':  user.managerId         ?? '',
+    '보고대상(사번)':  user.managerId     ?? '',
   };
 }
 
@@ -55,12 +52,12 @@ function secondaryOrgToRow(a: SecondaryOrgAssignment): Record<string, string> {
   return {
     '사번':       a.userId,
     '겸임조직ID': a.orgId,
-    '겸임조직명': a.orgName    ?? '',
-    '겸임직책':   a.position,
+    '겸임조직명': a.orgName ?? '',
+    '겸임역할':   a.role    ?? '',
     '시작일':     a.startDate,
-    '종료일':     a.endDate    ?? '',
+    '종료일':     a.endDate ?? '',
     '겸임비율':   a.ratio !== undefined ? String(a.ratio) : '',
-    '비고':       a.note       ?? '',
+    '비고':       a.note    ?? '',
   };
 }
 

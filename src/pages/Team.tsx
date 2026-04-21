@@ -946,7 +946,7 @@ function OrgTreeNode({
 function MemberRow({
   user, onEdit, onTerminate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
-  secondaryAssignmentHere,
+  secondaryAssignmentHere, isOrgHeadHere = false,
 }: {
   user: User;
   onEdit: ((u: User) => void) | null;
@@ -956,6 +956,7 @@ function MemberRow({
   onToggle?: (id: string) => void;
   selectionActive?: boolean;
   secondaryAssignmentHere?: SecondaryOrgAssignment;
+  isOrgHeadHere?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   const canSelect = onToggle && user.role !== 'admin';
@@ -986,7 +987,7 @@ function MemberRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-zinc-900">{user.name}</span>
-          <StatusBadge type="role" value={user.role} />
+          {(user.role !== 'leader' || isOrgHeadHere) && <StatusBadge type="role" value={user.role} />}
           {secondaryAssignmentHere ? (
             <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
               겸임{secondaryAssignmentHere.position ? ` · ${secondaryAssignmentHere.position}` : ''}
@@ -1268,7 +1269,13 @@ function AdminView() {
     const secondaryIds = new Set(
       secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => a.userId)
     );
-    return activeUsers.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
+    const members = activeUsers.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
+    // 조직장을 맨 위로 정렬
+    return members.sort((a, b) => {
+      if (a.id === selectedUnit.headId) return -1;
+      if (b.id === selectedUnit.headId) return 1;
+      return 0;
+    });
   }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, secondaryOrgs]);
 
   const searchResults = useMemo(() =>
@@ -1541,7 +1548,8 @@ function AdminView() {
                     selected={selectedIds.has(u.id)}
                     onToggle={!showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
-                    secondaryAssignmentHere={secondaryMapHere.get(u.id)} />
+                    secondaryAssignmentHere={secondaryMapHere.get(u.id)}
+                    isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id} />
                 ))}
               </div>
             )}

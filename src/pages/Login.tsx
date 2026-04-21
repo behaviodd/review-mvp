@@ -5,17 +5,17 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { verifyLogin } from '../utils/authApi';
 import type { User } from '../types';
-import { Star, Eye, EyeOff, ChevronDown, Settings2 } from 'lucide-react';
+import { Star, Eye, EyeOff, ChevronDown, Settings2, Loader2 } from 'lucide-react';
 
 /* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
 export function Login() {
   const { login } = useAuthStore();
-  const { users } = useTeamStore();
+  const { users, isLoading: usersLoading } = useTeamStore();
   const { scriptUrl } = useSheetsSyncStore();
   const navigate = useNavigate();
 
-  // Google Sheets 미연결 + 구성원 없음 → 초기 설정 모드
-  const isSetupMode = !scriptUrl && users.length === 0;
+  // scriptUrl이 있어도 구성원이 없으면 초기 설정 모드 표시
+  const isSetupMode = users.length === 0 && !usersLoading;
 
   const handleSetupLogin = () => {
     const bootstrapAdmin: User = {
@@ -50,9 +50,21 @@ export function Login() {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
         return;
       }
-      const user = users.find(u => u.id === result.userId || u.email.toLowerCase() === email.trim().toLowerCase());
+
+      // 로컬 users 스토어에서 찾기 — 아직 org sync 중이면 최대 3초 대기
+      const findUser = () =>
+        useTeamStore.getState().users.find(
+          u => u.id === result.userId || u.email.toLowerCase() === email.trim().toLowerCase()
+        );
+
+      let user: User | undefined = findUser();
+      if (!user && (usersLoading || useTeamStore.getState().isLoading)) {
+        await new Promise(r => setTimeout(r, 3000));
+        user = findUser();
+      }
+
       if (!user) {
-        setError('계정을 찾을 수 없습니다. 관리자에게 문의하세요.');
+        setError('구성원 데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
         return;
       }
       login(user, result.isTemp);
@@ -94,8 +106,16 @@ export function Login() {
           <p className="text-sm/6 text-zinc-500 mt-1">이메일과 비밀번호로 로그인하세요</p>
         </div>
 
+        {/* org 동기화 중 안내 */}
+        {usersLoading && scriptUrl && (
+          <div className="flex items-center gap-2 justify-center py-2 text-xs text-zinc-400">
+            <Loader2 className="size-3.5 animate-spin" />
+            구성원 데이터를 불러오는 중...
+          </div>
+        )}
+
         {/* 초기 설정 모드 배너 */}
-        {isSetupMode && (
+        {isSetupMode && !scriptUrl && (
           <div className="bg-white rounded-2xl ring-1 ring-amber-200 shadow-sm p-5 space-y-3">
             <div className="flex items-start gap-3">
               <div className="size-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">

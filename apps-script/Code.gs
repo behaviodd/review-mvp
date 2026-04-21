@@ -229,14 +229,34 @@ function doPost(e) {
       var accountSheet = getSheet(SHEET.ACCOUNTS);
       var accounts     = sheetToObjects(accountSheet);
       var account      = null;
+      var emailInput   = String(data['email']).toLowerCase().trim();
       for (var i = 0; i < accounts.length; i++) {
-        if (String(accounts[i]['이메일']).toLowerCase().trim() ===
-            String(data['email']).toLowerCase().trim()) {
+        if (String(accounts[i]['이메일']).toLowerCase().trim() === emailInput) {
           account = accounts[i];
           break;
         }
       }
-      if (!account) return jsonErr('계정을 찾을 수 없습니다.');
+
+      // _계정에 없으면 _구성원에서 이메일로 찾아 자동 초기화
+      if (!account) {
+        var userSheet = getSheet(SHEET.USERS);
+        var allUsers  = sheetToObjects(userSheet);
+        var matchUser = null;
+        for (var j = 0; j < allUsers.length; j++) {
+          if (String(allUsers[j]['이메일']).toLowerCase().trim() === emailInput) {
+            matchUser = allUsers[j];
+            break;
+          }
+        }
+        if (!matchUser) return jsonErr('계정을 찾을 수 없습니다.');
+        var autoId = String(matchUser['사번']).trim();
+        upsertRow(accountSheet, '사번', autoId, {
+          '사번':         autoId,
+          '이메일':       emailInput,
+          '비밀번호해시': '',
+        });
+        account = { '사번': autoId, '이메일': emailInput, '비밀번호해시': '' };
+      }
 
       var userId   = String(account['사번']).trim();
       var stored   = String(account['비밀번호해시']).trim();
@@ -252,32 +272,71 @@ function doPost(e) {
     }
 
     if (action === 'setPassword') {
-      var sheet = getSheet(SHEET.ACCOUNTS);
-      patchRow(sheet, '사번', data['userId'], {
+      var sheet    = getSheet(SHEET.ACCOUNTS);
+      var patched  = patchRow(sheet, '사번', data['userId'], {
         '비밀번호해시': data['passwordHash'],
       });
+      // 계정 행이 없으면 _구성원에서 이메일 찾아 생성 후 저장
+      if (!patched) {
+        var email = '';
+        var urows = sheetToObjects(getSheet(SHEET.USERS));
+        for (var k = 0; k < urows.length; k++) {
+          if (String(urows[k]['사번']).trim() === String(data['userId']).trim()) {
+            email = String(urows[k]['이메일']).toLowerCase().trim();
+            break;
+          }
+        }
+        upsertRow(sheet, '사번', data['userId'], {
+          '사번':         data['userId'],
+          '이메일':       email,
+          '비밀번호해시': data['passwordHash'],
+        });
+      }
       return jsonOk();
     }
 
     if (action === 'resetAccount') {
-      var sheet = getSheet(SHEET.ACCOUNTS);
-      patchRow(sheet, '사번', data['userId'], {
+      var sheet   = getSheet(SHEET.ACCOUNTS);
+      var patched = patchRow(sheet, '사번', data['userId'], {
         '비밀번호해시': '',
       });
+      if (!patched) return jsonErr('계정을 찾을 수 없습니다: ' + data['userId']);
       return jsonOk();
     }
 
     if (action === 'initAccount') {
-      var sheet    = getSheet(SHEET.ACCOUNTS);
-      var rowIdx   = findRowIndex(sheet, '사번', data['userId']);
+      var sheet  = getSheet(SHEET.ACCOUNTS);
+      var rowIdx = findRowIndex(sheet, '사번', data['userId']);
       if (rowIdx < 0) {
         upsertRow(sheet, '사번', data['userId'], {
           '사번':         data['userId'],
-          '이메일':       data['email'] || '',
+          '이메일':       String(data['email'] || '').toLowerCase().trim(),
           '비밀번호해시': '',
         });
       }
       return jsonOk();
+    }
+
+    // 관리자용: _구성원 전체를 _계정에 일괄 초기화 (이미 있는 행은 건드리지 않음)
+    if (action === 'batchInitAccounts') {
+      var accountSheet = getSheet(SHEET.ACCOUNTS);
+      var uRows        = sheetToObjects(getSheet(SHEET.USERS));
+      var created      = 0;
+      uRows.forEach(function(u) {
+        var uid = String(u['사번']).trim();
+        if (!uid) return;
+        if (findRowIndex(accountSheet, '사번', uid) < 0) {
+          upsertRow(accountSheet, '사번', uid, {
+            '사번':         uid,
+            '이메일':       String(u['이메일'] || '').toLowerCase().trim(),
+            '비밀번호해시': '',
+          });
+          created++;
+        }
+      });
+      return ContentService.createTextOutput(
+        JSON.stringify({ ok: true, created: created })
+      ).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ── 구성원 ────────────────────────────────────────────────────

@@ -134,6 +134,8 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
   const { orgUnits, secondaryOrgs, upsertSecondaryOrg, removeSecondaryOrg, updateOrgUnit } = useTeamStore();
   const myAssignments = secondaryOrgs.filter(a => a.userId === userId);
   const [adding, setAdding] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [editingRole, setEditingRole] = useState('');
   const [form, setForm] = useState({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' });
 
   const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
@@ -177,36 +179,56 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
         <p className="text-xs text-zinc-400 py-1">겸임 조직이 없습니다.</p>
       )}
       {myAssignments.map(a => {
-        const isHead = orgUnits.find(u => u.id === a.orgId)?.headId === userId;
+        const isHead    = orgUnits.find(u => u.id === a.orgId)?.headId === userId;
+        const isEditing = editingOrgId === a.orgId;
         return (
           <div key={`${a.userId}-${a.orgId}`}
-            className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+            className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
                 <p className="text-xs font-medium text-zinc-800">{a.orgName ?? a.orgId}</p>
                 {isHead && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded border border-emerald-200">조직장</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded border border-emerald-200 flex-shrink-0">조직장</span>
                 )}
               </div>
-              {a.role && <p className="text-xs text-zinc-500 mt-0.5">{a.role}{a.ratio ? ` · ${a.ratio}%` : ''}</p>}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <label className="flex items-center gap-1 cursor-pointer select-none">
+                  <input type="checkbox" checked={isHead} onChange={() => toggleHead(a)}
+                    className="size-3 rounded accent-emerald-600" />
+                  <span className="text-[10px] font-medium text-zinc-500">조직장</span>
+                </label>
+                <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
+                  className="p-1 text-zinc-300 hover:text-rose-500 transition-colors ml-1">
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={() => toggleHead(a)}
-                title={isHead ? '조직장 해제' : '조직장으로 지정'}
-                className={`px-2 py-1 text-[10px] font-semibold rounded border transition-colors ${
-                  isHead
-                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                    : 'bg-zinc-100 text-zinc-400 border-zinc-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200'
-                }`}
-              >
-                {isHead ? '조직장 ✓' : '조직장'}
+            {isEditing ? (
+              <div className="flex gap-1.5">
+                <input autoFocus type="text" value={editingRole}
+                  onChange={e => setEditingRole(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      upsertSecondaryOrg({ ...a, role: editingRole || undefined });
+                      setEditingOrgId(null);
+                    } else if (e.key === 'Escape') {
+                      setEditingOrgId(null);
+                    }
+                  }}
+                  placeholder="역할 입력..." className={inp + ' py-1 text-xs'} />
+                <button type="button" onClick={() => { upsertSecondaryOrg({ ...a, role: editingRole || undefined }); setEditingOrgId(null); }}
+                  className="px-2 py-1 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 flex-shrink-0">저장</button>
+                <button type="button" onClick={() => setEditingOrgId(null)}
+                  className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800 flex-shrink-0">취소</button>
+              </div>
+            ) : (
+              <button type="button"
+                onClick={() => { setEditingOrgId(a.orgId); setEditingRole(a.role ?? ''); }}
+                className="text-xs text-zinc-400 hover:text-zinc-700 text-left w-full truncate transition-colors">
+                {a.role ? a.role : <span className="italic">역할 없음 · 클릭해서 입력</span>}
+                {a.ratio ? ` · ${a.ratio}%` : ''}
               </button>
-              <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
-                className="p-1 text-zinc-300 hover:text-rose-500 transition-colors">
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
+            )}
           </div>
         );
       })}
@@ -295,6 +317,7 @@ function AddMemberModal({
   const allLeaders = users.filter(u => u.role === 'admin' || headIds.has(u.id));
   const adminUser  = users.find(u => u.role === 'admin');
 
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '', nameEn: '', email: '', phone: '', joinDate: '',
     primaryRole: '', jobFunction: '', isPrimaryHead: false,
@@ -315,7 +338,8 @@ function AddMemberModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) return;
+    if (!form.name.trim() || !form.email.trim() || submitting) return;
+    setSubmitting(true);
 
     const department = hasOrgUnits
       ? (orgUnits.find(u => u.id === orgSel.mainOrgId)?.name ?? '미배정')
@@ -345,6 +369,7 @@ function AddMemberModal({
     }
     onClose();
   };
+
 
   return (
     <Modal title="구성원 추가" onClose={onClose} wide>
@@ -417,9 +442,9 @@ function AddMemberModal({
         <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
           <button type="button" onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-          <button type="submit" disabled={!form.name.trim() || !form.email.trim()}
+          <button type="submit" disabled={!form.name.trim() || !form.email.trim() || submitting}
             className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed">
-            추가
+            {submitting ? '추가 중...' : '추가'}
           </button>
         </div>
       </form>
@@ -1075,7 +1100,7 @@ function MemberRow({
           )}
         </div>
         <p className="text-xs text-zinc-400 mt-0.5 truncate">
-          {secondaryAssignmentHere ? secondaryAssignmentHere.role || user.position : user.position}
+          {secondaryAssignmentHere ? secondaryAssignmentHere.role ?? '' : user.position}
           {user.email && <span className="ml-2 text-zinc-300">·</span>}
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
@@ -1478,7 +1503,8 @@ function AdminView() {
             <div className="divide-y divide-zinc-950/3">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
-                  onEdit={setEditingMember} onTerminate={handleTerminate} />
+                  onEdit={setEditingMember} onTerminate={handleTerminate}
+                  isAnyOrgHead={headIdsAll.has(u.id)} />
               ))}
             </div>
           )}
@@ -1681,7 +1707,8 @@ function AdminView() {
 /* ── Manager View ───────────────────────────────────────────────────── */
 function ManagerView() {
   const { currentUser } = useAuthStore();
-  const { users, secondaryOrgs } = useTeamStore();
+  const { users, orgUnits, secondaryOrgs } = useTeamStore();
+  const headIdsAll = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const [editingMember, setEditingMember] = useState<User | null>(null);
   const [search, setSearch] = useState('');
 
@@ -1704,7 +1731,7 @@ function ManagerView() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400 pointer-events-none" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="이름, 직책으로 검색..."
+              placeholder="이름, 역할로 검색..."
               className="w-full pl-8 pr-3 py-1.5 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white" />
           </div>
           <span className="text-xs text-zinc-400 flex-shrink-0">전체 {myTeam.length}명</span>
@@ -1715,7 +1742,8 @@ function ManagerView() {
         ) : (
           <div className="divide-y divide-zinc-950/3">
             {displayed.map(u => (
-              <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs} onEdit={setEditingMember} />
+              <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs} onEdit={setEditingMember}
+                isAnyOrgHead={headIdsAll.has(u.id)} />
             ))}
           </div>
         )}
@@ -1728,7 +1756,8 @@ function ManagerView() {
 
 function MemberView() {
   const { currentUser } = useAuthStore();
-  const { users, secondaryOrgs } = useTeamStore();
+  const { users, orgUnits, secondaryOrgs } = useTeamStore();
+  const headIdsAll = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const [search, setSearch] = useState('');
 
   if (!currentUser) return null;
@@ -1747,7 +1776,7 @@ function MemberView() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400 pointer-events-none" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="이름, 직책으로 검색..."
+              placeholder="이름, 역할로 검색..."
               className="w-full pl-8 pr-3 py-1.5 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white" />
           </div>
           <span className="text-xs text-zinc-400 flex-shrink-0">{currentUser.department} · {colleagues.length}명</span>
@@ -1757,7 +1786,8 @@ function MemberView() {
         ) : (
           <div className="divide-y divide-zinc-950/3">
             {displayed.map(u => (
-              <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs} onEdit={null} />
+              <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs} onEdit={null}
+                isAnyOrgHead={headIdsAll.has(u.id)} />
             ))}
           </div>
         )}

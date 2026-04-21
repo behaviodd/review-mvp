@@ -12,17 +12,14 @@ function colorFromId(id: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-/* ── 직책 → role 파생 (시트에 '역할' 컬럼이 없을 때 폴백) ──────────── */
-const ADMIN_KEYWORDS  = ['대표이사', '대표', 'CEO', 'ceo'];
-const LEADER_KEYWORDS = [
-  '본부장', '팀장', '실장', '센터장', '그룹장', '파트장',
-  '리드', 'Lead', 'Head', '부장', '차장', '수석',
-];
+/* ── 역할 파생 ────────────────────────────────────────────────────────── */
+// '역할' 컬럼이 자유 텍스트가 된 이후로는 admin 키워드만 감지.
+// 조직장(leader) 여부는 OrgUnit.headId 로만 결정.
+const ADMIN_KEYWORDS = ['대표이사', '대표', 'CEO', 'ceo'];
 const VALID_ROLES: UserRole[] = ['admin', 'leader', 'member'];
 
 function deriveRole(position: string): UserRole {
-  if (ADMIN_KEYWORDS.some(k  => position.includes(k))) return 'admin';
-  if (LEADER_KEYWORDS.some(k => position.includes(k))) return 'leader';
+  if (ADMIN_KEYWORDS.some(k => position.includes(k))) return 'admin';
   return 'member';
 }
 

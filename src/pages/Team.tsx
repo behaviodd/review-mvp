@@ -992,7 +992,9 @@ function MemberRow({
           {(() => {
             if (user.role === 'admin') return <StatusBadge type="role" value="admin" />;
             if (isOrgHeadHere) return <StatusBadge type="role" value="leader" />;
-            // 조직장이 지정된 조직에서만 타 leader 배지 숨김
+            // 겸임으로 소속된 경우 실제 role 배지 그대로 표시 (다른 조직의 조직장일 수 있음)
+            if (secondaryAssignmentHere) return <StatusBadge type="role" value={user.role} />;
+            // 주소속 구성원 중 조직장이 지정된 조직의 타 leader는 배지 숨김
             if (user.role === 'leader' && !!orgHeadId) return null;
             return <StatusBadge type="role" value={user.role} />;
           })()}

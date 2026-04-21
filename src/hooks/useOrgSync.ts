@@ -56,8 +56,11 @@ export function useOrgSync() {
         );
       } else {
         if (orgResp.etag) orgEtagRef.current = orgResp.etag;
+        const parsedUsers = parseSheetUsers(orgResp.rows ?? orgResp.users ?? []);
+        // 시트가 비어 있으면 로컬 데이터 보존
+        if (parsedUsers.length === 0) return;
         syncFromSheet(
-          parseSheetUsers(orgResp.rows ?? orgResp.users ?? []),
+          parsedUsers,
           parseOrgUnits(orgUnitRows as Record<string, unknown>[]),
           parseSecondaryOrgs(secondaryOrgRows as Record<string, unknown>[]),
         );

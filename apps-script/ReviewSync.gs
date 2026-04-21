@@ -17,10 +17,13 @@
  *           upsertSubmission | deleteSubmission
  */
 
+/* ★ 스프레드시트 ID — 반드시 본인 시트 ID로 교체하세요 ★ */
+var SPREADSHEET_ID = '138NMXPcwrG_lOIkC27BGtTZLN-3Ql3mVOttvM5xD-mg';
+
 /* ── 시트 이름 상수 ─────────────────────────────────────────────── */
-var SHEET_CYCLES      = '리뷰';
-var SHEET_TEMPLATES   = '템플릿';
-var SHEET_SUBMISSIONS = '제출내용';
+var SHEET_CYCLES      = '_리뷰';
+var SHEET_TEMPLATES   = '_템플릿';
+var SHEET_SUBMISSIONS = '_제출';
 
 /* ── 컬럼 헤더 정의 ─────────────────────────────────────────────── */
 var CYCLE_HEADERS = [
@@ -35,9 +38,15 @@ var SUBMISSION_HEADERS = [
   '종합점수', '제출일시', '최종저장일시', '답변JSON'
 ];
 
+/* ── 유틸: 스프레드시트 열기 ────────────────────────────────────── */
+function getSpreadsheet() {
+  if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
 /* ── 유틸: 시트 가져오기 (없으면 생성 + 헤더 기록) ─────────────── */
 function getSheet(name, headers) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);

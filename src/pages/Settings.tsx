@@ -9,7 +9,7 @@ import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { User, Shield, Sheet, CheckCircle2, XCircle, RefreshCw, Info, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { Switch } from '../components/catalyst/switch';
-import { verifyLogin, changePassword } from '../utils/authApi';
+import { verifyLogin, changePassword, batchInitAccounts } from '../utils/authApi';
 
 
 /* ── 비밀번호 변경 섹션 ──────────────────────────────────────────────── */
@@ -164,6 +164,19 @@ export function Settings() {
   const { refetch: refetchReview } = useReviewSync();
   const [urlDraft, setUrlDraft] = useState(scriptUrl);
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
+  const [batchInitState, setBatchInitState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
+
+  const handleBatchInitAccounts = async () => {
+    setBatchInitState('loading');
+    const result = await batchInitAccounts();
+    setBatchInitState(result.ok ? 'ok' : 'fail');
+    if (result.ok) {
+      showToast('success', `계정 일괄 초기화 완료 — ${result.created}명 신규 등록`);
+    } else {
+      showToast('error', '계정 초기화에 실패했습니다. Apps Script URL을 확인해 주세요.');
+    }
+    setTimeout(() => setBatchInitState('idle'), 3000);
+  };
 
   const handleSaveUrl = () => {
     setScriptUrl(urlDraft.trim());
@@ -357,8 +370,22 @@ export function Settings() {
 
           </div>
 
-          {/* 저장 버튼 */}
-          <div className="flex justify-end pt-1">
+          {/* 저장 / 계정 일괄 초기화 */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              {scriptUrl && (
+                <button
+                  onClick={handleBatchInitAccounts}
+                  disabled={batchInitState === 'loading'}
+                  className="px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {batchInitState === 'loading' ? '처리 중...' : '계정 일괄 초기화'}
+                </button>
+              )}
+              {scriptUrl && (
+                <p className="text-[11px] text-neutral-400">시트에서 가져온 구성원의 초기 비밀번호를 사번으로 설정</p>
+              )}
+            </div>
             <button
               onClick={handleSaveUrl}
               disabled={urlDraft.trim() === scriptUrl}

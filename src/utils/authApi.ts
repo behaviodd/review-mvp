@@ -87,3 +87,13 @@ export async function initAccount(userId: string, email: string): Promise<boolea
     return false;
   }
 }
+
+/** 관리자 전용 — _구성원 전체를 _계정 탭에 일괄 등록 (이미 있는 행은 유지) */
+export async function batchInitAccounts(): Promise<{ ok: boolean; created: number }> {
+  try {
+    const json = await post('batchInitAccounts', {});
+    return { ok: json.ok === true, created: Number(json.created ?? 0) };
+  } catch {
+    return { ok: false, created: 0 };
+  }
+}

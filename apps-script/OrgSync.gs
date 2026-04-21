@@ -1,24 +1,27 @@
 /**
  * ReviewFlow — 조직·구성원 데이터 Apps Script
  *
- * 스프레드시트 시트 구성 (없으면 자동 생성):
- *   - 구성원     : 전체 구성원 목록
- *   - _조직구조  : 조직 트리 (주조직/부조직/팀/스쿼드)
- *   - _겸임      : 겸임 조직 배정 내역
+ * ★ 필수 설정:
+ *   아래 SPREADSHEET_ID 에 데이터가 있는 스프레드시트 URL의 ID를 입력하세요.
+ *   URL 예: https://docs.google.com/spreadsheets/d/138NMXPcwrG_lOIkC27BGtTZLN-3Ql3mVOttvM5xD-mg/edit
  *
- * 배포 방법:
- *   확장 프로그램 → Apps Script → 배포 → 새 배포
- *   종류: 웹 앱 / 액세스: 모든 사용자
+ * 시트 이름 (이미 있는 시트 이름과 다르면 아래 상수를 수정하세요):
+ *   SHEET_USERS     : 구성원 목록 탭 이름
+ *   SHEET_ORG       : 조직구조 탭 이름 (없으면 자동 생성)
+ *   SHEET_SECONDARY : 겸임 탭 이름 (없으면 자동 생성)
+ *
+ * 배포: 확장 프로그램 → Apps Script → 배포 → 새 배포
+ *       종류: 웹 앱 / 액세스: 모든 사용자
  *
  * GET  ?action=getOrg[&etag=...] | getOrgStructure | getSecondaryOrgs
  * POST { action, data }  또는  { action, rows }
- *   action: createUser | updateUser | deleteUser | batchUpsertUsers
- *           upsertOrgUnit | deleteOrgUnit
- *           upsertSecondaryOrg | deleteSecondaryOrg
  */
 
-/* ── 시트 이름 상수 ─────────────────────────────────────────────── */
-var SHEET_USERS      = '구성원';
+/* ★ 스프레드시트 ID — 반드시 본인 시트 ID로 교체하세요 ★ */
+var SPREADSHEET_ID = '138NMXPcwrG_lOIkC27BGtTZLN-3Ql3mVOttvM5xD-mg';  // 예: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms'
+
+/* ── 시트 이름 상수 (기존 탭 이름이 다르면 여기만 수정) ────────── */
+var SHEET_USERS      = '_구성원';
 var SHEET_ORG        = '_조직구조';
 var SHEET_SECONDARY  = '_겸임';
 
@@ -37,9 +40,15 @@ var SECONDARY_HEADERS = [
   '시작일', '종료일', '겸임비율', '비고'
 ];
 
+/* ── 유틸: 스프레드시트 열기 ────────────────────────────────────── */
+function getSpreadsheet() {
+  if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
 /* ── 유틸: 시트 가져오기 (없으면 생성 + 헤더) ──────────────────── */
 function getSheet(name, headers) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);

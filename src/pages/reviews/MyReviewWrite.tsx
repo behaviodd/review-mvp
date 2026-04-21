@@ -11,15 +11,55 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
-import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
-import { submissionWriter } from '../../utils/reviewSheetWriter';
 import { exportSubmissionToCSV } from '../../utils/exportUtils';
 import { DEFAULT_TEMPLATE } from '../../data/defaultTemplate';
-import { AutoSaveIndicator } from '../../components/ui/AutoSaveIndicator';
 import { ProgressBar } from '../../components/ui/ProgressBar';
-import { useAutoSave } from '../../hooks/useAutoSave';
 import { formatDate } from '../../utils/dateUtils';
 import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User } from '../../types';
+
+// ─── 객관식 선택기 ────────────────────────────────────────────────────────────
+function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
+  question: TemplateQuestion; selected: string[]; onChange: (v: string[]) => void; disabled?: boolean;
+}) {
+  const opts = (question.options ?? []).filter(o => o.trim());
+  if (opts.length === 0) return <p className="text-xs text-zinc-300 italic">보기가 없습니다.</p>;
+  const toggle = (opt: string) => {
+    if (question.allowMultiple) {
+      onChange(selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt]);
+    } else {
+      onChange([opt]);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      {opts.map(opt => {
+        const checked = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            disabled={disabled}
+            onClick={() => toggle(opt)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm text-left transition-all ${
+              checked
+                ? 'border-primary-400 bg-primary-50 text-primary-700 font-medium'
+                : disabled
+                  ? 'border-zinc-100 bg-zinc-50 text-zinc-300 cursor-not-allowed'
+                  : 'border-zinc-200 hover:border-primary-300 text-zinc-700'
+            }`}
+          >
+            <span className={`w-4 h-4 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${
+              question.allowMultiple ? 'rounded' : 'rounded-full'
+            } ${checked ? 'border-primary-500 bg-primary-500' : 'border-zinc-300'}`}>
+              {checked && <span className="w-2 h-2 bg-white rounded-sm" />}
+            </span>
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── 별점 선택기 ──────────────────────────────────────────────────────────────
 function RatingSelector({ question: _question, value, onChange, disabled }: {
@@ -61,8 +101,11 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const isUnanswered = showError && question.isRequired && !readOnly &&
-    (question.type === 'text' ? !answer?.textValue?.trim() : !answer?.ratingValue);
+  const isUnanswered = showError && question.isRequired && !readOnly && (() => {
+    if (question.type === 'text') return !answer?.textValue?.trim();
+    if (question.type === 'multiple_choice') return !answer?.selectedOptions?.length;
+    return !answer?.ratingValue;
+  })();
 
   return (
     <div className={`bg-white rounded-xl border p-5 ${
@@ -111,6 +154,14 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
           question={question}
           value={answer?.ratingValue}
           onChange={v => onChange({ questionId: question.id, ratingValue: v })}
+          disabled={readOnly}
+        />
+      )}
+      {question.type === 'multiple_choice' && (
+        <MultipleChoiceSelector
+          question={question}
+          selected={answer?.selectedOptions ?? []}
+          onChange={v => onChange({ questionId: question.id, selectedOptions: v })}
           disabled={readOnly}
         />
       )}
@@ -178,6 +229,12 @@ function InputAnswerContent({ question, answer }: {
     ) : (
       <p className="text-sm text-zinc-400 italic">미응답</p>
     );
+  }
+  if (question.type === 'multiple_choice') {
+    const opts = answer?.selectedOptions ?? [];
+    return opts.length > 0
+      ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-zinc-100 text-zinc-700 rounded-full">{o}</span>)}</div>
+      : <p className="text-sm text-zinc-400 italic">미응답</p>;
   }
 
   return text?.trim()
@@ -564,7 +621,6 @@ export function MyReviewWrite() {
   const { currentUser } = useAuthStore();
   const { submissions, saveAnswer, submitSubmission, cycles, templates } = useReviewStore();
   const { users } = useTeamStore();
-  const { reviewSyncEnabled } = useSheetsSyncStore();
 
   const submission = submissions.find(s => s.id === submissionId);
   const cycle = cycles.find(c => c.id === submission?.cycleId);
@@ -607,24 +663,18 @@ export function MyReviewWrite() {
 
   const getAnswer = (qId: string) => submission?.answers.find(a => a.questionId === qId);
 
-  const onSave = useCallback(async () => {
-    if (!submissionId || !reviewSyncEnabled) return;
-    const latest = useReviewStore.getState().submissions.find(s => s.id === submissionId);
-    if (latest) submissionWriter.upsert(latest);
-  }, [submissionId, reviewSyncEnabled]);
-  const { saveState, savedTime, triggerSave } = useAutoSave(onSave);
-
   const handleChange = useCallback((answer: Answer) => {
     if (!submissionId) return;
     saveAnswer(submissionId, answer);
-    triggerSave();
-  }, [submissionId, saveAnswer, triggerSave]);
+  }, [submissionId, saveAnswer]);
 
   const completedSections = sectionRanges.map(([start, end]) =>
     visibleQuestions.slice(start, end).every(q => {
       if (!q.isRequired) return true;
       const a = getAnswer(q.id);
-      return q.type === 'text' ? !!a?.textValue?.trim() : !!a?.ratingValue;
+      if (q.type === 'text') return !!a?.textValue?.trim();
+      if (q.type === 'multiple_choice') return !!a?.selectedOptions?.length;
+      return !!a?.ratingValue;
     })
   );
   const completedCount = completedSections.filter(Boolean).length;
@@ -977,7 +1027,7 @@ export function MyReviewWrite() {
                 <ChevronLeft className="w-4 h-4" /> 이전
               </button>
 
-              <AutoSaveIndicator state={saveState} savedTime={savedTime} />
+              <span className="text-xs text-zinc-400">{completedCount}/{totalSections} 섹션 완료</span>
 
               {currentSection < totalSections - 1 ? (
                 <button

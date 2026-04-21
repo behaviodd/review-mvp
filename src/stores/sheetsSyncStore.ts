@@ -29,7 +29,6 @@ interface SheetsSyncState {
 export const useSheetsSyncStore = create<SheetsSyncState>()(
   persist(
     (set) => ({
-      // VITE_APPS_SCRIPT_URL이 있으면 기본값으로 사용 (로컬 개발용)
       scriptUrl: import.meta.env.VITE_APPS_SCRIPT_URL ?? '',
       enabled: false,
       lastSyncAt: {},
@@ -40,8 +39,8 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       reviewLastSyncedAt: null,
       reviewSyncError: null,
 
-      setScriptUrl:  (scriptUrl) => set({ scriptUrl }),
-      setEnabled:    (enabled)   => set({ enabled }),
+      setScriptUrl: (scriptUrl) => set({ scriptUrl }),
+      setEnabled:   (enabled)  => set({ enabled }),
       markSynced:    (cycleId)   =>
         set(s => ({ lastSyncAt: { ...s.lastSyncAt, [cycleId]: new Date().toISOString() } })),
       setOrgSyncEnabled:     (orgSyncEnabled)     => set({ orgSyncEnabled }),

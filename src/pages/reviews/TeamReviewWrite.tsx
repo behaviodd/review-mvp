@@ -7,8 +7,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
-import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
-import { submissionWriter } from '../../utils/reviewSheetWriter';
 import { useTeamStore } from '../../stores/teamStore';
 
 const RATING_LABELS: Record<number, string> = { 1: '매우 미흡', 2: '미흡', 3: '보통', 4: '우수', 5: '매우 우수' };
@@ -16,8 +14,6 @@ import { exportSubmissionToCSV } from '../../utils/exportUtils';
 import { DEFAULT_TEMPLATE } from '../../data/defaultTemplate';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { AutoSaveIndicator } from '../../components/ui/AutoSaveIndicator';
-import { useAutoSave } from '../../hooks/useAutoSave';
 import { formatDate } from '../../utils/dateUtils';
 import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit } from '../../types';
 
@@ -255,7 +251,6 @@ export function TeamReviewWrite() {
   const navigate = useNavigate();
   const { cycles, submissions, saveAnswer, submitSubmission, upsertSubmission, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
-  const { reviewSyncEnabled } = useSheetsSyncStore();
 
   const cycle = cycles.find(c => c.id === cycleId);
   const template = templates.find(t => t.id === cycle?.templateId) ?? DEFAULT_TEMPLATE;
@@ -442,19 +437,11 @@ export function TeamReviewWrite() {
   const getAnswer = (qId: string) => mySubmission?.answers.find(a => a.questionId === qId);
   const getSelfAnswer = (qId: string) => selfSubmission?.answers.find(a => a.questionId === qId);
 
-  const onSave = useCallback(async () => {
-    if (!mySubmission?.id || !reviewSyncEnabled) return;
-    const latest = useReviewStore.getState().submissions.find(s => s.id === mySubmission.id);
-    if (latest) submissionWriter.upsert(latest);
-  }, [mySubmission?.id, reviewSyncEnabled]);
-  const { saveState, savedTime, triggerSave } = useAutoSave(onSave);
-
   const mySubmissionId = mySubmission?.id;
   const handleAnswerChange = useCallback((answer: Answer) => {
     if (!mySubmissionId || isReadOnly) return;
     saveAnswer(mySubmissionId, answer);
-    triggerSave();
-  }, [mySubmissionId, isReadOnly, saveAnswer, triggerSave]);
+  }, [mySubmissionId, isReadOnly, saveAnswer]);
 
   const detectMismatch = () => {
     if (!selfSubmitted) return false;
@@ -667,9 +654,8 @@ export function TeamReviewWrite() {
             </div>
           )}
 
-          {/* 자동저장 + 상태 */}
-          <div className="flex items-center justify-between">
-            <AutoSaveIndicator state={saveState} savedTime={savedTime} />
+          {/* 상태 */}
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-2">
               <StatusBadge type="submission" value={mySubmission?.status || 'not_started'} />
               {selfSubmitted
@@ -796,6 +782,35 @@ export function TeamReviewWrite() {
                           />
                         )
                       )}
+                      {q.type === 'multiple_choice' && (
+                        (isReadOnly || submitted) ? (
+                          (answer?.selectedOptions?.length ?? 0) > 0
+                            ? <div className="flex flex-wrap gap-1.5">{(answer!.selectedOptions!).map(o => <span key={o} className="text-xs px-2 py-1 bg-zinc-100 text-zinc-700 rounded-full">{o}</span>)}</div>
+                            : <p className="text-sm text-zinc-400 italic">미응답</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(q.options ?? []).filter(o => o.trim()).map(opt => {
+                              const sel = answer?.selectedOptions ?? [];
+                              const checked = sel.includes(opt);
+                              const toggle = () => {
+                                const next = q.allowMultiple
+                                  ? (checked ? sel.filter(s => s !== opt) : [...sel, opt])
+                                  : [opt];
+                                handleAnswerChange({ questionId: q.id, selectedOptions: next });
+                              };
+                              return (
+                                <button key={opt} type="button" onClick={toggle}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm text-left transition-all ${checked ? 'border-primary-400 bg-primary-50 text-primary-700 font-medium' : 'border-zinc-200 hover:border-primary-300 text-zinc-700'}`}>
+                                  <span className={`w-4 h-4 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${q.allowMultiple ? 'rounded' : 'rounded-full'} ${checked ? 'border-primary-500 bg-primary-500' : 'border-zinc-300'}`}>
+                                    {checked && <span className="w-2 h-2 bg-white rounded-sm" />}
+                                  </span>
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )
+                      )}
                       {q.type === 'text' && (
                         (isReadOnly || submitted) ? (
                           answer?.textValue?.trim()
@@ -832,8 +847,7 @@ export function TeamReviewWrite() {
 
           {/* 하단 제출 바 */}
           {!isAdmin && !isReadOnly && !submitted && (
-            <div className="flex items-center justify-between bg-white rounded-xl border border-zinc-950/5 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
-              <AutoSaveIndicator state={saveState} savedTime={savedTime} />
+            <div className="flex items-center justify-end bg-white rounded-xl border border-zinc-950/5 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
               <button
                 onClick={() => { if (selfSubmitted && canSubmit) setShowConfirm(true); }}
                 disabled={!selfSubmitted || !canSubmit}

@@ -75,12 +75,21 @@ function sheetToObjects(sheet) {
     });
 }
 
+/** 헤더 이름 정규화 — 공백 제거 + 소문자. 시트 열 이름 변형 대응 */
+function normalizeKey(k) {
+  return String(k).replace(/\s+/g, '').toLowerCase();
+}
+
 /** 특정 컬럼값으로 행 번호(1-based) 검색. 없으면 -1 반환 */
 function findRowIndex(sheet, colName, value) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return -1;
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var colIdx  = headers.indexOf(colName);
+  var headers   = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var normTarget = normalizeKey(colName);
+  var colIdx = -1;
+  for (var i = 0; i < headers.length; i++) {
+    if (normalizeKey(headers[i]) === normTarget) { colIdx = i; break; }
+  }
   if (colIdx < 0) return -1;
   var col = sheet.getRange(2, colIdx + 1, lastRow - 1, 1).getValues();
   for (var i = 0; i < col.length; i++) {
@@ -91,9 +100,14 @@ function findRowIndex(sheet, colName, value) {
 
 /** 기본키(pkCol)를 기준으로 행을 upsert */
 function upsertRow(sheet, pkCol, pkValue, data) {
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var row     = headers.map(function(h) { return data[h] !== undefined ? data[h] : ''; });
-  var rowIdx  = findRowIndex(sheet, pkCol, pkValue);
+  var headers  = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var normData = {};
+  Object.keys(data).forEach(function(k) { normData[normalizeKey(k)] = data[k]; });
+  var row = headers.map(function(h) {
+    var v = normData[normalizeKey(h)];
+    return v !== undefined ? v : '';
+  });
+  var rowIdx = findRowIndex(sheet, pkCol, pkValue);
   if (rowIdx > 0) {
     sheet.getRange(rowIdx, 1, 1, row.length).setValues([row]);
   } else {
@@ -103,12 +117,15 @@ function upsertRow(sheet, pkCol, pkValue, data) {
 
 /** 기존 행의 값을 유지하면서 지정한 컬럼만 덮어씀 (부분 업데이트) */
 function patchRow(sheet, pkCol, pkValue, patch) {
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var rowIdx  = findRowIndex(sheet, pkCol, pkValue);
+  var headers  = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var rowIdx   = findRowIndex(sheet, pkCol, pkValue);
   if (rowIdx < 0) return false;
-  var existing = sheet.getRange(rowIdx, 1, 1, headers.length).getValues()[0];
-  var updated  = headers.map(function(h, i) {
-    return patch[h] !== undefined ? patch[h] : existing[i];
+  var existing  = sheet.getRange(rowIdx, 1, 1, headers.length).getValues()[0];
+  var normPatch = {};
+  Object.keys(patch).forEach(function(k) { normPatch[normalizeKey(k)] = patch[k]; });
+  var updated = headers.map(function(h, i) {
+    var v = normPatch[normalizeKey(h)];
+    return v !== undefined ? v : existing[i];
   });
   sheet.getRange(rowIdx, 1, 1, updated.length).setValues([updated]);
   return true;
@@ -193,10 +210,11 @@ function doGet(e) {
 //
 // 지원 액션:
 //   [인증]
-//     verifyLogin     → { userId, isTemp }
-//     setPassword     → { ok }
-//     resetAccount    → { ok }
-//     initAccount     → { ok }
+//     verifyLogin       → { userId, isTemp }
+//     setPassword       → { ok }
+//     resetAccount      → { ok }
+//     initAccount       → { ok }
+//     batchInitAccounts → { ok, created }
 //   [구성원]
 //     createUser      → { ok, userId }
 //     updateUser      → { ok }
@@ -229,17 +247,36 @@ function doPost(e) {
       var accountSheet = getSheet(SHEET.ACCOUNTS);
       var accounts     = sheetToObjects(accountSheet);
       var account      = null;
+      var emailInput   = String(data['email']).toLowerCase().trim();
       for (var i = 0; i < accounts.length; i++) {
-        if (String(accounts[i]['이메일']).toLowerCase().trim() ===
-            String(data['email']).toLowerCase().trim()) {
-          account = accounts[i];
-          break;
+        if (String(accounts[i]['이메일']).toLowerCase().trim() === emailInput) {
+          account = accounts[i]; break;
         }
       }
-      if (!account) return jsonErr('계정을 찾을 수 없습니다.');
+
+      // _계정에 없으면 _구성원에서 이메일로 찾아 자동 초기화 (초기 비밀번호 = 사번)
+      if (!account) {
+        var allUsers = sheetToObjects(getSheet(SHEET.USERS));
+        var matchUser = null;
+        for (var j = 0; j < allUsers.length; j++) {
+          if (String(allUsers[j]['이메일']).toLowerCase().trim() === emailInput) {
+            matchUser = allUsers[j]; break;
+          }
+        }
+        if (!matchUser) return jsonErr('계정을 찾을 수 없습니다.');
+        var autoId = String(matchUser['사번']).trim();
+        upsertRow(accountSheet, '사번', autoId, {
+          '사번': autoId, '이메일': emailInput, '비밀번호해시': '',
+        });
+        account = { '사번': autoId, '이메일': emailInput, '비밀번호해시': '' };
+      }
 
       var userId   = String(account['사번']).trim();
-      var stored   = String(account['비밀번호해시']).trim();
+      // 시트에서 읽은 '비밀번호해시' 키가 없으면(열 이름 불일치) 빈 문자열로 처리
+      var hashKey  = Object.keys(account).filter(function(k) {
+        return normalizeKey(k) === '비밀번호해시';
+      })[0] || '비밀번호해시';
+      var stored   = String(account[hashKey] !== undefined ? account[hashKey] : '').trim();
       var provided = String(data['passwordHash']).trim();
 
       // 저장된 해시가 비어 있으면 초기 비밀번호 = sha256(사번)
@@ -252,18 +289,30 @@ function doPost(e) {
     }
 
     if (action === 'setPassword') {
-      var sheet = getSheet(SHEET.ACCOUNTS);
-      patchRow(sheet, '사번', data['userId'], {
+      var sheet   = getSheet(SHEET.ACCOUNTS);
+      var patched = patchRow(sheet, '사번', data['userId'], {
         '비밀번호해시': data['passwordHash'],
       });
+      // 계정 행이 없으면 _구성원에서 이메일 찾아 새로 생성
+      if (!patched) {
+        var email = '';
+        var urows = sheetToObjects(getSheet(SHEET.USERS));
+        for (var k = 0; k < urows.length; k++) {
+          if (String(urows[k]['사번']).trim() === String(data['userId']).trim()) {
+            email = String(urows[k]['이메일'] || '').toLowerCase().trim(); break;
+          }
+        }
+        upsertRow(sheet, '사번', data['userId'], {
+          '사번': data['userId'], '이메일': email, '비밀번호해시': data['passwordHash'],
+        });
+      }
       return jsonOk();
     }
 
     if (action === 'resetAccount') {
-      var sheet = getSheet(SHEET.ACCOUNTS);
-      patchRow(sheet, '사번', data['userId'], {
-        '비밀번호해시': '',
-      });
+      var sheet   = getSheet(SHEET.ACCOUNTS);
+      var patched = patchRow(sheet, '사번', data['userId'], { '비밀번호해시': '' });
+      if (!patched) return jsonErr('계정을 찾을 수 없습니다: ' + data['userId']);
       return jsonOk();
     }
 
@@ -273,11 +322,33 @@ function doPost(e) {
       if (rowIdx < 0) {
         upsertRow(sheet, '사번', data['userId'], {
           '사번':         data['userId'],
-          '이메일':       data['email'] || '',
+          '이메일':       String(data['email'] || '').toLowerCase().trim(),
           '비밀번호해시': '',
         });
       }
       return jsonOk();
+    }
+
+    // 관리자용: _구성원 전체를 _계정에 일괄 초기화 (이미 있는 행은 건드리지 않음)
+    if (action === 'batchInitAccounts') {
+      var accountSheet = getSheet(SHEET.ACCOUNTS);
+      var uRows        = sheetToObjects(getSheet(SHEET.USERS));
+      var created      = 0;
+      uRows.forEach(function(u) {
+        var uid = String(u['사번']).trim();
+        if (!uid) return;
+        if (findRowIndex(accountSheet, '사번', uid) < 0) {
+          upsertRow(accountSheet, '사번', uid, {
+            '사번':         uid,
+            '이메일':       String(u['이메일'] || '').toLowerCase().trim(),
+            '비밀번호해시': '',
+          });
+          created++;
+        }
+      });
+      return ContentService.createTextOutput(
+        JSON.stringify({ ok: true, created: created })
+      ).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ── 구성원 ────────────────────────────────────────────────────

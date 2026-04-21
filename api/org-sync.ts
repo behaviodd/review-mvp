@@ -54,14 +54,18 @@ export default async function handler(request: Request): Promise<Response> {
     try {
       const payload = await request.text();
 
-      // Apps Script POST-Redirect-GET 패턴: POST /exec → 302 → GET redirect URL
-      // redirect:'follow' 가 POST→GET 변환을 올바르게 처리함
-      const res = await fetch(scriptUrl, {
+      // redirect:'follow' 는 302 를 GET 으로 변환하여 doPost 대신 doGet 이 호출됨.
+      // redirect:'manual' 로 직접 302 Location 을 따라가야 doPost 가 올바르게 실행됨.
+      let res = await fetch(scriptUrl, {
         method:   'POST',
         headers:  { 'Content-Type': 'application/json' },
         body:     payload,
-        redirect: 'follow',
+        redirect: 'manual',
       });
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get('location') ?? res.headers.get('Location');
+        if (location) res = await fetch(location, { redirect: 'follow' });
+      }
 
       const body = await res.text();
 

@@ -108,6 +108,7 @@ export interface Answer {
   questionId: string;
   ratingValue?: number;
   textValue?: string;
+  selectedOptions?: string[];
 }
 
 export interface Feedback {

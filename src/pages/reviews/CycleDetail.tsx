@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useNotificationStore } from '../../stores/notificationStore';
@@ -33,7 +34,7 @@ const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
     next: 'manager_review',
     label: '조직장 리뷰 시작',
     isDanger: false,
-    msg: '자기평가 단계를 마감하고 조직장 하향리뷰 단계로 전환합니다.',
+    msg: '자기평가 단계를 마감하고 조직장 리뷰 단계로 전환합니다.',
   },
   manager_review: {
     next: 'closed',
@@ -221,7 +222,7 @@ function CycleEditModal({
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                매니저 리뷰 마감일 <span className="text-danger-500">*</span>
+                조직장 리뷰 마감일 <span className="text-danger-500">*</span>
               </label>
               <input
                 type="date"
@@ -254,10 +255,42 @@ function CycleEditModal({
   );
 }
 
-// ─── 제출 리뷰 조회 모달 ─────────────────────────────────────────────────────
+// ─── 제출 리뷰 사이드 패널 (자기평가 ↔ 조직장 리뷰 병렬 비교) ─────────────────
 const RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
 
-function SubmissionViewModal({
+function AnswerView({ q, ans }: { q: ReviewTemplate['questions'][0]; ans: ReviewSubmission['answers'][0] | undefined }) {
+  if (q.type === 'rating' || q.type === 'competency') {
+    if (ans?.ratingValue == null) return <p className="text-xs text-neutral-300 italic">미응답</p>;
+    const rv = ans.ratingValue;
+    return (
+      <div className="space-y-1.5">
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(n => (
+            <div key={n} className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors ${
+              n === rv ? 'bg-primary-600 text-white shadow-sm' : n < rv ? 'bg-primary-100 text-primary-400' : 'bg-neutral-100 text-neutral-300'
+            }`}>{n}</div>
+          ))}
+        </div>
+        <span className="text-xs font-semibold text-primary-700">{RATING_LABELS[rv]}</span>
+      </div>
+    );
+  }
+  if (q.type === 'multiple_choice') {
+    const opts = ans?.selectedOptions ?? [];
+    if (!opts.length) return <p className="text-xs text-neutral-300 italic">미응답</p>;
+    return (
+      <div className="flex flex-wrap gap-1">
+        {opts.map(v => (
+          <span key={v} className="px-2 py-0.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-full border border-primary-100">{v}</span>
+        ))}
+      </div>
+    );
+  }
+  if (!ans?.textValue?.trim()) return <p className="text-xs text-neutral-300 italic">미응답</p>;
+  return <p className="text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">{ans.textValue}</p>;
+}
+
+function SubmissionViewPanel({
   member,
   selfSub,
   managerSub,
@@ -272,131 +305,181 @@ function SubmissionViewModal({
   template: ReviewTemplate | undefined;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<'self' | 'manager'>(
-    selfSub?.status === 'submitted' ? 'self' : 'manager'
+  const allQuestions = template?.questions ?? [];
+
+  const ColHeader = ({
+    label,
+    sub,
+    extra,
+    accent,
+  }: {
+    label: string;
+    sub: ReviewSubmission | undefined;
+    extra?: React.ReactNode;
+    accent: string;
+  }) => (
+    <div className={`px-5 py-3 ${accent}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-neutral-800">{label}</span>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+          sub?.status === 'submitted'
+            ? 'bg-success-100 text-success-700'
+            : sub?.status === 'in_progress'
+            ? 'bg-amber-100 text-amber-700'
+            : 'bg-neutral-100 text-neutral-400'
+        }`}>
+          {sub?.status === 'submitted' ? '제출 완료' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
+        </span>
+      </div>
+      {sub?.submittedAt && (
+        <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(sub.submittedAt)} 제출</p>
+      )}
+      {extra}
+    </div>
   );
 
-  const sub = tab === 'self' ? selfSub : managerSub;
-  const questions = template?.questions ?? [];
-  const visibleQuestions = questions.filter(q =>
-    tab === 'self' ? q.target !== 'leader' : q.target !== 'self'
-  );
+  /* 종합 평점 행 — 양쪽 중 하나라도 있을 때만 표시 */
+  const showOverall = selfSub?.overallRating != null || managerSub?.overallRating != null;
 
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-modal w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 flex-shrink-0">
+  return createPortal(
+    <>
+      {/* 배경 오버레이 */}
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+
+      {/* 사이드 패널 — 넓게 */}
+      <div className="fixed top-0 right-0 h-screen w-full max-w-5xl bg-white shadow-2xl z-50 flex flex-col">
+
+        {/* 패널 헤더 */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 flex-shrink-0 bg-white">
           <div className="flex items-center gap-3">
-            <UserAvatar user={member} size="sm" />
+            <UserAvatar user={member} size="md" />
             <div>
-              <p className="text-sm font-semibold text-neutral-900">{member.name}</p>
-              <p className="text-xs text-neutral-400">{member.position} · {member.department}</p>
+              <p className="text-base font-semibold text-neutral-900">{member.name}</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{member.position} · {member.department}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors">
-            <X className="w-4 h-4 text-neutral-500" />
+          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-neutral-500" />
           </button>
         </div>
 
-        {/* 탭 */}
-        <div className="flex gap-1 px-5 py-2.5 border-b border-neutral-100 flex-shrink-0">
-          {([
-            { key: 'self', label: '자기평가', sub: selfSub },
-            { key: 'manager', label: '매니저 리뷰', sub: managerSub },
-          ] as const).map(({ key, label, sub: s }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                tab === key
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
-              }`}
-            >
-              {label}
-              {s?.status === 'submitted'
-                ? <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
-                : <span className="w-1.5 h-1.5 rounded-full bg-neutral-200" />}
-            </button>
-          ))}
-          {tab === 'manager' && reviewer && (
-            <span className="ml-auto text-xs text-neutral-400 self-center">작성자: {reviewer.name}</span>
-          )}
+        {/* 컬럼 헤더 */}
+        <div className="grid grid-cols-2 border-b border-neutral-100 flex-shrink-0 divide-x divide-neutral-100">
+          <ColHeader
+            label="자기평가"
+            sub={selfSub}
+            accent="bg-indigo-50/60"
+          />
+          <ColHeader
+            label="조직장 리뷰"
+            sub={managerSub}
+            accent="bg-emerald-50/60"
+            extra={reviewer && (
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                작성자: <strong className="text-neutral-600">{reviewer.name}</strong>
+              </p>
+            )}
+          />
         </div>
 
-        {/* 본문 */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {!sub || sub.status !== 'submitted' ? (
-            <div className="py-12 text-center text-sm text-neutral-400">
-              {sub?.status === 'in_progress' ? '작성 중입니다.' : '아직 제출되지 않았습니다.'}
+        {/* 종합 평점 비교 행 */}
+        {showOverall && (
+          <div className="grid grid-cols-2 divide-x divide-neutral-100 border-b border-neutral-100 flex-shrink-0">
+            {[selfSub, managerSub].map((s, i) => (
+              <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i === 0 ? 'bg-indigo-50/40' : 'bg-emerald-50/40'}`}>
+                {s?.overallRating != null ? (
+                  <>
+                    <Star className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-neutral-400 font-medium">종합 평점</span>
+                      <p className="text-base font-bold text-primary-700 leading-none mt-0.5">
+                        {s.overallRating.toFixed(1)}
+                        <span className="text-xs font-medium ml-1">{RATING_LABELS[Math.round(s.overallRating)] ?? ''}</span>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-xs text-neutral-300 italic">종합 평점 없음</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 질문별 답변 — 병렬 비교 */}
+        <div className="flex-1 overflow-y-auto">
+          {allQuestions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-neutral-300">
+              <Eye className="w-8 h-8" />
+              <p className="text-sm">템플릿 정보가 없습니다.</p>
             </div>
           ) : (
-            <>
-              {sub.overallRating != null && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-primary-50 rounded-xl">
-                  <Star className="w-4 h-4 text-primary-500" />
-                  <span className="text-sm font-semibold text-primary-700">
-                    종합 평점 {sub.overallRating}점 — {RATING_LABELS[sub.overallRating] ?? ''}
-                  </span>
-                </div>
-              )}
-              {visibleQuestions.map((q, idx) => {
-                const ans = sub.answers.find(a => a.questionId === q.id);
-                return (
-                  <div key={q.id} className="space-y-1.5">
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Q{idx + 1}
-                    </p>
-                    <p className="text-sm font-medium text-neutral-800">{q.text}</p>
-                    {q.type === 'rating' ? (
-                      ans?.ratingValue != null ? (
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map(n => (
-                              <div
-                                key={n}
-                                className={`w-8 h-8 rounded-lg text-sm font-bold flex items-center justify-center ${
-                                  n === ans.ratingValue
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-neutral-100 text-neutral-300'
-                                }`}
-                              >
-                                {n}
-                              </div>
-                            ))}
-                          </div>
-                          <span className="text-xs text-neutral-500">{RATING_LABELS[ans.ratingValue]}</span>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-neutral-300 italic">미응답</p>
-                      )
-                    ) : q.type === 'multiple_choice' ? (
-                      ans?.textValue ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {ans.textValue.split(',').map(v => (
-                            <span key={v} className="px-2.5 py-1 text-xs font-medium bg-primary-50 text-primary-700 rounded-full">
-                              {v.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      ) : <p className="text-sm text-neutral-300 italic">미응답</p>
-                    ) : (
-                      ans?.textValue
-                        ? <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed bg-neutral-50 rounded-xl px-4 py-3">{ans.textValue}</p>
-                        : <p className="text-sm text-neutral-300 italic">미응답</p>
-                    )}
+            allQuestions.map((q, idx) => {
+              const selfAns  = selfSub?.answers.find(a => a.questionId === q.id);
+              const mgrAns   = managerSub?.answers.find(a => a.questionId === q.id);
+              const hasSelf  = q.target !== 'leader';
+              const hasMgr   = q.target !== 'self';
+              const typeLabel =
+                q.type === 'rating' ? '평점' :
+                q.type === 'competency' ? '역량' :
+                q.type === 'multiple_choice' ? '객관식' : '주관식';
+
+              return (
+                <div key={q.id} className={`${idx < allQuestions.length - 1 ? 'border-b border-neutral-100' : ''}`}>
+                  {/* 질문 텍스트 — 전체 너비 */}
+                  <div className="flex items-start gap-2.5 px-5 pt-4 pb-3">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-100 text-[10px] font-bold text-neutral-500 flex items-center justify-center mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+                          {typeLabel}
+                        </span>
+                        {q.isPrivate && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">비공개</span>
+                        )}
+                        {q.target !== 'both' && (
+                          <span className="text-[10px] font-semibold text-neutral-300 bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-100">
+                            {q.target === 'self' ? '본인 작성' : '조직장 작성'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-neutral-800 leading-snug">{q.text}</p>
+                    </div>
                   </div>
-                );
-              })}
-              <p className="text-xs text-neutral-300 text-right">
-                제출 {sub.submittedAt ? formatDate(sub.submittedAt) : '—'}
-              </p>
-            </>
+
+                  {/* 답변 2컬럼 */}
+                  <div className="grid grid-cols-2 divide-x divide-neutral-100 pb-4">
+                    <div className={`px-5 ${hasSelf ? '' : 'bg-neutral-50/50'}`}>
+                      {hasSelf
+                        ? (selfSub?.status === 'submitted'
+                          ? <AnswerView q={q} ans={selfAns} />
+                          : <p className="text-xs text-neutral-300 italic">
+                              {selfSub?.status === 'in_progress' ? '작성 중' : '미제출'}
+                            </p>)
+                        : <p className="text-xs text-neutral-200 italic">해당 없음</p>
+                      }
+                    </div>
+                    <div className={`px-5 ${hasMgr ? '' : 'bg-neutral-50/50'}`}>
+                      {hasMgr
+                        ? (managerSub?.status === 'submitted'
+                          ? <AnswerView q={q} ans={mgrAns} />
+                          : <p className="text-xs text-neutral-300 italic">
+                              {managerSub?.status === 'in_progress' ? '작성 중' : '미제출'}
+                            </p>)
+                        : <p className="text-xs text-neutral-200 italic">해당 없음</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }
 
@@ -508,8 +591,8 @@ export function CycleDetail() {
           addNotification({
             id: `mgr_review_${Date.now()}_${i}_${leaderId}`,
             userId: leaderId,
-            title: '조직장 리뷰 단계 시작',
-            message: `${cycle.title} 리뷰가 조직장 리뷰 단계로 전환되었습니다. 지금 팀원 평가를 작성해주세요.`,
+            title: '조직장 리뷰 시작',
+            message: `${cycle.title} 리뷰가 조직장 리뷰 단계로 전환되었습니다. 팀원 평가를 작성해주세요.`,
             type: 'system',
             isRead: false,
             createdAt: new Date().toISOString(),
@@ -669,7 +752,7 @@ export function CycleDetail() {
         const managerSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === viewingMemberId && s.type === 'downward');
         const reviewer = managerSub ? users.find(u => u.id === managerSub.reviewerId) : undefined;
         return (
-          <SubmissionViewModal
+          <SubmissionViewPanel
             member={member}
             selfSub={selfSub}
             managerSub={managerSub}
@@ -698,7 +781,7 @@ export function CycleDetail() {
         {[
           { icon: Users, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
           { icon: BarChart2, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
-          { icon: BarChart2, label: '매니저 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
+          { icon: BarChart2, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
         ].map(({ icon: Icon, label, value, sub }) => (
           <div key={label} className="bg-white rounded-xl border border-neutral-200 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -717,7 +800,7 @@ export function CycleDetail() {
         <div className="space-y-3">
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
-            { label: '매니저 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
+            { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
           ].map(({ label, date, highlight }) => (
             <div key={label} className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-primary-50' : ''}`}>
               <span className={`text-sm ${highlight ? 'font-semibold text-primary-700' : 'text-neutral-600'}`}>{label}</span>
@@ -805,7 +888,7 @@ export function CycleDetail() {
                     <StatusBadge type="submission" value={self} />
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-neutral-400">매니저</span>
+                    <span className="text-xs text-neutral-400">조직장</span>
                     <StatusBadge type="submission" value={manager} />
                   </div>
                 </div>

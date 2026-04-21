@@ -46,10 +46,11 @@ export function useReviewSync() {
         fetchTab('getTemplates'),
         fetchTab('getSubmissions'),
       ]);
+      // 시트가 비어 있으면 undefined → 로컬 데이터 보존
       syncFromSheet({
-        cycles:      parseSheetCycles(cycleRows),
-        templates:   parseSheetTemplates(templateRows),
-        submissions: parseSheetSubmissions(submissionRows),
+        cycles:      cycleRows.length      > 0 ? parseSheetCycles(cycleRows)           : undefined,
+        templates:   templateRows.length   > 0 ? parseSheetTemplates(templateRows)     : undefined,
+        submissions: submissionRows.length > 0 ? parseSheetSubmissions(submissionRows) : undefined,
       });
       setReviewLastSyncedAt(new Date().toISOString());
     } catch (e) {

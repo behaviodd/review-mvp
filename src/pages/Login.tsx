@@ -46,10 +46,6 @@ export function Login() {
     setError('');
     try {
       const result = await verifyLogin(email.trim(), password);
-      if (!result) {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-        return;
-      }
 
       // 로컬 users 스토어에서 찾기 — 아직 org sync 중이면 최대 3초 대기
       const findUser = () =>
@@ -69,8 +65,9 @@ export function Login() {
       }
       login(user, result.isTemp);
       navigate('/');
-    } catch {
-      setError('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } catch (e) {
+      // verifyLogin이 throw한 실제 원인을 그대로 표시
+      setError(e instanceof Error ? e.message : '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

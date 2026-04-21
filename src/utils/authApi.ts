@@ -17,29 +17,44 @@ export async function sha256(text: string): Promise<string> {
     .join('');
 }
 
-async function post(action: string, data: Record<string, string | boolean>) {
-  const res = await fetch('/api/org-sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
-    body: JSON.stringify({ action, data }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json() as Promise<Record<string, unknown>>;
+/** 내부 POST — 실패 시 실제 원인을 throw */
+async function post(action: string, data: Record<string, string | boolean>): Promise<Record<string, unknown>> {
+  let rawBody = '';
+  try {
+    const res = await fetch('/api/org-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
+      body: JSON.stringify({ action, data }),
+    });
+    rawBody = await res.text();
+    if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status}): ${rawBody.slice(0, 200)}`);
+  } catch (e) {
+    // 네트워크 오류 또는 위에서 던진 HTTP 오류
+    throw e instanceof Error ? e : new Error(String(e));
+  }
+
+  try {
+    return JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    // Apps Script가 JSON 대신 HTML 등을 반환한 경우
+    throw new Error(`응답 파싱 오류 — 받은 내용: ${rawBody.slice(0, 300)}`);
+  }
 }
 
-/** 이메일 + 비밀번호로 로그인 검증. 성공 시 { userId, isTemp } 반환 */
+/**
+ * 이메일 + 비밀번호로 로그인 검증.
+ * 성공: { userId, isTemp } 반환
+ * 실패: 실제 원인 메시지로 throw
+ */
 export async function verifyLogin(
   email: string,
   password: string,
-): Promise<{ userId: string; isTemp: boolean } | null> {
-  try {
-    const passwordHash = await sha256(password);
-    const json = await post('verifyLogin', { email: email.toLowerCase(), passwordHash });
-    if (json.error || !json.userId) return null;
-    return { userId: String(json.userId), isTemp: json.isTemp === true };
-  } catch {
-    return null;
-  }
+): Promise<{ userId: string; isTemp: boolean }> {
+  const passwordHash = await sha256(password);
+  const json = await post('verifyLogin', { email: email.toLowerCase(), passwordHash });
+  if (json.error) throw new Error(String(json.error));
+  if (!json.userId) throw new Error('응답에 userId가 없습니다.');
+  return { userId: String(json.userId), isTemp: json.isTemp === true };
 }
 
 /** 비밀번호 변경 */
@@ -53,10 +68,7 @@ export async function changePassword(userId: string, newPassword: string): Promi
   }
 }
 
-/**
- * 계정 초기화 (관리자 전용)
- * passwordHash를 빈값으로 설정 → 다음 로그인 시 사번이 비밀번호가 됨
- */
+/** 계정 초기화 (관리자 전용) — passwordHash를 빈값으로 설정 */
 export async function resetAccount(userId: string): Promise<boolean> {
   try {
     const json = await post('resetAccount', { userId });
@@ -66,10 +78,7 @@ export async function resetAccount(userId: string): Promise<boolean> {
   }
 }
 
-/**
- * 신규 구성원 계정 초기화 (구성원 생성 시 자동 호출)
- * _계정 탭에 userId/email을 등록하고 passwordHash는 빈값으로 설정
- */
+/** 신규 구성원 계정 초기화 */
 export async function initAccount(userId: string, email: string): Promise<boolean> {
   try {
     const json = await post('initAccount', { userId, email: email.toLowerCase() });

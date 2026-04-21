@@ -79,10 +79,12 @@ export function Login() {
     if (user) { login(user); navigate('/'); }
   };
 
+  const { orgUnits } = useTeamStore();
+  const headIds = new Set(orgUnits.map(u => u.headId).filter(Boolean));
   const roleGroups = {
-    admin:    users.filter(u => u.role === 'admin').slice(0, 2),
-    leader: users.filter(u => u.role === 'leader').slice(0, 4),
-    member: users.filter(u => u.role === 'member').slice(0, 4),
+    admin:  users.filter(u => u.role === 'admin').slice(0, 2),
+    leader: users.filter(u => u.role === 'leader' || (u.role !== 'admin' && headIds.has(u.id))).slice(0, 4),
+    member: users.filter(u => u.role === 'member' && !headIds.has(u.id)).slice(0, 4),
   };
   const roleMeta = {
     admin:  { label: '관리자', desc: '리뷰 운영 · 전체 현황' },

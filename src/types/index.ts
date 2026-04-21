@@ -87,6 +87,7 @@ export interface TemplateQuestion {
   helpText?: string;
   exampleAnswer?: string;
   options?: string[];
+  allowMultiple?: boolean;
   order: number;
 }
 

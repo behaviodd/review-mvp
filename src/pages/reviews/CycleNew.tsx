@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -8,7 +8,7 @@ import { useFieldValidation } from '../../hooks/useFieldValidation';
 import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import {
   Check, ChevronLeft, ChevronRight, FileText, Users,
-  Calendar, Eye, Rocket, PartyPopper, Plus, RefreshCw,
+  Calendar, Eye, Rocket, PartyPopper, Plus, RefreshCw, ChevronDown,
 } from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 
@@ -37,15 +37,20 @@ const addDays = (d: Date, n: number) => {
   return r.toISOString().slice(0, 10);
 };
 
+const DRAFT_KEY = 'cycleWizardDraft';
+
+const TYPE_LABEL: Record<string, string> = {
+  text: '주관식', rating: '평점', competency: '역량', multiple_choice: '객관식',
+};
+
 export function CycleNew() {
-  const navigate     = useNavigate();
+  const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentUser } = useAuthStore();
   const { addCycle, upsertSubmission, templates } = useReviewStore();
   const { users, isLoading: usersLoading } = useTeamStore();
   const showToast = useShowToast();
 
-  // 실제 조직 데이터에서 부서 목록 도출 (어드민 제외, 중복 제거)
   const departments = useMemo(
     () => Array.from(new Set(
       users.filter(u => u.role !== 'admin').map(u => u.department)
@@ -53,38 +58,56 @@ export function CycleNew() {
     [users],
   );
 
-  const [step, setStep]           = useState(0);
-  const [published, setPublished] = useState(false);
-  const [publishedTitle, setPublishedTitle] = useState('');
-  const [publishedId, setPublishedId]       = useState('');
-  const [publishedCount, setPublishedCount] = useState({ members: 0, submissions: 0 });
-  const [publishing, setPublishing] = useState(false);
-
   const fromTemplateId = searchParams.get('templateId') ?? '';
-  const initialTemplateId = fromTemplateId || (templates[0]?.id ?? '');
+  const newTemplateId  = searchParams.get('newTemplateId') ?? '';
 
-  // 템플릿 카드에서 진입 시 step 1(템플릿) 확인 상태 — 직접 변경 원하면 펼침
-  const [templateLocked, setTemplateLocked] = useState(!!fromTemplateId);
+  // 새 템플릿 만들고 돌아왔을 때 sessionStorage에서 위저드 초안 복원
+  const restoredDraft = useMemo(() => {
+    if (!newTemplateId) return null;
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? 'null') as { form: FormState; step: number } | null; }
+    catch { return null; }
+  }, [newTemplateId]);
 
-  const [form, setForm] = useState<FormState>({
-    title:                '',
-    type:                 'scheduled',
-    templateId:           initialTemplateId,
-    targetDepartments:    [],
-    selfReviewDeadline:   addDays(today, 14),
-    managerReviewDeadline: addDays(today, 21),
-    calibrationDeadline:  addDays(today, 28),
-  });
+  const initialTemplateId = newTemplateId || fromTemplateId || (templates[0]?.id ?? '');
+
+  const [step,           setStep]           = useState(restoredDraft?.step ?? 0);
+  const [published,      setPublished]      = useState(false);
+  const [publishedTitle, setPublishedTitle] = useState('');
+  const [publishedId,    setPublishedId]    = useState('');
+  const [publishedCount, setPublishedCount] = useState({ members: 0, submissions: 0 });
+  const [publishing,     setPublishing]     = useState(false);
+  const [templateLocked, setTemplateLocked] = useState(!!fromTemplateId || !!newTemplateId);
+  const [confirmOpen,    setConfirmOpen]    = useState(false);
+  const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
+
+  const [form, setForm] = useState<FormState>(
+    restoredDraft?.form ?? {
+      title:                 '',
+      type:                  'scheduled',
+      templateId:            initialTemplateId,
+      targetDepartments:     [],
+      selfReviewDeadline:    addDays(today, 14),
+      managerReviewDeadline: addDays(today, 21),
+      calibrationDeadline:   addDays(today, 28),
+    },
+  );
+
+  // 새 템플릿 복귀 시: 새 템플릿 자동 선택 + sessionStorage 정리
+  useEffect(() => {
+    if (newTemplateId && restoredDraft) {
+      setForm(f => ({ ...f, templateId: newTemplateId }));
+      sessionStorage.removeItem(DRAFT_KEY);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedTemplate = templates.find(t => t.id === form.templateId);
 
-  // 대상 구성원 (어드민 제외)
   const targetMembers = useMemo(
     () => users.filter(u => form.targetDepartments.includes(u.department) && u.role !== 'admin'),
     [users, form.targetDepartments],
   );
 
-  // 발행 시 생성될 제출 건수 미리 계산
   const previewSubmissions = useMemo(
     () => createCycleSubmissions('preview', targetMembers, users),
     [targetMembers, users],
@@ -117,6 +140,12 @@ export function CycleNew() {
     return true;
   };
 
+  // 새 템플릿 만들기: 위저드 상태 저장 후 이동
+  const handleGoCreateTemplate = () => {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step: 1 }));
+    navigate('/templates/new?returnTo=cycle-wizard');
+  };
+
   /* ── 발행 ─────────────────────────────────────────────────── */
   const handlePublish = async () => {
     if (!currentUser || publishing) return;
@@ -125,22 +154,20 @@ export function CycleNew() {
       await new Promise(r => setTimeout(r, 400));
       const cycleId = `cyc_${Date.now()}`;
 
-      // 1. 사이클 저장
       addCycle({
-        id:                   cycleId,
-        title:                form.title,
-        type:                 form.type,
-        status:               'self_review',
-        templateId:           form.templateId,
-        targetDepartments:    form.targetDepartments,
-        selfReviewDeadline:   new Date(form.selfReviewDeadline).toISOString(),
+        id:                    cycleId,
+        title:                 form.title,
+        type:                  form.type,
+        status:                'self_review',
+        templateId:            form.templateId,
+        targetDepartments:     form.targetDepartments,
+        selfReviewDeadline:    new Date(form.selfReviewDeadline).toISOString(),
         managerReviewDeadline: new Date(form.managerReviewDeadline).toISOString(),
-        createdBy:            currentUser.id,
-        createdAt:            new Date().toISOString(),
-        completionRate:       0,
+        createdBy:             currentUser.id,
+        createdAt:             new Date().toISOString(),
+        completionRate:        0,
       });
 
-      // 2. 평가자–피평가자 매핑 제출 자동 생성
       const subs = createCycleSubmissions(cycleId, targetMembers, users);
       subs.forEach(sub => upsertSubmission(sub));
 
@@ -151,6 +178,7 @@ export function CycleNew() {
       setPublished(true);
     } finally {
       setPublishing(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -172,7 +200,7 @@ export function CycleNew() {
             { label: '자기평가 마감',    value: form.selfReviewDeadline },
             { label: '매니저 리뷰 마감', value: form.managerReviewDeadline },
             { label: '대상 구성원',      value: `${publishedCount.members}명` },
-            { label: '생성된 제출 건',   value: `자기평가 ${previewSubmissions.filter(s => s.type==='self').length}건 · 매니저 평가 ${previewSubmissions.filter(s => s.type==='downward').length}건` },
+            { label: '생성된 제출 건',   value: `자기평가 ${selfCount}건 · 매니저 평가 ${downCount}건` },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center gap-3 text-sm">
               <span className="text-neutral-400 w-32 flex-shrink-0">{label}</span>
@@ -202,7 +230,7 @@ export function CycleNew() {
                 setTemplateLocked(false);
                 setForm({
                   title: '', type: 'scheduled', templateId: templates[0]?.id ?? '',
-                  targetDepartments: [],
+                  targetDepartments:     [],
                   selfReviewDeadline:    addDays(today, 14),
                   managerReviewDeadline: addDays(today, 21),
                   calibrationDeadline:   addDays(today, 28),
@@ -298,7 +326,7 @@ export function CycleNew() {
               <h2 className="text-lg font-semibold text-neutral-900">평가 템플릿 선택</h2>
               <button
                 type="button"
-                onClick={() => navigate('/templates/new')}
+                onClick={handleGoCreateTemplate}
                 className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
               >
                 <Plus className="w-3.5 h-3.5" /> 새 템플릿 만들기
@@ -345,7 +373,7 @@ export function CycleNew() {
                 <p className="text-xs text-neutral-400">템플릿을 먼저 만들어야 리뷰를 생성할 수 있습니다.</p>
                 <button
                   type="button"
-                  onClick={() => navigate('/templates/new')}
+                  onClick={handleGoCreateTemplate}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" /> 새 템플릿 만들기
@@ -473,14 +501,14 @@ export function CycleNew() {
             <h2 className="text-lg font-semibold text-neutral-900">최종 검토 후 발행하세요</h2>
             <div className="space-y-0">
               {[
-                { label: '리뷰 이름',     value: form.title },
-                { label: '유형',          value: form.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰' },
-                { label: '템플릿',        value: selectedTemplate?.name ?? '-' },
-                { label: '대상 부서',     value: form.targetDepartments.join(', ') || '-' },
-                { label: '대상 구성원',   value: `${targetMembers.length}명` },
-                { label: '자기평가',      value: `${selfCount}건 생성` },
-                { label: '매니저 평가',   value: `${downCount}건 생성` },
-                { label: '자기평가 마감', value: form.selfReviewDeadline },
+                { label: '리뷰 이름',        value: form.title },
+                { label: '유형',             value: form.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰' },
+                { label: '템플릿',           value: selectedTemplate?.name ?? '-' },
+                { label: '대상 부서',        value: form.targetDepartments.join(', ') || '-' },
+                { label: '대상 구성원',      value: `${targetMembers.length}명` },
+                { label: '자기평가',         value: `${selfCount}건 생성` },
+                { label: '매니저 평가',      value: `${downCount}건 생성` },
+                { label: '자기평가 마감',    value: form.selfReviewDeadline },
                 { label: '매니저 평가 마감', value: form.managerReviewDeadline },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-3 py-2.5 border-b border-neutral-100 last:border-0">
@@ -489,6 +517,61 @@ export function CycleNew() {
                 </div>
               ))}
             </div>
+
+            {/* 템플릿 문항 미리보기 (접기/펼치기) */}
+            {selectedTemplate && (
+              <div className="border border-neutral-200 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setTemplatePreviewOpen(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 hover:bg-neutral-100 transition-colors text-sm font-medium text-neutral-700"
+                >
+                  <span>템플릿 문항 전체 보기 ({selectedTemplate.questions.length}개)</span>
+                  <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${templatePreviewOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {templatePreviewOpen && (
+                  <div className="divide-y divide-neutral-100">
+                    {selectedTemplate.questions.map((q, idx) => (
+                      <div key={q.id} className="px-4 py-3 space-y-1.5">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs text-neutral-400 w-5 flex-shrink-0 mt-0.5">{idx + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-neutral-800">{q.text}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                q.type === 'text' ? 'bg-blue-50 text-blue-600'
+                                : q.type === 'rating' ? 'bg-amber-50 text-amber-600'
+                                : q.type === 'competency' ? 'bg-purple-50 text-purple-600'
+                                : 'bg-green-50 text-green-600'
+                              }`}>
+                                {TYPE_LABEL[q.type] ?? q.type}
+                              </span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-neutral-100 text-neutral-500' : q.target === 'leader' ? 'bg-orange-50 text-orange-600' : 'bg-teal-50 text-teal-600'}`}>
+                                {q.target === 'self' ? '자기평가' : q.target === 'leader' ? '리더 평가' : '공통'}
+                              </span>
+                              {q.isPrivate && <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-400">비공개</span>}
+                              {q.isRequired && <span className="text-xs text-danger-400">필수</span>}
+                            </div>
+                            {q.type === 'rating' && q.ratingScale && (
+                              <p className="text-xs text-neutral-400 mt-1">{q.ratingScale}점 척도</p>
+                            )}
+                            {q.type === 'multiple_choice' && q.options && q.options.length > 0 && (
+                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                {q.options.map((opt, oi) => (
+                                  <span key={oi} className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded">{opt}</span>
+                                ))}
+                                {q.allowMultiple && <span className="text-xs text-green-600 ml-1">복수 선택 가능</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="p-4 bg-primary-50 border border-primary-100 rounded-xl">
               <p className="text-sm font-semibold text-primary-800 mb-1 flex items-center gap-2">
                 <Rocket className="w-4 h-4" /> 발행하면 즉시 시작됩니다
@@ -514,37 +597,86 @@ export function CycleNew() {
           step === 1 && templates.length === 0 ? (
             <button
               type="button"
-              onClick={() => navigate('/templates/new')}
+              onClick={handleGoCreateTemplate}
               className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" /> 템플릿 만들기
             </button>
           ) : (
-          <button
-            onClick={() => {
-              if (step === 0) { touch('title'); if (!canNext()) return; }
-              if (step === 3) { touch('managerReviewDeadline'); if (!canNext()) return; }
-              resetErrors();
-              setStep(s => s + 1);
-            }}
-            disabled={!canNext()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            다음 <ChevronRight className="w-4 h-4" />
-          </button>
+            <button
+              onClick={() => {
+                if (step === 0) { touch('title'); if (!canNext()) return; }
+                if (step === 3) { touch('managerReviewDeadline'); if (!canNext()) return; }
+                resetErrors();
+                setStep(s => s + 1);
+              }}
+              disabled={!canNext()}
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              다음 <ChevronRight className="w-4 h-4" />
+            </button>
           )
         ) : (
-          <LoadingButton
-            onClick={handlePublish}
-            loading={publishing}
+          <button
+            onClick={() => setConfirmOpen(true)}
             disabled={usersLoading || targetMembers.length === 0}
-            className="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded-lg hover:bg-success-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-4 py-2 bg-success-600 text-white text-sm font-medium rounded-lg hover:bg-success-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {!publishing && <Rocket className="w-4 h-4" />}
+            <Rocket className="w-4 h-4" />
             {usersLoading ? '구성원 로딩 중...' : targetMembers.length === 0 ? '대상 구성원 없음' : '발행하기'}
-          </LoadingButton>
+          </button>
         )}
       </div>
+
+      {/* 발행 확인 다이얼로그 */}
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-warning-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <Rocket className="w-5 h-5 text-warning-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900">리뷰를 발행하시겠습니까?</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">발행 후에는 되돌릴 수 없습니다.</p>
+              </div>
+            </div>
+            <div className="bg-neutral-50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex gap-3">
+                <span className="text-neutral-400 w-28 flex-shrink-0">리뷰 이름</span>
+                <span className="font-medium text-neutral-800">{form.title}</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-neutral-400 w-28 flex-shrink-0">대상 구성원</span>
+                <span className="font-medium text-neutral-800">{targetMembers.length}명</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-neutral-400 w-28 flex-shrink-0">생성될 제출 건</span>
+                <span className="font-medium text-neutral-800">자기평가 {selfCount}건 · 매니저 평가 {downCount}건</span>
+              </div>
+            </div>
+            <p className="text-xs text-danger-600 bg-danger-50 px-3 py-2 rounded-lg">
+              ⚠ 발행된 리뷰는 즉시 구성원에게 배정되며 수정이 불가합니다.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 px-4 py-2.5 bg-neutral-100 text-neutral-700 text-sm font-medium rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                취소
+              </button>
+              <LoadingButton
+                onClick={handlePublish}
+                loading={publishing}
+                className="flex-1 px-4 py-2.5 bg-success-600 text-white text-sm font-medium rounded-lg hover:bg-success-700"
+              >
+                {!publishing && <Rocket className="w-4 h-4" />}
+                발행하기
+              </LoadingButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

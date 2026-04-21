@@ -1,18 +1,31 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
-import { ChevronLeft, Plus, Trash2, GripVertical, Lock, Eye, HelpCircle, X } from 'lucide-react';
+import {
+  ChevronLeft, Plus, Trash2, GripVertical, Lock, HelpCircle, X,
+  AlignLeft, List, BarChart2, Brain, Check,
+} from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';
-
-const inputCls = (hasErr: boolean) =>
-  `w-full px-3.5 py-2.5 border rounded bg-neutral-50 text-sm focus:outline-none focus:ring-2 focus:bg-white ${
-    hasErr
-      ? 'border-danger-400 focus:border-danger-400 focus:ring-danger-100'
-      : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-100'
-  }`;
 import type { TemplateQuestion } from '../../types';
+
+/* ── helpers ──────────────────────────────────────────────── */
+
+const TYPES = [
+  { val: 'text',            label: '주관식', icon: AlignLeft,  color: 'text-blue-600',   bg: 'bg-blue-50'   },
+  { val: 'multiple_choice', label: '객관식', icon: List,       color: 'text-green-600',  bg: 'bg-green-50'  },
+  { val: 'rating',          label: '평점',   icon: BarChart2,  color: 'text-amber-600',  bg: 'bg-amber-50'  },
+  { val: 'competency',      label: '역량',   icon: Brain,      color: 'text-purple-600', bg: 'bg-purple-50' },
+] as const;
+
+const TARGETS = [
+  { val: 'both',   label: '공통'    },
+  { val: 'self',   label: '자기평가' },
+  { val: 'leader', label: '매니저'  },
+] as const;
+
+const typeInfo = (val: string) => TYPES.find(t => t.val === val) ?? TYPES[0];
 
 const newQuestion = (order: number): TemplateQuestion => ({
   id: `q_${Date.now()}_${order}`,
@@ -24,9 +37,97 @@ const newQuestion = (order: number): TemplateQuestion => ({
   order,
 });
 
+/* ── Preview component ────────────────────────────────────── */
+
+function PreviewQuestion({ q, idx }: { q: TemplateQuestion; idx: number }) {
+  const ti = typeInfo(q.type);
+  return (
+    <div className={`rounded-xl border p-4 space-y-3 ${q.isPrivate ? 'border-neutral-200 bg-neutral-50' : 'border-neutral-100 bg-white'}`}>
+      <div className="flex items-start gap-2">
+        <span className={`flex-shrink-0 w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center mt-0.5 ${ti.bg} ${ti.color}`}>
+          {idx + 1}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-neutral-800 leading-snug">
+            {q.text || <span className="text-neutral-300 italic">질문을 입력하세요</span>}
+            {q.isRequired && <span className="text-danger-500 ml-0.5">*</span>}
+          </p>
+          {q.helpText && (
+            <div className="flex items-start gap-1 mt-1">
+              <HelpCircle className="w-3 h-3 text-neutral-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-neutral-400">{q.helpText}</p>
+            </div>
+          )}
+        </div>
+        {q.isPrivate && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Lock className="w-3 h-3 text-neutral-400" />
+            <span className="text-[10px] text-neutral-400">비공개</span>
+          </div>
+        )}
+      </div>
+
+      {/* Answer widget */}
+      {q.type === 'text' && (
+        <div className="h-16 bg-neutral-50 border border-neutral-200 rounded-lg" />
+      )}
+      {q.type === 'rating' && (
+        <div className="flex gap-1.5">
+          {[1, 2, 3, 4, 5].map(n => (
+            <div key={n} className="flex-1 py-2 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-xs text-neutral-400 font-medium">
+              {n}
+            </div>
+          ))}
+        </div>
+      )}
+      {q.type === 'competency' && (
+        <div className="flex gap-1.5">
+          {['미흡', '보통', '우수', '탁월'].map(l => (
+            <div key={l} className="flex-1 py-2 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400">
+              {l}
+            </div>
+          ))}
+        </div>
+      )}
+      {q.type === 'multiple_choice' && (
+        <div className="space-y-1.5">
+          {q.allowMultiple && (
+            <p className="text-[10px] text-green-600 font-medium">복수 선택 가능</p>
+          )}
+          {(q.options ?? ['', '']).filter(o => o.trim()).length === 0 ? (
+            <p className="text-xs text-neutral-300 italic">보기를 입력하세요</p>
+          ) : (
+            (q.options ?? []).filter(o => o.trim()).map((opt, oi) => (
+              <div key={oi} className="flex items-center gap-2 text-xs text-neutral-600">
+                {q.allowMultiple
+                  ? <span className="w-4 h-4 rounded border border-neutral-300 flex-shrink-0" />
+                  : <span className="w-4 h-4 rounded-full border border-neutral-300 flex-shrink-0" />
+                }
+                {opt}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Meta tags */}
+      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${ti.bg} ${ti.color}`}>{ti.label}</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">
+          {TARGETS.find(t => t.val === q.target)?.label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ───────────────────────────────────────── */
+
 export function TemplateBuilder() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { currentUser } = useAuthStore();
   const { templates, addTemplate, updateTemplate } = useReviewStore();
   const showToast = useShowToast();
@@ -34,14 +135,13 @@ export function TemplateBuilder() {
   const isNew = templateId === 'new';
   const existing = !isNew ? templates.find(t => t.id === templateId) : undefined;
 
-  const [name, setName] = useState(existing?.name ?? '');
+  const [name,        setName]        = useState(existing?.name        ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [questions, setQuestions] = useState<TemplateQuestion[]>(
+  const [questions,   setQuestions]   = useState<TemplateQuestion[]>(
     existing?.questions ?? [newQuestion(1)]
   );
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [nameError, setNameError] = useState('');
+  const [saving,         setSaving]         = useState(false);
+  const [nameError,      setNameError]      = useState('');
   const [questionErrors, setQuestionErrors] = useState<Record<string, string>>({});
 
   const addQ = () => setQuestions(qs => [...qs, newQuestion(qs.length + 1)]);
@@ -65,16 +165,19 @@ export function TemplateBuilder() {
     try {
       await new Promise(r => setTimeout(r, 400));
       if (isNew) {
+        const newId = `tmpl_${Date.now()}`;
         addTemplate({
-          id: `tmpl_${Date.now()}`,
-          name,
-          description,
+          id: newId, name, description,
           isDefault: false,
           createdBy: currentUser.id,
           createdAt: new Date().toISOString(),
           questions,
         });
         showToast('success', '템플릿이 생성되었습니다!');
+        if (returnTo === 'cycle-wizard') {
+          navigate(`/cycles/new?newTemplateId=${newId}`);
+          return;
+        }
       } else if (existing) {
         updateTemplate(existing.id, { name, description, questions });
         showToast('success', '템플릿이 저장되었습니다.');
@@ -86,242 +189,288 @@ export function TemplateBuilder() {
   };
 
   return (
-    <div className="flex gap-5 h-full">
-      {/* Editor */}
-      <div className="flex-1 min-w-0 space-y-5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/cycles')} className="p-2 hover:bg-neutral-100 rounded-xl transition-colors">
-            <ChevronLeft className="w-5 h-5 text-neutral-600" />
-          </button>
-          <h1 className="text-lg font-bold text-neutral-900 flex-1">{isNew ? '새 템플릿' : '템플릿 편집'}</h1>
-          <button
-            onClick={() => setPreviewOpen(o => !o)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors ${previewOpen ? 'bg-primary-50 border-primary-200 text-primary-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
-          >
-            <Eye className="w-4 h-4" /> 미리보기
-          </button>
-          <LoadingButton
-            onClick={handleSave}
-            loading={saving}
-            className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
-          >
-            저장
-          </LoadingButton>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden bg-neutral-100">
 
-        {/* Template meta */}
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">템플릿 이름 *</label>
+      {/* ── Top toolbar ───────────────────────────────────── */}
+      <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-neutral-200 flex-shrink-0 shadow-sm">
+        <button
+          onClick={() => navigate('/cycles')}
+          className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3">
             <input
               type="text"
               value={name}
               onChange={e => { setName(e.target.value); if (e.target.value.trim()) setNameError(''); }}
               onBlur={() => { if (!name.trim()) setNameError('템플릿 이름을 입력해주세요.'); }}
-              placeholder="예: 분기 성과 리뷰"
-              className={inputCls(!!nameError)}
+              placeholder="템플릿 이름을 입력하세요"
+              className={`text-base font-semibold bg-transparent border-0 border-b-2 focus:outline-none px-0 py-0.5 w-64 transition-colors ${
+                nameError
+                  ? 'border-danger-400 text-danger-700 placeholder:text-danger-300'
+                  : 'border-transparent hover:border-neutral-300 focus:border-primary-500 text-neutral-900 placeholder:text-neutral-400'
+              }`}
             />
-            {nameError && <p className="mt-1 text-xs text-danger-600">{nameError}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">설명</label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="이 템플릿에 대한 간단한 설명"
-              className="w-full px-3.5 py-2.5 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
+              placeholder="설명 (선택)"
+              className="text-sm bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-neutral-200 focus:border-primary-400 text-neutral-500 placeholder:text-neutral-300 transition-colors"
             />
           </div>
+          {nameError && <p className="text-xs text-danger-600 mt-0.5">{nameError}</p>}
         </div>
 
-        {/* Questions */}
-        <div className="space-y-3">
-          {questions.map((q, idx) => (
-            <div key={q.id} className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-              <div className="flex items-start gap-3">
-                <button className="mt-1 text-neutral-300 cursor-grab active:cursor-grabbing">
-                  <GripVertical className="w-4 h-4" />
-                </button>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-neutral-400">Q{idx + 1}</span>
-                    <div className="flex gap-1.5 ml-auto">
-                      {([
-                        ['text', '주관식'],
-                        ['multiple_choice', '객관식'],
-                        ['rating', '평점'],
-                        ['competency', '역량'],
-                      ] as const).map(([val, label]) => (
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs text-neutral-400">{questions.length}개 문항</span>
+          <LoadingButton
+            onClick={handleSave}
+            loading={saving}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            {!saving && <Check className="w-4 h-4" />}
+            {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
+          </LoadingButton>
+        </div>
+      </div>
+
+      {/* ── Split body ────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Left: Editor ─────────────────────────────────── */}
+        <div className="flex-[3] overflow-y-auto p-6 space-y-3 min-w-0">
+
+          {questions.map((q, idx) => {
+            const ti = typeInfo(q.type);
+            return (
+              <div
+                key={q.id}
+                className={`bg-white rounded-xl border shadow-sm transition-shadow hover:shadow-md ${
+                  questionErrors[q.id] ? 'border-danger-300' : 'border-neutral-200'
+                }`}
+              >
+                {/* Question header */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
+                  <button className="text-neutral-300 cursor-grab active:cursor-grabbing hover:text-neutral-400 transition-colors">
+                    <GripVertical className="w-4 h-4" />
+                  </button>
+                  <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center flex-shrink-0 ${ti.bg} ${ti.color}`}>
+                    {idx + 1}
+                  </span>
+                  {/* Type tabs */}
+                  <div className="flex items-center gap-1 flex-1">
+                    {TYPES.map(({ val, label, icon: Icon }) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => updateQ(q.id, {
+                          type: val as TemplateQuestion['type'],
+                          options: val === 'multiple_choice' ? (q.options ?? ['', '']) : undefined,
+                          allowMultiple: val === 'multiple_choice' ? (q.allowMultiple ?? false) : undefined,
+                        })}
+                        className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                          q.type === val
+                            ? `${ti.bg} ${ti.color} font-semibold`
+                            : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => removeQ(q.id)}
+                    disabled={questions.length <= 1}
+                    className="p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-lg transition-colors disabled:opacity-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Question body */}
+                <div className="px-4 py-4 space-y-3">
+                  {/* Question text */}
+                  <input
+                    type="text"
+                    value={q.text}
+                    onChange={e => {
+                      updateQ(q.id, { text: e.target.value });
+                      if (e.target.value.trim()) setQuestionErrors(er => { const n = { ...er }; delete n[q.id]; return n; });
+                    }}
+                    onBlur={() => { if (!q.text.trim()) setQuestionErrors(er => ({ ...er, [q.id]: '질문 내용을 입력해주세요.' })); }}
+                    placeholder="질문 내용을 입력하세요"
+                    className={`w-full px-3.5 py-2.5 border rounded-lg bg-neutral-50 text-sm focus:outline-none focus:ring-2 focus:bg-white transition-colors ${
+                      questionErrors[q.id]
+                        ? 'border-danger-400 focus:ring-danger-100'
+                        : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-100'
+                    }`}
+                  />
+                  {questionErrors[q.id] && (
+                    <p className="text-xs text-danger-600 -mt-1">{questionErrors[q.id]}</p>
+                  )}
+
+                  {/* Multiple choice options */}
+                  {q.type === 'multiple_choice' && (
+                    <div className="space-y-2 pl-1">
+                      <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none w-fit">
+                        <input
+                          type="checkbox"
+                          checked={q.allowMultiple ?? false}
+                          onChange={e => updateQ(q.id, { allowMultiple: e.target.checked })}
+                          className="w-3.5 h-3.5 rounded accent-primary-500"
+                        />
+                        <span className="text-neutral-600 font-medium">복수 선택 가능</span>
+                      </label>
+                      <div className="space-y-1.5">
+                        {(q.options ?? []).map((opt, oi) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            <span className={`w-4 h-4 flex-shrink-0 border border-neutral-300 ${q.allowMultiple ? 'rounded' : 'rounded-full'}`} />
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={e => {
+                                const next = [...(q.options ?? [])];
+                                next[oi] = e.target.value;
+                                updateQ(q.id, { options: next });
+                              }}
+                              placeholder={`보기 ${oi + 1}`}
+                              className="flex-1 px-3 py-1.5 border border-neutral-200 rounded-lg bg-neutral-50 text-xs focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white"
+                            />
+                            {(q.options ?? []).length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = [...(q.options ?? [])];
+                                  next.splice(oi, 1);
+                                  updateQ(q.id, { options: next });
+                                }}
+                                className="p-1 text-neutral-300 hover:text-danger-400 transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => updateQ(q.id, { options: [...(q.options ?? []), ''] })}
+                          className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors mt-1"
+                        >
+                          <Plus className="w-3 h-3" /> 보기 추가
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rating scale hint */}
+                  {q.type === 'rating' && (
+                    <p className="text-xs text-neutral-400 pl-1">1–5점 척도로 표시됩니다.</p>
+                  )}
+
+                  {/* Help text */}
+                  <input
+                    type="text"
+                    value={q.helpText ?? ''}
+                    onChange={e => updateQ(q.id, { helpText: e.target.value })}
+                    placeholder="도움말 (선택) — 질문의 의도나 작성 가이드"
+                    className="w-full px-3.5 py-2 border border-neutral-100 rounded-lg text-xs text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-neutral-300"
+                  />
+
+                  {/* Footer controls */}
+                  <div className="flex items-center gap-4 pt-1">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={q.isRequired}
+                        onChange={e => updateQ(q.id, { isRequired: e.target.checked })}
+                        className="w-3.5 h-3.5 rounded accent-primary-500"
+                      />
+                      <span className="text-xs text-neutral-600">필수</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={q.isPrivate}
+                        onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
+                        className="w-3.5 h-3.5 rounded accent-primary-500"
+                      />
+                      <Lock className="w-3 h-3 text-neutral-400" />
+                      <span className="text-xs text-neutral-600">매니저 전용</span>
+                    </label>
+                    <div className="flex gap-1 ml-auto">
+                      {TARGETS.map(({ val, label }) => (
                         <button
                           key={val}
                           type="button"
-                          onClick={() => updateQ(q.id, {
-                            type: val,
-                            options: val === 'multiple_choice' ? (q.options ?? ['', '']) : undefined,
-                          })}
-                          className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${q.type === val ? 'bg-primary-600 text-white font-semibold' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
+                          onClick={() => updateQ(q.id, { target: val })}
+                          className={`px-2.5 py-0.5 text-xs rounded-lg transition-colors ${
+                            q.target === val
+                              ? 'bg-neutral-800 text-white font-medium'
+                              : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                          }`}
                         >
                           {label}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <input
-                      type="text"
-                      value={q.text}
-                      onChange={e => {
-                        updateQ(q.id, { text: e.target.value });
-                        if (e.target.value.trim()) setQuestionErrors(er => { const n = { ...er }; delete n[q.id]; return n; });
-                      }}
-                      onBlur={() => { if (!q.text.trim()) setQuestionErrors(er => ({ ...er, [q.id]: '질문 내용을 입력해주세요.' })); }}
-                      placeholder="질문 내용을 입력하세요"
-                      className={inputCls(!!questionErrors[q.id])}
-                    />
-                    {questionErrors[q.id] && <p className="mt-1 text-xs text-danger-600">{questionErrors[q.id]}</p>}
-                  </div>
-                  {/* 객관식 보기 편집 */}
-                  {q.type === 'multiple_choice' && (
-                    <div className="space-y-2">
-                      {(q.options ?? []).map((opt, oi) => (
-                        <div key={oi} className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center flex-shrink-0">
-                            <span className="w-2 h-2 rounded-full bg-neutral-300" />
-                          </span>
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={e => {
-                              const next = [...(q.options ?? [])];
-                              next[oi] = e.target.value;
-                              updateQ(q.id, { options: next });
-                            }}
-                            placeholder={`보기 ${oi + 1}`}
-                            className="flex-1 px-3 py-1.5 border border-neutral-200 rounded-lg bg-neutral-50 text-xs focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white"
-                          />
-                          {(q.options ?? []).length > 2 && (
-                            <button type="button" onClick={() => {
-                              const next = [...(q.options ?? [])];
-                              next.splice(oi, 1);
-                              updateQ(q.id, { options: next });
-                            }} className="p-1 text-neutral-300 hover:text-danger-400 transition-colors">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => updateQ(q.id, { options: [...(q.options ?? []), ''] })}
-                        className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors"
-                      >
-                        <Plus className="w-3 h-3" /> 보기 추가
-                      </button>
-                    </div>
-                  )}
-                  <input
-                    type="text"
-                    value={q.helpText ?? ''}
-                    onChange={e => updateQ(q.id, { helpText: e.target.value })}
-                    placeholder="도움말 (선택) — 질문의 의도나 작성 가이드"
-                    className="w-full px-3.5 py-2 border border-neutral-100 rounded-xl text-xs text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                  />
-                  <div className="flex items-center gap-4 text-xs">
-                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                      <input type="checkbox" checked={q.isRequired} onChange={e => updateQ(q.id, { isRequired: e.target.checked })}
-                        className="w-3.5 h-3.5 rounded accent-primary-500" />
-                      <span className="text-neutral-600">필수</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                      <input type="checkbox" checked={q.isPrivate} onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
-                        className="w-3.5 h-3.5 rounded accent-primary-500" />
-                      <Lock className="w-3 h-3 text-neutral-400" />
-                      <span className="text-neutral-600">매니저 전용</span>
-                    </label>
-                    <div className="flex gap-1.5 ml-auto">
-                      {(['both', 'self', 'leader'] as const).map(t => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => updateQ(q.id, { target: t })}
-                          className={`px-2 py-0.5 rounded-lg transition-colors ${q.target === t ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-neutral-500'}`}
-                        >
-                          {t === 'both' ? '공통' : t === 'self' ? '자기평가' : '매니저'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
-                <button
-                  onClick={() => removeQ(q.id)}
-                  disabled={questions.length <= 1}
-                  className="mt-1 p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-xl transition-colors disabled:opacity-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
+
+          {/* Add question */}
           <button
             onClick={addQ}
-            className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-sm text-neutral-500 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50/50 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 border-2 border-dashed border-neutral-200 rounded-xl text-sm text-neutral-400 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50/50 transition-all flex items-center justify-center gap-2 group"
           >
-            <Plus className="w-4 h-4" /> 질문 추가
+            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            질문 추가
           </button>
         </div>
-      </div>
 
-      {/* Preview panel */}
-      {previewOpen && (
-        <div className="w-80 flex-shrink-0">
-          <div className="sticky top-20 bg-white rounded-xl border border-neutral-200 shadow-card p-5 space-y-4 max-h-[calc(100vh-120px)] overflow-y-auto">
-            <h2 className="text-sm font-semibold text-neutral-700">미리보기</h2>
-            <div className="space-y-1 mb-2">
-              <p className="text-base font-semibold text-neutral-800">{name || '(이름 없음)'}</p>
-              {description && <p className="text-xs text-neutral-400">{description}</p>}
-            </div>
-            {questions.filter(q => q.text).map((q, i) => (
-              <div key={q.id} className={`p-4 rounded-xl border ${q.isPrivate ? 'border-neutral-200 bg-neutral-50/50' : 'border-neutral-100'}`}>
-                {q.isPrivate && (
-                  <div className="flex items-center gap-1 mb-1.5">
-                    <Lock className="w-3 h-3 text-neutral-400" />
-                    <span className="text-xs text-neutral-400">매니저 전용</span>
-                  </div>
-                )}
-                <p className="text-xs font-semibold text-neutral-800 mb-2">
-                  {i + 1}. {q.text}
-                  {q.isRequired && <span className="text-danger-500 ml-1">*</span>}
-                </p>
-                {q.helpText && (
-                  <div className="flex items-start gap-1 mb-2">
-                    <HelpCircle className="w-3 h-3 text-neutral-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-neutral-400">{q.helpText}</p>
-                  </div>
-                )}
-                {q.type === 'text' ? (
-                  <div className="w-full h-14 bg-neutral-50 rounded-lg border border-neutral-200" />
-                ) : q.type === 'multiple_choice' ? (
-                  <div className="space-y-1.5">
-                    {(q.options ?? []).filter(o => o.trim()).map((opt, oi) => (
-                      <div key={oi} className="flex items-center gap-2 text-xs text-neutral-600">
-                        <span className="w-4 h-4 rounded-full border border-neutral-300 flex-shrink-0" />
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex gap-1">
-                    {[1,2,3,4,5].map(n => (
-                      <div key={n} className="flex-1 h-8 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-xs text-neutral-400">{n}</div>
-                    ))}
-                  </div>
-                )}
+        {/* Right: Live preview ──────────────────────────── */}
+        <div className="flex-[2] min-w-0 border-l border-neutral-200 bg-neutral-50 flex flex-col overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-neutral-200 bg-white flex-shrink-0">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">실시간 미리보기</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            {/* Header */}
+            <div className="bg-white rounded-xl border border-neutral-200 px-5 py-4">
+              <p className={`text-base font-bold leading-snug ${name ? 'text-neutral-900' : 'text-neutral-300 italic'}`}>
+                {name || '템플릿 이름'}
+              </p>
+              {description
+                ? <p className="text-xs text-neutral-500 mt-1">{description}</p>
+                : <p className="text-xs text-neutral-300 italic mt-1">설명</p>
+              }
+              <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center gap-2">
+                <span className="text-xs text-neutral-400">{questions.length}문항</span>
+                <span className="text-neutral-200">·</span>
+                <span className="text-xs text-neutral-400">
+                  필수 {questions.filter(q => q.isRequired).length}개
+                </span>
               </div>
+            </div>
+
+            {/* Questions preview */}
+            {questions.map((q, idx) => (
+              <PreviewQuestion key={q.id} q={q} idx={idx} />
             ))}
+
+            {questions.length === 0 && (
+              <div className="text-center py-10 text-neutral-300 text-sm">
+                질문을 추가하면 여기에 미리보기가 표시됩니다
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

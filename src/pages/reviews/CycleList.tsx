@@ -27,7 +27,7 @@ function StatusChip({ status }: { status: ReviewStatus }) {
 }
 
 export function CycleList() {
-  const { cycles, templates, deleteTemplate } = useReviewStore();
+  const { cycles, templates, deleteTemplate, deleteCycle } = useReviewStore();
   const navigate = useNavigate();
   const showToast = useShowToast();
   const [tab, setTab] = useState<'cycles' | 'templates'>('cycles');
@@ -36,6 +36,14 @@ export function CycleList() {
     if (confirm(`"${name}" 템플릿을 삭제하시겠습니까?`)) {
       deleteTemplate(id);
       showToast('success', '템플릿이 삭제되었습니다.');
+    }
+  };
+
+  const handleDeleteCycle = (e: React.MouseEvent, id: string, title: string) => {
+    e.stopPropagation();
+    if (confirm(`"${title}" 리뷰와 모든 제출 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+      deleteCycle(id);
+      showToast('success', '리뷰가 삭제되었습니다.');
     }
   };
 
@@ -85,14 +93,20 @@ export function CycleList() {
         <p className="text-xs text-neutral-400 mt-0.5">자기평가 마감</p>
       </div>
 
-      {cycle.status !== 'closed' && (
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all" onClick={e => e.stopPropagation()}>
         <button
           onClick={e => { e.stopPropagation(); navigate(`/cycles/${cycle.id}?edit=1`); }}
-          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-all"
+          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
         >
           <Pencil className="w-3 h-3" /> 편집
         </button>
-      )}
+        <button
+          onClick={e => handleDeleteCycle(e, cycle.id, cycle.title)}
+          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-danger-500 bg-danger-50 hover:bg-danger-100 rounded-lg transition-colors"
+        >
+          <Trash2 className="w-3 h-3" /> 삭제
+        </button>
+      </div>
       <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-primary-400 flex-shrink-0" />
     </div>
   );

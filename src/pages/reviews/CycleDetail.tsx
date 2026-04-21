@@ -8,7 +8,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
-import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle, Eye, Star } from 'lucide-react';
+import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle, Eye, Star, Trash2 } from 'lucide-react';
 import { useShowToast } from '../../components/ui/Toast';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 import { exportCycleToCSV } from '../../utils/exportUtils';
@@ -402,7 +402,7 @@ function SubmissionViewModal({
 
 export function CycleDetail() {
   const { cycleId } = useParams<{ cycleId: string }>();
-  const { cycles, submissions, updateCycle, upsertSubmission, templates } = useReviewStore();
+  const { cycles, submissions, updateCycle, deleteCycle, upsertSubmission, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
   const { addNotification } = useNotificationStore();
   const navigate = useNavigate();
@@ -415,6 +415,7 @@ export function CycleDetail() {
   const [regenerating, setRegenerating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { scriptUrl, enabled, markSynced, lastSyncAt } = useSheetsSyncStore();
 
   useEffect(() => {
@@ -580,14 +581,18 @@ export function CycleDetail() {
         >
           <Download className="w-3.5 h-3.5" /> 내보내기
         </button>
-        {cycle.status !== 'closed' && (
-          <button
-            onClick={() => setShowEdit(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" /> 편집
-          </button>
-        )}
+        <button
+          onClick={() => setShowEdit(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" /> 편집
+        </button>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger-600 border border-danger-200 rounded hover:bg-danger-50 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> 삭제
+        </button>
       </div>
 
       {/* 상태 전환 확인 배너 */}
@@ -621,6 +626,36 @@ export function CycleDetail() {
             >
               {transition.label}
             </LoadingButton>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 확인 배너 */}
+      {showDeleteConfirm && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-danger-50 border-danger-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <Trash2 className="w-4 h-4 shrink-0 text-danger-500" />
+            <p className="text-sm text-danger-800">
+              <strong>"{cycle.title}"</strong> 리뷰와 모든 제출 데이터({submissions.filter(s => s.cycleId === cycle.id).length}건)가 영구 삭제됩니다. 되돌릴 수 없습니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => {
+                deleteCycle(cycle.id);
+                showToast('success', '리뷰가 삭제되었습니다.');
+                navigate('/cycles');
+              }}
+              className="px-3 py-1.5 text-sm font-semibold text-white bg-danger-600 hover:bg-danger-700 rounded transition-colors"
+            >
+              삭제 확정
+            </button>
           </div>
         </div>
       )}

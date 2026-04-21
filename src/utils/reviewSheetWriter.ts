@@ -65,6 +65,9 @@ export const cycleWriter = {
   upsert: (cycle: ReviewCycle) =>
     post('upsertCycle', cycleToRow(cycle))
       .catch(e => console.error('[Sheet] cycle upsert:', e)),
+  delete: (id: string) =>
+    post('deleteCycle', { '사이클ID': id })
+      .catch(e => console.error('[Sheet] cycle delete:', e)),
 };
 
 export const templateWriter = {

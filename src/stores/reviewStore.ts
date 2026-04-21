@@ -21,6 +21,7 @@ interface ReviewState {
   // CRUD
   addCycle: (cycle: ReviewCycle) => void;
   updateCycle: (id: string, updates: Partial<ReviewCycle>) => void;
+  deleteCycle: (id: string) => void;
   addTemplate: (template: ReviewTemplate) => void;
   updateTemplate: (id: string, updates: Partial<ReviewTemplate>) => void;
   deleteTemplate: (id: string) => void;
@@ -59,6 +60,14 @@ export const useReviewStore = create<ReviewState>()(
           const updated = get().cycles.find(c => c.id === id);
           if (updated) cycleWriter.upsert(updated);
         }
+      },
+
+      deleteCycle: (id) => {
+        set(s => ({
+          cycles: s.cycles.filter(c => c.id !== id),
+          submissions: s.submissions.filter(sub => sub.cycleId !== id),
+        }));
+        if (isReviewSyncEnabled()) cycleWriter.delete(id);
       },
 
       /* ── 템플릿 ───────────────────────────────────────────────── */

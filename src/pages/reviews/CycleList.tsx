@@ -144,13 +144,15 @@ export function CycleList() {
   return (
     <div className="space-y-6">
       {/* 탭 */}
-      <div className="flex gap-1 p-1 bg-neutral-100 rounded-lg w-fit">
+      <div className="flex gap-6 border-b border-[#dee2e6]">
         {(['cycles', 'templates'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              tab === t ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+            className={`py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
+              tab === t
+                ? 'border-[#212529] text-[#212529]'
+                : 'border-transparent text-[#adb5bd] hover:text-[#868e96]'
             }`}
           >
             {t === 'cycles' ? '리뷰 목록' : '리뷰 템플릿'}

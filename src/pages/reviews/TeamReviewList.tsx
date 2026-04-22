@@ -343,20 +343,20 @@ export function TeamReviewList() {
     <div className="space-y-5">
       {/* 필터 탭 */}
       {cycleData.length > 0 && (
-        <div className="flex items-center gap-1 bg-white rounded-xl border border-neutral-200 shadow-card p-1 w-fit">
+        <div className="flex gap-6 border-b border-[#dee2e6]">
           {TABS.map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
                 filter === key
-                  ? 'bg-zinc-950 text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
+                  ? 'border-[#212529] text-[#212529]'
+                  : 'border-transparent text-[#adb5bd] hover:text-[#868e96]'
               }`}
             >
               {label}
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                filter === key ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
+                filter === key ? 'bg-[#212529] text-white' : 'bg-zinc-100 text-[#adb5bd]'
               }`}>
                 {count}
               </span>

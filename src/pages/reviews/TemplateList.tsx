@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
-import { FileText, Plus, Star, Trash2 } from 'lucide-react';
+import { MsArticleIcon, MsPlusIcon, MsStarIcon, MsDeleteIcon } from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
+import { MsButton } from '../../components/ui/MsButton';
 
 export function TemplateList() {
   const { templates, deleteTemplate } = useReviewStore();
@@ -22,7 +23,7 @@ export function TemplateList() {
       <div>
         <h1 className="text-xl font-semibold text-neutral-900 mb-6">리뷰 템플릿</h1>
         <EmptyState
-          icon={FileText}
+          icon={MsArticleIcon}
           title="아직 생성된 템플릿이 없습니다."
           description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
           actionLabel="새 템플릿 만들기"
@@ -36,12 +37,7 @@ export function TemplateList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">리뷰 템플릿</h1>
-        <button
-          onClick={() => navigate('/templates/new')}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> 새 템플릿
-        </button>
+        <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>새 템플릿</MsButton>
       </div>
 
       <div className="space-y-3">
@@ -50,14 +46,14 @@ export function TemplateList() {
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FileText className="w-4 h-4 text-primary-600" />
+                  <MsArticleIcon size={16} className="text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-semibold text-neutral-900">{tmpl.name}</h3>
                     {tmpl.isDefault && (
                       <span className="flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
-                        <Star className="w-3 h-3" /> 기본
+                        <MsStarIcon size={12} /> 기본
                       </span>
                     )}
                   </div>
@@ -76,7 +72,7 @@ export function TemplateList() {
                     onClick={() => handleDelete(tmpl.id, tmpl.name)}
                     className="p-1.5 text-neutral-400 hover:text-danger-500 hover:bg-danger-50 rounded-xl transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <MsDeleteIcon size={12} />
                   </button>
                 )}
               </div>

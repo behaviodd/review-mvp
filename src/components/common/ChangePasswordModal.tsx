@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { MsLockIcon } from '../ui/MsIcons';
 import { useAuthStore } from '../../stores/authStore';
 import { changePassword } from '../../utils/authApi';
 
@@ -34,7 +35,7 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
 
         <div className="text-center space-y-1">
           <div className="inline-flex items-center justify-center size-11 bg-amber-100 rounded-xl mb-2">
-            <Lock className="size-5 text-amber-600" />
+            <MsLockIcon size={20} className="text-amber-600" />
           </div>
           <h2 className="text-base font-semibold text-zinc-950">비밀번호 변경 필요</h2>
           <p className="text-xs text-zinc-500 leading-relaxed">

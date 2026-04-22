@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, X } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
+import { MsCancelIcon } from '../ui/MsIcons';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -43,7 +44,7 @@ export function NotificationPanel() {
         className="relative p-2 rounded-lg hover:bg-neutral-100 transition-colors"
         aria-label={`알림 ${unread}개`}
       >
-        <Bell size={17} className={unread > 0 ? 'text-neutral-700' : 'text-neutral-500'} />
+        <Bell size={16} className={unread > 0 ? 'text-neutral-700' : 'text-neutral-500'} />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-danger-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unread > 9 ? '9+' : unread}
@@ -76,7 +77,7 @@ export function NotificationPanel() {
                 onClick={() => setOpen(false)}
                 className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700"
               >
-                <X size={14} />
+                <MsCancelIcon size={12} />
               </button>
             </div>
           </div>

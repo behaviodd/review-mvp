@@ -7,12 +7,14 @@ import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { formatDateTime } from '../utils/dateUtils';
+import { Heart, Lightbulb, ThumbsUp, Lightbulb as TipIcon } from 'lucide-react';
 import {
-  MessageSquare, Send, Heart, Lightbulb, ThumbsUp,
-  ChevronLeft, Lightbulb as TipIcon, ChevronDown, ChevronRight,
-  Plus, Search, X,
-} from 'lucide-react';
+  MsMessageIcon, MsSendIcon, MsChevronLeftIcon, MsChevronDownIcon,
+  MsChevronRightIcon, MsPlusIcon, MsSearchIcon, MsCancelIcon,
+} from '../components/ui/MsIcons';
 import type { FeedbackType } from '../types';
+import { MsButton } from '../components/ui/MsButton';
+import { MsCheckbox } from '../components/ui/MsControl';
 
 const TYPE_CONFIG: Record<FeedbackType, {
   label: string; emoji: string;
@@ -147,14 +149,14 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             onClick={onBack}
             className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" /> 피드백 목록
+            <MsChevronLeftIcon size={16} className="w-4 h-4" /> 피드백 목록
           </button>
         </div>
 
         {/* 검색 */}
         <div className="px-3 py-2 border-b border-zinc-950/5">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400 pointer-events-none" />
+            <MsSearchIcon size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
               type="text"
               value={search}
@@ -167,7 +169,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 onClick={() => setSearch('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
               >
-                <X className="size-3" />
+                <MsCancelIcon size={12} className="size-3" />
               </button>
             )}
           </div>
@@ -245,12 +247,12 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 className="text-indigo-400 hover:text-primary-600 transition-colors flex-shrink-0"
                 aria-label="선택 해제"
               >
-                <X className="size-4" />
+                <MsCancelIcon size={16} className="size-4" />
               </button>
             </div>
           ) : (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
+              <MsSearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <input
                 type="text"
                 value={search}
@@ -344,16 +346,14 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 
           {/* 익명 + 전송 */}
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2.5">
+              <MsCheckbox
                 checked={isAnonymous}
                 onChange={e => setAnonymous(e.target.checked)}
-                className="w-4 h-4 rounded accent-primary-500"
+                label="익명으로 보내기"
               />
-              <span className="text-sm text-zinc-700">익명으로 보내기</span>
               <span className="text-xs text-zinc-400 hidden sm:inline">(받는 사람이 보낸 사람을 알 수 없습니다)</span>
-            </label>
+            </div>
           </div>
         </div>
 
@@ -363,13 +363,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             <p className="text-xs text-zinc-400">
               {selectedUser ? `${selectedUser.name}님에게 ${TYPE_CONFIG[type].emoji} ${TYPE_CONFIG[type].label} 피드백` : '받는 사람을 선택하세요'}
             </p>
-            <button
-              onClick={handleSubmit}
-              disabled={!toUserId || content.trim().length < 10}
-              className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <Send className="w-4 h-4" /> 피드백 보내기
-            </button>
+            <MsButton onClick={handleSubmit} disabled={!toUserId || content.trim().length < 10} leftIcon={<MsSendIcon size={16} />}>피드백 보내기</MsButton>
           </div>
         </div>
       </div>
@@ -391,7 +385,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
           className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors border-b border-zinc-950/5"
         >
           <span className="text-xs font-medium text-zinc-700">좋은 피드백 작성법</span>
-          {tipsOpen ? <ChevronDown className="size-3.5 text-zinc-400" /> : <ChevronRight className="size-3.5 text-zinc-400" />}
+          {tipsOpen ? <MsChevronDownIcon size={12} className="text-zinc-400" /> : <MsChevronRightIcon size={12} className="text-zinc-400" />}
         </button>
         {tipsOpen && (
           <ul className="px-4 py-3 space-y-3">
@@ -466,12 +460,7 @@ export function Feedback() {
         {/* 헤더 */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-zinc-900">피드백</h1>
-          <button
-            onClick={() => goToWrite()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> 피드백 보내기
-          </button>
+          <MsButton onClick={() => goToWrite()} leftIcon={<MsPlusIcon size={16} />}>피드백 보내기</MsButton>
         </div>
 
         {/* 세그먼트 필터 */}
@@ -499,7 +488,7 @@ export function Feedback() {
         {/* 목록 */}
         {items.length === 0 ? (
           <EmptyState
-            icon={MessageSquare}
+            icon={MsMessageIcon}
             title={tab === 'received' ? '아직 받은 피드백이 없습니다.' : '아직 보낸 피드백이 없습니다.'}
             description={tab === 'received' ? '동료들에게 먼저 피드백을 보내보세요!' : '동료에게 진심 어린 피드백을 전달해보세요.'}
           />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { MsMenuIcon } from '../ui/MsIcons';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuthStore } from '../../stores/authStore';
@@ -64,7 +64,7 @@ export function AppLayout() {
             className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             aria-label="메뉴 열기"
           >
-            <Menu size={18} />
+            <MsMenuIcon size={16} />
           </button>
         </div>
 

@@ -10,7 +10,8 @@ const GRADE_FROM_RATING = (r: number) => r >= 4.5 ? 'S' : r >= 3.5 ? 'A' : r >= 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { EmptyState } from '../components/ui/EmptyState';
-import { TrendingUp, BarChart2, Users, Star, MessageSquare, ChevronRight } from 'lucide-react';
+import { TrendingUp, BarChart2, Users } from 'lucide-react';
+import { MsStarIcon, MsMessageIcon, MsChevronRightIcon } from '../components/ui/MsIcons';
 
 // sky, emerald, slate, rose, violet (Tailwind syntax theme 팔레트)
 const COLORS = ['#4f46e5', '#059669', '#94a3b8', '#e11d48', '#7c3aed'];
@@ -183,7 +184,7 @@ export function Reports() {
                       }`}>
                         {sub?.status === 'submitted' ? '제출' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
                       </span>
-                      {activeCycle && <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-500 flex-shrink-0" />}
+                      {activeCycle && <MsChevronRightIcon size={12} className="text-neutral-300 group-hover:text-neutral-500 flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -223,8 +224,8 @@ export function Reports() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
-                { icon: Star, label: '제출한 자기평가', value: `${mySubs.length}회`, action: () => navigate('/reviews/me'), actionLabel: '내 리뷰 보기' },
-                { icon: MessageSquare, label: '받은 피드백', value: `${myReceived.length}개`, action: () => navigate('/feedback'), actionLabel: '확인하기' },
+                { icon: MsStarIcon, label: '제출한 자기평가', value: `${mySubs.length}회`, action: () => navigate('/reviews/me'), actionLabel: '내 리뷰 보기' },
+                { icon: MsMessageIcon, label: '받은 피드백', value: `${myReceived.length}개`, action: () => navigate('/feedback'), actionLabel: '확인하기' },
                 { icon: TrendingUp, label: '보낸 피드백', value: `${mySent.length}개`, action: () => navigate('/feedback'), actionLabel: '보내기' },
               ].map(({ icon: Icon, label, value, action, actionLabel }) => (
                 <div key={label} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 flex flex-col gap-2">

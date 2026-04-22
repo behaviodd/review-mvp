@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { History, Users, ShieldCheck, BookOpen } from 'lucide-react';
 import {
-  Lock, AlertTriangle, FileText, History,
-  Check, Star, Download, Search,
-  ChevronDown, ChevronRight, ChevronLeft, Users, Calendar, ShieldCheck, BookOpen,
-} from 'lucide-react';
+  MsLockIcon, MsWarningIcon, MsArticleIcon,
+  MsCheckIcon, MsStarIcon, MsDownloadIcon, MsSearchIcon,
+  MsChevronDownIcon, MsChevronRightIcon, MsChevronLeftIcon, MsCalendarIcon,
+} from '../../components/ui/MsIcons';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -16,6 +17,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/dateUtils';
 import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit } from '../../types';
+import { MsButton } from '../../components/ui/MsButton';
 
 // ─── 조직 트리 노드 타입 ──────────────────────────────────────────────────────
 interface OrgTreeNode {
@@ -94,7 +96,7 @@ function RightPanel({
       <div className="p-4 border-b border-zinc-950/5 space-y-4">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded bg-primary-50 flex items-center justify-center flex-shrink-0">
-            <FileText className="size-3.5 text-primary-600" />
+            <MsArticleIcon size={12} className="text-primary-600" />
           </div>
           <p className="text-xs font-semibold text-zinc-950">셀프리뷰 정보</p>
         </div>
@@ -117,14 +119,14 @@ function RightPanel({
 
           <div className="grid grid-cols-1 gap-2">
             <div className="flex items-start gap-2 p-2.5 bg-zinc-50 rounded-lg">
-              <Calendar className="size-3.5 text-zinc-400 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={12} className="text-zinc-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-zinc-400">자기평가 마감</p>
                 <p className="text-xs font-medium text-zinc-700">{formatDate(cycle.selfReviewDeadline)}</p>
               </div>
             </div>
             <div className="flex items-start gap-2 p-2.5 bg-zinc-50 rounded-lg">
-              <Calendar className="size-3.5 text-zinc-400 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={12} className="text-zinc-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-zinc-400">매니저 평가 마감</p>
                 <p className="text-xs font-medium text-zinc-700">{formatDate(cycle.managerReviewDeadline)}</p>
@@ -159,7 +161,7 @@ function RightPanel({
             </li>
             {privateCount > 0 && (
               <li className="text-xs text-zinc-500 flex items-center gap-1.5">
-                <Lock className="size-3 text-zinc-400 flex-shrink-0" />
+                <MsLockIcon size={12} className="text-zinc-400 flex-shrink-0" />
                 비공개 문항 {privateCount}개 포함
               </li>
             )}
@@ -176,7 +178,7 @@ function RightPanel({
             )}
             className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
           >
-            <Download className="size-3.5" /> CSV 내보내기
+            <MsDownloadIcon size={12} /> CSV 내보내기
           </button>
         )}
       </div>
@@ -204,8 +206,8 @@ function RightPanel({
               )}
             </div>
             {histOpen
-              ? <ChevronDown className="size-3.5 text-zinc-400" />
-              : <ChevronRight className="size-3.5 text-zinc-400" />
+              ? <MsChevronDownIcon size={12} className="text-zinc-400" />
+              : <MsChevronRightIcon size={12} className="text-zinc-400" />
             }
           </button>
 
@@ -226,7 +228,7 @@ function RightPanel({
                         <p className="text-xs text-zinc-400 mt-0.5">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
                         {s.overallRating && (
                           <div className="flex items-center gap-1.5 mt-1.5">
-                            <Star className="size-3 text-primary-500 fill-primary-500" />
+                            <MsStarIcon size={12} className="text-primary-500" />
                             <span className="text-xs font-bold text-zinc-700">{s.overallRating.toFixed(1)}</span>
                             <span className="text-xs text-zinc-400">{RATING_LABELS[Math.round(s.overallRating)]}</span>
                           </div>
@@ -489,10 +491,10 @@ export function TeamReviewWrite() {
             onClick={() => navigate('/reviews/team')}
             className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 transition-colors"
           >
-            <ChevronLeft className="w-3.5 h-3.5" /> 하향 평가 목록
+            <MsChevronLeftIcon size={12} /> 하향 평가 목록
           </button>
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-300 pointer-events-none" />
+            <MsSearchIcon size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
@@ -553,8 +555,8 @@ export function TeamReviewWrite() {
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       {isOpen
-                        ? <ChevronDown className="w-3 h-3 text-zinc-300 flex-shrink-0" />
-                        : <ChevronRight className="w-3 h-3 text-zinc-300 flex-shrink-0" />
+                        ? <MsChevronDownIcon size={12} className="text-zinc-300 flex-shrink-0" />
+                        : <MsChevronRightIcon size={12} className="text-zinc-300 flex-shrink-0" />
                       }
                       <span className="text-xs font-semibold text-zinc-600 truncate">{node.name}</span>
                     </div>
@@ -621,7 +623,7 @@ export function TeamReviewWrite() {
           {/* ── 조직장 리뷰 단계 전 안내 배너 ── */}
           {!isAdmin && isPhaseBeforeManagerReview && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-              <Calendar className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={16} className="text-zinc-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-zinc-700">아직 조직장 리뷰 단계가 아닙니다</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -634,7 +636,7 @@ export function TeamReviewWrite() {
           {/* ── 자기평가 미제출 잠금 배너 ── */}
           {!selfSubmitted && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-              <Lock className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
+              <MsLockIcon size={16} className="text-zinc-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-zinc-700">{reviewee.name}님의 자기평가 대기 중</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -647,7 +649,7 @@ export function TeamReviewWrite() {
           {/* ── 점수 불일치 경고 ── */}
           {hasMismatch && (
             <div className="flex items-start gap-3 p-4 bg-primary-50 border border-primary-200 rounded-xl">
-              <AlertTriangle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+              <MsWarningIcon size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-primary-700">
                 <strong>{reviewee.name}님의 자기평가</strong>와 현재 평가 간 점수 차이가 큽니다. 1:1 면담에서 논의해 보세요.
               </p>
@@ -701,7 +703,7 @@ export function TeamReviewWrite() {
                   <div className={`md:col-span-2 px-5 py-3 bg-white flex items-start gap-2 border-t border-zinc-950/5 ${isLastRow ? '' : 'border-b-0'}`}>
                     {q.isPrivate && (
                       <span className="flex items-center gap-1 text-xs text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5">
-                        <Lock className="w-2.5 h-2.5" /> 비공개
+                        <MsLockIcon size={12} /> 비공개
                       </span>
                     )}
                     <p className="text-sm font-semibold text-zinc-800">
@@ -720,7 +722,7 @@ export function TeamReviewWrite() {
                       </p>
                       {q.isPrivate ? (
                         <div className="flex items-center gap-2 text-zinc-300">
-                          <Lock className="w-4 h-4 flex-shrink-0" />
+                          <MsLockIcon size={16} className="flex-shrink-0" />
                           <p className="text-xs">팀원에게 공유되지 않는 매니저 전용 질문입니다.</p>
                         </div>
                       ) : !selfSubmitted ? (
@@ -840,7 +842,7 @@ export function TeamReviewWrite() {
           {/* 제출 완료 배너 */}
           {(isReadOnly || submitted) && (
             <div className="flex items-center gap-2.5 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <MsCheckIcon size={20} className="text-emerald-600 flex-shrink-0" />
               <p className="text-sm font-medium text-emerald-700">{reviewee.name}님의 평가가 제출되었습니다.</p>
             </div>
           )}
@@ -848,17 +850,16 @@ export function TeamReviewWrite() {
           {/* 하단 제출 바 */}
           {!isAdmin && !isReadOnly && !submitted && (
             <div className="flex items-center justify-end bg-white rounded-xl border border-zinc-950/5 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
-              <button
+              <MsButton
                 onClick={() => { if (selfSubmitted && canSubmit) setShowConfirm(true); }}
                 disabled={!selfSubmitted || !canSubmit}
                 title={
                   !selfSubmitted ? '팀원의 자기평가 제출 후 평가를 제출할 수 있습니다.' :
                   !canSubmit ? '조직장 리뷰 단계가 시작되면 제출할 수 있습니다.' : undefined
                 }
-                className="px-5 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 평가 제출하기
-              </button>
+              </MsButton>
             </div>
           )}
         </div>
@@ -885,24 +886,14 @@ export function TeamReviewWrite() {
           <div className="bg-white rounded-xl shadow-modal max-w-sm w-full p-6">
             <div className="text-center mb-5">
               <div className="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Check className="w-6 h-6 text-primary-600" />
+                <MsCheckIcon size={24} className="text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold text-zinc-900 mb-1">{reviewee.name}님의 평가를 제출할까요?</h3>
               <p className="text-sm text-zinc-500">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-2.5 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700"
-              >
-                제출
-              </button>
+              <MsButton variant="default" onClick={() => setShowConfirm(false)} className="flex-1 h-auto py-2.5">취소</MsButton>
+              <MsButton onClick={handleSubmit} className="flex-1 h-auto py-2.5">제출</MsButton>
             </div>
           </div>
         </div>

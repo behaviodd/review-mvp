@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { MsCheckCircleIcon, MsWarningIcon, MsCancelIcon, MsInfoIcon } from './MsIcons';
 
 type ToastType = 'success' | 'warning' | 'error' | 'info';
 interface ToastItem { id: string; type: ToastType; message: string; }
@@ -21,13 +21,13 @@ export const useToast = create<ToastState>((set) => ({
 
 // Catalyst-style: white card + subtle ring + colored icon
 const CONFIG: Record<ToastType, {
-  icon: typeof CheckCircle2;
+  icon: typeof MsCheckCircleIcon;
   iconCls: string;
 }> = {
-  success: { icon: CheckCircle2, iconCls: 'text-emerald-600' },
-  warning: { icon: AlertTriangle, iconCls: 'text-amber-500'  },
-  error:   { icon: XCircle,      iconCls: 'text-red-600'     },
-  info:    { icon: Info,         iconCls: 'text-indigo-600'  },
+  success: { icon: MsCheckCircleIcon, iconCls: 'text-emerald-600' },
+  warning: { icon: MsWarningIcon,     iconCls: 'text-amber-500'  },
+  error:   { icon: MsCancelIcon,      iconCls: 'text-red-600'     },
+  info:    { icon: MsInfoIcon,        iconCls: 'text-indigo-600'  },
 };
 
 function Toast({ toast }: { toast: ToastItem }) {
@@ -49,7 +49,7 @@ function Toast({ toast }: { toast: ToastItem }) {
         className="flex-shrink-0 mt-0.5 text-zinc-400 hover:text-zinc-600 transition-colors"
         aria-label="닫기"
       >
-        <X size={14} />
+        <MsCancelIcon size={12} />
       </button>
     </div>
   );

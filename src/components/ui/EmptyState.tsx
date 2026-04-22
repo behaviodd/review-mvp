@@ -1,8 +1,8 @@
-import type { LucideIcon } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { Button } from '../catalyst/button';
 
 interface Props {
-  icon: LucideIcon;
+  icon: ComponentType<{ size?: number | string; className?: string }>;
   title: string;
   description?: string;
   action?: { label: string; onClick: () => void };

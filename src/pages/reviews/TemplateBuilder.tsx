@@ -3,12 +3,14 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
+import { AlignLeft, List, BarChart2, Brain } from 'lucide-react';
 import {
-  ChevronLeft, Plus, Trash2, GripVertical, Lock, X,
-  AlignLeft, List, BarChart2, Brain, Check, Pencil,
-} from 'lucide-react';
-import { LoadingButton } from '../../components/ui/LoadingButton';
+  MsChevronLeftIcon, MsPlusIcon, MsDeleteIcon, MsGrabIcon,
+  MsLockIcon, MsCancelIcon, MsCheckIcon, MsEditIcon,
+} from '../../components/ui/MsIcons';
 import type { TemplateQuestion, TemplateSection } from '../../types';
+import { MsButton } from '../../components/ui/MsButton';
+import { MsCheckbox } from '../../components/ui/MsControl';
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -172,7 +174,7 @@ export function TemplateBuilder() {
           onClick={() => navigate('/cycles')}
           className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <MsChevronLeftIcon size={20} />
         </button>
 
         <div className="flex-1 min-w-0">
@@ -202,14 +204,9 @@ export function TemplateBuilder() {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xs text-neutral-400">{totalQuestions}개 문항</span>
-          <LoadingButton
-            onClick={handleSave}
-            loading={saving}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            {!saving && <Check className="w-4 h-4" />}
+          <MsButton onClick={handleSave} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
             {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
-          </LoadingButton>
+          </MsButton>
         </div>
       </div>
 
@@ -245,7 +242,7 @@ export function TemplateBuilder() {
                     >
                       <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />
                       {section.name}
-                      <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                      <MsEditIcon size={12} className="opacity-0 group-hover:opacity-60 transition-opacity" />
                     </button>
                   )}
                 </div>
@@ -255,7 +252,7 @@ export function TemplateBuilder() {
                   className="p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-lg transition-colors disabled:opacity-0 disabled:pointer-events-none"
                   title="섹션 삭제"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <MsDeleteIcon size={12} />
                 </button>
               </div>
 
@@ -273,7 +270,7 @@ export function TemplateBuilder() {
                     {/* Question header */}
                     <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
                       <button className="text-neutral-300 cursor-grab active:cursor-grabbing hover:text-neutral-400 transition-colors">
-                        <GripVertical className="w-4 h-4" />
+                        <MsGrabIcon size={16} />
                       </button>
                       <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center flex-shrink-0 ${ti.bg} ${ti.color}`}>
                         {globalIdx + 1}
@@ -305,7 +302,7 @@ export function TemplateBuilder() {
                         disabled={sectionQs.length <= 1 && sections.length <= 1}
                         className="p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-lg transition-colors disabled:opacity-0"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <MsDeleteIcon size={12} />
                       </button>
                     </div>
 
@@ -333,15 +330,12 @@ export function TemplateBuilder() {
                       {/* Multiple choice options */}
                       {q.type === 'multiple_choice' && (
                         <div className="space-y-2 pl-1">
-                          <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none w-fit">
-                            <input
-                              type="checkbox"
-                              checked={q.allowMultiple ?? false}
-                              onChange={e => updateQ(q.id, { allowMultiple: e.target.checked })}
-                              className="w-3.5 h-3.5 rounded accent-primary-500"
-                            />
-                            <span className="text-neutral-600 font-medium">복수 선택 가능</span>
-                          </label>
+                          <MsCheckbox
+                            size="md"
+                            checked={q.allowMultiple ?? false}
+                            onChange={e => updateQ(q.id, { allowMultiple: e.target.checked })}
+                            label={<span className="text-xs text-neutral-600 font-medium">복수 선택 가능</span>}
+                          />
                           <div className="space-y-1.5">
                             {(q.options ?? []).map((opt, oi) => (
                               <div key={oi} className="flex items-center gap-2">
@@ -367,7 +361,7 @@ export function TemplateBuilder() {
                                     }}
                                     className="p-1 text-neutral-300 hover:text-danger-400 transition-colors"
                                   >
-                                    <X className="w-3.5 h-3.5" />
+                                    <MsCancelIcon size={12} />
                                   </button>
                                 )}
                               </div>
@@ -377,7 +371,7 @@ export function TemplateBuilder() {
                               onClick={() => updateQ(q.id, { options: [...(q.options ?? []), ''] })}
                               className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors mt-1"
                             >
-                              <Plus className="w-3 h-3" /> 보기 추가
+                              <MsPlusIcon size={12} /> 보기 추가
                             </button>
                           </div>
                         </div>
@@ -396,25 +390,18 @@ export function TemplateBuilder() {
                       />
 
                       <div className="flex items-center gap-4 pt-1">
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={q.isRequired}
-                            onChange={e => updateQ(q.id, { isRequired: e.target.checked })}
-                            className="w-3.5 h-3.5 rounded accent-primary-500"
-                          />
-                          <span className="text-xs text-neutral-600">필수</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={q.isPrivate}
-                            onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
-                            className="w-3.5 h-3.5 rounded accent-primary-500"
-                          />
-                          <Lock className="w-3 h-3 text-neutral-400" />
-                          <span className="text-xs text-neutral-600">매니저 전용</span>
-                        </label>
+                        <MsCheckbox
+                          size="md"
+                          checked={q.isRequired}
+                          onChange={e => updateQ(q.id, { isRequired: e.target.checked })}
+                          label={<span className="text-xs text-neutral-600">필수</span>}
+                        />
+                        <MsCheckbox
+                          size="md"
+                          checked={q.isPrivate}
+                          onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
+                          label={<span className="flex items-center gap-1 text-xs text-neutral-600"><MsLockIcon size={12} className="text-neutral-400" />매니저 전용</span>}
+                        />
                         <div className="flex gap-1 ml-auto">
                           {TARGETS.map(({ val, label }) => (
                             <button
@@ -443,7 +430,7 @@ export function TemplateBuilder() {
                 onClick={() => addQ(section.id)}
                 className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-sm text-neutral-400 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50/50 transition-all flex items-center justify-center gap-2 group"
               >
-                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <MsPlusIcon size={16} className="group-hover:scale-110 transition-transform" />
                 질문 추가
               </button>
             </div>
@@ -455,7 +442,7 @@ export function TemplateBuilder() {
           onClick={addSection}
           className="w-full py-3.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-neutral-500 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50/30 transition-all flex items-center justify-center gap-2 font-medium"
         >
-          <Plus className="w-4 h-4" />
+          <MsPlusIcon size={16} />
           섹션 추가
         </button>
 

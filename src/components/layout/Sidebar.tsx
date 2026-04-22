@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
 import {
-  LayoutDashboard, Settings, ChevronLeft, ChevronRight,
-  RefreshCw, Building2, LogOut, UserCheck, MoreHorizontal,
-} from 'lucide-react';
+  MsHomeIcon, MsSettingIcon, MsChevronLeftIcon, MsChevronRightIcon,
+  MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsChevronRightLineIcon,
+} from '../ui/MsIcons';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../ui/cn';
@@ -54,11 +55,11 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
   }, [menuOpen]);
 
   const navItems = [
-    { to: '/',             icon: LayoutDashboard, label: '홈',        show: true                               },
-    { to: '/reviews/me',   icon: RefreshCw,       label: '내 리뷰',   show: !isAdmin                           },
-    { to: '/reviews/team', icon: UserCheck,       label: '하향 평가', show: can.viewTeamReviews && !isAdmin    },
+    { to: '/',             icon: MsHomeIcon,      label: '홈',        show: true                               },
+    { to: '/reviews/me',   icon: MsRefreshIcon,   label: '내 리뷰',   show: !isAdmin                           },
+    { to: '/reviews/team', icon: MsProfileIcon,   label: '하향 평가', show: can.viewTeamReviews && !isAdmin    },
     { to: '/team',         icon: Building2,       label: '구성원',    show: true                               },
-    { to: '/cycles',       icon: RefreshCw,       label: '리뷰 운영', show: isAdmin                            },
+    { to: '/cycles',       icon: MsRefreshIcon,   label: '리뷰 운영', show: isAdmin                            },
   ].filter(i => i.show);
 
   const handleLogout = () => {
@@ -93,7 +94,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
           className="hidden md:flex items-center justify-center size-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {collapsed ? <MsChevronRightIcon size={12} /> : <MsChevronLeftIcon size={12} />}
         </button>
       </div>
 
@@ -109,7 +110,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
             className="ml-1 text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
             title="더보기"
           >
-            <MoreHorizontal size={14} />
+            <MsMoreIcon size={12} />
           </button>
 
           {menuOpen && (
@@ -118,14 +119,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
                 onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
-                <Settings size={14} className="flex-shrink-0" />
+                <MsSettingIcon size={12} className="flex-shrink-0" />
                 설정
               </button>
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
               >
-                <LogOut size={14} className="flex-shrink-0" />
+                <MsLogoutIcon size={12} className="flex-shrink-0" />
                 로그아웃
               </button>
             </div>
@@ -151,7 +152,8 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
             )}
           >
             <Icon size={16} className="flex-shrink-0" />
-            <span className={cn(collapsed && 'md:hidden')}>{label}</span>
+            <span className={cn('flex-1', collapsed && 'md:hidden')}>{label}</span>
+            <MsChevronRightLineIcon size={14} className={cn('flex-shrink-0 text-gray-300', collapsed && 'md:hidden')} />
           </NavLink>
         ))}
       </nav>

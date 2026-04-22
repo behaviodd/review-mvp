@@ -8,10 +8,8 @@ import type { ReviewTemplate } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import {
-  Users, ChevronRight, Download, CheckCircle2, Clock, Circle,
-  AlertTriangle,
-} from 'lucide-react';
+import { Users, Circle } from 'lucide-react';
+import { MsChevronRightIcon, MsDownloadIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon } from '../../components/ui/MsIcons';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import type { ReviewCycle } from '../../types';
 
@@ -42,14 +40,14 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
   if (total > 0 && submitted === total) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-        <CheckCircle2 className="w-3.5 h-3.5" /> 평가 완료
+        <MsCheckCircleIcon size={12} /> 평가 완료
       </span>
     );
   }
   if (submitted > 0) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700">
-        <Clock className="w-3.5 h-3.5" /> 작성 중
+        <MsClockIcon size={12} /> 작성 중
       </span>
     );
   }
@@ -198,7 +196,7 @@ export function TeamReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               {urgent && !isCompleted && (
-                <AlertTriangle className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate group-hover:text-primary-700 ${
                 urgent && !isCompleted ? 'text-primary-700' : 'text-neutral-900'
@@ -219,11 +217,11 @@ export function TeamReviewList() {
                 <Users className="w-3 h-3" /> {total}명
               </span>
               <span className="flex items-center gap-1 text-emerald-600">
-                <CheckCircle2 className="w-3 h-3" /> {submitted}
+                <MsCheckCircleIcon size={12} /> {submitted}
               </span>
               {inProgress > 0 && (
                 <span className="flex items-center gap-1 text-primary-600">
-                  <Clock className="w-3 h-3" /> {inProgress}
+                  <MsClockIcon size={12} /> {inProgress}
                 </span>
               )}
               {notStarted > 0 && (
@@ -247,7 +245,7 @@ export function TeamReviewList() {
                 : 'bg-primary-600 text-white'}
           `}>
             {isCompleted ? '결과 보기' : submitted === 0 ? '시작' : '계속'}
-            <ChevronRight className="w-3 h-3" />
+            <MsChevronRightIcon size={12} />
           </span>
         </div>
 
@@ -257,7 +255,7 @@ export function TeamReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               {urgent && !isCompleted && (
-                <AlertTriangle className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate group-hover:text-primary-700 ${
                 urgent && !isCompleted ? 'text-primary-700' : 'text-neutral-900'
@@ -272,7 +270,7 @@ export function TeamReviewList() {
               </span>
               {inProgress > 0 && (
                 <span className="flex items-center gap-1 text-primary-500">
-                  <Clock className="w-3 h-3" /> 작성 중 {inProgress}
+                  <MsClockIcon size={12} /> 작성 중 {inProgress}
                 </span>
               )}
             </div>
@@ -313,7 +311,7 @@ export function TeamReviewList() {
                 title="엑셀 다운로드"
                 className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
               >
-                <Download className="w-3.5 h-3.5" />
+                <MsDownloadIcon size={12} />
               </button>
             )}
             {!isCompleted ? (
@@ -324,11 +322,11 @@ export function TeamReviewList() {
                   : 'bg-primary-600 text-white group-hover:bg-primary-700'}
               `}>
                 {submitted === 0 ? '시작하기' : '이어서 작성'}
-                <ChevronRight className="w-3 h-3" />
+                <MsChevronRightIcon size={12} />
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-neutral-400 group-hover:text-neutral-600">
-                결과 보기 <ChevronRight className="w-3 h-3" />
+                결과 보기 <MsChevronRightIcon size={12} />
               </span>
             )}
           </div>

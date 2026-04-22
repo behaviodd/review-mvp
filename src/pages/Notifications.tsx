@@ -2,12 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { formatDateTime } from '../utils/dateUtils';
-import { Bell, Clock, MessageSquare, CheckCheck, ChevronRight } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
+import { MsClockIcon, MsMessageIcon, MsChevronRightIcon } from '../components/ui/MsIcons';
 import type { NotificationType } from '../types';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: typeof Bell; color: string; bg: string }> = {
-  deadline: { icon: Clock, color: 'text-primary-600', bg: 'bg-primary-50' },
-  feedback: { icon: MessageSquare, color: 'text-primary-600', bg: 'bg-primary-50' },
+  deadline: { icon: MsClockIcon as typeof Bell, color: 'text-primary-600', bg: 'bg-primary-50' },
+  feedback: { icon: MsMessageIcon as typeof Bell, color: 'text-primary-600', bg: 'bg-primary-50' },
   review_result: { icon: Bell, color: 'text-success-600', bg: 'bg-success-50' },
   system: { icon: Bell, color: 'text-neutral-500', bg: 'bg-neutral-100' },
 };
@@ -76,7 +77,7 @@ export function Notifications() {
                   <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">{n.message}</p>
                   <p className="text-xs text-neutral-300 mt-1">{formatDateTime(n.createdAt)}</p>
                 </div>
-                {n.actionUrl && <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0 mt-1" />}
+                {n.actionUrl && <MsChevronRightIcon size={16} className="text-neutral-300 flex-shrink-0 mt-1" />}
               </button>
             );
           })}

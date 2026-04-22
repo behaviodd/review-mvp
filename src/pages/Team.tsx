@@ -8,12 +8,15 @@ import { useShowToast } from '../components/ui/Toast';
 import { resetAccount } from '../utils/authApi';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { Building2, Users, KeyRound, Layers, ArrowRight } from 'lucide-react';
 import {
-  Building2, Users, UserCheck, Plus, X, Pencil, Search,
-  ChevronRight, ChevronDown, Trash2, KeyRound, RefreshCw,
-  UserPlus, Layers, GripVertical, ArrowRight,
-} from 'lucide-react';
+  MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
+  MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon, MsRefreshIcon,
+  MsFriendAddIcon, MsGrabIcon, MsProfileIcon,
+} from '../components/ui/MsIcons';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
+import { MsButton } from '../components/ui/MsButton';
+import { MsCheckbox } from '../components/ui/MsControl';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
 const ORG_TYPE_LABEL: Record<OrgUnitType, string> = {
@@ -52,7 +55,7 @@ function Modal({ title, onClose, children, wide }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-950/5">
           <h3 className="text-sm font-semibold text-zinc-950">{title}</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 transition-colors">
-            <X className="size-4" />
+            <MsCancelIcon size={16} className="size-4" />
           </button>
         </div>
         <div className="p-5">{children}</div>
@@ -171,7 +174,7 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
         {!adding && (
           <button onClick={() => setAdding(true)}
             className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium">
-            <Plus className="size-3" /> 추가
+            <MsPlusIcon size={12} className="size-3" /> 추가
           </button>
         )}
       </div>
@@ -192,14 +195,10 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <label className="flex items-center gap-1 cursor-pointer select-none">
-                  <input type="checkbox" checked={isHead} onChange={() => toggleHead(a)}
-                    className="size-3 rounded accent-emerald-600" />
-                  <span className="text-[10px] font-medium text-zinc-500">조직장</span>
-                </label>
+                <MsCheckbox size="md" checked={isHead} onChange={() => toggleHead(a)} label={<span className="text-[10px] font-medium text-zinc-500">조직장</span>} />
                 <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
                   className="p-1 text-zinc-300 hover:text-rose-500 transition-colors ml-1">
-                  <Trash2 className="size-3.5" />
+                  <MsDeleteIcon size={12} className="size-3.5" />
                 </button>
               </div>
             </div>
@@ -216,8 +215,7 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
                     }
                   }}
                   placeholder="역할 입력..." className={inp + ' py-1 text-xs'} />
-                <button type="button" onClick={() => { upsertSecondaryOrg({ ...a, role: editingRole || undefined }); setEditingOrgId(null); }}
-                  className="px-2 py-1 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 flex-shrink-0">저장</button>
+                <MsButton type="button" size="sm" onClick={() => { upsertSecondaryOrg({ ...a, role: editingRole || undefined }); setEditingOrgId(null); }} className="flex-shrink-0">저장</MsButton>
                 <button type="button" onClick={() => setEditingOrgId(null)}
                   className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800 flex-shrink-0">취소</button>
               </div>
@@ -249,12 +247,7 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
                   <input type="text" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                     placeholder="예) 프로덕트 디자이너" className={inp} />
                 </div>
-                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.isHead}
-                    onChange={e => setForm(f => ({ ...f, isHead: e.target.checked }))}
-                    className="size-3.5 rounded accent-emerald-600" />
-                  <span className="text-xs font-medium text-zinc-600">조직장</span>
-                </label>
+                <MsCheckbox size="md" checked={form.isHead} onChange={e => setForm(f => ({ ...f, isHead: e.target.checked }))} label={<span className="text-xs font-medium text-zinc-600">조직장</span>} className="pt-5" />
               </div>
             </div>
             <div>
@@ -275,10 +268,7 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => { setAdding(false); setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' }); }}
               className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-            <button type="button" onClick={handleAdd} disabled={!form.orgId}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40">
-              저장
-            </button>
+            <MsButton type="button" size="sm" onClick={handleAdd} disabled={!form.orgId}>저장</MsButton>
           </div>
         </div>
       )}
@@ -415,13 +405,7 @@ function AddMemberModal({
                   <label className={lbl}>역할</label>
                   <input type="text" value={form.primaryRole} onChange={f('primaryRole')} placeholder="예) iOS 개발자" className={inp} />
                 </div>
-                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.isPrimaryHead}
-                    disabled={!mostSpecificOrgId}
-                    onChange={e => setForm(p => ({ ...p, isPrimaryHead: e.target.checked }))}
-                    className="size-3.5 rounded accent-emerald-600 disabled:opacity-40" />
-                  <span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>
-                </label>
+                <MsCheckbox size="md" checked={form.isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setForm(p => ({ ...p, isPrimaryHead: e.target.checked }))} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>} className="pt-5" />
               </div>
             </div>
             <div className="col-span-2">
@@ -442,10 +426,7 @@ function AddMemberModal({
         <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
           <button type="button" onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-          <button type="submit" disabled={!form.name.trim() || !form.email.trim() || submitting}
-            className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed">
-            {submitting ? '추가 중...' : '추가'}
-          </button>
+          <MsButton type="submit" loading={submitting} disabled={!form.name.trim() || !form.email.trim()}>추가</MsButton>
         </div>
       </form>
     </Modal>
@@ -627,13 +608,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
                   <label className={lbl}>역할</label>
                   <input type="text" value={form.position} onChange={f('position')} placeholder="예) iOS 개발자" className={inp} />
                 </div>
-                <label className="flex items-center gap-1.5 pt-5 cursor-pointer select-none">
-                  <input type="checkbox" checked={isPrimaryHead}
-                    disabled={!mostSpecificOrgId}
-                    onChange={e => setIsPrimaryHead(e.target.checked)}
-                    className="size-3.5 rounded accent-emerald-600 disabled:opacity-40" />
-                  <span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>
-                </label>
+                <MsCheckbox size="md" checked={isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setIsPrimaryHead(e.target.checked)} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>} className="pt-5" />
               </div>
             </div>
             <div className="col-span-2">
@@ -679,7 +654,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
             {!showTerminate ? (
               <button type="button" onClick={() => setShowTerminate(true)}
                 className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-rose-500 transition-colors">
-                <X className="size-3.5" /> 퇴사 처리
+                <MsCancelIcon size={12} className="size-3.5" /> 퇴사 처리
               </button>
             ) : (
               <div className="p-3 rounded-lg border border-rose-200 bg-rose-50/50 space-y-3">
@@ -706,10 +681,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
         <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
           <button type="button" onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-          <button type="submit"
-            className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700">
-            저장
-          </button>
+          <MsButton type="submit">저장</MsButton>
         </div>
       </form>
     </Modal>
@@ -788,14 +760,14 @@ function BulkMoveModal({
         <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
           <button type="button" onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-          <button
+          <MsButton
             type="button"
             disabled={!orgSel.mainOrgId}
             onClick={() => onConfirm(orgSel, managerId === '__keep__' ? null : managerId)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            leftIcon={<ArrowRight className="size-3.5" />}
           >
-            <ArrowRight className="size-3.5" /> 이동 확정
-          </button>
+            이동 확정
+          </MsButton>
         </div>
       </div>
     </Modal>
@@ -859,10 +831,7 @@ function OrgUnitFormModal({
         <div className="flex justify-end gap-2 pt-1">
           <button type="button" onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
-          <button type="submit" disabled={!name.trim()}
-            className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed">
-            {isEdit ? '저장' : '추가'}
-          </button>
+          <MsButton type="submit" disabled={!name.trim()}>{isEdit ? '저장' : '추가'}</MsButton>
         </div>
       </form>
     </Modal>
@@ -993,10 +962,10 @@ function OrgTreeNode({
         {/* Drag handle */}
         {canEdit && (
           <span
-            className={`flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
+            className={`flex-shrink-0 text-zinc-400 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
             title="드래그로 순서·위치 변경"
           >
-            <GripVertical className="size-3.5 text-zinc-300" />
+            <MsGrabIcon size={12} />
           </span>
         )}
 
@@ -1005,7 +974,7 @@ function OrgTreeNode({
           onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
           className={`size-4 flex items-center justify-center flex-shrink-0 rounded transition-colors ${hasChildren ? 'text-zinc-400 hover:text-zinc-700' : 'opacity-0 pointer-events-none'}`}
         >
-          {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+          {expanded ? <MsChevronDownMonoIcon size={12} /> : <MsChevronRightMonoIcon size={12} />}
         </button>
 
         {/* type dot */}
@@ -1028,22 +997,22 @@ function OrgTreeNode({
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
               className="p-1 rounded text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
-              <UserPlus className="size-3" />
+              <MsFriendAddIcon size={12} />
             </button>
             {nextType && (
               <button title={`${ORG_TYPE_LABEL[nextType]} 추가`}
                 onClick={() => onAddChild(nextType, unit.id)}
                 className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
-                <Plus className="size-3" />
+                <MsPlusIcon size={12} />
               </button>
             )}
             <button title="편집" onClick={() => onEditUnit(unit)}
               className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors">
-              <Pencil className="size-3" />
+              <MsEditIcon size={12} />
             </button>
             <button title="삭제" onClick={() => onDeleteUnit(unit)}
               className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-              <Trash2 className="size-3" />
+              <MsDeleteIcon size={12} />
             </button>
           </div>
         )}
@@ -1108,15 +1077,10 @@ function MemberRow({
       {/* 체크박스 */}
       {canSelect && (
         <div
-          className={`flex-shrink-0 transition-opacity ${selectionActive || selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          className={`flex items-center flex-shrink-0 transition-opacity ${selectionActive || selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
           onClick={e => e.stopPropagation()}
         >
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggle!(user.id)}
-            className="size-4 rounded accent-indigo-600 cursor-pointer"
-          />
+          <MsCheckbox checked={selected} onChange={() => onToggle!(user.id)} />
         </div>
       )}
 
@@ -1152,12 +1116,12 @@ function MemberRow({
         >
           <button onClick={() => onEdit(user)} title="정보 수정"
             className="p-1.5 rounded-md text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
-            <Pencil className="size-3.5" />
+            <MsEditIcon size={12} className="size-3.5" />
           </button>
           {onTerminate && user.role !== 'admin' && (
             <button onClick={() => onTerminate(user)} title="퇴사 처리"
               className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-              <X className="size-3.5" />
+              <MsCancelIcon size={12} className="size-3.5" />
             </button>
           )}
         </div>
@@ -1190,15 +1154,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const clearSelection = () => setSelectedIds(new Set());
 
   const headerActions = useMemo(() => canEdit ? (
-    <button
+    <MsButton
       onClick={() => {
         const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
         setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
       }}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+      leftIcon={<MsFriendAddIcon size={16} />}
     >
-      <UserPlus className="size-4" /> 구성원 추가
-    </button>
+      구성원 추가
+    </MsButton>
   ) : undefined, [canEdit, selectedOrgId, orgUnits]);
   useSetPageHeader('구성원', headerActions);
 
@@ -1470,7 +1434,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         {orgSyncEnabled && (
           isLoading ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-xs text-zinc-500">
-              <RefreshCw className="size-3 animate-spin" /> 동기화 중
+              <MsRefreshIcon size={12} className="animate-spin" /> 동기화 중
             </span>
           ) : orgSyncError ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-xs text-rose-500">
@@ -1478,7 +1442,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             </span>
           ) : orgLastSyncedAt ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-xs text-emerald-600">
-              <RefreshCw className="size-3" />
+              <MsRefreshIcon size={12} className="size-3" />
               {new Date(orgLastSyncedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화됨
             </span>
           ) : null
@@ -1490,7 +1454,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 ? 'bg-rose-50 text-rose-600 border-rose-200'
                 : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
             }`}>
-            <X className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
+            <MsCancelIcon size={12} className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
           </button>
         )}
       </div>
@@ -1500,7 +1464,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         {[
           { icon: Users,     label: '전체 구성원', value: `${totalNonAdmin}명`,  sub: '재직 중' },
           { icon: Building2, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
-          { icon: UserCheck, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
+          { icon: MsProfileIcon, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
         ].map(({ icon: Icon, label, value, sub }) => (
           <div key={label} className="bg-white rounded-xl ring-1 ring-zinc-950/5 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -1517,7 +1481,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
       {/* Search bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
+        <MsSearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
         <input type="text" value={search}
           onChange={e => { setSearch(e.target.value); clearSelection(); }}
           placeholder="이름, 직책, 팀으로 검색..."
@@ -1525,7 +1489,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         {search && (
           <button onClick={() => setSearch('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-            <X className="size-4" />
+            <MsCancelIcon size={16} className="size-4" />
           </button>
         )}
       </div>
@@ -1567,7 +1531,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
                   title="주조직 추가"
                   className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
-                  <Plus className="size-3.5" />
+                  <MsPlusIcon size={12} className="size-3.5" />
                 </button>
               )}
             </div>
@@ -1641,23 +1605,24 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               </div>
               <div className="flex items-center gap-2">
                 {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
-                  <input
-                    type="checkbox"
+                  <MsCheckbox
                     title="전체 선택"
                     checked={panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
+                    indeterminate={panelUsers.filter(u => u.role !== 'admin').some(u => selectedIds.has(u.id)) && !panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
                     onChange={() => toggleSelectAll(panelUsers)}
-                    className="size-4 rounded accent-indigo-600 cursor-pointer"
                   />
                 )}
                 {canEdit && !showTerminated && (
-                  <button
+                  <MsButton
                     onClick={() => {
                       const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
                       setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
-                    <UserPlus className="size-3.5" /> 구성원 추가
-                  </button>
+                    size="sm"
+                    leftIcon={<MsFriendAddIcon size={12} />}
+                  >
+                    구성원 추가
+                  </MsButton>
                 )}
               </div>
             </div>

@@ -9,13 +9,17 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
-import { ChevronLeft, Users, Calendar, BarChart2, X, Pencil, Check, Download, RefreshCw, AlertTriangle, Eye, Star, Trash2 } from 'lucide-react';
+import { Users, BarChart2, Eye } from 'lucide-react';
+import {
+  MsChevronLeftIcon, MsCalendarIcon, MsCancelIcon, MsEditIcon,
+  MsCheckIcon, MsDownloadIcon, MsRefreshIcon, MsWarningIcon, MsStarIcon, MsDeleteIcon,
+} from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
-import { LoadingButton } from '../../components/ui/LoadingButton';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import { syncCycle } from '../../utils/sheetsSync';
 import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
 import type { ReviewCycle, ReviewStatus, ReviewSubmission, ReviewTemplate, User } from '../../types';
+import { MsButton } from '../../components/ui/MsButton';
 
 // 상태 전환 정의
 const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
@@ -105,7 +109,7 @@ function CycleEditModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <h2 className="text-base font-semibold text-neutral-900">리뷰 편집</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors">
-            <X className="w-4 h-4 text-neutral-500" />
+            <MsCancelIcon size={16} className="text-neutral-500" />
           </button>
         </div>
 
@@ -168,7 +172,7 @@ function CycleEditModal({
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                     <span className="text-xs text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">{t.questions.length}문항</span>
-                    {form.templateId === t.id && <Check className="w-4 h-4 text-primary-600" />}
+                    {form.templateId === t.id && <MsCheckIcon size={16} className="text-primary-600" />}
                   </div>
                 </button>
               ))}
@@ -193,7 +197,7 @@ function CycleEditModal({
                         : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
                     }`}
                   >
-                    {selected && <Check className="w-3 h-3" />}
+                    {selected && <MsCheckIcon size={12} />}
                     {dept}
                     <span className="text-neutral-400">{count}명</span>
                   </button>
@@ -236,19 +240,13 @@ function CycleEditModal({
 
         {/* 모달 푸터 */}
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-100">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
-          >
-            취소
-          </button>
-          <button
+          <MsButton variant="outline-default" onClick={onClose}>취소</MsButton>
+          <MsButton
             onClick={handleSave}
             disabled={!form.title.trim() || form.targetDepartments.length === 0}
-            className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             저장하기
-          </button>
+          </MsButton>
         </div>
       </div>
     </div>
@@ -359,7 +357,7 @@ function SubmissionViewPanel({
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-neutral-500" />
+            <MsCancelIcon size={20} className="text-neutral-500" />
           </button>
         </div>
 
@@ -389,7 +387,7 @@ function SubmissionViewPanel({
               <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i === 0 ? 'bg-indigo-50/40' : 'bg-emerald-50/40'}`}>
                 {s?.overallRating != null ? (
                   <>
-                    <Star className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+                    <MsStarIcon size={12} className="text-primary-400 flex-shrink-0" />
                     <div>
                       <span className="text-[10px] text-neutral-400 font-medium">종합 평점</span>
                       <p className="text-base font-bold text-primary-700 leading-none mt-0.5">
@@ -628,7 +626,7 @@ export function CycleDetail() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/cycles')} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
-          <ChevronLeft className="w-5 h-5 text-neutral-600" />
+          <MsChevronLeftIcon size={20} className="text-neutral-600" />
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-neutral-900">{cycle.title}</h1>
@@ -636,46 +634,45 @@ export function CycleDetail() {
         </div>
         <StatusBadge type="review" value={cycle.status} />
         {transition && (
-          <button
+          <MsButton
+            variant={transition.isDanger ? 'outline-red' : 'outline-brand1'}
             onClick={() => setShowConfirm(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
-              transition.isDanger
-                ? 'text-danger-600 border-danger-200 hover:bg-danger-50'
-                : 'text-primary-600 border-primary-200 hover:bg-primary-50'
-            }`}
           >
             {transition.label}
-          </button>
+          </MsButton>
         )}
         {enabled && (
-          <button
+          <MsButton
+            variant="outline-default"
             onClick={handleSheetSync}
             disabled={syncing}
             title={lastSyncAt[cycle.id] ? `마지막 동기화: ${new Date(lastSyncAt[cycle.id]).toLocaleString('ko-KR')}` : '시트 동기화'}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-success-700 border border-success-200 bg-success-50 rounded hover:bg-success-100 disabled:opacity-50 transition-colors"
+            leftIcon={<MsRefreshIcon className={syncing ? 'animate-spin' : ''} />}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
             {syncing ? '동기화 중…' : '시트 동기화'}
-          </button>
+          </MsButton>
         )}
-        <button
+        <MsButton
+          variant="outline-default"
           onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
+          leftIcon={<MsDownloadIcon />}
         >
-          <Download className="w-3.5 h-3.5" /> 내보내기
-        </button>
-        <button
+          내보내기
+        </MsButton>
+        <MsButton
+          variant="outline-default"
           onClick={() => setShowEdit(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded hover:bg-neutral-50 transition-colors"
+          leftIcon={<MsEditIcon />}
         >
-          <Pencil className="w-3.5 h-3.5" /> 편집
-        </button>
-        <button
+          편집
+        </MsButton>
+        <MsButton
+          variant="outline-red"
           onClick={() => setShowDeleteConfirm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger-600 border border-danger-200 rounded hover:bg-danger-50 transition-colors"
+          leftIcon={<MsDeleteIcon />}
         >
-          <Trash2 className="w-3.5 h-3.5" /> 삭제
-        </button>
+          삭제
+        </MsButton>
       </div>
 
       {/* 상태 전환 확인 배너 */}
@@ -686,29 +683,21 @@ export function CycleDetail() {
             : 'bg-amber-50 border-amber-200'
         }`}>
           <div className="flex items-center gap-2 min-w-0">
-            <AlertTriangle className={`w-4 h-4 shrink-0 ${transition.isDanger ? 'text-danger-500' : 'text-amber-500'}`} />
+            <MsWarningIcon size={16} className={`shrink-0 ${transition.isDanger ? 'text-danger-500' : 'text-amber-500'}`} />
             <p className={`text-sm ${transition.isDanger ? 'text-danger-800' : 'text-amber-800'}`}>
               {transition.msg}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-            >
-              취소
-            </button>
-            <LoadingButton
+            <MsButton variant="ghost" size="sm" onClick={() => setShowConfirm(false)}>취소</MsButton>
+            <MsButton
               loading={transitioning}
               onClick={handleTransition}
-              className={`px-3 py-1.5 text-sm font-semibold text-white rounded transition-colors ${
-                transition.isDanger
-                  ? 'bg-danger-600 hover:bg-danger-700'
-                  : 'bg-primary-600 hover:bg-primary-700'
-              }`}
+              size="sm"
+              className={transition.isDanger ? 'bg-danger-600 hover:bg-danger-700' : ''}
             >
               {transition.label}
-            </LoadingButton>
+            </MsButton>
           </div>
         </div>
       )}
@@ -717,28 +706,24 @@ export function CycleDetail() {
       {showDeleteConfirm && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-danger-50 border-danger-200">
           <div className="flex items-center gap-2 min-w-0">
-            <Trash2 className="w-4 h-4 shrink-0 text-danger-500" />
+            <MsDeleteIcon size={16} className="shrink-0 text-danger-500" />
             <p className="text-sm text-danger-800">
               <strong>"{cycle.title}"</strong> 리뷰와 모든 제출 데이터({submissions.filter(s => s.cycleId === cycle.id).length}건)가 영구 삭제됩니다. 되돌릴 수 없습니다.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-            >
-              취소
-            </button>
-            <button
+            <MsButton variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>취소</MsButton>
+            <MsButton
+              variant="red"
+              size="sm"
               onClick={() => {
                 deleteCycle(cycle.id);
                 showToast('success', '리뷰가 삭제되었습니다.');
                 navigate('/cycles');
               }}
-              className="px-3 py-1.5 text-sm font-semibold text-white bg-danger-600 hover:bg-danger-700 rounded transition-colors"
             >
               삭제 확정
-            </button>
+            </MsButton>
           </div>
         </div>
       )}
@@ -796,7 +781,7 @@ export function CycleDetail() {
 
       {/* Timeline */}
       <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2"><Calendar className="w-4 h-4" /> 일정</h2>
+        <h2 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
         <div className="space-y-3">
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
@@ -816,15 +801,16 @@ export function CycleDetail() {
           <h2 className="text-sm font-semibold text-neutral-700">부서별 진행 현황</h2>
           <div className="flex items-center gap-2">
             <p className="text-xs text-neutral-400">클릭하면 해당 부서 구성원만 표시됩니다</p>
-            <button
+            <MsButton
+              variant="outline-default"
+              size="sm"
               onClick={handleRegenerateSubmissions}
               disabled={regenerating}
               title="구성원 제출 누락 시 재생성"
-              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 border border-neutral-200 rounded hover:bg-neutral-50 disabled:opacity-40 transition-colors"
+              leftIcon={<MsRefreshIcon className={regenerating ? 'animate-spin' : ''} />}
             >
-              <RefreshCw className={`w-3 h-3 ${regenerating ? 'animate-spin' : ''}`} />
               제출 재생성
-            </button>
+            </MsButton>
           </div>
         </div>
         <div className="space-y-3">
@@ -862,7 +848,7 @@ export function CycleDetail() {
               <span className="flex items-center gap-1 text-xs font-medium text-primary-700 bg-primary-50 px-2 py-0.5 rounded">
                 {selectedDept}
                 <button onClick={() => setSelectedDept(null)} className="hover:text-primary-900">
-                  <X className="w-3 h-3" />
+                  <MsCancelIcon size={12} />
                 </button>
               </span>
             )}
@@ -893,12 +879,15 @@ export function CycleDetail() {
                   </div>
                 </div>
                 {hasAny && (
-                  <button
+                  <MsButton
+                    variant="outline-brand1"
+                    size="sm"
                     onClick={() => setViewingMemberId(member.id)}
-                    className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-600 border border-primary-200 bg-primary-50 hover:bg-primary-100 rounded-lg transition-all"
+                    className="opacity-0 group-hover:opacity-100"
+                    leftIcon={<Eye />}
                   >
-                    <Eye className="w-3 h-3" /> 리뷰 보기
-                  </button>
+                    리뷰 보기
+                  </MsButton>
                 )}
               </div>
             );

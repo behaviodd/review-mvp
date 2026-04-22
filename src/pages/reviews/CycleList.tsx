@@ -4,7 +4,8 @@ import { useReviewStore } from '../../stores/reviewStore';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
-import { RefreshCw, Plus, ChevronRight, Pencil, FileText, Star, Trash2 } from 'lucide-react';
+import { MsRefreshIcon, MsPlusIcon, MsChevronRightIcon, MsEditIcon, MsArticleIcon, MsStarIcon, MsDeleteIcon } from '../../components/ui/MsIcons';
+import { MsButton } from '../../components/ui/MsButton';
 import { useShowToast } from '../../components/ui/Toast';
 import type { ReviewStatus } from '../../types';
 
@@ -53,19 +54,9 @@ export function CycleList() {
 
   const headerActions = useMemo(() => (
     tab === 'cycles' ? (
-      <button
-        onClick={() => navigate('/cycles/new')}
-        className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-      >
-        <Plus className="w-4 h-4" /> 새 리뷰
-      </button>
+      <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>새 리뷰</MsButton>
     ) : (
-      <button
-        onClick={() => navigate('/templates/new')}
-        className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-      >
-        <Plus className="w-4 h-4" /> 새 템플릿
-      </button>
+      <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>새 템플릿</MsButton>
     )
   ), [tab, navigate]);
   useSetPageHeader('리뷰 운영', headerActions);
@@ -118,16 +109,16 @@ export function CycleList() {
           onClick={e => { e.stopPropagation(); navigate(`/cycles/${cycle.id}?edit=1`); }}
           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
         >
-          <Pencil className="w-3 h-3" /> 편집
+          <MsEditIcon size={12} /> 편집
         </button>
         <button
           onClick={e => handleDeleteCycle(e, cycle.id, cycle.title)}
           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-danger-500 bg-danger-50 hover:bg-danger-100 rounded-lg transition-colors"
         >
-          <Trash2 className="w-3 h-3" /> 삭제
+          <MsDeleteIcon size={12} /> 삭제
         </button>
       </div>
-      <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-primary-400 flex-shrink-0" />
+      <MsChevronRightIcon size={16} className="text-neutral-300 group-hover:text-primary-400 flex-shrink-0" />
     </div>
   );
 
@@ -164,7 +155,7 @@ export function CycleList() {
       {tab === 'cycles' && (
         cycles.length === 0 ? (
           <EmptyState
-            icon={RefreshCw}
+            icon={MsRefreshIcon}
             title="아직 생성된 리뷰가 없습니다."
             description="새 리뷰를 만들어 팀의 성장 돌아보기를 시작해보세요."
             actionLabel="새 리뷰 만들기"
@@ -197,7 +188,7 @@ export function CycleList() {
       {tab === 'templates' && (
         templates.length === 0 ? (
           <EmptyState
-            icon={FileText}
+            icon={MsArticleIcon}
             title="아직 생성된 템플릿이 없습니다."
             description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
             actionLabel="새 템플릿 만들기"
@@ -210,14 +201,14 @@ export function CycleList() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-start gap-2 flex-1 min-w-0">
                     <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <FileText className="w-4 h-4 text-primary-600" />
+                      <MsArticleIcon size={16} className="text-primary-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-semibold text-neutral-900">{tmpl.name}</h3>
                         {tmpl.isDefault && (
                           <span className="flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
-                            <Star className="w-3 h-3" /> 기본
+                            <MsStarIcon size={12} /> 기본
                           </span>
                         )}
                       </div>
@@ -229,7 +220,7 @@ export function CycleList() {
                       onClick={() => navigate(`/cycles/new?templateId=${tmpl.id}`)}
                       className="px-3 py-1.5 text-xs font-medium text-primary-600 border border-primary-200 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
                     >
-                      <Plus className="w-3 h-3 inline mr-1" />리뷰 생성
+                      <MsPlusIcon size={12} className="inline mr-1" />리뷰 생성
                     </button>
                     <button
                       onClick={() => navigate(`/templates/${tmpl.id}`)}
@@ -242,7 +233,7 @@ export function CycleList() {
                         onClick={() => handleDeleteTemplate(tmpl.id, tmpl.name)}
                         className="p-1.5 text-neutral-400 hover:text-danger-500 hover:bg-danger-50 rounded-xl transition-colors"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <MsDeleteIcon size={12} />
                       </button>
                     )}
                   </div>

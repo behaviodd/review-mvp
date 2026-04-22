@@ -6,7 +6,8 @@ import { useReviewStore } from '../../stores/reviewStore';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { Star, ChevronRight, CheckCircle2, Clock, Circle, AlertTriangle, UserCheck, ShieldCheck, Users, BarChart2, FileText } from 'lucide-react';
+import { Circle, ShieldCheck, Users, BarChart2 } from 'lucide-react';
+import { MsStarIcon, MsChevronRightIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsArticleIcon } from '../../components/ui/MsIcons';
 import { useTeamStore } from '../../stores/teamStore';
 
 type Filter = 'all' | 'active' | 'done';
@@ -15,14 +16,14 @@ function StatusDot({ status }: { status: string }) {
   if (status === 'submitted') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success-700">
-        <CheckCircle2 className="w-3.5 h-3.5" /> 제출 완료
+        <MsCheckCircleIcon size={12} /> 제출 완료
       </span>
     );
   }
   if (status === 'in_progress') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700">
-        <Clock className="w-3.5 h-3.5" /> 작성 중
+        <MsClockIcon size={12} /> 작성 중
       </span>
     );
   }
@@ -93,7 +94,7 @@ export function MyReviewList() {
               onClick={() => navigate('/templates')}
               className="flex flex-col items-center gap-2 p-4 rounded-xl border border-neutral-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors text-left"
             >
-              <FileText className="w-5 h-5 text-indigo-500" />
+              <MsArticleIcon size={20} className="text-indigo-500" />
               <div>
                 <p className="text-sm font-semibold text-neutral-800">템플릿 관리</p>
                 <p className="text-xs text-neutral-400 mt-0.5">리뷰 양식 생성 및 수정</p>
@@ -110,7 +111,7 @@ export function MyReviewList() {
     return (
       <div className="space-y-5">
         <EmptyState
-          icon={Star}
+          icon={MsStarIcon}
           title="아직 진행 중인 리뷰가 없습니다."
           description="관리자가 리뷰를 생성하면 여기에 나타납니다."
         />
@@ -151,7 +152,7 @@ export function MyReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               {urgent && !isSubmitted && (
-                <AlertTriangle className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-primary-700' : 'text-neutral-900'} group-hover:text-primary-700`}>
                 {cycle?.title ?? '–'}
@@ -166,8 +167,8 @@ export function MyReviewList() {
               )}
               {isSubmitted && (
                 managerEval
-                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 대기</span>
+                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
               )}
             </div>
             {!isSubmitted && (
@@ -183,10 +184,10 @@ export function MyReviewList() {
               ${urgent ? 'bg-primary-500 text-white' : 'bg-primary-600 text-white'}
             `}>
               {sub.status === 'not_started' ? '시작' : '계속'}
-              <ChevronRight className="w-3 h-3" />
+              <MsChevronRightIcon size={12} />
             </span>
           ) : (
-            <ChevronRight className="w-4 h-4 text-neutral-300 mt-1 flex-shrink-0" />
+            <MsChevronRightIcon size={16} className="text-neutral-300 mt-1 flex-shrink-0" />
           )}
         </div>
 
@@ -195,7 +196,7 @@ export function MyReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               {urgent && !isSubmitted && (
-                <AlertTriangle className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-primary-700' : 'text-neutral-900'} group-hover:text-primary-700`}>
                 {cycle?.title ?? '–'}
@@ -207,8 +208,8 @@ export function MyReviewList() {
               </p>
               {isSubmitted && (
                 managerEval
-                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><UserCheck className="w-2.5 h-2.5" /> 조직장 평가 대기</span>
+                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
               )}
             </div>
           </div>
@@ -249,11 +250,11 @@ export function MyReviewList() {
                 transition-colors
               `}>
                 {sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
-                <ChevronRight className="w-3 h-3" />
+                <MsChevronRightIcon size={12} />
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-neutral-400 group-hover:text-neutral-600">
-                결과 보기 <ChevronRight className="w-3 h-3" />
+                결과 보기 <MsChevronRightIcon size={12} />
               </span>
             )}
           </div>
@@ -280,12 +281,12 @@ export function MyReviewList() {
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
-                <UserCheck className="w-2.5 h-2.5" /> 조직장 평가
+                <MsProfileIcon size={12} /> 조직장 평가
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">{reviewer?.name} 작성</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" />
+          <MsChevronRightIcon size={16} className="text-neutral-300 flex-shrink-0" />
         </div>
 
         {/* 데스크톱 */}
@@ -296,7 +297,7 @@ export function MyReviewList() {
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
-                <UserCheck className="w-2.5 h-2.5" /> 조직장 평가
+                <MsProfileIcon size={12} /> 조직장 평가
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
@@ -317,13 +318,13 @@ export function MyReviewList() {
 
           <div className="w-24 flex-shrink-0 flex justify-end">
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success-700">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 완료
+              <MsCheckCircleIcon size={12} /> 완료
             </span>
           </div>
 
           <div className="flex-shrink-0 w-24 flex justify-end">
             <span className="inline-flex items-center gap-1 text-xs text-neutral-400 group-hover:text-neutral-600">
-              결과 보기 <ChevronRight className="w-3 h-3" />
+              결과 보기 <MsChevronRightIcon size={12} />
             </span>
           </div>
         </div>
@@ -374,7 +375,7 @@ export function MyReviewList() {
       {/* 빈 상태 */}
       {isFilterEmpty ? (
         <EmptyState
-          icon={Star}
+          icon={MsStarIcon}
           title={
             filter === 'active' ? '진행 중인 리뷰가 없습니다.' :
             filter === 'done'   ? '완료한 리뷰가 없습니다.' :

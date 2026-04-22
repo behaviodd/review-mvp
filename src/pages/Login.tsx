@@ -5,7 +5,8 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { verifyLogin } from '../utils/authApi';
 import type { User } from '../types';
-import { Eye, EyeOff, ChevronDown, Settings2, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { MsChevronDownIcon, MsSettingIcon } from '../components/ui/MsIcons';
 
 /* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
 export function Login() {
@@ -129,7 +130,7 @@ export function Login() {
           <div className="bg-white rounded-2xl ring-1 ring-amber-200 shadow-sm p-5 space-y-3">
             <div className="flex items-start gap-3">
               <div className="size-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <Settings2 className="size-4 text-amber-600" />
+                <MsSettingIcon size={16} className="text-amber-600" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-zinc-900">초기 설정이 필요합니다</p>
@@ -203,7 +204,7 @@ export function Login() {
             className="w-full flex items-center justify-between px-5 py-3 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
           >
             <span>체험 계정으로 둘러보기</span>
-            <ChevronDown className={`size-4 transition-transform duration-200 ${showDemo ? 'rotate-180' : ''}`} />
+            <MsChevronDownIcon size={16} className={`transition-transform duration-200 ${showDemo ? 'rotate-180' : ''}`} />
           </button>
 
           {showDemo && (

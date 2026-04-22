@@ -12,19 +12,21 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../utils/dateUtils';
-import { AlertCircle, Users, TrendingUp, Clock, Plus } from 'lucide-react';
+import { Users, TrendingUp } from 'lucide-react';
+import { MsAlertIcon, MsClockIcon, MsPlusIcon } from '../components/ui/MsIcons';
+import { MsButton } from '../components/ui/MsButton';
 
 
 function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
   label: string; value: string | number; sub?: string;
-  icon: typeof AlertCircle; color: string; iconBg: string;
+  icon: typeof MsAlertIcon; color: string; iconBg: string;
 }) {
   return (
     <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">{label}</p>
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
-          <Icon size={15} className={color} />
+          <Icon size={16} className={color} />
         </div>
       </div>
       <p className={`text-2xl font-bold leading-none text-neutral-900`}>{value}</p>
@@ -61,9 +63,7 @@ function AdminDashboard() {
   const barColor = (rate: number) => rate >= 80 ? '#059669' : rate >= 50 ? '#4f46e5' : '#e11d48';
 
   const headerActions = useMemo(() => (
-    <button onClick={() => navigate('/cycles/new')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
-      <Plus className="w-4 h-4" /> 새 리뷰 생성
-    </button>
+    <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>새 리뷰 생성</MsButton>
   ), [navigate]);
   useSetPageHeader('관리자 대시보드', headerActions);
 
@@ -111,10 +111,10 @@ function AdminDashboard() {
     <div className="space-y-5 md:space-y-6">
       {/* 통계 카드 — 모바일 2열, 데스크톱 4열 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={Clock} color="text-primary-600" iconBg="bg-primary-50" />
-        <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp} color="text-success-600" iconBg="bg-success-50" />
-        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={Users} color="text-neutral-600" iconBg="bg-neutral-100" />
-        <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={AlertCircle} color="text-primary-600" iconBg="bg-primary-50" />
+        <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-primary-600" iconBg="bg-primary-50" />
+        <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-success-600" iconBg="bg-success-50" />
+        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={Users as typeof MsAlertIcon} color="text-neutral-600" iconBg="bg-neutral-100" />
+        <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-primary-600" iconBg="bg-primary-50" />
       </div>
 
       {/* 차트 섹션 — 모바일 1열, 데스크톱 3열 */}
@@ -339,12 +339,9 @@ function EmployeeDashboard() {
                 <p className="text-xs text-neutral-400 mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
               </div>
             </div>
-            <button
-              onClick={() => navigate(`/reviews/me/${mySelf.id}`)}
-              className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white font-medium text-sm rounded-lg hover:bg-primary-700 transition-colors"
-            >
+            <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
               {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
-            </button>
+            </MsButton>
           </div>
         </div>
       )}

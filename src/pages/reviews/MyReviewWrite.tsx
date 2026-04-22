@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { PartyPopper, ShieldCheck, Lightbulb, Save } from 'lucide-react';
 import {
-  ChevronLeft, ChevronRight, Check, HelpCircle, Lock,
-  PartyPopper, MessageSquare, Download, Calendar,
-  ShieldCheck, Lightbulb, FileText, ChevronDown,
-  Link2, Paperclip, ExternalLink, X, Plus, UserCheck, Save,
-} from 'lucide-react';
-import { LoadingButton } from '../../components/ui/LoadingButton';
+  MsChevronLeftIcon, MsChevronRightIcon, MsCheckIcon, MsHelpIcon, MsLockIcon,
+  MsMessageIcon, MsDownloadIcon, MsCalendarIcon,
+  MsArticleIcon, MsChevronDownIcon,
+  MsLinkIcon, MsPaperclipIcon, MsOutlinkIcon, MsCancelIcon, MsPlusIcon, MsProfileIcon,
+} from '../../components/ui/MsIcons';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -16,6 +16,7 @@ import { DEFAULT_TEMPLATE } from '../../data/defaultTemplate';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
 import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User } from '../../types';
+import { MsButton } from '../../components/ui/MsButton';
 
 // ─── 객관식 선택기 ────────────────────────────────────────────────────────────
 function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
@@ -98,7 +99,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
     }`}>
       {question.isPrivate && (
         <div className="flex items-center gap-1.5 mb-2">
-          <Lock className="w-3.5 h-3.5 text-zinc-400" />
+          <MsLockIcon size={12} className="text-zinc-400" />
           <span className="text-xs text-zinc-400">매니저 전용</span>
         </div>
       )}
@@ -108,7 +109,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         </p>
         {question.helpText && (
           <button onClick={() => setHelpOpen(o => !o)} className="text-zinc-400 hover:text-zinc-600 flex-shrink-0 mt-0.5">
-            <HelpCircle className="w-4 h-4" />
+            <MsHelpIcon size={16} />
           </button>
         )}
       </div>
@@ -244,7 +245,7 @@ function RightPanel({
       <div className="p-4 border-b border-zinc-950/5 space-y-4">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded bg-primary-50 flex items-center justify-center flex-shrink-0">
-            <FileText className="size-3.5 text-primary-600" />
+            <MsArticleIcon size={12} className="text-primary-600" />
           </div>
           <p className="text-xs font-semibold text-zinc-950">리뷰 정보</p>
         </div>
@@ -267,7 +268,7 @@ function RightPanel({
           <p className="text-xs font-medium text-zinc-700 leading-snug">{cycle?.title ?? '—'}</p>
         </div>
         <div className="flex items-start gap-2 p-2.5 bg-zinc-50 rounded-lg">
-          <Calendar className="size-3.5 text-zinc-400 mt-0.5 flex-shrink-0" />
+          <MsCalendarIcon size={12} className="text-zinc-400 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-xs text-zinc-400">자기평가 마감</p>
             <p className="text-xs font-medium text-zinc-700">{cycle ? formatDate(cycle.selfReviewDeadline) : '—'}</p>
@@ -292,7 +293,7 @@ function RightPanel({
             onClick={() => exportSubmissionToCSV(submission, template, cycle, users.find(u => u.id === submission.revieweeId) ?? currentUser, currentUser)}
             className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
           >
-            <Download className="size-3.5" /> CSV 내보내기
+            <MsDownloadIcon size={12} /> CSV 내보내기
           </button>
         )}
       </div>
@@ -301,11 +302,11 @@ function RightPanel({
       <div>
         <button onClick={() => setRefsOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors border-b border-zinc-950/5">
           <div className="flex items-center gap-2">
-            <Paperclip className="size-3.5 text-zinc-400" />
+            <MsPaperclipIcon size={12} className="text-zinc-400" />
             <span className="text-xs font-medium text-zinc-700">참고자료</span>
             {refs.length > 0 && <span className="text-xs font-bold bg-primary-100 text-primary-600 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">{refs.length}</span>}
           </div>
-          {refsOpen ? <ChevronDown className="size-3.5 text-zinc-400" /> : <ChevronRight className="size-3.5 text-zinc-400" />}
+          {refsOpen ? <MsChevronDownIcon size={12} className="text-zinc-400" /> : <MsChevronRightIcon size={12} className="text-zinc-400" />}
         </button>
         {refsOpen && (
           <div className="px-4 py-3 space-y-3">
@@ -313,13 +314,13 @@ function RightPanel({
               <ul className="space-y-1.5">
                 {refs.map(item => (
                   <li key={item.id} className="flex items-center gap-2 group">
-                    {item.kind === 'link' ? <Link2 className="size-3.5 text-primary-400 flex-shrink-0" /> : <Paperclip className="size-3.5 text-zinc-400 flex-shrink-0" />}
+                    {item.kind === 'link' ? <MsLinkIcon size={12} className="text-primary-400 flex-shrink-0" /> : <MsPaperclipIcon size={12} className="text-zinc-400 flex-shrink-0" />}
                     <span className="flex-1 min-w-0 text-xs text-zinc-600 truncate">
                       {item.kind === 'link'
-                        ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline inline-flex items-center gap-0.5">{item.title}<ExternalLink className="size-2.5 ml-0.5" /></a>
+                        ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline inline-flex items-center gap-0.5">{item.title}<MsOutlinkIcon size={12} className="ml-0.5" /></a>
                         : item.name}
                     </span>
-                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-zinc-400 hover:text-rose-500 transition-all flex-shrink-0"><X className="size-3" /></button>}
+                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-zinc-400 hover:text-rose-500 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
                   </li>
                 ))}
               </ul>
@@ -329,7 +330,7 @@ function RightPanel({
                 <div className="flex bg-zinc-100 rounded-lg p-0.5">
                   {(['link', 'file'] as const).map(tab => (
                     <button key={tab} onClick={() => setRefTab(tab)} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${refTab === tab ? 'bg-white text-zinc-800 shadow-sm' : 'text-zinc-500'}`}>
-                      {tab === 'link' ? <Link2 className="size-3" /> : <Paperclip className="size-3" />}
+                      {tab === 'link' ? <MsLinkIcon size={12} /> : <MsPaperclipIcon size={12} />}
                       {tab === 'link' ? '링크' : '파일'}
                     </button>
                   ))}
@@ -338,11 +339,11 @@ function RightPanel({
                   <div className="space-y-1.5">
                     <input type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="https://..." className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-xs focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300" />
                     <input type="text" value={linkTitle} onChange={e => setLinkTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="제목 (선택)" className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-zinc-50 text-xs focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 focus:bg-white placeholder:text-zinc-300" />
-                    <button onClick={addLink} disabled={!linkUrl.trim()} className="w-full flex items-center justify-center gap-1 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 disabled:opacity-40 transition-colors"><Plus className="size-3" /> 링크 추가</button>
+                    <MsButton onClick={addLink} disabled={!linkUrl.trim()} size="sm" className="w-full h-auto py-1.5" leftIcon={<MsPlusIcon size={12} />}>링크 추가</MsButton>
                   </div>
                 ) : (
                   <label className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border-2 border-dashed border-zinc-200 rounded-lg hover:border-primary-300 hover:bg-primary-50/30 cursor-pointer transition-colors">
-                    <Paperclip className="size-4 text-zinc-400" />
+                    <MsPaperclipIcon size={16} className="text-zinc-400" />
                     <span className="text-xs text-zinc-500 font-medium">파일 선택</span>
                     <input type="file" multiple className="hidden" onChange={handleFileChange} />
                   </label>
@@ -362,7 +363,7 @@ function RightPanel({
               <Lightbulb className="size-3.5 text-amber-400" />
               <span className="text-xs font-medium text-zinc-700">작성 팁</span>
             </div>
-            {tipsOpen ? <ChevronDown className="size-3.5 text-zinc-400" /> : <ChevronRight className="size-3.5 text-zinc-400" />}
+            {tipsOpen ? <MsChevronDownIcon size={12} className="text-zinc-400" /> : <MsChevronRightIcon size={12} className="text-zinc-400" />}
           </button>
           {tipsOpen && (
             <ul className="px-4 py-3 space-y-2.5">
@@ -513,15 +514,15 @@ export function MyReviewWrite() {
           <h1 className="text-2xl font-bold text-zinc-900 mb-3">수고하셨습니다! 🎉</h1>
           <p className="text-zinc-600 mb-2">성장 돌아보기를 완료했습니다.</p>
           <p className="text-sm text-zinc-400 mb-8">리뷰가 안전하게 제출되었습니다.</p>
-          <button onClick={() => navigate('/')} className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold">대시보드로 돌아가기</button>
+          <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
           <div className="mt-8 text-left space-y-2">
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
             <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-primary-200 shadow-card transition-all text-left">
-              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0"><MessageSquare className="w-[18px] h-[18px] text-primary-600" /></div>
+              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0"><MsMessageIcon size={16} className="text-primary-600" /></div>
               <div><p className="text-sm font-semibold text-zinc-800">받은 피드백 확인</p><p className="text-xs text-zinc-400 mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
             </button>
             <button onClick={() => navigate('/reviews/me')} className="w-full flex items-center gap-4 p-4 bg-white border border-zinc-950/5 rounded-xl hover:border-primary-200 shadow-card transition-all text-left">
-              <div className="w-9 h-9 bg-zinc-50 rounded-lg flex items-center justify-center flex-shrink-0"><ChevronLeft className="w-[18px] h-[18px] text-zinc-500" /></div>
+              <div className="w-9 h-9 bg-zinc-50 rounded-lg flex items-center justify-center flex-shrink-0"><MsChevronLeftIcon size={16} className="text-zinc-500" /></div>
               <div><p className="text-sm font-semibold text-zinc-800">내 리뷰 목록으로</p><p className="text-xs text-zinc-400 mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
             </button>
           </div>
@@ -540,7 +541,7 @@ export function MyReviewWrite() {
         {/* 뒤로가기 헤더 */}
         <div className="px-6 py-4 bg-white border-b border-zinc-950/5">
           <button onClick={() => navigate('/reviews/me')} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 transition-colors">
-            <ChevronLeft className="w-4 h-4" /> 내 리뷰 목록
+            <MsChevronLeftIcon size={16} /> 내 리뷰 목록
           </button>
         </div>
 
@@ -549,7 +550,7 @@ export function MyReviewWrite() {
           {/* 자기평가 기간 마감 배너 */}
           {cyclePastSelfReview && (
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <Lock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <MsLockIcon size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-amber-800">자기평가 기간이 종료되었습니다</p>
                 <p className="text-xs text-amber-700 mt-0.5">리뷰가 조직장 평가 단계로 전환되었습니다.</p>
@@ -629,7 +630,7 @@ export function MyReviewWrite() {
           {/* 제출 완료 배너 */}
           {isReadOnly && (
             <div className="flex items-center gap-2.5 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <MsCheckIcon size={20} className="text-emerald-600 flex-shrink-0" />
               <p className="text-sm font-medium text-emerald-700">
                 {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
               </p>
@@ -639,7 +640,7 @@ export function MyReviewWrite() {
           {/* 조직장 평가 대기 */}
           {!isDownward && isReadOnly && !managerReview && (
             <div className="flex items-center gap-2.5 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-              <UserCheck className="w-5 h-5 text-zinc-400 flex-shrink-0" />
+              <MsProfileIcon size={20} className="text-zinc-400 flex-shrink-0" />
               <p className="text-sm text-zinc-500">조직장 평가가 제출되면 여기에 표시됩니다.</p>
             </div>
           )}
@@ -660,9 +661,9 @@ export function MyReviewWrite() {
                 <Save className="w-4 h-4" />
                 {savedAt ? `✓ ${savedAt}에 저장됨` : '임시 저장'}
               </button>
-              <button onClick={handleSubmitClick} className="w-full py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors">
+              <MsButton onClick={handleSubmitClick} className="w-full h-auto py-3 rounded-xl">
                 검토 및 제출하기
-              </button>
+              </MsButton>
             </div>
           )}
         </div>
@@ -683,14 +684,14 @@ export function MyReviewWrite() {
           <div className="bg-white rounded-xl shadow-modal max-w-sm w-full p-6">
             <div className="text-center mb-5">
               <div className="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Check className="w-6 h-6 text-primary-600" />
+                <MsCheckIcon size={24} className="text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold text-zinc-900 mb-2">최종 제출하시겠습니까?</h3>
               <p className="text-sm text-zinc-500">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1 py-2.5 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50">취소</button>
-              <LoadingButton loading={submitting} onClick={handleSubmit} className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">제출</LoadingButton>
+              <MsButton variant="default" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1 h-auto py-2.5">취소</MsButton>
+              <MsButton loading={submitting} onClick={handleSubmit} className="flex-1 h-auto py-2.5">제출</MsButton>
             </div>
           </div>
         </div>

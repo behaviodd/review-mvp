@@ -8,9 +8,11 @@ import { useReviewSync } from '../hooks/useReviewSync';
 import { useReviewStore } from '../stores/reviewStore';
 import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
-import { User, Shield, Sheet, CheckCircle2, XCircle, RefreshCw, Info, Eye, EyeOff, ChevronDown } from 'lucide-react';
-import { Switch } from '../components/catalyst/switch';
+import { Shield, Sheet, Eye, EyeOff } from 'lucide-react';
+import { MsProfileIcon, MsCheckCircleIcon, MsCancelIcon, MsRefreshIcon, MsInfoIcon, MsChevronDownIcon } from '../components/ui/MsIcons';
+import { MsSwitch } from '../components/ui/MsControl';
 import { verifyLogin, changePassword, batchInitAccounts } from '../utils/authApi';
+import { MsButton } from '../components/ui/MsButton';
 
 
 /* ── 비밀번호 변경 섹션 ──────────────────────────────────────────────── */
@@ -62,7 +64,7 @@ function PasswordChangeSection() {
           <Shield className="w-4 h-4 text-neutral-400" />
           <h2 className="text-sm font-semibold text-neutral-700">개인정보 및 보안</h2>
         </div>
-        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <MsChevronDownIcon size={16} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -221,7 +223,7 @@ export function Settings() {
       {/* Profile */}
       <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <User className="w-4 h-4 text-neutral-400" />
+          <MsProfileIcon size={16} className="text-neutral-400" />
           <h2 className="text-sm font-semibold text-neutral-700">프로필</h2>
         </div>
         <div className="flex items-center gap-4">
@@ -276,10 +278,10 @@ export function Settings() {
                   className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50 text-xs text-neutral-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white pr-8"
                 />
                 {testState === 'ok' && (
-                  <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                  <MsCheckCircleIcon size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-500" />
                 )}
                 {testState === 'fail' && (
-                  <XCircle className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" />
+                  <MsCancelIcon size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-rose-500" />
                 )}
               </div>
               <button
@@ -292,7 +294,7 @@ export function Settings() {
             </div>
             {/* 개발 환경 설정 안내 */}
             <div className="mt-2 flex gap-1.5 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+              <MsInfoIcon size={12} className="text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 leading-relaxed">
                 <span className="font-medium">로컬 개발:</span>{' '}
                 프로젝트 루트에 <code className="bg-amber-100 px-1 rounded">.env.local</code> 파일을 만들고{' '}
@@ -311,7 +313,7 @@ export function Settings() {
                 <p className="text-sm text-neutral-800">조직 데이터 자동 동기화</p>
                 <p className="text-xs text-neutral-400 mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
               </div>
-              <Switch checked={orgSyncEnabled} onChange={setOrgSyncEnabled} />
+              <MsSwitch checked={orgSyncEnabled} onChange={setOrgSyncEnabled} />
             </div>
 
             {orgSyncEnabled && (
@@ -319,11 +321,11 @@ export function Settings() {
                 <div>
                   {orgSyncError ? (
                     <p className="text-xs text-rose-500 flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" /> {orgSyncError}
+                      <MsCancelIcon size={12} className="shrink-0" /> {orgSyncError}
                     </p>
                   ) : orgLastSyncedAt ? (
                     <p className="text-xs text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <MsCheckCircleIcon size={12} className="shrink-0" />
                       {formatSyncTime(orgLastSyncedAt)} · 구성원 {users.length}명
                     </p>
                   ) : (
@@ -332,7 +334,7 @@ export function Settings() {
                 </div>
                 <button onClick={refetchOrg} disabled={orgLoading} title="지금 동기화"
                   className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 transition-colors">
-                  <RefreshCw className={`w-3.5 h-3.5 ${orgLoading ? 'animate-spin' : ''}`} />
+                  <MsRefreshIcon size={12} className={`${orgLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             )}
@@ -343,7 +345,7 @@ export function Settings() {
                 <p className="text-sm text-neutral-800">리뷰 운영 데이터 자동 동기화</p>
                 <p className="text-xs text-neutral-400 mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
               </div>
-              <Switch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
+              <MsSwitch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
             </div>
 
             {reviewSyncEnabled && (
@@ -351,11 +353,11 @@ export function Settings() {
                 <div>
                   {reviewSyncError ? (
                     <p className="text-xs text-rose-500 flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 shrink-0" /> {reviewSyncError}
+                      <MsCancelIcon size={12} className="shrink-0" /> {reviewSyncError}
                     </p>
                   ) : reviewLastSyncedAt ? (
                     <p className="text-xs text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <MsCheckCircleIcon size={12} className="shrink-0" />
                       {formatSyncTime(reviewLastSyncedAt)} · 리뷰 {cycles.length}개 · 템플릿 {templates.length}개 · 제출 {submissions.length}건
                     </p>
                   ) : (
@@ -364,7 +366,7 @@ export function Settings() {
                 </div>
                 <button onClick={refetchReview} disabled={reviewLoading} title="지금 동기화"
                   className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 transition-colors">
-                  <RefreshCw className={`w-3.5 h-3.5 ${reviewLoading ? 'animate-spin' : ''}`} />
+                  <MsRefreshIcon size={12} className={`${reviewLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             )}
@@ -387,13 +389,7 @@ export function Settings() {
                 <p className="text-[11px] text-neutral-400">시트에서 가져온 구성원의 초기 비밀번호를 사번으로 설정</p>
               )}
             </div>
-            <button
-              onClick={handleSaveUrl}
-              disabled={urlDraft.trim() === scriptUrl}
-              className="px-4 py-2 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              저장
-            </button>
+            <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>
           </div>
         </div>
       </div>

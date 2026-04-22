@@ -7,18 +7,19 @@ import { useAuthStore } from '../../stores/authStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useFieldValidation } from '../../hooks/useFieldValidation';
 import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
+import { Users, Eye, Rocket, PartyPopper } from 'lucide-react';
 import {
-  Check, ChevronLeft, ChevronRight, FileText, Users,
-  Calendar, Eye, Rocket, PartyPopper, Plus, RefreshCw, ChevronDown,
-} from 'lucide-react';
-import { LoadingButton } from '../../components/ui/LoadingButton';
+  MsCheckIcon, MsChevronLeftIcon, MsChevronRightIcon, MsArticleIcon,
+  MsCalendarIcon, MsPlusIcon, MsRefreshIcon, MsChevronDownIcon,
+} from '../../components/ui/MsIcons';
+import { MsButton } from '../../components/ui/MsButton';
 
 const STEPS = [
-  { label: '기본 정보',    icon: FileText },
-  { label: '리뷰 템플릿',  icon: FileText },
-  { label: '대상 구성원',  icon: Users    },
-  { label: '일정 설정',    icon: Calendar },
-  { label: '검토 및 발행', icon: Eye      },
+  { label: '기본 정보',    icon: MsArticleIcon  },
+  { label: '리뷰 템플릿',  icon: MsArticleIcon  },
+  { label: '대상 구성원',  icon: Users          },
+  { label: '일정 설정',    icon: MsCalendarIcon },
+  { label: '검토 및 발행', icon: Eye            },
 ];
 
 interface FormState {
@@ -212,12 +213,9 @@ export function CycleNew() {
           ))}
         </div>
         <div className="flex flex-col gap-2 pt-2">
-          <button
-            onClick={() => navigate(`/cycles/${publishedId}`)}
-            className="w-full px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
+          <MsButton onClick={() => navigate(`/cycles/${publishedId}`)} className="w-full h-auto py-2.5">
             리뷰 상세보기 →
-          </button>
+          </MsButton>
           <div className="flex gap-2">
             <button
               onClick={() => navigate('/cycles')}
@@ -263,7 +261,7 @@ export function CycleNew() {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                   done ? 'bg-success-500 text-white' : current ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-400'
                 }`}>
-                  {done ? <Check className="w-4 h-4" /> : i + 1}
+                  {done ? <MsCheckIcon size={16} /> : i + 1}
                 </div>
                 <span className={`text-xs whitespace-nowrap ${current ? 'text-primary-700 font-semibold' : done ? 'text-success-600' : 'text-neutral-400'}`}>
                   {s.label}
@@ -332,7 +330,7 @@ export function CycleNew() {
                 onClick={handleGoCreateTemplate}
                 className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
               >
-                <Plus className="w-3.5 h-3.5" /> 새 템플릿 만들기
+                <MsPlusIcon size={12} /> 새 템플릿 만들기
               </button>
             </div>
 
@@ -343,7 +341,7 @@ export function CycleNew() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-2">
                       <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 text-white" />
+                        <MsCheckIcon size={12} className="text-white" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-primary-800">{selectedTemplate.name}</p>
@@ -356,7 +354,7 @@ export function CycleNew() {
                       onClick={() => setTemplateLocked(false)}
                       className="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1 flex-shrink-0 ml-2"
                     >
-                      <RefreshCw className="w-3 h-3" /> 변경
+                      <MsRefreshIcon size={12} /> 변경
                     </button>
                   </div>
                   <div className="mt-3 pt-3 border-t border-primary-100 space-y-1">
@@ -371,16 +369,10 @@ export function CycleNew() {
               </div>
             ) : templates.length === 0 ? (
               <div className="text-center py-10 space-y-3">
-                <FileText className="w-10 h-10 text-neutral-200 mx-auto" />
+                <MsArticleIcon size={32} className="text-neutral-200 mx-auto" />
                 <p className="text-sm text-neutral-500 font-medium">저장된 템플릿이 없습니다</p>
                 <p className="text-xs text-neutral-400">템플릿을 먼저 만들어야 리뷰를 생성할 수 있습니다.</p>
-                <button
-                  type="button"
-                  onClick={handleGoCreateTemplate}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> 새 템플릿 만들기
-                </button>
+                <MsButton type="button" onClick={handleGoCreateTemplate} leftIcon={<MsPlusIcon size={16} />}>새 템플릿 만들기</MsButton>
               </div>
             ) : (
               <div className="space-y-3">
@@ -439,7 +431,7 @@ export function CycleNew() {
                     className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${selected ? 'border-primary-500 bg-primary-50' : 'border-neutral-200 hover:border-neutral-300'}`}
                   >
                     <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${selected ? 'bg-primary-500' : 'border-2 border-neutral-300'}`}>
-                      {selected && <Check className="w-3 h-3 text-white" />}
+                      {selected && <MsCheckIcon size={12} className="text-white" />}
                     </div>
                     <div className="flex-1">
                       <p className={`text-sm font-semibold ${selected ? 'text-primary-700' : 'text-neutral-700'}`}>{dept}</p>
@@ -530,7 +522,7 @@ export function CycleNew() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 hover:bg-neutral-100 transition-colors text-sm font-medium text-neutral-700"
                 >
                   <span>템플릿 문항 전체 보기 ({selectedTemplate.questions.length}개)</span>
-                  <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${templatePreviewOpen ? 'rotate-180' : ''}`} />
+                  <MsChevronDownIcon size={16} className={`text-neutral-400 transition-transform ${templatePreviewOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {templatePreviewOpen && (
                   <div className="divide-y divide-neutral-100">
@@ -593,20 +585,14 @@ export function CycleNew() {
           onClick={() => step > 0 ? setStep(s => s - 1) : navigate('/cycles')}
           className="flex items-center gap-1.5 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" /> {step === 0 ? '취소' : '이전'}
+          <MsChevronLeftIcon size={16} /> {step === 0 ? '취소' : '이전'}
         </button>
 
         {step < STEPS.length - 1 ? (
           step === 1 && templates.length === 0 ? (
-            <button
-              type="button"
-              onClick={handleGoCreateTemplate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> 템플릿 만들기
-            </button>
+            <MsButton type="button" onClick={handleGoCreateTemplate} leftIcon={<MsPlusIcon size={16} />}>템플릿 만들기</MsButton>
           ) : (
-            <button
+            <MsButton
               onClick={() => {
                 if (step === 0) { touch('title'); if (!canNext()) return; }
                 if (step === 3) { touch('managerReviewDeadline'); if (!canNext()) return; }
@@ -614,20 +600,20 @@ export function CycleNew() {
                 setStep(s => s + 1);
               }}
               disabled={!canNext()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              rightIcon={<MsChevronRightIcon size={16} />}
             >
-              다음 <ChevronRight className="w-4 h-4" />
-            </button>
+              다음
+            </MsButton>
           )
         ) : (
-          <button
+          <MsButton
             onClick={() => setConfirmOpen(true)}
             disabled={usersLoading || targetMembers.length === 0}
-            className="flex items-center gap-1.5 px-4 py-2 bg-success-600 text-white text-sm font-medium rounded-lg hover:bg-success-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="bg-success-600 hover:bg-success-700"
+            leftIcon={<Rocket className="w-4 h-4" />}
           >
-            <Rocket className="w-4 h-4" />
             {usersLoading ? '구성원 로딩 중...' : targetMembers.length === 0 ? '대상 구성원 없음' : '발행하기'}
-          </button>
+          </MsButton>
         )}
       </div>
 
@@ -668,14 +654,14 @@ export function CycleNew() {
               >
                 취소
               </button>
-              <LoadingButton
+              <MsButton
                 onClick={handlePublish}
                 loading={publishing}
-                className="flex-1 px-4 py-2.5 bg-success-600 text-white text-sm font-medium rounded-lg hover:bg-success-700"
+                className="flex-1 h-auto py-2.5 bg-success-600 hover:bg-success-700"
+                leftIcon={<Rocket className="w-4 h-4" />}
               >
-                {!publishing && <Rocket className="w-4 h-4" />}
                 발행하기
-              </LoadingButton>
+              </MsButton>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ a, button, [role="button"], select, input, textarea {
 ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }                 /* zinc-400 */
 
 /* ─── Focus ───────────────────────────────────────────────────── */
-:focus-visible { outline: 2px solid #FF558F; outline-offset: 2px; }
+:focus-visible { outline: 2px solid #FF4D89; outline-offset: 2px; }
 
 /* ─── Animations ──────────────────────────────────────────────── */
 @keyframes fadeSlideDown {

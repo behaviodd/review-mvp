@@ -4,7 +4,7 @@ import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  ChevronLeft, Plus, Trash2, GripVertical, Lock, HelpCircle, X,
+  ChevronLeft, Plus, Trash2, GripVertical, Lock, X,
   AlignLeft, List, BarChart2, Brain, Check, Pencil,
 } from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';

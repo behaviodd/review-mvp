@@ -49,7 +49,7 @@ export function CycleNew() {
   const [searchParams] = useSearchParams();
   const { currentUser } = useAuthStore();
   const { addCycle, upsertSubmission, templates } = useReviewStore();
-  const { users, isLoading: usersLoading } = useTeamStore();
+  const { users, orgUnits, isLoading: usersLoading } = useTeamStore();
   const showToast = useShowToast();
 
   useSetPageHeader('리뷰 사이클 생성');
@@ -171,7 +171,7 @@ export function CycleNew() {
         completionRate:        0,
       });
 
-      const subs = createCycleSubmissions(cycleId, targetMembers, users);
+      const subs = createCycleSubmissions(cycleId, targetMembers, users, orgUnits);
       subs.forEach(sub => upsertSubmission(sub));
 
       showToast('success', `리뷰 발행 완료 · 제출 ${subs.length}건 생성`);

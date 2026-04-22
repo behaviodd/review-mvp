@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import { useTeamStore } from './stores/teamStore';
 import { useOrgSync } from './hooks/useOrgSync';
 import { useReviewSync } from './hooks/useReviewSync';
 import { AppLayout } from './components/layout/AppLayout';
@@ -36,7 +37,10 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 function RequireRole({ roles, children }: { roles: string[]; children: React.ReactNode }) {
   const { currentUser } = useAuthStore();
-  if (!currentUser || !roles.includes(currentUser.role)) {
+  const orgUnits = useTeamStore(s => s.orgUnits);
+  const isOrgHead = !!currentUser && orgUnits.some(u => u.headId === currentUser.id);
+  const effectiveRole = isOrgHead && currentUser.role === 'member' ? 'leader' : currentUser?.role;
+  if (!currentUser || !roles.includes(effectiveRole ?? '')) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;

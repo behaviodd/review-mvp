@@ -36,7 +36,7 @@ function BrandIcon({ className }: { className?: string }) {
 }
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
-  const { isAdmin } = usePermission();
+  const { isAdmin, can } = usePermission();
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,7 +56,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
   const navItems = [
     { to: '/',             icon: LayoutDashboard, label: '홈',        show: true                               },
     { to: '/reviews/me',   icon: RefreshCw,       label: '내 리뷰',   show: !isAdmin                           },
-    { to: '/reviews/team', icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader'     },
+    { to: '/reviews/team', icon: UserCheck,       label: '하향 평가', show: can.viewTeamReviews && !isAdmin    },
     { to: '/team',         icon: Building2,       label: '구성원',    show: true                               },
     { to: '/cycles',       icon: RefreshCw,       label: '리뷰 운영', show: isAdmin                            },
   ].filter(i => i.show);

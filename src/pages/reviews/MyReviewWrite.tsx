@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Check, HelpCircle, Lock,
   PartyPopper, MessageSquare, Download, Calendar,
   ShieldCheck, Lightbulb, FileText, ChevronDown,
-  Link2, Paperclip, ExternalLink, X, Plus, UserCheck,
+  Link2, Paperclip, ExternalLink, X, Plus, UserCheck, Save,
 } from 'lucide-react';
 import { LoadingButton } from '../../components/ui/LoadingButton';
 import { UserAvatar } from '../../components/ui/UserAvatar';
@@ -238,7 +238,7 @@ function RightPanel({
   const removeRef = (id: string) => setRefs(p => p.filter(r => r.id !== id));
 
   return (
-    <div className="hidden lg:flex w-72 bg-white border-l border-zinc-950/5 flex-col flex-shrink-0 overflow-y-auto">
+    <div className="hidden lg:flex w-72 bg-white border-l border-zinc-950/5 flex-col flex-shrink-0 overflow-y-auto sticky top-0 h-full">
 
       {/* 리뷰 정보 */}
       <div className="p-4 border-b border-zinc-950/5 space-y-4">
@@ -397,6 +397,7 @@ export function MyReviewWrite() {
   const [submitting,     setSubmitting]     = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [refs, setRefs] = useState<RefItem[]>([]);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
@@ -645,10 +646,20 @@ export function MyReviewWrite() {
 
           {/* 제출 버튼 */}
           {!isReadOnly && (
-            <div className="pb-10">
+            <div className="pb-10 space-y-2">
               {showValidation && !completedSections.every(Boolean) && (
                 <p className="text-sm text-rose-600 mb-3 text-center">필수 항목을 모두 작성한 후 제출해주세요.</p>
               )}
+              <button
+                onClick={() => {
+                  setSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
+                  setTimeout(() => setSavedAt(null), 3000);
+                }}
+                className="w-full py-2.5 border border-zinc-200 bg-white text-zinc-600 rounded-xl text-sm font-medium hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {savedAt ? `✓ ${savedAt}에 저장됨` : '임시 저장'}
+              </button>
               <button onClick={handleSubmitClick} className="w-full py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors">
                 검토 및 제출하기
               </button>

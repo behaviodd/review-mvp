@@ -23,7 +23,7 @@ export function AppLayout() {
 
   return (
     <PageHeaderProvider>
-    <div className="flex min-h-screen bg-[#F3F4F6]">
+    <div className="flex h-screen overflow-hidden bg-[#F3F4F6]">
       {/* 모바일 백드롭 */}
       {mobileOpen && (
         <div
@@ -39,7 +39,7 @@ export function AppLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${sidebarWidth}`}>
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-200 ${sidebarWidth}`}>
 
         {/* 모바일 전용 상단 바 */}
         <div className="md:hidden bg-white border-b border-gray-200 h-[56px] flex items-center justify-between px-4 flex-shrink-0 sticky top-0 z-20">
@@ -73,7 +73,7 @@ export function AppLayout() {
           <Header />
         </div>
 
-        <main className={`flex-1 flex flex-col ${isFullBleed ? 'overflow-hidden' : 'p-6'}`}>
+        <main className={`flex-1 flex flex-col min-h-0 ${isFullBleed ? 'overflow-hidden' : 'overflow-y-auto p-6'}`}>
           {isFullBleed ? (
             <Outlet />
           ) : (

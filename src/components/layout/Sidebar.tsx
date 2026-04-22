@@ -90,13 +90,10 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
         </span>
         <button
           onClick={onToggle}
-          className={cn(
-            'hidden md:flex items-center justify-center size-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0',
-            collapsed && 'md:hidden',
-          )}
-          aria-label="사이드바 접기"
+          className="hidden md:flex items-center justify-center size-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
-          <ChevronLeft size={14} />
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
@@ -159,18 +156,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
         ))}
       </nav>
 
-      {/* ── 하단: 펼치기 토글 (collapsed 상태일 때만) ── */}
-      {collapsed && (
-        <div className="border-t border-gray-100 p-2 flex-shrink-0">
-          <button
-            onClick={onToggle}
-            className="hidden md:flex items-center justify-center w-full py-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="사이드바 펼치기"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      )}
     </aside>
   );
 }

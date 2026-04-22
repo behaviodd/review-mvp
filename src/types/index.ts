@@ -66,11 +66,18 @@ export interface ReviewCycle {
   completionRate: number;
 }
 
+export interface TemplateSection {
+  id: string;
+  name: string;
+  order: number;
+}
+
 export interface ReviewTemplate {
   id: string;
   name: string;
   description: string;
   questions: TemplateQuestion[];
+  sections?: TemplateSection[];
   isDefault: boolean;
   createdBy: string;
   createdAt: string;
@@ -89,6 +96,7 @@ export interface TemplateQuestion {
   options?: string[];
   allowMultiple?: boolean;
   order: number;
+  sectionId?: string;
 }
 
 export interface ReviewSubmission {

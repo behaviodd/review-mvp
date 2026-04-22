@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import type { ReviewTemplate } from '../../types';
@@ -76,6 +77,7 @@ function SectionHeader() {
 export function TeamReviewList() {
   const [filter, setFilter] = useState<Filter>('all');
   const { currentUser } = useAuthStore();
+  useSetPageHeader('하향 평가');
   const isAdmin = currentUser?.role === 'admin';
   const { cycles, submissions, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
@@ -339,8 +341,6 @@ export function TeamReviewList() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold text-neutral-900">하향 평가</h1>
-
       {/* 필터 탭 */}
       {cycleData.length > 0 && (
         <div className="flex items-center gap-1 bg-white rounded-xl border border-neutral-200 shadow-card p-1 w-fit">

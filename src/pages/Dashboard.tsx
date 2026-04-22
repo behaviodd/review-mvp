@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { useReviewStore } from '../stores/reviewStore';
 import { useTeamStore } from '../stores/teamStore';
 import { timeAgo } from '../utils/dateUtils';
@@ -59,6 +60,13 @@ function AdminDashboard() {
 
   const barColor = (rate: number) => rate >= 80 ? '#059669' : rate >= 50 ? '#4f46e5' : '#e11d48';
 
+  const headerActions = useMemo(() => (
+    <button onClick={() => navigate('/cycles/new')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+      <Plus className="w-4 h-4" /> 새 리뷰 생성
+    </button>
+  ), [navigate]);
+  useSetPageHeader('관리자 대시보드', headerActions);
+
   const activityFeed = useMemo(() => {
     type Event = { key: string; text: string; time: string; timestamp: string };
     const events: Event[] = [];
@@ -101,13 +109,6 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">관리자 대시보드</h1>
-        <button onClick={() => navigate('/cycles/new')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
-          <Plus className="w-4 h-4" /> 새 리뷰 생성
-        </button>
-      </div>
-
       {/* 통계 카드 — 모바일 2열, 데스크톱 4열 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={Clock} color="text-primary-600" iconBg="bg-primary-50" />
@@ -212,6 +213,8 @@ function ManagerDashboard() {
   const mySelfs = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self');
   const myDownwards = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'downward');
 
+  useSetPageHeader('조직장 대시보드');
+
   const getMemberStatus = (memberId: string) => {
     const sub = submissions.find(s => s.reviewerId === currentUser?.id && s.revieweeId === memberId && s.type === 'downward' && s.cycleId === activeCycle?.id);
     return sub?.status || 'not_started';
@@ -225,8 +228,6 @@ function ManagerDashboard() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">조직장 대시보드</h1>
-
       {/* 할 일 — 모바일 1열, 태블릿+ 2열 */}
       <div>
         <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-3">할 일</p>
@@ -321,9 +322,10 @@ function EmployeeDashboard() {
   const mySelf = submissions.find(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.cycleId === activeCycle?.id);
   const pastSubmissions = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.status === 'submitted');
 
+  useSetPageHeader(`안녕하세요, ${currentUser?.name}님 👋`);
+
   return (
     <div className="space-y-5 md:space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">안녕하세요, {currentUser?.name}님 👋</h1>
 
       {/* CTA 카드 */}
       {activeCycle && mySelf && mySelf.status !== 'submitted' && (

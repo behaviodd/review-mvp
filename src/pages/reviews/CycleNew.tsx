@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -50,6 +51,8 @@ export function CycleNew() {
   const { addCycle, upsertSubmission, templates } = useReviewStore();
   const { users, isLoading: usersLoading } = useTeamStore();
   const showToast = useShowToast();
+
+  useSetPageHeader('리뷰 사이클 생성');
 
   const departments = useMemo(
     () => Array.from(new Set(

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
 import { RefreshCw, Plus, ChevronRight, Pencil, FileText, Star, Trash2 } from 'lucide-react';
@@ -49,6 +50,25 @@ export function CycleList() {
 
   const active = cycles.filter(c => c.status !== 'closed' && c.status !== 'draft');
   const closed = cycles.filter(c => c.status === 'closed');
+
+  const headerActions = useMemo(() => (
+    tab === 'cycles' ? (
+      <button
+        onClick={() => navigate('/cycles/new')}
+        className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+      >
+        <Plus className="w-4 h-4" /> 새 리뷰
+      </button>
+    ) : (
+      <button
+        onClick={() => navigate('/templates/new')}
+        className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+      >
+        <Plus className="w-4 h-4" /> 새 템플릿
+      </button>
+    )
+  ), [tab, navigate]);
+  useSetPageHeader('리뷰 운영', headerActions);
 
   const Row = ({ cycle }: { cycle: typeof cycles[0] }) => (
     <div
@@ -123,26 +143,6 @@ export function CycleList() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">리뷰 운영</h1>
-        {tab === 'cycles' ? (
-          <button
-            onClick={() => navigate('/cycles/new')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> 새 리뷰
-          </button>
-        ) : (
-          <button
-            onClick={() => navigate('/templates/new')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> 새 템플릿
-          </button>
-        )}
-      </div>
-
       {/* 탭 */}
       <div className="flex gap-1 p-1 bg-neutral-100 rounded-lg w-fit">
         {(['cycles', 'templates'] as const).map(t => (

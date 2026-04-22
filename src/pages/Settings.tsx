@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useTeamStore } from '../stores/teamStore';
 import { useOrgSync } from '../hooks/useOrgSync';
@@ -163,6 +164,8 @@ export function Settings() {
   const { refetch: refetchOrg } = useOrgSync();
   const { refetch: refetchReview } = useReviewSync();
   const [urlDraft, setUrlDraft] = useState(scriptUrl);
+
+  useSetPageHeader('설정');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
   const [batchInitState, setBatchInitState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
 
@@ -215,8 +218,6 @@ export function Settings() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold text-neutral-900">설정</h1>
-
       {/* Profile */}
       <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">

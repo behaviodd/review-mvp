@@ -6,6 +6,7 @@ import { Header } from './Header';
 import { useAuthStore } from '../../stores/authStore';
 import { ToastContainer } from '../ui/Toast';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
+import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
 
 const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/'];
 
@@ -21,6 +22,7 @@ export function AppLayout() {
   const sidebarWidth = collapsed ? 'md:ml-[56px]' : 'md:ml-[220px]';
 
   return (
+    <PageHeaderProvider>
     <div className="flex min-h-screen bg-[#F3F4F6]">
       {/* 모바일 백드롭 */}
       {mobileOpen && (
@@ -88,5 +90,6 @@ export function AppLayout() {
         <ChangePasswordModal userId={currentUser.id} onDone={() => {}} />
       )}
     </div>
+    </PageHeaderProvider>
   );
 }

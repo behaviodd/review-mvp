@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { usePermission } from '../hooks/usePermission';
 import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
@@ -7,7 +8,6 @@ import { useShowToast } from '../components/ui/Toast';
 import { resetAccount } from '../utils/authApi';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Heading } from '../components/catalyst/heading';
 import {
   Building2, Users, UserCheck, Plus, X, Pencil, Search,
   ChevronRight, ChevronDown, Trash2, KeyRound, RefreshCw,
@@ -1189,6 +1189,19 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  const headerActions = useMemo(() => canEdit ? (
+    <button
+      onClick={() => {
+        const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+        setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
+      }}
+      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+    >
+      <UserPlus className="size-4" /> 구성원 추가
+    </button>
+  ) : undefined, [canEdit, selectedOrgId, orgUnits]);
+  useSetPageHeader('구성원', headerActions);
+
   const toggleMember = (id: string) =>
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -1452,48 +1465,34 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Heading>조직 · 구성원</Heading>
-          {orgSyncEnabled && (
-            isLoading ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-xs text-zinc-500">
-                <RefreshCw className="size-3 animate-spin" /> 동기화 중
-              </span>
-            ) : orgSyncError ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-xs text-rose-500">
-                시트 연결 오류
-              </span>
-            ) : orgLastSyncedAt ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-xs text-emerald-600">
-                <RefreshCw className="size-3" />
-                {new Date(orgLastSyncedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화됨
-              </span>
-            ) : null
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {terminatedUsers.length > 0 && (
-            <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); clearSelection(); }}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                showTerminated
-                  ? 'bg-rose-50 text-rose-600 border-rose-200'
-                  : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
-              }`}>
-              <X className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
-            </button>
-          )}
-          {canEdit && (
-            <button onClick={() => {
-                const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
-                setAddMemberModal({ unitId: selectedOrgId ?? undefined, managerId: unit?.headId });
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
-              <UserPlus className="size-4" /> 구성원 추가
-            </button>
-          )}
-        </div>
+      {/* 동기화 상태 + 퇴사자 토글 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {orgSyncEnabled && (
+          isLoading ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-xs text-zinc-500">
+              <RefreshCw className="size-3 animate-spin" /> 동기화 중
+            </span>
+          ) : orgSyncError ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-xs text-rose-500">
+              시트 연결 오류
+            </span>
+          ) : orgLastSyncedAt ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-xs text-emerald-600">
+              <RefreshCw className="size-3" />
+              {new Date(orgLastSyncedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화됨
+            </span>
+          ) : null
+        )}
+        {terminatedUsers.length > 0 && (
+          <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); clearSelection(); }}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              showTerminated
+                ? 'bg-rose-50 text-rose-600 border-rose-200'
+                : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
+            }`}>
+            <X className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
+          </button>
+        )}
       </div>
 
       {/* Stats */}

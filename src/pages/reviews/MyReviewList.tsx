@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -39,6 +40,8 @@ export function MyReviewList() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>('all');
 
+  useSetPageHeader('내 리뷰');
+
   const mySubmissions = submissions.filter(
     s => s.reviewerId === currentUser?.id && s.type === 'self'
   );
@@ -57,7 +60,6 @@ export function MyReviewList() {
   if (currentUser?.role === 'admin' && mySubmissions.length === 0 && receivedReviews.length === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-semibold text-neutral-900">내 리뷰</h1>
         <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-8 text-center space-y-5">
           <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto">
             <ShieldCheck className="w-7 h-7 text-indigo-500" />
@@ -107,7 +109,6 @@ export function MyReviewList() {
   if (mySubmissions.length === 0 && receivedReviews.length === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-semibold text-neutral-900">내 리뷰</h1>
         <EmptyState
           icon={Star}
           title="아직 진행 중인 리뷰가 없습니다."
@@ -348,10 +349,6 @@ export function MyReviewList() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">내 리뷰</h1>
-      </div>
-
       {/* 필터 탭 */}
       <div className="flex items-center gap-1 bg-white rounded-xl border border-neutral-200 shadow-card p-1 self-start w-fit">
         {TABS.map(({ key, label, count }) => (

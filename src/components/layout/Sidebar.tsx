@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, ChevronLeft, ChevronRight,
@@ -38,6 +39,19 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
   const { isAdmin } = usePermission();
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const navItems = [
     { to: '/',             icon: LayoutDashboard, label: '홈',        show: true                               },
@@ -86,20 +100,39 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
         </button>
       </div>
 
-      {/* ── 유저 이메일 ── */}
+      {/* ── 유저 이메일 + 드롭다운 ── */}
       {currentUser && (
         <div className={cn(
-          'flex items-center justify-between px-4 py-2.5 border-b border-gray-100',
+          'relative flex items-center justify-between px-4 py-2.5 border-b border-gray-100',
           collapsed && 'md:hidden',
-        )}>
+        )} ref={menuRef}>
           <span className="text-[11px] text-gray-400 truncate flex-1">{currentUser.email}</span>
           <button
-            onClick={() => { navigate('/settings'); onMobileClose(); }}
+            onClick={() => setMenuOpen(o => !o)}
             className="ml-1 text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
-            title="설정"
+            title="더보기"
           >
             <MoreHorizontal size={14} />
           </button>
+
+          {menuOpen && (
+            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden py-1">
+              <button
+                onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              >
+                <Settings size={14} className="flex-shrink-0" />
+                설정
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); handleLogout(); }}
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <LogOut size={14} className="flex-shrink-0" />
+                로그아웃
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -126,33 +159,9 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
         ))}
       </nav>
 
-      {/* ── 하단 액션 ── */}
-      <div className="border-t border-gray-100 p-2 flex-shrink-0 space-y-0.5">
-        <button
-          onClick={() => { navigate('/settings'); onMobileClose(); }}
-          className={cn(
-            'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors',
-            collapsed && 'md:justify-center',
-          )}
-          title={collapsed ? '설정' : undefined}
-        >
-          <Settings size={16} className="flex-shrink-0" />
-          <span className={cn(collapsed && 'md:hidden')}>설정</span>
-        </button>
-        <button
-          onClick={handleLogout}
-          className={cn(
-            'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors',
-            collapsed && 'md:justify-center',
-          )}
-          title={collapsed ? '로그아웃' : undefined}
-        >
-          <LogOut size={16} className="flex-shrink-0" />
-          <span className={cn(collapsed && 'md:hidden')}>로그아웃</span>
-        </button>
-
-        {/* 펼치기 토글 — collapsed 상태일 때만 표시 */}
-        {collapsed && (
+      {/* ── 하단: 펼치기 토글 (collapsed 상태일 때만) ── */}
+      {collapsed && (
+        <div className="border-t border-gray-100 p-2 flex-shrink-0">
           <button
             onClick={onToggle}
             className="hidden md:flex items-center justify-center w-full py-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
@@ -160,8 +169,8 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
           >
             <ChevronRight size={14} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 }

@@ -5,7 +5,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { verifyLogin } from '../utils/authApi';
 import type { User } from '../types';
-import { Star, Eye, EyeOff, ChevronDown, Settings2, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, Settings2, Loader2 } from 'lucide-react';
 
 /* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
 export function Login() {
@@ -98,8 +98,19 @@ export function Login() {
 
         {/* 브랜드 */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center size-10 bg-indigo-600 rounded-xl mb-3">
-            <Star size={18} className="text-white" />
+          <div className="inline-flex items-center justify-center size-12 mb-3">
+            <svg className="size-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clipPath="url(#login-clip)">
+                <path d="M0 6.4C0 4.15979 0 3.03968 0.435974 2.18404C0.819467 1.43139 1.43139 0.819467 2.18404 0.435974C3.03968 0 4.15979 0 6.4 0H17.6C19.8402 0 20.9603 0 21.816 0.435974C22.5686 0.819467 23.1805 1.43139 23.564 2.18404C24 3.03968 24 4.15979 24 6.4V17.6C24 19.8402 24 20.9603 23.564 21.816C23.1805 22.5686 22.5686 23.1805 21.816 23.564C20.9603 24 19.8402 24 17.6 24H6.4C4.15979 24 3.03968 24 2.18404 23.564C1.43139 23.1805 0.819467 22.5686 0.435974 21.816C0 20.9603 0 19.8402 0 17.6V6.4Z" fill="url(#login-grad)"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M20.3158 10.8307L18.0583 9.51837C17.4989 9.19275 17.1593 8.60071 17.1593 7.95933V5.35436C17.1593 4.30843 16.0205 3.65718 15.1115 4.19002L12.904 5.47277C12.3446 5.79839 11.6454 5.79839 11.076 5.47277L8.87847 4.19002C7.96948 3.66705 6.83074 4.31829 6.83074 5.35436V7.95933C6.83074 8.60071 6.49112 9.19275 5.93174 9.51837L3.67425 10.8307C2.77525 11.3537 2.77525 12.6463 3.67425 13.1693L5.93174 14.4816C6.49112 14.8073 6.83074 15.3993 6.83074 16.0407V18.6456C6.83074 19.6916 7.96948 20.3428 8.87847 19.81L11.086 18.5272C11.6454 18.2016 12.3446 18.2016 12.914 18.5272L15.1215 19.81C16.0305 20.3329 17.1693 19.6817 17.1693 18.6456V16.0407C17.1693 15.3993 17.5089 14.8073 18.0683 14.4816L20.3257 13.1693C21.2247 12.6463 21.2247 11.3537 20.3257 10.8307H20.3158Z" fill="white"/>
+              </g>
+              <defs>
+                <radialGradient id="login-grad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(24.5 24) rotate(-135) scale(33.9411)">
+                  <stop stopColor="#FDAA87"/><stop offset="0.802885" stopColor="#FF558F"/>
+                </radialGradient>
+                <clipPath id="login-clip"><rect width="24" height="24" fill="white"/></clipPath>
+              </defs>
+            </svg>
           </div>
           <h1 className="text-2xl/8 font-semibold text-zinc-950 tracking-tight">ReviewFlow</h1>
           <p className="text-sm/6 text-zinc-500 mt-1">이메일과 비밀번호로 로그인하세요</p>
@@ -178,7 +189,7 @@ export function Login() {
             <button
               type="submit"
               disabled={!email.trim() || !password || loading}
-              className="w-full py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? '로그인 중...' : '로그인'}
             </button>
@@ -219,7 +230,7 @@ export function Login() {
                           <button
                             key={user.id}
                             onClick={() => handleDemoLogin(user.id)}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-zinc-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-left transition-all group"
+                            className="flex items-center gap-2 p-2 rounded-lg border border-zinc-100 hover:border-primary-200 hover:bg-primary-50/50 text-left transition-all group"
                           >
                             <div
                               className="size-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
@@ -228,7 +239,7 @@ export function Login() {
                               {user.name.slice(0, 1)}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-medium text-zinc-800 truncate group-hover:text-indigo-700 transition-colors">
+                              <p className="text-xs font-medium text-zinc-800 truncate group-hover:text-primary-600 transition-colors">
                                 {user.name}
                               </p>
                               <p className="text-[11px] text-zinc-400 truncate">{user.position}</p>

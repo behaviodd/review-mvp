@@ -1,12 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Settings, ChevronLeft, ChevronRight, Star, RefreshCw, Building2,
-  LogOut, UserCheck,
+  LayoutDashboard, Settings, ChevronLeft, ChevronRight,
+  RefreshCw, Building2, LogOut, UserCheck, MoreHorizontal,
 } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
-import { UserAvatar } from '../ui/UserAvatar';
 import { cn } from '../ui/cn';
 
 interface Props {
@@ -16,17 +14,37 @@ interface Props {
   onMobileClose: () => void;
 }
 
+function BrandIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g clipPath="url(#ms-clip)">
+        <path d="M0 6.4C0 4.15979 0 3.03968 0.435974 2.18404C0.819467 1.43139 1.43139 0.819467 2.18404 0.435974C3.03968 0 4.15979 0 6.4 0H17.6C19.8402 0 20.9603 0 21.816 0.435974C22.5686 0.819467 23.1805 1.43139 23.564 2.18404C24 3.03968 24 4.15979 24 6.4V17.6C24 19.8402 24 20.9603 23.564 21.816C23.1805 22.5686 22.5686 23.1805 21.816 23.564C20.9603 24 19.8402 24 17.6 24H6.4C4.15979 24 3.03968 24 2.18404 23.564C1.43139 23.1805 0.819467 22.5686 0.435974 21.816C0 20.9603 0 19.8402 0 17.6V6.4Z" fill="url(#ms-grad)"/>
+        <path fillRule="evenodd" clipRule="evenodd" d="M20.3158 10.8307L18.0583 9.51837C17.4989 9.19275 17.1593 8.60071 17.1593 7.95933V5.35436C17.1593 4.30843 16.0205 3.65718 15.1115 4.19002L12.904 5.47277C12.3446 5.79839 11.6454 5.79839 11.076 5.47277L8.87847 4.19002C7.96948 3.66705 6.83074 4.31829 6.83074 5.35436V7.95933C6.83074 8.60071 6.49112 9.19275 5.93174 9.51837L3.67425 10.8307C2.77525 11.3537 2.77525 12.6463 3.67425 13.1693L5.93174 14.4816C6.49112 14.8073 6.83074 15.3993 6.83074 16.0407V18.6456C6.83074 19.6916 7.96948 20.3428 8.87847 19.81L11.086 18.5272C11.6454 18.2016 12.3446 18.2016 12.914 18.5272L15.1215 19.81C16.0305 20.3329 17.1693 19.6817 17.1693 18.6456V16.0407C17.1693 15.3993 17.5089 14.8073 18.0683 14.4816L20.3257 13.1693C21.2247 12.6463 21.2247 11.3537 20.3257 10.8307H20.3158Z" fill="white"/>
+      </g>
+      <defs>
+        <radialGradient id="ms-grad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(24.5 24) rotate(-135) scale(33.9411)">
+          <stop stopColor="#FDAA87"/>
+          <stop offset="0.802885" stopColor="#FF558F"/>
+        </radialGradient>
+        <clipPath id="ms-clip">
+          <rect width="24" height="24" fill="white"/>
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
+
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
   const { isAdmin } = usePermission();
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const navItems = [
-    { to: '/',              icon: LayoutDashboard, label: '홈',        show: true,                              },
-    { to: '/reviews/me',    icon: Star,            label: '내 리뷰',   show: !isAdmin,                          },
-    { to: '/reviews/team',  icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader',    },
-    { to: '/team',          icon: Building2,       label: '구성원',    show: true,                              },
-    { to: '/cycles',        icon: RefreshCw,       label: '리뷰 운영', show: isAdmin,  },
+    { to: '/',             icon: LayoutDashboard, label: '홈',        show: true                               },
+    { to: '/reviews/me',   icon: RefreshCw,       label: '내 리뷰',   show: !isAdmin                           },
+    { to: '/reviews/team', icon: UserCheck,       label: '하향 평가', show: currentUser?.role === 'leader'     },
+    { to: '/team',         icon: Building2,       label: '구성원',    show: true                               },
+    { to: '/cycles',       icon: RefreshCw,       label: '리뷰 운영', show: isAdmin                            },
   ].filter(i => i.show);
 
   const handleLogout = () => {
@@ -37,31 +55,56 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
   return (
     <aside className={cn(
-      'fixed left-0 top-0 h-screen bg-neutral-950 border-r border-white/5 flex flex-col z-30 transition-all duration-200',
-      'w-56',
+      'fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex flex-col z-30 transition-all duration-200',
       mobileOpen ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0',
-      collapsed ? 'md:w-14' : 'md:w-56',
+      collapsed ? 'md:w-[56px]' : 'md:w-[220px]',
+      'w-[220px]',
     )}>
 
-      {/* ── Logo ── */}
+      {/* ── 로고 ── */}
       <div className={cn(
-        'flex items-center h-14 border-b border-white/5 flex-shrink-0 px-4 gap-2.5',
-        collapsed && 'md:justify-center md:px-0',
+        'flex items-center h-[72px] border-b border-gray-100 flex-shrink-0 px-4',
+        collapsed ? 'md:justify-center md:px-0' : 'gap-2.5',
       )}>
-        <div className="w-7 h-7 bg-primary-600 rounded-md flex items-center justify-center flex-shrink-0">
-          <Star size={14} className="text-white" />
-        </div>
+        <BrandIcon className="size-8 flex-shrink-0" />
         <span className={cn(
-          'text-sm font-semibold text-white tracking-tight',
+          'text-[13px] font-semibold text-gray-900 leading-tight flex-1',
           collapsed && 'md:hidden',
         )}>
           ReviewFlow
         </span>
+        <button
+          onClick={onToggle}
+          className={cn(
+            'hidden md:flex items-center justify-center size-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0',
+            collapsed && 'md:hidden',
+          )}
+          aria-label="사이드바 접기"
+        >
+          <ChevronLeft size={14} />
+        </button>
       </div>
 
+      {/* ── 유저 이메일 ── */}
+      {currentUser && (
+        <div className={cn(
+          'flex items-center justify-between px-4 py-2.5 border-b border-gray-100',
+          collapsed && 'md:hidden',
+        )}>
+          <span className="text-[11px] text-gray-400 truncate flex-1">{currentUser.email}</span>
+          <button
+            onClick={() => { navigate('/settings'); onMobileClose(); }}
+            className="ml-1 text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+            title="설정"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Nav ── */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -70,91 +113,54 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
             title={collapsed ? label : undefined}
             onClick={onMobileClose}
             className={({ isActive }) => cn(
-              'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors',
-              collapsed && 'md:justify-center',
+              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
+              collapsed && 'md:justify-center md:px-0 md:py-2.5',
               isActive
-                ? 'bg-white/10 text-white'
-                : 'text-neutral-400 hover:bg-white/5 hover:text-white',
+                ? 'bg-primary-50 text-primary-500 font-semibold'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium',
             )}
           >
-            <span className="relative flex-shrink-0">
-              <Icon size={16} />
-            </span>
-            <span className={cn('flex-1 leading-none', collapsed && 'md:hidden')}>
-              {label}
-            </span>
+            <Icon size={16} className="flex-shrink-0" />
+            <span className={cn(collapsed && 'md:hidden')}>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* ── User + Actions ── */}
-      <div className="border-t border-white/5 p-2 flex-shrink-0 space-y-1">
-
-        {/* 펼쳐진 상태: 유저 정보 + 아이콘 액션 */}
-        {currentUser && (
-          <div className={cn(
-            'flex items-center gap-2.5 px-2 py-2 rounded-lg',
-            collapsed && 'md:hidden',
-          )}>
-            <UserAvatar user={currentUser} size="sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate leading-tight">
-                {currentUser.name}
-              </p>
-              <p className="text-[11px] text-neutral-400 truncate leading-tight mt-0.5">
-                {currentUser.department}
-              </p>
-            </div>
-            {/* 설정 */}
-            <button
-              onClick={() => { navigate('/settings'); onMobileClose(); }}
-              title="설정"
-              className="p-1.5 rounded-md text-neutral-500 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
-            >
-              <Settings size={14} />
-            </button>
-            {/* 로그아웃 */}
-            <button
-              onClick={handleLogout}
-              title="로그아웃"
-              className="p-1.5 rounded-md text-neutral-500 hover:text-danger-400 hover:bg-danger-500/10 transition-colors flex-shrink-0"
-            >
-              <LogOut size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* 접힌 상태: 아바타 + 로그아웃만 */}
-        {currentUser && (
-          <div className={cn(
-            'hidden flex-col items-center gap-1',
-            collapsed && 'md:flex',
-          )}>
-            <button
-              onClick={() => { navigate('/settings'); onMobileClose(); }}
-              title={`${currentUser.name} · 설정`}
-              className="p-1 rounded-md hover:bg-white/10 transition-colors"
-            >
-              <UserAvatar user={currentUser} size="sm" />
-            </button>
-            <button
-              onClick={handleLogout}
-              title="로그아웃"
-              className="p-1.5 rounded-md text-neutral-500 hover:text-danger-400 hover:bg-danger-500/10 transition-colors"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
-        )}
-
-        {/* 접기/펼치기 토글 */}
+      {/* ── 하단 액션 ── */}
+      <div className="border-t border-gray-100 p-2 flex-shrink-0 space-y-0.5">
         <button
-          onClick={onToggle}
-          className="hidden md:flex w-full items-center justify-center py-1.5 rounded-lg hover:bg-white/5 text-neutral-500 hover:text-neutral-300 transition-colors"
-          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          onClick={() => { navigate('/settings'); onMobileClose(); }}
+          className={cn(
+            'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors',
+            collapsed && 'md:justify-center',
+          )}
+          title={collapsed ? '설정' : undefined}
         >
-          {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          <Settings size={16} className="flex-shrink-0" />
+          <span className={cn(collapsed && 'md:hidden')}>설정</span>
         </button>
+        <button
+          onClick={handleLogout}
+          className={cn(
+            'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors',
+            collapsed && 'md:justify-center',
+          )}
+          title={collapsed ? '로그아웃' : undefined}
+        >
+          <LogOut size={16} className="flex-shrink-0" />
+          <span className={cn(collapsed && 'md:hidden')}>로그아웃</span>
+        </button>
+
+        {/* 펼치기 토글 — collapsed 상태일 때만 표시 */}
+        {collapsed && (
+          <button
+            onClick={onToggle}
+            className="hidden md:flex items-center justify-center w-full py-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+            aria-label="사이드바 펼치기"
+          >
+            <ChevronRight size={14} />
+          </button>
+        )}
       </div>
     </aside>
   );

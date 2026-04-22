@@ -112,7 +112,7 @@ export function Login() {
               </defs>
             </svg>
           </div>
-          <h1 className="text-2xl/8 font-semibold text-zinc-950 tracking-tight">ReviewFlow</h1>
+          <h1 className="text-2xl/8 font-semibold text-zinc-950 tracking-tight">메이크스타 리뷰시스템</h1>
           <p className="text-sm/6 text-zinc-500 mt-1">이메일과 비밀번호로 로그인하세요</p>
         </div>
 

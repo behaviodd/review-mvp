@@ -399,7 +399,7 @@ export function Settings() {
       </div>
       )}
 
-      <p className="text-center text-xs text-neutral-300 pb-4">ReviewFlow MVP v0.1.0 · 프로토타입</p>
+      <p className="text-center text-xs text-neutral-300 pb-4">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>
     </div>
   );
 }

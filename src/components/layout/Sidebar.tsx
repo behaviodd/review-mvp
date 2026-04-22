@@ -86,7 +86,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
           'text-[13px] font-semibold text-gray-900 leading-tight flex-1',
           collapsed && 'md:hidden',
         )}>
-          ReviewFlow
+          메이크스타 리뷰시스템
         </span>
         <button
           onClick={onToggle}

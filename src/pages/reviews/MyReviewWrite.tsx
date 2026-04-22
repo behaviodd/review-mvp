@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PartyPopper, ShieldCheck, Lightbulb, Save } from 'lucide-react';
 import {
-  MsChevronLeftIcon, MsChevronRightIcon, MsCheckIcon, MsHelpIcon, MsLockIcon,
+  MsChevronLeftIcon, MsChevronRightIcon, MsCheckIcon, MsLockIcon,
   MsMessageIcon, MsDownloadIcon, MsCalendarIcon,
   MsArticleIcon, MsChevronDownIcon,
   MsLinkIcon, MsPaperclipIcon, MsOutlinkIcon, MsCancelIcon, MsPlusIcon, MsProfileIcon,
@@ -84,7 +84,6 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
   question: TemplateQuestion; answer?: Answer; onChange: (a: Answer) => void;
   readOnly?: boolean; showError?: boolean;
 }) {
-  const [helpOpen, setHelpOpen] = useState(false);
   const isUnanswered = showError && question.isRequired && !readOnly && (() => {
     if (question.type === 'text') return !answer?.textValue?.trim();
     if (question.type === 'multiple_choice') return !answer?.selectedOptions?.length;
@@ -103,26 +102,17 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
           <span className="text-xs text-zinc-400">매니저 전용</span>
         </div>
       )}
-      <div className="flex items-start gap-2 mb-3">
-        <p className="text-sm font-semibold text-zinc-800 flex-1 leading-snug">
+      <div className="mb-3">
+        <p className="text-sm font-semibold text-zinc-800 leading-snug mb-1">
           {question.text}{question.isRequired && <span className="text-rose-500 ml-1">*</span>}
         </p>
         {question.helpText && (
-          <button onClick={() => setHelpOpen(o => !o)} className="text-zinc-400 hover:text-zinc-600 flex-shrink-0 mt-0.5">
-            <MsHelpIcon size={16} />
-          </button>
+          <p className="text-xs text-zinc-400 leading-relaxed">{question.helpText}</p>
+        )}
+        {question.exampleAnswer && (
+          <p className="text-xs text-zinc-400 italic mt-0.5">예시: {question.exampleAnswer}</p>
         )}
       </div>
-      {helpOpen && question.helpText && (
-        <div className="mb-3 p-3 bg-primary-50 rounded-xl border border-primary-100">
-          <p className="text-xs text-primary-700 mb-1.5 font-medium">이 질문의 의도</p>
-          <p className="text-xs text-primary-600">{question.helpText}</p>
-          {question.exampleAnswer && (
-            <><p className="text-xs text-primary-700 font-medium mt-2 mb-1">예시 답변</p>
-            <p className="text-xs text-primary-600 italic">{question.exampleAnswer}</p></>
-          )}
-        </div>
-      )}
       {(question.type === 'rating' || question.type === 'competency') && (
         <RatingSelector question={question} value={answer?.ratingValue}
           onChange={v => onChange({ questionId: question.id, ratingValue: v })} disabled={readOnly} />

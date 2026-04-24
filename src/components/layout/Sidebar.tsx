@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Building2 } from 'lucide-react';
 import {
-  MsHomeIcon, MsSettingIcon, MsChevronLeftIcon, MsChevronRightIcon,
-  MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsChevronRightLineIcon,
+  MsHomeIcon, MsSettingIcon, MsChevronLeftLineIcon, MsChevronRightLineIcon,
+  MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsGroupIcon,
+  MsArticleIcon, MsDeleteIcon,
 } from '../ui/MsIcons';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
+import { useReviewStore } from '../../stores/reviewStore';
+import { useTeamStore } from '../../stores/teamStore';
+import { Pill } from '../ui/Pill';
 import { cn } from '../ui/cn';
+import { useMemo } from 'react';
 
 interface Props {
   collapsed: boolean;
@@ -39,9 +43,27 @@ function BrandIcon({ className }: { className?: string }) {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
   const { isAdmin, can } = usePermission();
   const { currentUser, logout } = useAuthStore();
+  const submissions = useReviewStore(s => s.submissions);
+  const users = useTeamStore(s => s.users);
+  const orgUnits = useTeamStore(s => s.orgUnits);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 승인 대기 개수 계산 — leader/admin에만 노출
+  const pendingApprovals = useMemo(() => {
+    if (!currentUser || !can.viewTeamReviews) return 0;
+    const byMgr = new Set(users.filter(u => u.managerId === currentUser.id).map(u => u.id));
+    const headOrgs = new Set(orgUnits.filter(o => o.headId === currentUser.id).map(o => o.name));
+    const orgMembers = new Set(users.filter(u =>
+      headOrgs.has(u.department) || headOrgs.has(u.subOrg ?? '__') ||
+      headOrgs.has(u.team ?? '__') || headOrgs.has(u.squad ?? '__')
+    ).map(u => u.id));
+    const leadeeIds = new Set([...byMgr, ...orgMembers]);
+    return submissions.filter(s =>
+      s.type === 'peer' && s.peerProposal?.status === 'pending' && leadeeIds.has(s.revieweeId)
+    ).length;
+  }, [submissions, users, orgUnits, currentUser, can.viewTeamReviews]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -54,13 +76,22 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
-  const navItems = [
-    { to: '/',             icon: MsHomeIcon,      label: '홈',        show: true                               },
-    { to: '/reviews/me',   icon: MsRefreshIcon,   label: '내 리뷰',   show: !isAdmin                           },
-    { to: '/reviews/team', icon: MsProfileIcon,   label: '하향 평가', show: can.viewTeamReviews && !isAdmin    },
-    { to: '/team',         icon: Building2,       label: '구성원',    show: true                               },
-    { to: '/cycles',       icon: MsRefreshIcon,   label: '리뷰 운영', show: isAdmin                            },
-  ].filter(i => i.show);
+  type NavNode =
+    | { kind: 'item'; to: string; icon: typeof MsHomeIcon; label: string; show: boolean; indent?: boolean; badge?: number }
+    | { kind: 'section'; label: string; show: boolean };
+
+  const navItems: NavNode[] = ([
+    { kind: 'item', to: '/',                           icon: MsHomeIcon,    label: '홈',           show: true },
+    { kind: 'item', to: '/reviews/me',                 icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin },
+    { kind: 'item', to: '/reviews/received',           icon: MsProfileIcon, label: '받은 리뷰',    show: true },
+    { kind: 'item', to: '/reviews/team',               icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin },
+    { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: can.viewTeamReviews || isAdmin, badge: pendingApprovals },
+    { kind: 'item', to: '/team',                       icon: MsGroupIcon,   label: '구성원',       show: true },
+    { kind: 'section', label: '리뷰 운영', show: isAdmin },
+    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',   show: isAdmin, indent: true },
+    { kind: 'item', to: '/templates',       icon: MsArticleIcon, label: '템플릿',   show: isAdmin, indent: true },
+    { kind: 'item', to: '/cycles/archive',  icon: MsDeleteIcon,  label: '보관함',   show: isAdmin, indent: true },
+  ] satisfies NavNode[]).filter(i => i.show);
 
   const handleLogout = () => {
     onMobileClose();
@@ -70,7 +101,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
   return (
     <aside className={cn(
-      'fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex flex-col z-30 transition-all duration-200',
+      'fixed left-0 top-0 h-screen bg-white border-r border-gray-020 flex flex-col z-30 transition-all duration-200',
       mobileOpen ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0',
       collapsed ? 'md:w-[56px]' : 'md:w-[220px]',
@@ -79,52 +110,52 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
       {/* ── 로고 ── */}
       <div className={cn(
-        'flex items-center h-[72px] border-b border-gray-100 flex-shrink-0 px-4',
+        'flex items-center h-[72px] border-b border-gray-010 flex-shrink-0 px-4',
         collapsed ? 'md:justify-center md:px-0' : 'gap-2.5',
       )}>
         <BrandIcon className="size-8 flex-shrink-0" />
         <span className={cn(
-          'text-[13px] font-semibold text-gray-900 leading-tight flex-1',
+          'text-[13px] font-semibold text-gray-099 leading-tight flex-1',
           collapsed && 'md:hidden',
         )}>
           메이크스타 리뷰시스템
         </span>
         <button
           onClick={onToggle}
-          className="hidden md:flex items-center justify-center size-6 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+          className="hidden md:flex items-center justify-center size-6 rounded-md text-gray-040 hover:text-gray-060 hover:bg-gray-010 transition-colors flex-shrink-0"
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
-          {collapsed ? <MsChevronRightIcon size={12} /> : <MsChevronLeftIcon size={12} />}
+          {collapsed ? <MsChevronRightLineIcon size={12} /> : <MsChevronLeftLineIcon size={12} />}
         </button>
       </div>
 
       {/* ── 유저 이메일 + 드롭다운 ── */}
       {currentUser && (
         <div className={cn(
-          'relative flex items-center justify-between px-4 py-2.5 border-b border-gray-100',
+          'relative flex items-center justify-between px-4 py-2.5 border-b border-gray-010',
           collapsed && 'md:hidden',
         )} ref={menuRef}>
-          <span className="text-[11px] text-gray-400 truncate flex-1">{currentUser.email}</span>
+          <span className="text-[11px] text-gray-040 truncate flex-1">{currentUser.email}</span>
           <button
             onClick={() => setMenuOpen(o => !o)}
-            className="ml-1 text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+            className="ml-1 text-gray-030 hover:text-gray-050 transition-colors flex-shrink-0"
             title="더보기"
           >
             <MsMoreIcon size={12} />
           </button>
 
           {menuOpen && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden py-1">
+            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-020 rounded-lg shadow-lg z-50 overflow-hidden py-1">
               <button
                 onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-060 hover:bg-gray-005 hover:text-gray-099 transition-colors"
               >
                 <MsSettingIcon size={12} className="flex-shrink-0" />
                 설정
               </button>
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-050 hover:bg-red-005 hover:text-red-050 transition-colors"
               >
                 <MsLogoutIcon size={12} className="flex-shrink-0" />
                 로그아웃
@@ -136,26 +167,48 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
       {/* ── Nav ── */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            title={collapsed ? label : undefined}
-            onClick={onMobileClose}
-            className={({ isActive }) => cn(
-              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
-              collapsed && 'md:justify-center md:px-0 md:py-2.5',
-              isActive
-                ? 'bg-primary-50 text-primary-500 font-semibold'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium',
-            )}
-          >
-            <Icon size={16} className="flex-shrink-0" />
-            <span className={cn('flex-1', collapsed && 'md:hidden')}>{label}</span>
-            <MsChevronRightLineIcon size={14} className={cn('flex-shrink-0 text-gray-300', collapsed && 'md:hidden')} />
-          </NavLink>
-        ))}
+        {navItems.map((node, i) => {
+          if (node.kind === 'section') {
+            return (
+              <div
+                key={`section-${i}`}
+                className={cn(
+                  'px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-040',
+                  collapsed && 'md:hidden',
+                )}
+              >
+                {node.label}
+              </div>
+            );
+          }
+          const Icon = node.icon;
+          return (
+            <NavLink
+              key={node.to}
+              to={node.to}
+              end={node.to === '/' || node.to === '/cycles'}
+              title={collapsed ? node.label : undefined}
+              onClick={onMobileClose}
+              className={({ isActive }) => cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
+                node.indent && !collapsed && 'md:ml-1.5',
+                collapsed && 'md:justify-center md:px-0 md:py-2.5',
+                isActive
+                  ? 'bg-pink-005 text-pink-040 font-semibold'
+                  : 'text-gray-060 hover:bg-gray-005 hover:text-gray-099 font-medium',
+              )}
+            >
+              <Icon size={16} className="flex-shrink-0" />
+              <span className={cn('flex-1', collapsed && 'md:hidden')}>{node.label}</span>
+              {node.badge != null && node.badge > 0 && (
+                <Pill tone="danger" size="xs" className={cn('shrink-0', collapsed && 'md:hidden')}>
+                  {node.badge}
+                </Pill>
+              )}
+              <MsChevronRightLineIcon size={14} className={cn('flex-shrink-0 text-gray-030', collapsed && 'md:hidden')} />
+            </NavLink>
+          );
+        })}
       </nav>
 
     </aside>

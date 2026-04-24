@@ -1,27 +1,51 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { Button } from '../catalyst/button';
+import { cn } from '../../utils/cn';
+import { EmptyIllustration } from './EmptyIllustration';
+
+type Variant = 'default' | 'inline';
+type IllustrationKey = 'empty-list' | 'empty-inbox' | 'empty-cycle';
 
 interface Props {
-  icon: ComponentType<{ size?: number | string; className?: string }>;
+  icon?: ComponentType<{ size?: number | string; className?: string }>;
+  illustration?: IllustrationKey;
   title: string;
-  description?: string;
+  description?: ReactNode;
   action?: { label: string; onClick: () => void };
   actionLabel?: string;
   onAction?: () => void;
   compact?: boolean;
+  /** default = 페이지 중앙 풀 파드 / inline = 리스트 안 점선 박스 */
+  variant?: Variant;
+  className?: string;
 }
 
-export function EmptyState({ icon: Icon, title, description, action, actionLabel, onAction, compact }: Props) {
+export function EmptyState({
+  icon: Icon, illustration, title, description, action, actionLabel, onAction, compact,
+  variant = 'default', className,
+}: Props) {
   const btn = action ?? (actionLabel && onAction ? { label: actionLabel, onClick: onAction } : undefined);
 
+  const wrapper = variant === 'inline'
+    ? 'rounded-xl border border-dashed border-gray-010 bg-white'
+    : '';
+
+  const pad = compact ? 'py-6' : variant === 'inline' ? 'py-10' : 'py-16';
+
   return (
-    <div className={`flex flex-col items-center justify-center text-center ${compact ? 'py-6' : 'py-16'}`}>
-      <div className="size-12 bg-zinc-100 rounded-xl flex items-center justify-center mb-3">
-        <Icon size={20} className="text-zinc-400" />
-      </div>
-      <p className="text-sm/6 font-semibold text-zinc-950 mb-1">{title}</p>
+    <div className={cn('flex flex-col items-center justify-center text-center', wrapper, pad, className)}>
+      {illustration ? (
+        <div className="mb-3">
+          <EmptyIllustration variant={illustration} size={80} />
+        </div>
+      ) : Icon && (
+        <div className="size-12 bg-gray-010 rounded-xl flex items-center justify-center mb-3">
+          <Icon size={20} className="text-gray-040" />
+        </div>
+      )}
+      <p className="text-sm/6 font-semibold text-gray-080 mb-1">{title}</p>
       {description && (
-        <p className="text-sm/6 text-zinc-500 mb-5 max-w-xs">{description}</p>
+        <div className="text-sm/6 text-gray-050 mb-5 max-w-xs">{description}</div>
       )}
       {btn && (
         <Button color="dark/zinc" onClick={btn.onClick}>

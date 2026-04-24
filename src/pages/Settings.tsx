@@ -8,11 +8,13 @@ import { useReviewSync } from '../hooks/useReviewSync';
 import { useReviewStore } from '../stores/reviewStore';
 import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
-import { Shield, Sheet, Eye, EyeOff } from 'lucide-react';
-import { MsProfileIcon, MsCheckCircleIcon, MsCancelIcon, MsRefreshIcon, MsInfoIcon, MsChevronDownIcon } from '../components/ui/MsIcons';
-import { MsSwitch } from '../components/ui/MsControl';
+import { Shield, Sheet } from 'lucide-react';
+import { MsProfileIcon, MsCheckCircleIcon, MsCancelIcon, MsRefreshIcon, MsInfoIcon, MsChevronDownLineIcon, MsShowIcon, MsHideIcon } from '../components/ui/MsIcons';
+import { MsSwitch, MsInput } from '../components/ui/MsControl';
 import { verifyLogin, changePassword, batchInitAccounts } from '../utils/authApi';
 import { MsButton } from '../components/ui/MsButton';
+import { SyncRetryDrawer } from '../components/review/SyncRetryDrawer';
+import { timeAgo } from '../utils/dateUtils';
 
 
 /* ── 비밀번호 변경 섹션 ──────────────────────────────────────────────── */
@@ -27,7 +29,7 @@ function PasswordChangeSection() {
 
   const strength = form.next.length === 0 ? 0 : form.next.length < 6 ? 1 : form.next.length < 10 ? 2 : 3;
   const strengthLabel = ['', '약함', '보통', '강함'];
-  const strengthColor = ['', 'bg-rose-400', 'bg-amber-400', 'bg-emerald-400'];
+  const strengthColor = ['', 'bg-red-040', 'bg-yellow-060', 'bg-green-040'];
 
   const reset = () => { setForm({ current: '', next: '', confirm: '' }); setError(''); setOpen(false); };
 
@@ -52,65 +54,56 @@ function PasswordChangeSection() {
     }
   };
 
-  const inp = 'w-full px-3 py-2 pr-10 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white';
-
   return (
-    <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+    <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700">개인정보 및 보안</h2>
+          <Shield className="w-4 h-4 text-gray-040" />
+          <h2 className="text-sm font-semibold text-gray-070">개인정보 및 보안</h2>
         </div>
-        <MsChevronDownIcon size={16} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <MsChevronDownLineIcon size={16} className={`text-gray-040 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">비밀번호 변경</p>
+          <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide">비밀번호 변경</p>
 
           {/* 현재 비밀번호 */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-1">현재 비밀번호</label>
-            <div className="relative">
-              <input
-                type={show ? 'text' : 'password'}
-                value={form.current}
-                onChange={e => { setForm(f => ({ ...f, current: e.target.value })); setError(''); }}
-                placeholder="현재 비밀번호"
-                autoComplete="current-password"
-                className={inp}
-              />
-              <button type="button" onClick={() => setShow(v => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          <MsInput
+            label="현재 비밀번호"
+            type={show ? 'text' : 'password'}
+            value={form.current}
+            onChange={e => { setForm(f => ({ ...f, current: e.target.value })); setError(''); }}
+            placeholder="현재 비밀번호"
+            autoComplete="current-password"
+            rightSlot={
+              <button type="button" onClick={() => setShow(v => !v)} className="text-gray-040 hover:text-gray-060">
+                {show ? <MsHideIcon size={16} /> : <MsShowIcon size={16} />}
               </button>
-            </div>
-          </div>
+            }
+          />
 
           {/* 새 비밀번호 */}
           <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-1">새 비밀번호</label>
-            <div className="relative">
-              <input
-                type={show ? 'text' : 'password'}
-                value={form.next}
-                onChange={e => { setForm(f => ({ ...f, next: e.target.value })); setError(''); }}
-                placeholder="새 비밀번호 (6자 이상)"
-                autoComplete="new-password"
-                className={inp}
-              />
-            </div>
+            <MsInput
+              label="새 비밀번호"
+              type={show ? 'text' : 'password'}
+              value={form.next}
+              onChange={e => { setForm(f => ({ ...f, next: e.target.value })); setError(''); }}
+              placeholder="새 비밀번호 (6자 이상)"
+              autoComplete="new-password"
+            />
             {form.next.length > 0 && (
               <div className="flex items-center gap-2 mt-1.5">
                 <div className="flex gap-1 flex-1">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${strength >= i ? strengthColor[strength] : 'bg-zinc-100'}`} />
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${strength >= i ? strengthColor[strength] : 'bg-gray-010'}`} />
                   ))}
                 </div>
-                <span className={`text-[11px] font-medium ${strength === 1 ? 'text-rose-500' : strength === 2 ? 'text-amber-500' : 'text-emerald-600'}`}>
+                <span className={`text-[11px] font-medium ${strength === 1 ? 'text-red-040' : strength === 2 ? 'text-yellow-060' : 'text-green-060'}`}>
                   {strengthLabel[strength]}
                 </span>
               </div>
@@ -118,32 +111,27 @@ function PasswordChangeSection() {
           </div>
 
           {/* 새 비밀번호 확인 */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-1">새 비밀번호 확인</label>
-            <input
-              type={show ? 'text' : 'password'}
-              value={form.confirm}
-              onChange={e => { setForm(f => ({ ...f, confirm: e.target.value })); setError(''); }}
-              placeholder="새 비밀번호 재입력"
-              autoComplete="new-password"
-              className="w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white"
-            />
-          </div>
+          <MsInput
+            label="새 비밀번호 확인"
+            type={show ? 'text' : 'password'}
+            value={form.confirm}
+            onChange={e => { setForm(f => ({ ...f, confirm: e.target.value })); setError(''); }}
+            placeholder="새 비밀번호 재입력"
+            autoComplete="new-password"
+          />
 
-          {error && <p className="text-xs text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>}
+          {error && <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={reset}
-              className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900">
-              취소
-            </button>
-            <button
+            <MsButton type="button" variant="ghost" size="sm" onClick={reset}>취소</MsButton>
+            <MsButton
               type="submit"
-              disabled={!form.current || !form.next || !form.confirm || loading}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              size="sm"
+              disabled={!form.current || !form.next || !form.confirm}
+              loading={loading}
             >
-              {loading ? '변경 중...' : '비밀번호 변경'}
-            </button>
+              비밀번호 변경
+            </MsButton>
           </div>
         </form>
       )}
@@ -160,12 +148,14 @@ export function Settings() {
     orgLastSyncedAt, orgSyncError,
     reviewSyncEnabled, setReviewSyncEnabled,
     reviewLastSyncedAt, reviewSyncError,
+    pendingOps, lastSuccessAt,
   } = useSheetsSyncStore();
   const { users, isLoading: orgLoading } = useTeamStore();
   const { cycles, templates, submissions, isLoading: reviewLoading } = useReviewStore();
   const { refetch: refetchOrg } = useOrgSync();
   const { refetch: refetchReview } = useReviewSync();
   const [urlDraft, setUrlDraft] = useState(scriptUrl);
+  const [syncDrawerOpen, setSyncDrawerOpen] = useState(false);
 
   useSetPageHeader('설정');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
@@ -221,33 +211,27 @@ export function Settings() {
   return (
     <div className="space-y-5">
       {/* Profile */}
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <MsProfileIcon size={16} className="text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700">프로필</h2>
+          <MsProfileIcon size={16} className="text-gray-040" />
+          <h2 className="text-sm font-semibold text-gray-070">프로필</h2>
         </div>
         <div className="flex items-center gap-4">
           <UserAvatar user={currentUser} size="xl" />
           <div>
-            <p className="text-lg font-semibold text-neutral-900">{currentUser.name}</p>
-            <p className="text-sm text-neutral-500">{currentUser.position}</p>
-            <p className="text-xs text-neutral-400">{currentUser.department} · {currentUser.email}</p>
+            <p className="text-lg font-semibold text-gray-099">{currentUser.name}</p>
+            <p className="text-sm text-gray-050">{currentUser.position}</p>
+            <p className="text-xs text-gray-040">{currentUser.department} · {currentUser.email}</p>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-neutral-50 flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-gray-005 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-neutral-600">역할</p>
-            <p className="text-sm text-neutral-800 mt-0.5">
+            <p className="text-xs font-medium text-gray-060">역할</p>
+            <p className="text-sm text-gray-080 mt-0.5">
               {currentUser.role === 'admin' ? '관리자' : currentUser.role === 'leader' ? '조직장' : '팀원'}
             </p>
           </div>
-          <button
-            disabled
-            title="프로필 편집은 아직 지원되지 않습니다"
-            className="px-3 py-1.5 text-xs font-medium text-neutral-300 border border-neutral-100 rounded-lg cursor-not-allowed bg-neutral-50"
-          >
-            편집
-          </button>
+          <MsButton variant="outline-default" size="sm" disabled title="프로필 편집은 아직 지원되지 않습니다">편집</MsButton>
         </div>
       </div>
 
@@ -256,84 +240,82 @@ export function Settings() {
 
       {/* Google Sheets 연동 (관리자 전용) */}
       {currentUser.role === 'admin' && (
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Sheet className="w-4 h-4 text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700">Google Sheets 연동</h2>
+          <Sheet className="w-4 h-4 text-gray-040" />
+          <h2 className="text-sm font-semibold text-gray-070">Google Sheets 연동</h2>
         </div>
 
         <div className="space-y-5">
           {/* Apps Script URL */}
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">
-              Apps Script 웹앱 URL
-            </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <MsInput
+                  label="Apps Script 웹앱 URL"
+                  size="sm"
                   type="url"
                   value={urlDraft}
                   onChange={e => { setUrlDraft(e.target.value); setTestState('idle'); }}
                   placeholder="https://script.google.com/macros/s/…/exec"
-                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50 text-xs text-neutral-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white pr-8"
+                  rightSlot={
+                    testState === 'ok' ? <MsCheckCircleIcon size={16} className="text-green-040" /> :
+                    testState === 'fail' ? <MsCancelIcon size={16} className="text-red-040" /> :
+                    undefined
+                  }
                 />
-                {testState === 'ok' && (
-                  <MsCheckCircleIcon size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-500" />
-                )}
-                {testState === 'fail' && (
-                  <MsCancelIcon size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-rose-500" />
-                )}
               </div>
-              <button
+              <MsButton
+                variant="outline-default"
+                size="sm"
                 onClick={handleTest}
-                disabled={testState === 'testing'}
-                className="px-3 py-2 text-xs font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50 transition-colors whitespace-nowrap"
+                loading={testState === 'testing'}
               >
-                {testState === 'testing' ? '확인 중…' : '연결 테스트'}
-              </button>
+                연결 테스트
+              </MsButton>
             </div>
             {/* 개발 환경 설정 안내 */}
-            <div className="mt-2 flex gap-1.5 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              <MsInfoIcon size={12} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 leading-relaxed">
+            <div className="mt-2 flex gap-1.5 bg-yellow-005 border border-yellow-060/20 rounded-lg px-3 py-2">
+              <MsInfoIcon size={12} className="text-yellow-060 shrink-0 mt-0.5" />
+              <p className="text-xs text-yellow-070 leading-relaxed">
                 <span className="font-medium">로컬 개발:</span>{' '}
-                프로젝트 루트에 <code className="bg-amber-100 px-1 rounded">.env.local</code> 파일을 만들고{' '}
-                <code className="bg-amber-100 px-1 rounded">APPS_SCRIPT_URL=위의 URL</code> 을 추가한 뒤 서버를 재시작하세요.
+                프로젝트 루트에 <code className="bg-yellow-060/10 px-1 rounded">.env.local</code> 파일을 만들고{' '}
+                <code className="bg-yellow-060/10 px-1 rounded">APPS_SCRIPT_URL=위의 URL</code> 을 추가한 뒤 서버를 재시작하세요.
                 <br />
                 <span className="font-medium">배포:</span>{' '}
-                Vercel 대시보드 → Settings → Environment Variables 에 <code className="bg-amber-100 px-1 rounded">APPS_SCRIPT_URL</code> 을 등록하세요.
+                Vercel 대시보드 → Settings → Environment Variables 에 <code className="bg-yellow-060/10 px-1 rounded">APPS_SCRIPT_URL</code> 을 등록하세요.
               </p>
             </div>
           </div>
 
-          <div className="border-t border-neutral-50 pt-4 space-y-4">
+          <div className="border-t border-gray-005 pt-4 space-y-4">
             {/* ── 조직 데이터 동기화 ── */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-800">조직 데이터 자동 동기화</p>
-                <p className="text-xs text-neutral-400 mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
+                <p className="text-sm text-gray-080">조직 데이터 자동 동기화</p>
+                <p className="text-xs text-gray-040 mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
               </div>
               <MsSwitch checked={orgSyncEnabled} onChange={setOrgSyncEnabled} />
             </div>
 
             {orgSyncEnabled && (
-              <div className="bg-zinc-50 rounded-lg px-3 py-2.5 flex items-center justify-between">
+              <div className="bg-gray-005 rounded-lg px-3 py-2.5 flex items-center justify-between">
                 <div>
                   {orgSyncError ? (
-                    <p className="text-xs text-rose-500 flex items-center gap-1">
+                    <p className="text-xs text-red-040 flex items-center gap-1">
                       <MsCancelIcon size={12} className="shrink-0" /> {orgSyncError}
                     </p>
                   ) : orgLastSyncedAt ? (
-                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <p className="text-xs text-green-060 flex items-center gap-1">
                       <MsCheckCircleIcon size={12} className="shrink-0" />
                       {formatSyncTime(orgLastSyncedAt)} · 구성원 {users.length}명
                     </p>
                   ) : (
-                    <p className="text-xs text-neutral-400">아직 동기화된 기록이 없습니다.</p>
+                    <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
                 <button onClick={refetchOrg} disabled={orgLoading} title="지금 동기화"
-                  className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 transition-colors">
+                  className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${orgLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
@@ -342,34 +324,59 @@ export function Settings() {
             {/* ── 리뷰 운영 데이터 동기화 ── */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-800">리뷰 운영 데이터 자동 동기화</p>
-                <p className="text-xs text-neutral-400 mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
+                <p className="text-sm text-gray-080">리뷰 운영 데이터 자동 동기화</p>
+                <p className="text-xs text-gray-040 mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
               </div>
               <MsSwitch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
             </div>
 
             {reviewSyncEnabled && (
-              <div className="bg-zinc-50 rounded-lg px-3 py-2.5 flex items-center justify-between">
+              <div className="bg-gray-005 rounded-lg px-3 py-2.5 flex items-center justify-between">
                 <div>
                   {reviewSyncError ? (
-                    <p className="text-xs text-rose-500 flex items-center gap-1">
+                    <p className="text-xs text-red-040 flex items-center gap-1">
                       <MsCancelIcon size={12} className="shrink-0" /> {reviewSyncError}
                     </p>
                   ) : reviewLastSyncedAt ? (
-                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <p className="text-xs text-green-060 flex items-center gap-1">
                       <MsCheckCircleIcon size={12} className="shrink-0" />
                       {formatSyncTime(reviewLastSyncedAt)} · 리뷰 {cycles.length}개 · 템플릿 {templates.length}개 · 제출 {submissions.length}건
                     </p>
                   ) : (
-                    <p className="text-xs text-neutral-400">아직 동기화된 기록이 없습니다.</p>
+                    <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
                 <button onClick={refetchReview} disabled={reviewLoading} title="지금 동기화"
-                  className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 transition-colors">
+                  className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${reviewLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             )}
+
+            {/* ── 쓰기 큐 상태 (경로 A) ── */}
+            <div className="flex items-start justify-between gap-3 pt-1">
+              <div className="min-w-0">
+                <p className="text-sm text-gray-080">쓰기 큐 상태</p>
+                <p className="text-xs text-gray-040 mt-0.5">
+                  리뷰 저장·리마인드 등 쓰기 실패가 생기면 여기에 쌓입니다.
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ${pendingOps.filter(o => o.tryCount > 0).length > 0 ? 'bg-red-005 text-red-070' : pendingOps.length > 0 ? 'bg-orange-005 text-orange-070' : 'bg-green-005 text-green-070'}`}>
+                    대기 {pendingOps.length}건 · 실패 {pendingOps.filter(o => o.tryCount > 0).length}건
+                  </span>
+                  <span className="text-gray-050">
+                    {lastSuccessAt ? `마지막 성공: ${timeAgo(lastSuccessAt)}` : '성공 이력 없음'}
+                  </span>
+                </div>
+              </div>
+              <MsButton
+                variant="outline-default"
+                size="sm"
+                onClick={() => setSyncDrawerOpen(true)}
+              >
+                동기화 상태 열기
+              </MsButton>
+            </div>
 
           </div>
 
@@ -380,13 +387,13 @@ export function Settings() {
                 <button
                   onClick={handleBatchInitAccounts}
                   disabled={batchInitState === 'loading'}
-                  className="px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 text-xs font-semibold text-yellow-070 bg-yellow-005 border border-yellow-060/20 rounded-lg hover:bg-yellow-060/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {batchInitState === 'loading' ? '처리 중...' : '계정 일괄 초기화'}
                 </button>
               )}
               {scriptUrl && (
-                <p className="text-[11px] text-neutral-400">시트에서 가져온 구성원의 초기 비밀번호를 사번으로 설정</p>
+                <p className="text-[11px] text-gray-040">시트에서 가져온 구성원의 초기 비밀번호를 사번으로 설정</p>
               )}
             </div>
             <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>
@@ -395,7 +402,9 @@ export function Settings() {
       </div>
       )}
 
-      <p className="text-center text-xs text-neutral-300 pb-4">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>
+      <p className="text-center text-xs text-gray-030 pb-4">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>
+
+      <SyncRetryDrawer open={syncDrawerOpen} onClose={() => setSyncDrawerOpen(false)} />
     </div>
   );
 }

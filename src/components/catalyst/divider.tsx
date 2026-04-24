@@ -7,7 +7,7 @@ export function Divider({ soft = false, className }: DividerProps) {
     <hr
       className={cn(
         'w-full border-t',
-        soft ? 'border-zinc-950/5' : 'border-zinc-950/10',
+        soft ? 'border-gray-010' : 'border-gray-020',
         className,
       )}
     />

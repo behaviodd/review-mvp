@@ -5,8 +5,10 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { verifyLogin } from '../utils/authApi';
 import type { User } from '../types';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { MsChevronDownIcon, MsSettingIcon } from '../components/ui/MsIcons';
+import { Loader2 } from 'lucide-react';
+import { MsSettingIcon, MsShowIcon, MsHideIcon } from '../components/ui/MsIcons';
+import { MsButton } from '../components/ui/MsButton';
+import { MsInput } from '../components/ui/MsControl';
 
 /* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
 export function Login() {
@@ -37,8 +39,6 @@ export function Login() {
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [showDemo, setShowDemo] = useState(false);
-
   /* 이메일 + 비밀번호 로그인 */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,27 +74,8 @@ export function Login() {
     }
   };
 
-  /* 체험 계정 로그인 (비밀번호 없음) */
-  const handleDemoLogin = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    if (user) { login(user); navigate('/'); }
-  };
-
-  const { orgUnits } = useTeamStore();
-  const headIds = new Set(orgUnits.map(u => u.headId).filter(Boolean));
-  const roleGroups = {
-    admin:  users.filter(u => u.role === 'admin').slice(0, 2),
-    leader: users.filter(u => u.role === 'leader' || (u.role !== 'admin' && headIds.has(u.id))).slice(0, 4),
-    member: users.filter(u => u.role === 'member' && !headIds.has(u.id)).slice(0, 4),
-  };
-  const roleMeta = {
-    admin:  { label: '관리자', desc: '리뷰 운영 · 전체 현황' },
-    leader: { label: '조직장',   desc: '팀원 평가 · 팀 현황' },
-    member: { label: '팀원',   desc: '셀프 리뷰 · 피드백' },
-  };
-
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-010 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-3">
 
         {/* 브랜드 */}
@@ -113,13 +94,13 @@ export function Login() {
               </defs>
             </svg>
           </div>
-          <h1 className="text-2xl/8 font-semibold text-zinc-950 tracking-tight">메이크스타 리뷰시스템</h1>
-          <p className="text-sm/6 text-zinc-500 mt-1">이메일과 비밀번호로 로그인하세요</p>
+          <h1 className="text-2xl/8 font-semibold text-gray-099 tracking-tight">메이크스타 리뷰시스템</h1>
+          <p className="text-sm/6 text-gray-050 mt-1">이메일과 비밀번호로 로그인하세요</p>
         </div>
 
         {/* org 동기화 중 안내 */}
         {usersLoading && scriptUrl && (
-          <div className="flex items-center gap-2 justify-center py-2 text-xs text-zinc-400">
+          <div className="flex items-center gap-2 justify-center py-2 text-xs text-gray-040">
             <Loader2 className="size-3.5 animate-spin" />
             구성원 데이터를 불러오는 중...
           </div>
@@ -127,14 +108,14 @@ export function Login() {
 
         {/* 초기 설정 모드 배너 */}
         {isSetupMode && !scriptUrl && (
-          <div className="bg-white rounded-2xl ring-1 ring-amber-200 shadow-sm p-5 space-y-3">
+          <div className="bg-white rounded-2xl ring-1 ring-yellow-060/20 shadow-sm p-5 space-y-3">
             <div className="flex items-start gap-3">
-              <div className="size-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <MsSettingIcon size={16} className="text-amber-600" />
+              <div className="size-8 rounded-lg bg-yellow-005 flex items-center justify-center flex-shrink-0">
+                <MsSettingIcon size={16} className="text-yellow-060" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-900">초기 설정이 필요합니다</p>
-                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                <p className="text-sm font-semibold text-gray-099">초기 설정이 필요합니다</p>
+                <p className="text-xs text-gray-050 mt-0.5 leading-relaxed">
                   Google Sheets 연동이 설정되지 않았습니다.<br />
                   설정 모드로 진입해 Apps Script URL을 먼저 등록해 주세요.
                 </p>
@@ -142,7 +123,7 @@ export function Login() {
             </div>
             <button
               onClick={handleSetupLogin}
-              className="w-full py-2 text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              className="w-full py-2 text-sm font-semibold text-yellow-070 bg-yellow-005 border border-yellow-060/20 rounded-lg hover:bg-yellow-060/10 transition-colors"
             >
               설정 모드로 진입
             </button>
@@ -150,113 +131,48 @@ export function Login() {
         )}
 
         {/* 로그인 폼 */}
-        <div className="bg-white rounded-2xl ring-1 ring-zinc-950/5 shadow-sm">
+        <div className="bg-white rounded-2xl ring-1 ring-gray-010 shadow-sm">
           <form onSubmit={handleLogin} className="p-5 space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1.5">이메일</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => { setEmail(e.target.value); setError(''); }}
-                placeholder="name@company.com"
-                autoComplete="email"
-                autoFocus
-                className="w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white focus:border-zinc-950/20 transition-all"
-              />
-            </div>
+            <MsInput
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError(''); }}
+              placeholder="name@company.com"
+              autoComplete="email"
+              autoFocus
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1.5">비밀번호</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); }}
-                  placeholder="비밀번호 (초기: 사번)"
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2 pr-10 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white focus:border-zinc-950/20 transition-all"
-                />
-                <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
-                  {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            <MsInput
+              label="비밀번호"
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(''); }}
+              placeholder="비밀번호 (초기: 사번)"
+              autoComplete="current-password"
+              rightSlot={
+                <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-040 hover:text-gray-060 transition-colors">
+                  {showPw ? <MsHideIcon size={16} /> : <MsShowIcon size={16} />}
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             {error && (
-              <p className="text-xs text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>
+              <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>
             )}
 
-            <button
+            <MsButton
               type="submit"
-              disabled={!email.trim() || !password || loading}
-              className="w-full py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              disabled={!email.trim() || !password}
+              loading={loading}
+              className="w-full"
             >
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
+              로그인
+            </MsButton>
           </form>
         </div>
 
-        {/* 체험 계정 섹션 */}
-        <div className="bg-white rounded-2xl ring-1 ring-zinc-950/5 shadow-sm overflow-hidden">
-          <button
-            onClick={() => setShowDemo(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-3 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-          >
-            <span>체험 계정으로 둘러보기</span>
-            <MsChevronDownIcon size={16} className={`transition-transform duration-200 ${showDemo ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showDemo && (
-            <div className="border-t border-zinc-100 px-4 pb-4">
-              {users.length === 0 ? (
-                <p className="text-xs text-zinc-400 py-4 text-center">
-                  구성원 데이터가 없습니다.<br />
-                  Google Sheets 연동 후 사용 가능합니다.
-                </p>
-              ) : (
-                (['admin', 'leader', 'member'] as const).map(role => {
-                  const group = roleGroups[role];
-                  if (group.length === 0) return null;
-                  const { label, desc } = roleMeta[role];
-                  return (
-                    <div key={role} className="mt-3 first:mt-2">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className="text-[11px] font-semibold text-zinc-500">{label}</span>
-                        <span className="text-[11px] text-zinc-300">·</span>
-                        <span className="text-[11px] text-zinc-400">{desc}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {group.map(user => (
-                          <button
-                            key={user.id}
-                            onClick={() => handleDemoLogin(user.id)}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-zinc-100 hover:border-primary-200 hover:bg-primary-50/50 text-left transition-all group"
-                          >
-                            <div
-                              className="size-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-                              style={{ backgroundColor: user.avatarColor }}
-                            >
-                              {user.name.slice(0, 1)}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium text-zinc-800 truncate group-hover:text-primary-600 transition-colors">
-                                {user.name}
-                              </p>
-                              <p className="text-[11px] text-zinc-400 truncate">{user.position}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-
-        <p className="text-center text-xs text-zinc-400 pb-4">
+        <p className="text-center text-xs text-gray-040 pb-4">
           초기 비밀번호는 사번입니다. 분실 시 관리자에게 초기화를 요청하세요.
         </p>
       </div>

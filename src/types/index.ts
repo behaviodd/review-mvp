@@ -52,6 +52,8 @@ export interface SecondaryOrgAssignment {
   note?: string;
 }
 
+export type CycleTargetMode = 'org' | 'manager' | 'custom';
+
 export interface ReviewCycle {
   id: string;
   title: string;
@@ -64,6 +66,41 @@ export interface ReviewCycle {
   createdBy: string;
   createdAt: string;
   completionRate: number;
+  tags?: string[];
+  archivedAt?: string;
+  templateSnapshot?: ReviewTemplate;
+  templateSnapshotAt?: string;
+  fromCycleId?: string;
+  // Phase 3.2a
+  folderId?: string;
+  targetMode?: CycleTargetMode;
+  targetManagerId?: string;
+  targetUserIds?: string[];
+  // Phase 3.2b
+  scheduledPublishAt?: string;
+  autoAdvance?: AutoAdvanceRule;
+  reminderPolicy?: ReminderRule[];
+  editLockedAt?: string;
+  autoArchived?: boolean;
+  closedAt?: string;
+  // Phase 3.3a
+  anonymity?: AnonymityPolicy;
+  visibility?: VisibilityPolicy;
+  referenceInfo?: ReferenceInfoPolicy;
+  // Phase 3.3b-1
+  reviewKinds?: ReviewKind[];
+  peerSelection?: PeerSelectionPolicy;
+  // Phase 3.3c-2
+  distribution?: DistributionPolicy;
+}
+
+export interface CycleFolder {
+  id: string;
+  name: string;
+  order: number;
+  color?: string;
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface TemplateSection {
@@ -99,17 +136,140 @@ export interface TemplateQuestion {
   sectionId?: string;
 }
 
+export interface ReminderRecord {
+  at: string;
+  by: string;
+  channel: 'inapp';
+  ruleId?: string;   // 자동 규칙 발송 시 규칙 id; 수동 리마인드는 undefined
+}
+
+export interface AutoAdvanceRule {
+  stage: 'self_to_manager';
+  graceHours: number;
+  threshold?: number;  // 0~100 (제출율 %)
+}
+
+export type ReminderTrigger = 'before_deadline' | 'overdue';
+export type ReminderAudience = 'not_started' | 'in_progress' | 'all_pending';
+export type ReminderStage = 'self' | 'manager' | 'both';
+
+export interface ReminderRule {
+  id: string;
+  trigger: ReminderTrigger;
+  offsetHours: number;
+  audience: ReminderAudience;
+  stage: ReminderStage;
+  channel: 'inapp';
+}
+
+// Phase 3.3a — 정책 3종
+export interface AnonymityPolicy {
+  peer?: boolean;
+  upward?: boolean;
+  downward?: boolean;
+  self?: boolean;
+}
+
+export type VisibilityWhen = 'submission' | 'cycle_close';
+
+export interface VisibilityPolicy {
+  downwardToReviewee?: VisibilityWhen;
+  peerToReviewee?: VisibilityWhen;
+  upwardToReviewee?: VisibilityWhen;
+}
+
+export interface ReferenceInfoPolicy {
+  includeGoals?: boolean;
+  includePreviousReview?: boolean;
+}
+
+// Phase 3.3b-1
+export type ReviewKind = 'self' | 'peer' | 'upward' | 'downward';
+export type PeerSelectionMethod = 'reviewee_picks' | 'leader_approves' | 'admin_assigns';
+export interface PeerSelectionPolicy {
+  method: PeerSelectionMethod;
+  minPeers: number;
+  maxPeers: number;
+  selectionDeadline?: string;
+}
+
+// Phase 3.3c-2
+export type PeerProposalStatus = 'pending' | 'approved' | 'rejected';
+export interface PeerProposal {
+  status: PeerProposalStatus;
+  proposedAt: string;
+  proposedBy: string;        // reviewee
+  decidedAt?: string;
+  decidedBy?: string;        // leader
+  rejectionReason?: string;
+}
+
+export type DistributionMethod = 'guide' | 'hard';
+export interface DistributionBand {
+  label: string;             // 'S' | 'A' | 'B' | 'C' | 'D' 등
+  ratio: number;             // 0-100 %
+  minRating?: number;        // 5점 척도의 구간 (선택)
+  maxRating?: number;
+}
+export interface DistributionPolicy {
+  method: DistributionMethod;
+  bands: DistributionBand[];
+}
+
+export interface DeadlineExtension {
+  until: string;          // ISO date
+  extendedBy: string;     // actorId
+  extendedAt: string;     // ISO datetime
+  reason?: string;
+}
+
+export interface ReviewerChange {
+  from: string;
+  to: string;
+  at: string;
+  by: string;
+  reason?: string;
+}
+
 export interface ReviewSubmission {
   id: string;
   cycleId: string;
   reviewerId: string;
   revieweeId: string;
-  type: 'self' | 'downward';
+  type: ReviewKind;   // self | peer | upward | downward (3.3b-1)
   status: SubmissionStatus;
   answers: Answer[];
   overallRating?: number;
   submittedAt?: string;
   lastSavedAt: string;
+  remindersSent?: ReminderRecord[];
+  deadlineOverride?: DeadlineExtension;
+  proxyWrittenBy?: string;
+  reviewerHistory?: ReviewerChange[];
+  autoExcluded?: { at: string; reason: 'inactive' | 'leave_date' | 'removed' };
+  peerProposal?: PeerProposal;    // peer 타입 + leader_approves 방식에서만 사용
+}
+
+export type AuditAction =
+  | 'cycle.status_transition'
+  | 'cycle.repushed'
+  | 'cycle.settings_updated'
+  | 'submission.reminder_sent'
+  | 'submission.deadline_extended'
+  | 'submission.reviewer_reassigned'
+  | 'submission.proxy_write_started'
+  | 'submission.proxy_submitted'
+  | 'submission.reopened';
+
+export interface AuditLogEntry {
+  id: string;
+  cycleId: string;
+  actorId: string;
+  action: AuditAction;
+  targetIds: string[];
+  summary: string;
+  meta?: Record<string, unknown>;
+  at: string;
 }
 
 export interface Answer {

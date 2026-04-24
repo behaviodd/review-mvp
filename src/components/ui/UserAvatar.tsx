@@ -5,6 +5,7 @@ interface Props {
   user: User;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showName?: boolean;
+  anonymous?: boolean;
 }
 
 const SIZES = {
@@ -14,20 +15,21 @@ const SIZES = {
   xl: 'size-14',
 };
 
-export function UserAvatar({ user, size = 'md', showName }: Props) {
-  const initials = user.name.slice(0, 2);
+export function UserAvatar({ user, size = 'md', showName, anonymous }: Props) {
+  const name = anonymous ? '익명' : user.name;
+  const initials = anonymous ? '?' : user.name.slice(0, 2);
   return (
     <div className="flex items-center gap-2.5">
       <Avatar
         initials={initials}
-        color={user.avatarColor}
-        alt={`${user.name} 아바타`}
+        color={anonymous ? '#8a99a8' : user.avatarColor}
+        alt={`${name} 아바타`}
         className={SIZES[size]}
       />
       {showName && (
         <div>
-          <p className="text-sm/6 font-medium text-zinc-950">{user.name}</p>
-          <p className="text-xs/5 text-zinc-500">{user.position}</p>
+          <p className="text-sm/6 font-medium text-gray-099">{name}</p>
+          {!anonymous && <p className="text-xs/5 text-gray-050">{user.position}</p>}
         </div>
       )}
     </div>

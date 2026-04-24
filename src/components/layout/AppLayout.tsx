@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { MsMenuIcon } from '../ui/MsIcons';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuthStore } from '../../stores/authStore';
-import { ToastContainer } from '../ui/Toast';
+import { ToastContainer, useShowToast } from '../ui/Toast';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
 import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
+import { SyncStatusBanner } from '../system/SyncStatusBanner';
+import { QUOTA_EVENT } from '../../utils/safeStorage';
 
 const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/'];
 
@@ -15,6 +17,16 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const showToast = useShowToast();
+
+  // localStorage 용량 초과 시 사용자에게 한 번 알림
+  useEffect(() => {
+    const onQuota = () => {
+      showToast('error', '브라우저 저장소가 가득 찼어요. 오래된 데이터를 비우거나 다른 브라우저를 사용해 주세요.');
+    };
+    window.addEventListener(QUOTA_EVENT, onQuota);
+    return () => window.removeEventListener(QUOTA_EVENT, onQuota);
+  }, [showToast]);
 
   if (!currentUser) return <Navigate to="/login" replace />;
 
@@ -23,7 +35,7 @@ export function AppLayout() {
 
   return (
     <PageHeaderProvider>
-    <div className="flex h-screen overflow-hidden bg-[#F3F4F6]">
+    <div className="flex h-screen overflow-hidden bg-gray-005">
       {/* 모바일 백드롭 */}
       {mobileOpen && (
         <div
@@ -42,7 +54,7 @@ export function AppLayout() {
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-200 ${sidebarWidth}`}>
 
         {/* 모바일 전용 상단 바 */}
-        <div className="md:hidden bg-white border-b border-gray-200 h-[56px] flex items-center justify-between px-4 flex-shrink-0 sticky top-0 z-20">
+        <div className="md:hidden bg-white border-b border-gray-020 h-[56px] flex items-center justify-between px-4 flex-shrink-0 sticky top-0 z-20">
           <div className="flex items-center gap-2.5">
             <svg className="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g clipPath="url(#ms-mob-clip)">
@@ -57,11 +69,11 @@ export function AppLayout() {
                 <clipPath id="ms-mob-clip"><rect width="24" height="24" fill="white"/></clipPath>
               </defs>
             </svg>
-            <span className="text-sm font-semibold text-gray-900">메이크스타 리뷰시스템</span>
+            <span className="text-sm font-semibold text-gray-099">메이크스타 리뷰시스템</span>
           </div>
           <button
             onClick={() => setMobileOpen(o => !o)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-050 hover:text-gray-099 hover:bg-gray-010 transition-colors"
             aria-label="메뉴 열기"
           >
             <MsMenuIcon size={16} />
@@ -72,6 +84,8 @@ export function AppLayout() {
         <div className="hidden md:block">
           <Header />
         </div>
+
+        <SyncStatusBanner />
 
         <main className={`flex-1 flex flex-col min-h-0 ${isFullBleed ? 'overflow-hidden' : 'overflow-y-auto p-6'}`}>
           {isFullBleed ? (

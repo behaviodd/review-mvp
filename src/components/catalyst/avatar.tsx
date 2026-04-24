@@ -4,7 +4,7 @@ type AvatarProps = {
   src?: string | null
   initials?: string
   alt?: string
-  color?: string          // CSS background color for initials fallback
+  color?: string
   square?: boolean
   className?: string
 }
@@ -29,7 +29,7 @@ export function Avatar({ src, initials, alt = '', color, square = false, classNa
           className="size-full select-none fill-current text-white"
           viewBox="0 0 100 100"
           aria-hidden={alt ? undefined : 'true'}
-          style={{ backgroundColor: color ?? '#18181b' }}
+          style={{ backgroundColor: color ?? '#111417' }}
         >
           <text
             x="50%"
@@ -40,22 +40,20 @@ export function Avatar({ src, initials, alt = '', color, square = false, classNa
             dy=".125em"
             fontSize={initials.length > 2 ? '35' : '42'}
             fontWeight="500"
-            fontFamily="Inter, Pretendard, -apple-system, sans-serif"
+            fontFamily="Pretendard Variable, Pretendard, -apple-system, sans-serif"
           >
             {initials}
           </text>
         </svg>
       ) : (
         <span
-          className={cn('size-full bg-zinc-200', rounded)}
+          className={cn('size-full bg-gray-020', rounded)}
           aria-hidden="true"
         />
       )}
     </span>
   )
 }
-
-/* ── AvatarButton ─────────────────────────────────────────────────── */
 
 type AvatarButtonProps = AvatarProps & {
   onClick?: React.MouseEventHandler<HTMLButtonElement>
@@ -69,7 +67,7 @@ export function AvatarButton({ onClick, 'aria-label': ariaLabel, className, ...a
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        'relative focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500',
+        'relative focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-050',
         avatarProps.square ? 'rounded-lg' : 'rounded-full',
         className,
       )}

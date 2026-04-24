@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { safeStorage } from '../utils/safeStorage';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
@@ -234,6 +235,7 @@ export const useTeamStore = create<TeamStore>()(
     }),
     {
       name: 'team-data-v1',
+      storage: createJSONStorage(() => safeStorage),
       partialize: (s) => ({
         users:         s.users,
         teams:         s.teams,

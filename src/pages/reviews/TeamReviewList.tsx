@@ -9,11 +9,12 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
 import { Users, Circle } from 'lucide-react';
-import { MsChevronRightIcon, MsDownloadIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon } from '../../components/ui/MsIcons';
+import { MsChevronRightLineIcon, MsDownloadIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon } from '../../components/ui/MsIcons';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import type { ReviewCycle } from '../../types';
 
-type Filter = 'all' | 'active' | 'done';
+type StatusFilter = 'all' | 'active' | 'done' | 'closed';
+type TypeFilter   = 'all' | 'scheduled' | 'adhoc';
 
 // ─── 사이클별 통계 타입 ──────────────────────────────────────────────────────
 interface CycleData {
@@ -25,6 +26,7 @@ interface CycleData {
   pct: number;
   isDone: boolean;
   isActive: boolean;
+  isClosed: boolean;
   firstMemberId: string;
 }
 
@@ -46,13 +48,13 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
   }
   if (submitted > 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-pink-060">
         <MsClockIcon size={12} /> 작성 중
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-400">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
       <Circle className="w-3.5 h-3.5" /> 미시작
     </span>
   );
@@ -61,11 +63,11 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
 // ─── 테이블 헤더 ─────────────────────────────────────────────────────────────
 function SectionHeader() {
   return (
-    <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-neutral-100 bg-neutral-50/50">
-      <div className="flex-1 text-xs font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-xs font-semibold text-neutral-400 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">상태</div>
+    <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
+      <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-gray-040 uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">상태</div>
       <div className="w-24" />
     </div>
   );
@@ -73,7 +75,8 @@ function SectionHeader() {
 
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
 export function TeamReviewList() {
-  const [filter, setFilter] = useState<Filter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
   const { currentUser } = useAuthStore();
   useSetPageHeader('하향 평가');
   const isAdmin = currentUser?.role === 'admin';
@@ -110,7 +113,7 @@ export function TeamReviewList() {
   if (!isAdmin && teamMembers.length === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-semibold text-neutral-900">하향 평가</h1>
+        <h1 className="text-xl font-semibold text-gray-099">하향 평가</h1>
         <EmptyState
           icon={Users}
           title="등록된 팀원이 없습니다."
@@ -159,19 +162,30 @@ export function TeamReviewList() {
       const isActive   = !isDone && ['self_review', 'manager_review', 'active', 'calibration'].includes(cycle.status);
       const firstMemberId = teamMembers[0]?.id ?? '';
 
-      return { cycle, template, total, submitted, inProgress, pct, isDone, isActive, firstMemberId };
+      return { cycle, template, total, submitted, inProgress, pct, isDone, isActive, isClosed, firstMemberId };
     });
 
-  const active = cycleData.filter(d => d.isActive);
-  const done   = cycleData.filter(d => d.isDone);
+  // 유형 필터 적용
+  const byType = typeFilter === 'all'
+    ? cycleData
+    : cycleData.filter(d => d.cycle.type === typeFilter);
 
-  const TABS: { key: Filter; label: string; count: number }[] = [
-    { key: 'all',    label: '전체',    count: cycleData.length },
+  const active = byType.filter(d => d.isActive);
+  const done   = byType.filter(d => d.isDone && !d.isClosed);
+  const closed = byType.filter(d => d.isClosed);
+
+  const TABS: { key: StatusFilter; label: string; count: number }[] = [
+    { key: 'all',    label: '전체',    count: byType.length },
     { key: 'active', label: '진행 중', count: active.length },
     { key: 'done',   label: '완료',    count: done.length },
+    { key: 'closed', label: '종료됨',  count: closed.length },
   ];
 
-  const filtered = filter === 'active' ? active : filter === 'done' ? done : cycleData;
+  const filtered =
+    statusFilter === 'active' ? active :
+    statusFilter === 'done'   ? done   :
+    statusFilter === 'closed' ? closed :
+    byType;
 
   // ─── 행 컴포넌트 ────────────────────────────────────────────────────────────
   const CycleRow = ({ data }: { data: CycleData }) => {
@@ -187,8 +201,8 @@ export function TeamReviewList() {
         onClick={() => navigate(`/reviews/team/${cycle.id}/${firstMemberId}`)}
         className={`
           group cursor-pointer transition-colors
-          border-b border-neutral-100 last:border-0
-          ${urgent && !isCompleted ? 'bg-primary-50/40 hover:bg-primary-50/70' : 'hover:bg-neutral-50/70'}
+          border-b border-gray-010 last:border-0
+          ${urgent && !isCompleted ? 'bg-pink-005/40 hover:bg-pink-005/70' : 'hover:bg-gray-005/70'}
         `}
       >
         {/* ── 모바일 ── */}
@@ -196,10 +210,10 @@ export function TeamReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               {urgent && !isCompleted && (
-                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
-              <p className={`text-sm font-semibold truncate group-hover:text-primary-700 ${
-                urgent && !isCompleted ? 'text-primary-700' : 'text-neutral-900'
+              <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
+                urgent && !isCompleted ? 'text-pink-060' : 'text-gray-099'
               }`}>
                 {cycle.title}
               </p>
@@ -207,12 +221,12 @@ export function TeamReviewList() {
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               <StatusDot submitted={submitted} total={total} isClosed={isClosed} />
               {cycle && (
-                <p className={`text-xs ${urgent && !isCompleted ? 'text-primary-600 font-medium' : 'text-neutral-400'}`}>
+                <p className={`text-xs ${urgent && !isCompleted ? 'text-pink-050 font-medium' : 'text-gray-040'}`}>
                   {deadlineLabel(cycle.managerReviewDeadline)}
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-neutral-400">
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-040">
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" /> {total}명
               </span>
@@ -220,7 +234,7 @@ export function TeamReviewList() {
                 <MsCheckCircleIcon size={12} /> {submitted}
               </span>
               {inProgress > 0 && (
-                <span className="flex items-center gap-1 text-primary-600">
+                <span className="flex items-center gap-1 text-pink-050">
                   <MsClockIcon size={12} /> {inProgress}
                 </span>
               )}
@@ -239,13 +253,13 @@ export function TeamReviewList() {
           <span className={`
             flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold mt-0.5
             ${isCompleted
-              ? 'text-neutral-400'
+              ? 'text-gray-040'
               : urgent
-                ? 'bg-primary-500 text-white'
-                : 'bg-primary-600 text-white'}
+                ? 'bg-pink-040 text-white'
+                : 'bg-pink-050 text-white'}
           `}>
             {isCompleted ? '결과 보기' : submitted === 0 ? '시작' : '계속'}
-            <MsChevronRightIcon size={12} />
+            <MsChevronRightLineIcon size={12} />
           </span>
         </div>
 
@@ -255,21 +269,21 @@ export function TeamReviewList() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               {urgent && !isCompleted && (
-                <MsWarningIcon size={12} className="text-primary-500 flex-shrink-0" />
+                <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
-              <p className={`text-sm font-semibold truncate group-hover:text-primary-700 ${
-                urgent && !isCompleted ? 'text-primary-700' : 'text-neutral-900'
+              <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
+                urgent && !isCompleted ? 'text-pink-060' : 'text-gray-099'
               }`}>
                 {cycle.title}
               </p>
             </div>
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-400">
+            <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-040">
               <span>{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'}</span>
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" /> {total}명
               </span>
               {inProgress > 0 && (
-                <span className="flex items-center gap-1 text-primary-500">
+                <span className="flex items-center gap-1 text-pink-040">
                   <MsClockIcon size={12} /> 작성 중 {inProgress}
                 </span>
               )}
@@ -281,7 +295,7 @@ export function TeamReviewList() {
             {!isCompleted ? (
               <div>
                 <ProgressBar value={pct} max={100} size="sm" />
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-xs text-gray-040 mt-1">
                   {submitted}/{total} 완료
                 </p>
               </div>
@@ -292,10 +306,10 @@ export function TeamReviewList() {
 
           {/* 마감일 */}
           <div className="w-28 flex-shrink-0 text-right">
-            <p className={`text-xs font-medium ${urgent && !isCompleted ? 'text-primary-600' : 'text-neutral-600'}`}>
+            <p className={`text-xs font-medium ${urgent && !isCompleted ? 'text-pink-050' : 'text-gray-060'}`}>
               {deadlineLabel(cycle.managerReviewDeadline)}
             </p>
-            <p className="text-xs text-neutral-400 mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
+            <p className="text-xs text-gray-040 mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
           </div>
 
           {/* 상태 */}
@@ -309,7 +323,7 @@ export function TeamReviewList() {
               <button
                 onClick={e => { e.stopPropagation(); exportCycleToCSV(cycle, template, submissions, users); }}
                 title="엑셀 다운로드"
-                className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-040 hover:text-gray-070 hover:bg-gray-010 rounded-lg transition-colors"
               >
                 <MsDownloadIcon size={12} />
               </button>
@@ -318,15 +332,15 @@ export function TeamReviewList() {
               <span className={`
                 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
                 ${urgent
-                  ? 'bg-primary-500 text-white group-hover:bg-primary-600'
-                  : 'bg-primary-600 text-white group-hover:bg-primary-700'}
+                  ? 'bg-pink-040 text-white group-hover:bg-pink-050'
+                  : 'bg-pink-050 text-white group-hover:bg-pink-060'}
               `}>
                 {submitted === 0 ? '시작하기' : '이어서 작성'}
-                <MsChevronRightIcon size={12} />
+                <MsChevronRightLineIcon size={12} />
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-neutral-400 group-hover:text-neutral-600">
-                결과 보기 <MsChevronRightIcon size={12} />
+              <span className="inline-flex items-center gap-1 text-xs text-gray-040 group-hover:text-gray-060">
+                결과 보기 <MsChevronRightLineIcon size={12} />
               </span>
             )}
           </div>
@@ -339,27 +353,47 @@ export function TeamReviewList() {
 
   return (
     <div className="space-y-5">
-      {/* 필터 탭 */}
+      {/* 필터 영역 */}
       {cycleData.length > 0 && (
-        <div className="flex gap-6 border-b border-[#dee2e6]">
-          {TABS.map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
-                filter === key
-                  ? 'border-[#212529] text-[#212529]'
-                  : 'border-transparent text-[#adb5bd] hover:text-[#868e96]'
-              }`}
-            >
-              {label}
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                filter === key ? 'bg-[#212529] text-white' : 'bg-zinc-100 text-[#adb5bd]'
-              }`}>
-                {count}
-              </span>
-            </button>
-          ))}
+        <div className="space-y-3">
+          {/* 상태 탭 */}
+          <div className="flex gap-6 border-b border-gray-020">
+            {TABS.map(({ key, label, count }) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={`flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                  statusFilter === key
+                    ? 'border-gray-099 text-gray-099'
+                    : 'border-transparent text-gray-030 hover:text-gray-050'
+                }`}
+              >
+                {label}
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                  statusFilter === key ? 'bg-gray-099 text-white' : 'bg-gray-010 text-gray-030'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* 유형 칩 */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-040 font-medium">유형</span>
+            {(['all', 'scheduled', 'adhoc'] as TypeFilter[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  typeFilter === t
+                    ? 'bg-gray-099 text-white'
+                    : 'bg-gray-010 text-gray-050 hover:bg-gray-020'
+                }`}
+              >
+                {t === 'all' ? '전체' : t === 'scheduled' ? '정기' : '수시'}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -368,23 +402,24 @@ export function TeamReviewList() {
         <EmptyState
           icon={Users}
           title={
-            filter === 'active' ? '진행 중인 팀원 평가가 없습니다.' :
-            filter === 'done'   ? '완료한 팀원 평가가 없습니다.' :
+            statusFilter === 'active' ? '진행 중인 팀원 평가가 없습니다.' :
+            statusFilter === 'done'   ? '완료한 팀원 평가가 없습니다.' :
+            statusFilter === 'closed' ? '종료된 팀원 평가가 없습니다.' :
             '진행 중인 팀원 평가가 없습니다.'
           }
           description={
-            filter === 'all'
+            statusFilter === 'all'
               ? '리뷰가 시작되면 여기에 표시됩니다.'
               : '다른 필터를 선택해 보세요.'
           }
         />
-      ) : filter === 'all' ? (
-        /* 전체: 진행 중 / 완료 섹션 분리 */
+      ) : statusFilter === 'all' ? (
+        /* 전체: 진행 중 / 완료 / 종료됨 섹션 분리 */
         <>
           {active.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2 px-1">진행 중</p>
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-card overflow-hidden">
+              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">진행 중</p>
+              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
                 <SectionHeader />
                 {active.map(d => <CycleRow key={d.cycle.id} data={d} />)}
               </div>
@@ -392,17 +427,26 @@ export function TeamReviewList() {
           )}
           {done.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2 px-1">완료</p>
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-card overflow-hidden">
+              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">완료</p>
+              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
                 <SectionHeader />
                 {done.map(d => <CycleRow key={d.cycle.id} data={d} />)}
+              </div>
+            </div>
+          )}
+          {closed.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">종료됨</p>
+              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+                <SectionHeader />
+                {closed.map(d => <CycleRow key={d.cycle.id} data={d} />)}
               </div>
             </div>
           )}
         </>
       ) : (
         /* 단독 필터 */
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-card overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
           <SectionHeader />
           {filtered.map(d => <CycleRow key={d.cycle.id} data={d} />)}
         </div>

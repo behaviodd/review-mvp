@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 
 interface PageHeader {
   title: string;
+  subtitle?: ReactNode;
   actions?: ReactNode;
+  onBack?: () => void;
 }
 
 const PageHeaderContext = createContext<{
@@ -21,15 +23,19 @@ export function PageHeaderProvider({ children }: { children: ReactNode }) {
 
 /**
  * Call from a page component to set the header title and optional action buttons.
- * Pass memoized JSX for `actions` to avoid re-render loops.
+ * Pass memoized JSX for `actions`/`subtitle` to avoid re-render loops.
  */
-export function useSetPageHeader(title: string, actions?: ReactNode) {
+export function useSetPageHeader(
+  title: string,
+  actions?: ReactNode,
+  options?: { subtitle?: ReactNode; onBack?: () => void },
+) {
   const { setHeader } = useContext(PageHeaderContext);
   useEffect(() => {
-    setHeader({ title, actions });
+    setHeader({ title, actions, subtitle: options?.subtitle, onBack: options?.onBack });
     return () => setHeader({ title: '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, actions]);
+  }, [title, actions, options?.subtitle, options?.onBack]);
 }
 
 export function usePageHeader() {

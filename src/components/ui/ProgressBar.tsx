@@ -10,9 +10,9 @@ interface Props {
 }
 
 const FILL = {
-  primary: 'bg-indigo-600',
-  success: 'bg-emerald-500',
-  danger:  'bg-red-500',
+  primary: 'bg-pink-040',
+  success: 'bg-green-040',
+  danger:  'bg-red-040',
 };
 
 export function ProgressBar({ value, max = 100, label, showPercent, size = 'md', color = 'auto' }: Props) {
@@ -25,11 +25,11 @@ export function ProgressBar({ value, max = 100, label, showPercent, size = 'md',
     <div className="w-full">
       {(label || showPercent) && (
         <div className="flex justify-between items-center mb-1.5">
-          {label       && <span className="text-xs/5 text-zinc-600">{label}</span>}
-          {showPercent && <span className="text-xs/5 font-medium text-zinc-700">{Math.round(pct)}%</span>}
+          {label       && <span className="text-xs/5 text-gray-060">{label}</span>}
+          {showPercent && <span className="text-xs/5 font-medium text-gray-070">{Math.round(pct)}%</span>}
         </div>
       )}
-      <div className={cn('w-full bg-zinc-200 rounded-full overflow-hidden', h)}>
+      <div className={cn('w-full bg-gray-020 rounded-full overflow-hidden', h)}>
         <div
           className={cn('h-full rounded-full transition-all duration-500', fill)}
           style={{ width: `${pct}%` }}

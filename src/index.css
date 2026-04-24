@@ -2,14 +2,219 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Makestar DS Semantic Tokens ─────────────────────────────── */
+:root {
+  /* Foreground */
+  --token-fg-default:                  #111417;
+  --token-fg-subtle:                   #6d7f92;
+  --token-fg-subtlest:                 #8a99a8;
+  --token-fg-disabled:                 rgba(45, 53, 61, 0.24);
+  --token-fg-selected:                 #a3daf5;
+  --token-fg-focused:                  #19a1e6;
+  --token-fg-danger-default:           #e61919;
+  --token-fg-danger-bolder:            #6e0c0c;
+  --token-fg-warning-default:          #b89f14;
+  --token-fg-warning-bolder:           #5c500a;
+  --token-fg-success-default:          #20903c;
+  --token-fg-success-bolder:           #0e541d;
+  --token-fg-info-default:             #1482b8;
+  --token-fg-info-bolder:              #0b4765;
+  --token-fg-inverse-default:          #fcfdfd;
+  --token-fg-inverse-subtle:           #6d7f92;
+  --token-fg-inverse-subtlest:         #4c5a66;
+  --token-fg-inverse-disabled:         rgba(31, 36, 42, 0.36);
+  --token-fg-inverse-selected:         #19a1e6;
+  --token-fg-inverse-focused:          #a3daf5;
+  --token-fg-inverse-danger-default:   #e93939;
+  --token-fg-inverse-danger-bolder:    #f28c8c;
+  --token-fg-inverse-warning-default:  #e8ca30;
+  --token-fg-inverse-warning-bolder:   #f3e28c;
+  --token-fg-inverse-success-default:  #39c661;
+  --token-fg-inverse-success-bolder:   #87e89e;
+  --token-fg-inverse-info-default:     #35ade9;
+  --token-fg-inverse-info-bolder:      #a3daf5;
+
+  /* Foreground — brand & accent */
+  --token-fg-accent-brand1-default:    #ff4d89;
+  --token-fg-accent-brand1-bolder:     #b7154b;
+  --token-fg-accent-brand1-subtle:     #f5a3be;
+  --token-fg-accent-brand1-subtlest:   #fad1df;
+  --token-fg-accent-brand1-disabled:   #fad1df;
+  --token-fg-accent-brand2-default:    #863dff;
+  --token-fg-accent-brand2-bolder:     #5207cf;
+  --token-fg-accent-brand2-subtle:     #c099ff;
+  --token-fg-accent-brand2-subtlest:   #d9c6fb;
+  --token-fg-accent-brand2-disabled:   #d9c6fb;
+  --token-fg-accent-gray-default:      #6d7f92;
+  --token-fg-accent-gray-bolder:       #3b454f;
+  --token-fg-accent-gray-disabled:     #e1e6ea;
+  --token-fg-accent-blue-default:      #1482b8;
+  --token-fg-accent-blue-bolder:       #0b4765;
+  --token-fg-accent-blue-disabled:     #e8f6fd;
+  --token-fg-accent-green-default:     #20903c;
+  --token-fg-accent-green-bolder:      #0e541d;
+  --token-fg-accent-green-disabled:    #e3fce8;
+  --token-fg-accent-indigo-default:    #144bb8;
+  --token-fg-accent-indigo-bolder:     #0a2760;
+  --token-fg-accent-orange-default:    #e65019;
+  --token-fg-accent-orange-bolder:     #63240e;
+  --token-fg-accent-orange-disabled:   #fdeee8;
+  --token-fg-accent-red-default:       #e61919;
+  --token-fg-accent-red-bolder:        #6e0c0c;
+  --token-fg-accent-red-disabled:      #f7baba;
+  --token-fg-accent-yellow-default:    #b89f14;
+  --token-fg-accent-yellow-bolder:     #5c500a;
+  --token-fg-accent-yellow-disabled:   #fdf9e8;
+
+  /* Background */
+  --token-bg-default:                  #fcfdfd;
+  --token-bg-subtle:                   #f0f3f4;
+  --token-bg-subtlest:                 #e1e6ea;
+  --token-bg-disabled:                 rgba(109, 127, 146, 0.08);
+  --token-bg-selected:                 #f5a3be;
+  --token-bg-focused:                  #99b7f5;
+  --token-bg-danger:                   #b81414;
+  --token-bg-info:                     #1482b8;
+  --token-bg-success:                  #20903c;
+  --token-bg-warning:                  #b89f14;
+  --token-bg-inverse-default:          #2d353d;
+  --token-bg-inverse-subtle:           #1f242a;
+  --token-bg-inverse-subtlest:         rgba(76, 90, 102, 0.32);
+  --token-bg-inverse-disabled:         rgba(59, 69, 79, 0.20);
+  --token-bg-inverse-selected:         #b7154b;
+  --token-bg-inverse-focused:          #144bb8;
+  --token-bg-inverse-danger:           #e93939;
+  --token-bg-inverse-info:             #35ade9;
+  --token-bg-inverse-success:          #39c661;
+  --token-bg-inverse-warning:          #e8ca30;
+
+  /* Background — brand & accent */
+  --token-bg-accent-brand1-default:    #ff4d89;
+  --token-bg-accent-brand1-hovered:    #e5195e;
+  --token-bg-accent-brand1-pressed:    #b7154b;
+  --token-bg-accent-brand1-disabled:   #fad1df;
+  --token-bg-accent-brand1-subtle:     #f5a3be;
+  --token-bg-accent-brand1-subtlest:   #fce8ef;
+  --token-bg-accent-brand2-default:    #863dff;
+  --token-bg-accent-brand2-hovered:    #6204fb;
+  --token-bg-accent-brand2-pressed:    #5207cf;
+  --token-bg-accent-brand2-disabled:   #d9c6fb;
+  --token-bg-accent-brand2-subtle:     #c099ff;
+  --token-bg-accent-brand2-subtlest:   #efe8fd;
+  --token-bg-accent-gray-default:      #c4cdd4;
+  --token-bg-accent-gray-hovered:      #a7b3be;
+  --token-bg-accent-gray-pressed:      #8a99a8;
+  --token-bg-accent-gray-disabled:     #e1e6ea;
+  --token-bg-accent-gray-subtle:       #e1e6ea;
+  --token-bg-accent-gray-subtlest:     #f0f3f4;
+  --token-bg-accent-blue-default:      #19a1e6;
+  --token-bg-accent-blue-hovered:      #1482b8;
+  --token-bg-accent-blue-pressed:      #0f628a;
+  --token-bg-accent-blue-disabled:     #e8f6fd;
+  --token-bg-accent-blue-subtle:       #a3daf5;
+  --token-bg-accent-blue-subtlest:     #e8f6fd;
+  --token-bg-accent-green-default:     #2cac4e;
+  --token-bg-accent-green-hovered:     #20903c;
+  --token-bg-accent-green-pressed:     #16732c;
+  --token-bg-accent-green-disabled:    #e3fce8;
+  --token-bg-accent-green-subtle:      #87e89e;
+  --token-bg-accent-green-subtlest:    #e3fce8;
+  --token-bg-accent-indigo-default:    #195ee6;
+  --token-bg-accent-indigo-hovered:    #144bb8;
+  --token-bg-accent-indigo-pressed:    #113f9b;
+  --token-bg-accent-indigo-disabled:   #e8effd;
+  --token-bg-accent-orange-default:    #e65019;
+  --token-bg-accent-orange-hovered:    #c04416;
+  --token-bg-accent-orange-pressed:    #913412;
+  --token-bg-accent-orange-disabled:   #fad5c7;
+  --token-bg-accent-orange-subtle:     #f6b8a0;
+  --token-bg-accent-orange-subtlest:   #fdeee8;
+  --token-bg-accent-red-default:       #e93939;
+  --token-bg-accent-red-hovered:       #e61919;
+  --token-bg-accent-red-pressed:       #b81414;
+  --token-bg-accent-red-disabled:      #f7baba;
+  --token-bg-accent-red-subtle:        #f28c8c;
+  --token-bg-accent-red-subtlest:      #fde8e8;
+  --token-bg-accent-yellow-default:    #ddbd18;
+  --token-bg-accent-yellow-hovered:    #b89f14;
+  --token-bg-accent-yellow-pressed:    #8a780f;
+  --token-bg-accent-yellow-disabled:   #fdf9e8;
+  --token-bg-accent-yellow-subtle:     #f3e28c;
+  --token-bg-accent-yellow-subtlest:   #fdf9e8;
+
+  /* Border */
+  --token-border-default:              #e1e6ea;
+  --token-border-subtle:               #f0f3f4;
+  --token-border-subtlest:             rgba(59, 69, 79, 0.20);
+  --token-border-disabled:             rgba(59, 69, 79, 0.20);
+  --token-border-selected:             #19a1e6;
+  --token-border-focused:              #a3daf5;
+  --token-border-overlay:              rgba(59, 69, 79, 0.20);
+  --token-border-danger:               #e61919;
+  --token-border-info:                 #1482b8;
+  --token-border-success:              #20903c;
+  --token-border-warning:              #b89f14;
+  --token-border-inverse-default:      #2d353d;
+  --token-border-inverse-subtle:       #1f242a;
+  --token-border-inverse-subtlest:     rgba(45, 53, 61, 0.24);
+  --token-border-inverse-disabled:     rgba(31, 36, 42, 0.36);
+  --token-border-inverse-selected:     #a3daf5;
+  --token-border-inverse-focused:      #19a1e6;
+  --token-border-inverse-danger:       #e93939;
+  --token-border-inverse-success:      #39c661;
+  --token-border-inverse-warning:      #e8ca30;
+
+  /* Border — brand & accent */
+  --token-border-accent-brand1-default:   #ff4d89;
+  --token-border-accent-brand1-subtle:    #f5a3be;
+  --token-border-accent-brand1-subtlest:  #fad1df;
+  --token-border-accent-brand1-disabled:  #fad1df;
+  --token-border-accent-brand2-default:   #863dff;
+  --token-border-accent-brand2-subtle:    #c099ff;
+  --token-border-accent-brand2-subtlest:  #d9c6fb;
+  --token-border-accent-brand2-disabled:  #d9c6fb;
+  --token-border-accent-gray-default:     #a7b3be;
+  --token-border-accent-gray-subtle:      #c4cdd4;
+  --token-border-accent-gray-subtlest:    #e1e6ea;
+  --token-border-accent-blue-default:     #19a1e6;
+  --token-border-accent-blue-subtle:      #6cc3ef;
+  --token-border-accent-blue-subtlest:    #a3daf5;
+  --token-border-accent-blue-disabled:    #c8e9f9;
+  --token-border-accent-green-default:    #2cac4e;
+  --token-border-accent-green-subtle:     #5ed97e;
+  --token-border-accent-green-subtlest:   #87e89e;
+  --token-border-accent-green-disabled:   #b3f4c1;
+  --token-border-accent-indigo-default:   #195ee6;
+  --token-border-accent-indigo-subtle:    #6b98f0;
+  --token-border-accent-orange-default:   #e65019;
+  --token-border-accent-orange-subtle:    #f6b8a0;
+  --token-border-accent-red-default:      #e93939;
+  --token-border-accent-red-subtle:       #f28c8c;
+  --token-border-accent-red-subtlest:     #f7baba;
+  --token-border-accent-yellow-default:   #e8ca30;
+  --token-border-accent-yellow-subtle:    #eed660;
+  --token-border-accent-yellow-subtlest:  #f3e28c;
+
+  /* Interaction & Elevation */
+  --token-interaction-hovered:         rgba(109, 127, 146, 0.08);
+  --token-interaction-pressed:         rgba(59, 69, 79, 0.20);
+  --token-blanket:                     rgba(0, 0, 0, 0.47);
+  --token-elevated-shadow-overlay:     rgba(17, 20, 23, 0.44);
+  --token-elevated-shadow-raised:      rgba(59, 69, 79, 0.20);
+  --token-elevated-surface-default:    #ffffff;
+  --token-elevated-surface-overlay:    #fcfdfd;
+  --token-elevated-surface-raised:     #fcfdfd;
+  --token-elevated-surface-sunken:     #e1e6ea;
+}
+
 /* ─── Base ────────────────────────────────────────────────────── */
 html { font-size: 16px; }
 
 body {
-  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #F3F4F6;
-  color: #111827;
+  background: var(--token-bg-subtle);
+  color: var(--token-fg-default);
   line-height: 1.5;
   overflow-x: hidden;
 }
@@ -21,20 +226,48 @@ a, button, [role="button"], select, input, textarea {
 
 /* ─── Component Utilities ─────────────────────────────────────── */
 @layer components {
-  .card        { @apply bg-white rounded-xl border border-neutral-200/80 shadow-card; }
-  .btn-primary { @apply inline-flex items-center gap-2 px-3.5 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors; }
-  .btn-subtle  { @apply inline-flex items-center gap-2 px-3.5 py-2 bg-neutral-100 text-neutral-700 text-sm font-medium rounded-lg hover:bg-neutral-200 transition-colors; }
-  .input       { @apply w-full px-3 py-2 bg-white border border-neutral-300 rounded-lg text-sm text-neutral-950 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors; }
+  .card {
+    @apply bg-white rounded-xl shadow-card;
+    border: 1px solid var(--token-border-default);
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-3.5 py-2 text-white text-sm font-medium rounded-lg transition-colors;
+    background-color: var(--token-bg-accent-brand1-default);
+  }
+  .btn-primary:hover  { background-color: var(--token-bg-accent-brand1-hovered); }
+  .btn-primary:active { background-color: var(--token-bg-accent-brand1-pressed); }
+
+  .btn-subtle {
+    @apply inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-lg transition-colors;
+    background-color: var(--token-bg-subtle);
+    color: var(--token-fg-default);
+  }
+  .btn-subtle:hover { background-color: var(--token-bg-subtlest); }
+
+  .input {
+    @apply w-full px-3 py-2 bg-white text-sm rounded-lg transition-colors;
+    color: var(--token-fg-default);
+    border: 1px solid var(--token-border-default);
+  }
+  .input::placeholder { color: var(--token-fg-subtlest); }
+  .input:focus {
+    outline: none;
+    border-color: var(--token-border-accent-brand1-default);
+    box-shadow: 0 0 0 2px var(--token-border-accent-brand1-subtlest);
+  }
 }
 
 /* ─── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #d4d4d8; border-radius: 3px; }  /* zinc-300 */
-::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }                 /* zinc-400 */
+::-webkit-scrollbar-thumb  { background: #c4cdd4; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a7b3be; }
 
 /* ─── Focus ───────────────────────────────────────────────────── */
-:focus-visible { outline: 2px solid #FF4D89; outline-offset: 2px; }
+:focus-visible {
+  outline: 2px solid var(--token-fg-accent-brand1-default);
+  outline-offset: 2px;
+}
 
 /* ─── Animations ──────────────────────────────────────────────── */
 @keyframes fadeSlideDown {

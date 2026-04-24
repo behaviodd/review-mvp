@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { safeStorage } from '../utils/safeStorage';
 import type { Notification } from '../types';
 
 interface NotificationState {
@@ -21,6 +22,9 @@ export const useNotificationStore = create<NotificationState>()(
         set(s => ({ notifications: s.notifications.map(n => n.userId === userId ? { ...n, isRead: true } : n) })),
       getUnread: (userId) => get().notifications.filter(n => n.userId === userId && !n.isRead),
     }),
-    { name: 'review-notifications-v2' }
+    {
+      name: 'review-notifications-v2',
+      storage: createJSONStorage(() => safeStorage),
+    }
   )
 );

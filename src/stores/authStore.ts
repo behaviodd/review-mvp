@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { safeStorage } from '../utils/safeStorage';
 import type { User } from '../types';
 
 interface AuthState {
@@ -20,6 +21,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ currentUser: null, mustChangePassword: false }),
       clearMustChangePassword: () => set({ mustChangePassword: false }),
     }),
-    { name: 'review-auth' }
+    {
+      name: 'review-auth',
+      storage: createJSONStorage(() => safeStorage),
+    }
   )
 );

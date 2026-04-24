@@ -5,12 +5,12 @@ import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
 import { AlignLeft, List, BarChart2, Brain } from 'lucide-react';
 import {
-  MsChevronLeftIcon, MsPlusIcon, MsDeleteIcon, MsGrabIcon,
+  MsChevronLeftLineIcon, MsPlusIcon, MsDeleteIcon, MsGrabIcon,
   MsLockIcon, MsCancelIcon, MsCheckIcon, MsEditIcon,
 } from '../../components/ui/MsIcons';
 import type { TemplateQuestion, TemplateSection } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
-import { MsCheckbox } from '../../components/ui/MsControl';
+import { MsCheckbox, MsInput } from '../../components/ui/MsControl';
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -54,11 +54,17 @@ export function TemplateBuilder() {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const { currentUser } = useAuthStore();
-  const { templates, addTemplate, updateTemplate } = useReviewStore();
+  const { templates, cycles, addTemplate, updateTemplate } = useReviewStore();
   const showToast = useShowToast();
 
   const isNew = templateId === 'new';
   const existing = !isNew ? templates.find(t => t.id === templateId) : undefined;
+  const activeUsingCount = !isNew && templateId
+    ? cycles.filter(c => c.templateId === templateId && !c.archivedAt && c.status !== 'closed' && c.status !== 'draft').length
+    : 0;
+  const historicalCount = !isNew && templateId
+    ? cycles.filter(c => c.templateId === templateId && (c.status === 'closed' || c.status === 'draft' || c.archivedAt)).length
+    : 0;
 
   const [name,        setName]        = useState(existing?.name        ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
@@ -166,15 +172,15 @@ export function TemplateBuilder() {
   const totalQuestions = questions.length;
 
   return (
-    <div className="flex flex-col min-h-full bg-neutral-50">
+    <div className="flex flex-col min-h-full bg-gray-005">
 
       {/* ── Top toolbar ───────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-neutral-200 flex-shrink-0 shadow-sm sticky top-0 z-20">
+      <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-gray-020 flex-shrink-0 shadow-sm sticky top-0 z-20">
         <button
           onClick={() => navigate('/cycles')}
-          className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600"
+          className="p-1.5 hover:bg-gray-010 rounded-lg transition-colors text-gray-060"
         >
-          <MsChevronLeftIcon size={20} />
+          <MsChevronLeftLineIcon size={20} />
         </button>
 
         <div className="flex-1 min-w-0">
@@ -187,8 +193,8 @@ export function TemplateBuilder() {
               placeholder="템플릿 이름을 입력하세요"
               className={`text-base font-semibold bg-transparent border-0 border-b-2 focus:outline-none px-0 py-0.5 w-64 transition-colors ${
                 nameError
-                  ? 'border-danger-400 text-danger-700 placeholder:text-danger-300'
-                  : 'border-transparent hover:border-neutral-300 focus:border-primary-500 text-neutral-900 placeholder:text-neutral-400'
+                  ? 'border-red-040 text-red-060 placeholder:text-red-020'
+                  : 'border-transparent hover:border-gray-030 focus:border-pink-040 text-gray-099 placeholder:text-gray-040'
               }`}
             />
             <input
@@ -196,14 +202,26 @@ export function TemplateBuilder() {
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="설명 (선택)"
-              className="text-sm bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-neutral-200 focus:border-primary-400 text-neutral-500 placeholder:text-neutral-300 transition-colors"
+              className="text-sm bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-gray-020 focus:border-pink-040 text-gray-050 placeholder:text-gray-030 transition-colors"
             />
           </div>
-          {nameError && <p className="text-xs text-danger-600 mt-0.5">{nameError}</p>}
+          {nameError && <p className="text-xs text-red-050 mt-0.5">{nameError}</p>}
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-neutral-400">{totalQuestions}개 문항</span>
+          {!isNew && (activeUsingCount > 0 || historicalCount > 0) && (
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                activeUsingCount > 0
+                  ? 'bg-orange-005 text-orange-070 border-orange-020'
+                  : 'bg-gray-005 text-gray-060 border-gray-010'
+              }`}
+              title={activeUsingCount > 0 ? '진행 중인 사이클이 있습니다. 변경 시 기존 사이클은 발행 시점 스냅샷을 그대로 사용하지만, 신규 발행 사이클부터 변경 내용이 반영됩니다.' : ''}
+            >
+              사용 중 진행 {activeUsingCount} · 과거 {historicalCount}
+            </span>
+          )}
+          <span className="text-xs text-gray-040">{totalQuestions}개 문항</span>
           <MsButton onClick={handleSave} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
             {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
           </MsButton>
@@ -233,14 +251,14 @@ export function TemplateBuilder() {
                       onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === 'Escape') setEditingSectionId(null);
                       }}
-                      className="text-sm font-semibold text-neutral-900 bg-white border border-primary-400 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-100 w-64"
+                      className="text-sm font-semibold text-gray-099 bg-white border border-pink-040 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-010 w-64"
                     />
                   ) : (
                     <button
                       onClick={() => setEditingSectionId(section.id)}
-                      className="flex items-center gap-2 text-sm font-semibold text-neutral-800 hover:text-primary-600 transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-080 hover:text-pink-050 transition-colors"
                     >
-                      <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-pink-040 flex-shrink-0" />
                       {section.name}
                       <MsEditIcon size={12} className="opacity-0 group-hover:opacity-60 transition-opacity" />
                     </button>
@@ -249,7 +267,7 @@ export function TemplateBuilder() {
                 <button
                   onClick={() => deleteSection(section.id)}
                   disabled={sections.length <= 1}
-                  className="p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-lg transition-colors disabled:opacity-0 disabled:pointer-events-none"
+                  className="p-1.5 text-gray-030 hover:text-red-040 hover:bg-red-005 rounded-lg transition-colors disabled:opacity-0 disabled:pointer-events-none"
                   title="섹션 삭제"
                 >
                   <MsDeleteIcon size={12} />
@@ -264,12 +282,12 @@ export function TemplateBuilder() {
                   <div
                     key={q.id}
                     className={`bg-white rounded-xl border shadow-sm transition-shadow hover:shadow-md ${
-                      questionErrors[q.id] ? 'border-danger-300' : 'border-neutral-200'
+                      questionErrors[q.id] ? 'border-red-020' : 'border-gray-020'
                     }`}
                   >
                     {/* Question header */}
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
-                      <button className="text-neutral-300 cursor-grab active:cursor-grabbing hover:text-neutral-400 transition-colors">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-010">
+                      <button className="text-gray-030 cursor-grab active:cursor-grabbing hover:text-gray-040 transition-colors">
                         <MsGrabIcon size={16} />
                       </button>
                       <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center flex-shrink-0 ${ti.bg} ${ti.color}`}>
@@ -289,7 +307,7 @@ export function TemplateBuilder() {
                             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg transition-colors ${
                               q.type === val
                                 ? `${ti.bg} ${ti.color} font-semibold`
-                                : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'
+                                : 'text-gray-040 hover:bg-gray-010 hover:text-gray-060'
                             }`}
                           >
                             <Icon className="w-3 h-3" />
@@ -300,7 +318,7 @@ export function TemplateBuilder() {
                       <button
                         onClick={() => removeQ(q.id)}
                         disabled={sectionQs.length <= 1 && sections.length <= 1}
-                        className="p-1.5 text-neutral-300 hover:text-danger-400 hover:bg-danger-50 rounded-lg transition-colors disabled:opacity-0"
+                        className="p-1.5 text-gray-030 hover:text-red-040 hover:bg-red-005 rounded-lg transition-colors disabled:opacity-0"
                       >
                         <MsDeleteIcon size={12} />
                       </button>
@@ -308,7 +326,7 @@ export function TemplateBuilder() {
 
                     {/* Question body */}
                     <div className="px-4 py-4 space-y-3">
-                      <input
+                      <MsInput
                         type="text"
                         value={q.text}
                         onChange={e => {
@@ -317,15 +335,8 @@ export function TemplateBuilder() {
                         }}
                         onBlur={() => { if (!q.text.trim()) setQuestionErrors(er => ({ ...er, [q.id]: '질문 내용을 입력해주세요.' })); }}
                         placeholder="질문 내용을 입력하세요"
-                        className={`w-full px-3.5 py-2.5 border rounded-lg bg-neutral-50 text-sm focus:outline-none focus:ring-2 focus:bg-white transition-colors ${
-                          questionErrors[q.id]
-                            ? 'border-danger-400 focus:ring-danger-100'
-                            : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-100'
-                        }`}
+                        error={questionErrors[q.id]}
                       />
-                      {questionErrors[q.id] && (
-                        <p className="text-xs text-danger-600 -mt-1">{questionErrors[q.id]}</p>
-                      )}
 
                       {/* Multiple choice options */}
                       {q.type === 'multiple_choice' && (
@@ -334,12 +345,12 @@ export function TemplateBuilder() {
                             size="md"
                             checked={q.allowMultiple ?? false}
                             onChange={e => updateQ(q.id, { allowMultiple: e.target.checked })}
-                            label={<span className="text-xs text-neutral-600 font-medium">복수 선택 가능</span>}
+                            label={<span className="text-xs text-gray-060 font-medium">복수 선택 가능</span>}
                           />
                           <div className="space-y-1.5">
                             {(q.options ?? []).map((opt, oi) => (
                               <div key={oi} className="flex items-center gap-2">
-                                <span className={`w-4 h-4 flex-shrink-0 border border-neutral-300 ${q.allowMultiple ? 'rounded' : 'rounded-full'}`} />
+                                <span className={`w-4 h-4 flex-shrink-0 border border-gray-030 ${q.allowMultiple ? 'rounded' : 'rounded-full'}`} />
                                 <input
                                   type="text"
                                   value={opt}
@@ -349,7 +360,7 @@ export function TemplateBuilder() {
                                     updateQ(q.id, { options: next });
                                   }}
                                   placeholder={`보기 ${oi + 1}`}
-                                  className="flex-1 px-3 py-1.5 border border-neutral-200 rounded-lg bg-neutral-50 text-xs focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white"
+                                  className="flex-1 px-3 py-1.5 border border-gray-020 rounded-lg bg-gray-005 text-xs focus:outline-none focus:ring-2 focus:ring-pink-010 focus:bg-white"
                                 />
                                 {(q.options ?? []).length > 2 && (
                                   <button
@@ -359,7 +370,7 @@ export function TemplateBuilder() {
                                       next.splice(oi, 1);
                                       updateQ(q.id, { options: next });
                                     }}
-                                    className="p-1 text-neutral-300 hover:text-danger-400 transition-colors"
+                                    className="p-1 text-gray-030 hover:text-red-040 transition-colors"
                                   >
                                     <MsCancelIcon size={12} />
                                   </button>
@@ -369,7 +380,7 @@ export function TemplateBuilder() {
                             <button
                               type="button"
                               onClick={() => updateQ(q.id, { options: [...(q.options ?? []), ''] })}
-                              className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors mt-1"
+                              className="flex items-center gap-1 text-xs text-pink-050 hover:text-pink-060 transition-colors mt-1"
                             >
                               <MsPlusIcon size={12} /> 보기 추가
                             </button>
@@ -378,15 +389,15 @@ export function TemplateBuilder() {
                       )}
 
                       {q.type === 'rating' && (
-                        <p className="text-xs text-neutral-400 pl-1">1–5점 척도로 표시됩니다.</p>
+                        <p className="text-xs text-gray-040 pl-1">1–5점 척도로 표시됩니다.</p>
                       )}
 
-                      <input
+                      <MsInput
+                        size="sm"
                         type="text"
                         value={q.helpText ?? ''}
                         onChange={e => updateQ(q.id, { helpText: e.target.value })}
                         placeholder="도움말 (선택) — 질문의 의도나 작성 가이드"
-                        className="w-full px-3.5 py-2 border border-neutral-100 rounded-lg text-xs text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-neutral-300"
                       />
 
                       <div className="flex items-center gap-4 pt-1">
@@ -394,13 +405,13 @@ export function TemplateBuilder() {
                           size="md"
                           checked={q.isRequired}
                           onChange={e => updateQ(q.id, { isRequired: e.target.checked })}
-                          label={<span className="text-xs text-neutral-600">필수</span>}
+                          label={<span className="text-xs text-gray-060">필수</span>}
                         />
                         <MsCheckbox
                           size="md"
                           checked={q.isPrivate}
                           onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
-                          label={<span className="flex items-center gap-1 text-xs text-neutral-600"><MsLockIcon size={12} className="text-neutral-400" />매니저 전용</span>}
+                          label={<span className="flex items-center gap-1 text-xs text-gray-060"><MsLockIcon size={12} className="text-gray-040" />매니저 전용</span>}
                         />
                         <div className="flex gap-1 ml-auto">
                           {TARGETS.map(({ val, label }) => (
@@ -410,8 +421,8 @@ export function TemplateBuilder() {
                               onClick={() => updateQ(q.id, { target: val })}
                               className={`px-2.5 py-0.5 text-xs rounded-lg transition-colors ${
                                 q.target === val
-                                  ? 'bg-neutral-800 text-white font-medium'
-                                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                                  ? 'bg-gray-080 text-white font-medium'
+                                  : 'bg-gray-010 text-gray-050 hover:bg-gray-020'
                               }`}
                             >
                               {label}
@@ -428,7 +439,7 @@ export function TemplateBuilder() {
               {/* 섹션 내 질문 추가 */}
               <button
                 onClick={() => addQ(section.id)}
-                className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-sm text-neutral-400 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50/50 transition-all flex items-center justify-center gap-2 group"
+                className="w-full py-3 border-2 border-dashed border-gray-020 rounded-xl text-sm text-gray-040 hover:border-pink-030 hover:text-pink-050 hover:bg-pink-005/50 transition-all flex items-center justify-center gap-2 group"
               >
                 <MsPlusIcon size={16} className="group-hover:scale-110 transition-transform" />
                 질문 추가
@@ -440,7 +451,7 @@ export function TemplateBuilder() {
         {/* 섹션 추가 */}
         <button
           onClick={addSection}
-          className="w-full py-3.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-neutral-500 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50/30 transition-all flex items-center justify-center gap-2 font-medium"
+          className="w-full py-3.5 border-2 border-dashed border-gray-030 rounded-xl text-sm text-gray-050 hover:border-pink-040 hover:text-pink-050 hover:bg-pink-005/30 transition-all flex items-center justify-center gap-2 font-medium"
         >
           <MsPlusIcon size={16} />
           섹션 추가

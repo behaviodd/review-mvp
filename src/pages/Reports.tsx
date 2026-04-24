@@ -11,17 +11,16 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { TrendingUp, BarChart2, Users } from 'lucide-react';
-import { MsStarIcon, MsMessageIcon, MsChevronRightIcon } from '../components/ui/MsIcons';
+import { MsStarIcon, MsMessageIcon, MsChevronRightLineIcon } from '../components/ui/MsIcons';
 
-// sky, emerald, slate, rose, violet (Tailwind syntax theme 팔레트)
-const COLORS = ['#4f46e5', '#059669', '#94a3b8', '#e11d48', '#7c3aed'];
+// DS palette: blue-060, green-060, gray-030, red-050, purple-060
+const COLORS = ['#1482b8', '#20903c', '#a7b3be', '#e61919', '#5207cf'];
 
-// Tooltip 공통 스타일
 const tooltipStyle = {
   borderRadius: '8px',
-  border: '1px solid #e2e8f0',
+  border: '1px solid #c4cdd4',
   fontSize: 12,
-  color: '#0f172a',
+  color: '#111417',
 };
 
 export function Reports() {
@@ -81,9 +80,9 @@ export function Reports() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-semibold text-neutral-900">리포트</h1>
+        <h1 className="text-xl font-semibold text-gray-099">리포트</h1>
         {activeCycle && (
-          <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">{activeCycle.title}</span>
+          <span className="text-xs text-gray-050 bg-gray-010 px-2 py-0.5 rounded">{activeCycle.title}</span>
         )}
       </div>
 
@@ -96,38 +95,38 @@ export function Reports() {
               { icon: BarChart2, label: '진행 중 리뷰', value: `${cycles.filter(c => c.status !== 'closed' && c.status !== 'draft').length}개` },
               { icon: TrendingUp, label: '전체 제출률', value: `${Math.round(allSubmitted.length / Math.max(submissions.filter(s => s.type === 'self').length, 1) * 100)}%` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4">
+              <div key={label} className="bg-white rounded-xl border border-gray-010 shadow-card p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className="w-4 h-4 text-neutral-400" />
-                  <span className="text-xs text-neutral-500">{label}</span>
+                  <Icon className="w-4 h-4 text-gray-040" />
+                  <span className="text-xs text-gray-050">{label}</span>
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">{value}</p>
+                <p className="text-2xl font-bold text-gray-099">{value}</p>
               </div>
             ))}
           </div>
 
           {/* Dept completion bar chart */}
-          <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-            <h2 className="text-sm font-semibold text-neutral-700 mb-4">부서별 제출률</h2>
+          <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+            <h2 className="text-sm font-semibold text-gray-070 mb-4">부서별 제출률</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={deptData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} domain={[0, 100]} unit="%" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6d7f92' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#6d7f92' }} domain={[0, 100]} unit="%" />
                 <Tooltip formatter={(v) => [`${v}%`, '제출률']} contentStyle={tooltipStyle} />
-                <Bar dataKey="제출률" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="제출률" fill="#1482b8" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Rating distribution */}
-          <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-            <h2 className="text-sm font-semibold text-neutral-700 mb-4">등급 분포</h2>
+          <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+            <h2 className="text-sm font-semibold text-gray-070 mb-4">등급 분포</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="grade" tick={{ fontSize: 13, fill: '#64748b' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
+                <XAxis dataKey="grade" tick={{ fontSize: 13, fill: '#6d7f92' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#6d7f92' }} allowDecimals={false} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="count" name="인원" radius={[6, 6, 0, 0]}>
                   {distData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -142,13 +141,13 @@ export function Reports() {
         <>
           {/* Team completion pie */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-              <h2 className="text-sm font-semibold text-neutral-700 mb-3">자기평가 제출 현황</h2>
+            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+              <h2 className="text-sm font-semibold text-gray-070 mb-3">자기평가 제출 현황</h2>
               {teamMembers.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={3}>
-                      {pieData.map((_, i) => <Cell key={i} fill={i === 0 ? '#4f46e5' : '#e2e8f0'} />)}
+                      {pieData.map((_, i) => <Cell key={i} fill={i === 0 ? '#ff4d89' : '#c4cdd4'} />)}
                     </Pie>
                     <Legend iconType="circle" iconSize={8} />
                     <Tooltip contentStyle={tooltipStyle} />
@@ -160,8 +159,8 @@ export function Reports() {
             </div>
 
             {/* Team member stats */}
-            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-              <h2 className="text-sm font-semibold text-neutral-700 mb-3">팀원 현황</h2>
+            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+              <h2 className="text-sm font-semibold text-gray-070 mb-3">팀원 현황</h2>
               <div className="space-y-2">
                 {teamMembers.map(m => {
                   const sub = submissions.find(s => s.revieweeId === m.id && s.type === 'self');
@@ -170,21 +169,21 @@ export function Reports() {
                       key={m.id}
                       onClick={() => activeCycle && navigate(`/reviews/team/${activeCycle.id}/${m.id}`)}
                       disabled={!activeCycle}
-                      className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-neutral-50 transition-colors disabled:cursor-default group"
+                      className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-gray-005 transition-colors disabled:cursor-default group"
                     >
                       <UserAvatar user={m} size="sm" />
                       <div className="flex-1 min-w-0 text-left">
-                        <p className="text-xs font-semibold text-neutral-700">{m.name}</p>
-                        <p className="text-xs text-neutral-400">{m.position}</p>
+                        <p className="text-xs font-semibold text-gray-070">{m.name}</p>
+                        <p className="text-xs text-gray-040">{m.position}</p>
                       </div>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                        sub?.status === 'submitted' ? 'bg-success-50 text-success-600' :
-                        sub?.status === 'in_progress' ? 'bg-primary-50 text-primary-600' :
-                        'bg-neutral-100 text-neutral-400'
+                        sub?.status === 'submitted' ? 'bg-green-005 text-green-060' :
+                        sub?.status === 'in_progress' ? 'bg-pink-005 text-pink-050' :
+                        'bg-gray-010 text-gray-040'
                       }`}>
                         {sub?.status === 'submitted' ? '제출' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
                       </span>
-                      {activeCycle && <MsChevronRightIcon size={12} className="text-neutral-300 group-hover:text-neutral-500 flex-shrink-0" />}
+                      {activeCycle && <MsChevronRightLineIcon size={12} className="text-gray-030 group-hover:text-gray-050 flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -194,17 +193,17 @@ export function Reports() {
 
           {/* Self vs Manager comparison */}
           {teamData.some(d => d.자기평가 > 0) && (
-            <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-              <h2 className="text-sm font-semibold text-neutral-700 mb-4">자기평가 vs 매니저평가 비교</h2>
+            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+              <h2 className="text-sm font-semibold text-gray-070 mb-4">자기평가 vs 매니저평가 비교</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={teamData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: '#64748b' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6d7f92' }} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: '#6d7f92' }} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend iconType="circle" iconSize={8} />
-                  <Bar dataKey="자기평가" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="매니저평가" fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="자기평가" fill="#1482b8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="매니저평가" fill="#20903c" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -228,22 +227,22 @@ export function Reports() {
                 { icon: MsMessageIcon, label: '받은 피드백', value: `${myReceived.length}개`, action: () => navigate('/feedback'), actionLabel: '확인하기' },
                 { icon: TrendingUp, label: '보낸 피드백', value: `${mySent.length}개`, action: () => navigate('/feedback'), actionLabel: '보내기' },
               ].map(({ icon: Icon, label, value, action, actionLabel }) => (
-                <div key={label} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 flex flex-col gap-2">
+                <div key={label} className="bg-white rounded-xl border border-gray-010 shadow-card p-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-neutral-400" />
-                    <span className="text-xs text-neutral-500">{label}</span>
+                    <Icon className="w-4 h-4 text-gray-040" />
+                    <span className="text-xs text-gray-050">{label}</span>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">{value}</p>
-                  <button onClick={action} className="mt-auto text-xs text-primary-600 hover:underline text-left">{actionLabel} →</button>
+                  <p className="text-2xl font-bold text-gray-099">{value}</p>
+                  <button onClick={action} className="mt-auto text-xs text-pink-050 hover:underline text-left">{actionLabel} →</button>
                 </div>
               ))}
             </div>
 
             {myAvg && (
-              <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-                <h2 className="text-sm font-semibold text-neutral-700 mb-1">최근 자기평가 평균 점수</h2>
-                <p className="text-3xl font-bold text-primary-600">{myAvg} <span className="text-base font-normal text-neutral-400">/ 5.0</span></p>
-                <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-primary-600 hover:underline">
+              <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+                <h2 className="text-sm font-semibold text-gray-070 mb-1">최근 자기평가 평균 점수</h2>
+                <p className="text-3xl font-bold text-pink-050">{myAvg} <span className="text-base font-normal text-gray-040">/ 5.0</span></p>
+                <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-pink-050 hover:underline">
                   최근 리뷰 상세 보기 →
                 </button>
               </div>

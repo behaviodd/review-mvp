@@ -19,15 +19,14 @@ export const useToast = create<ToastState>((set) => ({
   remove: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
 }));
 
-// Catalyst-style: white card + subtle ring + colored icon
 const CONFIG: Record<ToastType, {
   icon: typeof MsCheckCircleIcon;
   iconCls: string;
 }> = {
-  success: { icon: MsCheckCircleIcon, iconCls: 'text-emerald-600' },
-  warning: { icon: MsWarningIcon,     iconCls: 'text-amber-500'  },
-  error:   { icon: MsCancelIcon,      iconCls: 'text-red-600'     },
-  info:    { icon: MsInfoIcon,        iconCls: 'text-indigo-600'  },
+  success: { icon: MsCheckCircleIcon, iconCls: 'text-green-060'  },
+  warning: { icon: MsWarningIcon,     iconCls: 'text-orange-060' },
+  error:   { icon: MsCancelIcon,      iconCls: 'text-red-060'    },
+  info:    { icon: MsInfoIcon,        iconCls: 'text-blue-070'   },
 };
 
 function Toast({ toast }: { toast: ToastItem }) {
@@ -38,15 +37,15 @@ function Toast({ toast }: { toast: ToastItem }) {
     <div className="
       flex items-start gap-3 bg-white rounded-xl
       shadow-[0_3px_10px_rgb(0,0,0,0.1),0_1px_3px_rgb(0,0,0,0.06)]
-      ring-1 ring-zinc-950/5
+      ring-1 ring-gray-010
       px-4 py-3 min-w-72 max-w-sm
       animate-[fadeSlideDown_0.2s_ease]
     ">
       <Icon size={16} className={`flex-shrink-0 mt-0.5 ${iconCls}`} />
-      <p className="flex-1 text-sm/6 text-zinc-950 font-medium">{toast.message}</p>
+      <p className="flex-1 text-sm/6 text-gray-099 font-medium">{toast.message}</p>
       <button
         onClick={() => remove(toast.id)}
-        className="flex-shrink-0 mt-0.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+        className="flex-shrink-0 mt-0.5 text-gray-040 hover:text-gray-060 transition-colors"
         aria-label="닫기"
       >
         <MsCancelIcon size={12} />

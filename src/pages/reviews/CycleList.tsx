@@ -1,21 +1,38 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
+import { useTeamStore } from '../../stores/teamStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
-import { MsRefreshIcon, MsPlusIcon, MsChevronRightIcon, MsEditIcon, MsArticleIcon, MsStarIcon, MsDeleteIcon } from '../../components/ui/MsIcons';
+import {
+  MsRefreshIcon, MsPlusIcon, MsChevronRightLineIcon, MsEditIcon,
+  MsDeleteIcon, MsArticleIcon, MsCancelIcon,
+} from '../../components/ui/MsIcons';
 import { MsButton } from '../../components/ui/MsButton';
+import { MsInput, MsSelect, MsCheckbox } from '../../components/ui/MsControl';
 import { useShowToast } from '../../components/ui/Toast';
-import type { ReviewStatus } from '../../types';
+import { TagInput, tagColor } from '../../components/review/TagInput';
+import { FolderSidebar, CYCLE_DRAG_MIME } from '../../components/review/FolderSidebar';
+import { CycleBulkBar } from '../../components/review/CycleBulkBar';
+import { BulkMoveFolderModal } from '../../components/review/modals/BulkMoveFolderModal';
+import { BulkAddTagModal } from '../../components/review/modals/BulkAddTagModal';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import {
+  DEFAULT_CYCLE_FILTERS, applyCycleFilters, filtersToParams, paramsToFilters,
+  type CycleFilters, type CycleSort, type FolderSelection,
+} from '../../utils/cycleFilter';
+import type { ReviewStatus, ReviewType } from '../../types';
+import { cn } from '../../utils/cn';
 
 const STATUS_CONFIG: Record<ReviewStatus, { label: string; dot: string; text: string }> = {
-  draft:          { label: '초안',        dot: 'bg-neutral-300',  text: 'text-neutral-500' },
-  active:         { label: '진행 중',     dot: 'bg-primary-500',  text: 'text-primary-700' },
-  self_review:    { label: '자기평가 중', dot: 'bg-primary-500',  text: 'text-primary-700' },
-  manager_review: { label: '매니저 리뷰', dot: 'bg-primary-400',  text: 'text-primary-600' },
-  calibration:    { label: '조율 중',     dot: 'bg-primary-400',  text: 'text-primary-600' },
-  closed:         { label: '완료',        dot: 'bg-success-500',  text: 'text-success-700' },
+  draft:          { label: '초안',        dot: 'bg-gray-030',  text: 'text-gray-050' },
+  active:         { label: '진행 중',     dot: 'bg-pink-040',  text: 'text-pink-060' },
+  self_review:    { label: '자기평가 중', dot: 'bg-pink-040',  text: 'text-pink-060' },
+  manager_review: { label: '매니저 리뷰', dot: 'bg-pink-040',  text: 'text-pink-050' },
+  calibration:    { label: '조율 중',     dot: 'bg-pink-040',  text: 'text-pink-050' },
+  closed:         { label: '완료',        dot: 'bg-green-040', text: 'text-green-060' },
 };
 
 function StatusChip({ status }: { status: ReviewStatus }) {
@@ -28,239 +45,538 @@ function StatusChip({ status }: { status: ReviewStatus }) {
   );
 }
 
+type StatusPreset = 'all' | 'draft' | 'in_progress' | 'closed';
+const STATUS_PRESET: Record<StatusPreset, ReviewStatus[]> = {
+  all: [],
+  draft: ['draft'],
+  in_progress: ['self_review', 'manager_review', 'calibration', 'active'],
+  closed: ['closed'],
+};
+function detectPreset(statuses: ReviewStatus[]): StatusPreset {
+  if (statuses.length === 0) return 'all';
+  const keys = Object.entries(STATUS_PRESET) as [StatusPreset, ReviewStatus[]][];
+  for (const [k, arr] of keys) {
+    if (k === 'all') continue;
+    if (arr.length === statuses.length && arr.every(s => statuses.includes(s))) return k;
+  }
+  return 'all';
+}
+
+const SORT_OPTIONS: { value: CycleSort; label: string }[] = [
+  { value: 'created_desc',    label: '최신순' },
+  { value: 'created_asc',     label: '오래된순' },
+  { value: 'deadline_asc',    label: '마감 임박순' },
+  { value: 'completion_desc', label: '완료율 높은순' },
+  { value: 'completion_asc',  label: '완료율 낮은순' },
+];
+
 export function CycleList() {
-  const { cycles, templates, deleteTemplate, deleteCycle } = useReviewStore();
+  const {
+    cycles, submissions, archiveCycle, deleteCycle, updateCycle, addCycle,
+  } = useReviewStore();
+  const users = useTeamStore(s => s.users);
+  const currentUser = useAuthStore(s => s.currentUser);
   const navigate = useNavigate();
   const showToast = useShowToast();
-  const [tab, setTab] = useState<'cycles' | 'templates'>('cycles');
 
-  const handleDeleteTemplate = (id: string, name: string) => {
-    if (confirm(`"${name}" 템플릿을 삭제하시겠습니까?`)) {
-      deleteTemplate(id);
-      showToast('success', '템플릿이 삭제되었습니다.');
-    }
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo<CycleFilters>(() => paramsToFilters(searchParams), [searchParams]);
+  const update = (patch: Partial<CycleFilters>) => {
+    const next = { ...filters, ...patch };
+    setSearchParams(filtersToParams(next), { replace: true });
   };
 
-  const handleDeleteCycle = (e: React.MouseEvent, id: string, title: string) => {
-    e.stopPropagation();
-    if (confirm(`"${title}" 리뷰와 모든 제출 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
-      deleteCycle(id);
-      showToast('success', '리뷰가 삭제되었습니다.');
-    }
-  };
+  const preset = detectPreset(filters.statuses);
+  const setPreset = (p: StatusPreset) => update({ statuses: STATUS_PRESET[p] });
 
-  const active = cycles.filter(c => c.status !== 'closed' && c.status !== 'draft');
-  const closed = cycles.filter(c => c.status === 'closed');
+  const allTags = useMemo(
+    () => Array.from(new Set(cycles.flatMap(c => c.tags ?? []))).sort(),
+    [cycles],
+  );
+
+  const visible = useMemo(
+    () => applyCycleFilters(cycles, users, filters),
+    [cycles, users, filters],
+  );
 
   const headerActions = useMemo(() => (
-    tab === 'cycles' ? (
-      <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>새 리뷰</MsButton>
-    ) : (
-      <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>새 템플릿</MsButton>
-    )
-  ), [tab, navigate]);
+    <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>
+      새 리뷰
+    </MsButton>
+  ), [navigate]);
   useSetPageHeader('리뷰 운영', headerActions);
 
-  const Row = ({ cycle }: { cycle: typeof cycles[0] }) => (
-    <div
-      onClick={() => navigate(`/cycles/${cycle.id}`)}
-      className="group flex items-center gap-4 px-5 py-3.5 border-b border-zinc-950/5 last:border-0 hover:bg-neutral-50/60 cursor-pointer transition-colors"
-    >
-      {/* 이름 + 유형 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900 group-hover:text-primary-700 truncate leading-snug">
-          {cycle.title}
-        </p>
-        <p className="text-xs text-neutral-400 mt-0.5">
-          {cycle.type === 'scheduled' ? '정기' : '수시'} · 생성 {formatDate(cycle.createdAt)}
-        </p>
-      </div>
+  /* ── 선택 상태 ─────────────────────────────────────── */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAllVisible = () => {
+    const allSelected = visible.every(c => selected.has(c.id));
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const c of visible) next.delete(c.id);
+      } else {
+        for (const c of visible) next.add(c.id);
+      }
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
 
-      {/* 단계 */}
-      <div className="w-28 flex-shrink-0">
-        <StatusChip status={cycle.status} />
-      </div>
-
-      {/* 완료율 */}
-      <div className="w-28 flex-shrink-0">
-        {cycle.status !== 'draft' ? (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 rounded-full bg-neutral-100 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${cycle.completionRate === 100 ? 'bg-success-400' : 'bg-primary-400'}`}
-                style={{ width: `${cycle.completionRate ?? 0}%` }}
-              />
-            </div>
-            <span className="text-xs text-neutral-500 tabular-nums w-7 text-right">{cycle.completionRate ?? 0}%</span>
-          </div>
-        ) : (
-          <span className="text-xs text-neutral-300">—</span>
-        )}
-      </div>
-
-      {/* 마감일 */}
-      <div className="w-24 flex-shrink-0 text-right">
-        <p className="text-xs text-neutral-600">{formatDate(cycle.selfReviewDeadline)}</p>
-        <p className="text-xs text-neutral-400 mt-0.5">자기평가 마감</p>
-      </div>
-
-      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all" onClick={e => e.stopPropagation()}>
-        <button
-          onClick={e => { e.stopPropagation(); navigate(`/cycles/${cycle.id}?edit=1`); }}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
-        >
-          <MsEditIcon size={12} /> 편집
-        </button>
-        <button
-          onClick={e => handleDeleteCycle(e, cycle.id, cycle.title)}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-danger-500 bg-danger-50 hover:bg-danger-100 rounded-lg transition-colors"
-        >
-          <MsDeleteIcon size={12} /> 삭제
-        </button>
-      </div>
-      <MsChevronRightIcon size={16} className="text-neutral-300 group-hover:text-primary-400 flex-shrink-0" />
-    </div>
+  const selectedCycles = useMemo(
+    () => cycles.filter(c => selected.has(c.id)),
+    [cycles, selected],
   );
+  const selectedStats = useMemo(() => {
+    const members = new Set<string>();
+    let subs = 0;
+    for (const c of selectedCycles) {
+      for (const u of users) {
+        if (c.targetDepartments.includes(u.department) && u.role !== 'admin') members.add(u.id);
+      }
+      subs += submissions.filter(s => s.cycleId === c.id).length;
+    }
+    return { members: members.size, subs };
+  }, [selectedCycles, users, submissions]);
 
-  const ColHeader = () => (
-    <div className="flex items-center gap-4 px-5 py-2.5 border-b border-zinc-950/5 bg-neutral-50/50">
-      <div className="flex-1 text-xs font-semibold text-neutral-400 uppercase tracking-wide">리뷰</div>
-      <div className="w-28 text-xs font-semibold text-neutral-400 uppercase tracking-wide">단계</div>
-      <div className="w-28 text-xs font-semibold text-neutral-400 uppercase tracking-wide">완료율</div>
-      <div className="w-24 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wide">마감일</div>
-      <div className="w-4" />
-    </div>
-  );
+  /* ── 모달 상태 ─────────────────────────────────────── */
+  const [folderModal, setFolderModal] = useState(false);
+  const [tagModal, setTagModal] = useState(false);
+  const [singleDelete, setSingleDelete] = useState<{ id: string; title: string } | null>(null);
+  const [confirmBulkClone, setConfirmBulkClone] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+
+  /* ── 개별 행 액션 ──────────────────────────────────── */
+  const handleDeleteCycle = (e: React.MouseEvent, id: string, title: string) => {
+    e.stopPropagation();
+    setSingleDelete({ id, title });
+  };
+  const confirmSingleDelete = () => {
+    if (!singleDelete) return;
+    deleteCycle(singleDelete.id);
+    showToast('success', '리뷰가 삭제되었습니다.');
+    setSingleDelete(null);
+  };
+
+  const handleArchiveCycle = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const res = archiveCycle(id, currentUser?.id ?? 'system');
+    showToast(res.ok ? 'success' : 'error', res.ok ? '보관함으로 이동했습니다.' : (res.error ?? '실패'));
+  };
+
+  const handleCloneCycle = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigate(`/cycles/new?from=${id}`);
+  };
+
+  /* ── 폴더 이동 (드래그 & 일괄) ───────────────────────── */
+  const moveCyclesToFolder = (ids: string[], folderId: string | null) => {
+    for (const id of ids) {
+      updateCycle(id, { folderId: folderId ?? undefined });
+    }
+  };
+
+  const onBulkMoveFolder = (folderId: string | null) => {
+    moveCyclesToFolder(Array.from(selected), folderId);
+    setFolderModal(false);
+    showToast('success', `${selected.size}개 사이클을 이동했습니다.`);
+    clearSelection();
+  };
+
+  /* ── 태그 추가 ──────────────────────────────────────── */
+  const onBulkAddTag = (newTags: string[]) => {
+    for (const id of selected) {
+      const cycle = cycles.find(c => c.id === id);
+      if (!cycle) continue;
+      const merged = Array.from(new Set([...(cycle.tags ?? []), ...newTags]));
+      updateCycle(id, { tags: merged });
+    }
+    setTagModal(false);
+    showToast('success', `${selected.size}개 사이클에 태그를 추가했습니다.`);
+    clearSelection();
+  };
+
+  /* ── 보관 ─────────────────────────────────────────── */
+  const onBulkArchive = () => {
+    const eligible = selectedCycles.filter(c => c.status === 'closed' && !c.archivedAt);
+    const blocked = selectedCycles.length - eligible.length;
+    let moved = 0;
+    for (const c of eligible) {
+      const res = archiveCycle(c.id, currentUser?.id ?? 'system');
+      if (res.ok) moved += 1;
+    }
+    if (moved === 0) {
+      showToast('error', '보관할 수 있는 사이클(종료 상태)이 선택되지 않았습니다.');
+      return;
+    }
+    showToast('success', blocked > 0
+      ? `${moved}개 보관 · ${blocked}개는 종료 상태가 아니라 건너뜀`
+      : `${moved}개 보관 완료`);
+    clearSelection();
+  };
+
+  /* ── 복제 (최초 1건만 진입) ────────────────────────── */
+  const onBulkClone = () => {
+    if (selected.size === 1) {
+      const id = Array.from(selected)[0];
+      navigate(`/cycles/new?from=${id}`);
+      return;
+    }
+    setConfirmBulkClone(true);
+  };
+  const doBulkClone = () => {
+    setConfirmBulkClone(false);
+    const now = new Date().toISOString();
+    let cloned = 0;
+    for (const c of selectedCycles) {
+      const newId = `cyc_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+      addCycle({
+        ...c,
+        id: newId,
+        title: `${c.title} (복제)`,
+        status: 'draft',
+        createdAt: now,
+        createdBy: currentUser?.id ?? c.createdBy,
+        completionRate: 0,
+        archivedAt: undefined,
+        fromCycleId: c.id,
+        templateSnapshot: undefined,
+        templateSnapshotAt: undefined,
+      });
+      cloned += 1;
+    }
+    showToast('success', `${cloned}개 초안 복제됨`);
+    clearSelection();
+  };
+
+  /* ── 삭제 ─────────────────────────────────────────── */
+  const onBulkDelete = () => setConfirmBulkDelete(true);
+  const doBulkDelete = () => {
+    setConfirmBulkDelete(false);
+    for (const id of selected) deleteCycle(id);
+    showToast('success', `${selected.size}개 삭제됨`);
+    clearSelection();
+  };
+
+  /* ── 필터 초기화 체크 ─────────────────────────────── */
+  const filterActive =
+    filters.query.trim().length > 0 ||
+    filters.statuses.length > 0 ||
+    filters.types.length > 0 ||
+    filters.tags.length > 0 ||
+    !!filters.dateFrom || !!filters.dateTo ||
+    filters.folder.kind !== 'all';
+
+  const allChecked = visible.length > 0 && visible.every(c => selected.has(c.id));
+  const someChecked = visible.some(c => selected.has(c.id));
+
+  const handleFolderSelect = (sel: FolderSelection) => update({ folder: sel });
 
   return (
-    <div className="space-y-6">
-      {/* 탭 */}
-      <div className="flex gap-6 border-b border-[#dee2e6]">
-        {(['cycles', 'templates'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? 'border-[#212529] text-[#212529]'
-                : 'border-transparent text-[#adb5bd] hover:text-[#868e96]'
-            }`}
-          >
-            {t === 'cycles' ? '리뷰 목록' : '리뷰 템플릿'}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col md:flex-row gap-5">
+      <FolderSidebar
+        selected={filters.folder}
+        onSelect={handleFolderSelect}
+        cycles={cycles}
+        onMoveCycleToFolder={(cycleId, folderId) => moveCyclesToFolder([cycleId], folderId)}
+      />
 
-      {/* 리뷰 사이클 탭 */}
-      {tab === 'cycles' && (
-        cycles.length === 0 ? (
-          <EmptyState
-            icon={MsRefreshIcon}
-            title="아직 생성된 리뷰가 없습니다."
-            description="새 리뷰를 만들어 팀의 성장 돌아보기를 시작해보세요."
-            actionLabel="새 리뷰 만들기"
-            onAction={() => navigate('/cycles/new')}
-          />
+      <div className="flex-1 min-w-0 space-y-4">
+        {/* 필터 바 */}
+        <div className="rounded-xl border border-gray-010 bg-white shadow-card px-4 py-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5">
+              {([
+                ['all',         '전체'],
+                ['draft',       '초안'],
+                ['in_progress', '진행중'],
+                ['closed',      '완료'],
+              ] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setPreset(val)}
+                  className={cn(
+                    'px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap',
+                    preset === val ? 'bg-white text-gray-080 shadow-card' : 'text-gray-050 hover:text-gray-070',
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-5 w-px bg-gray-010" />
+
+            <MsSelect
+              value={filters.types[0] ?? ''}
+              onChange={e => update({ types: e.target.value ? [e.target.value as ReviewType] : [] })}
+              className="min-w-[120px]"
+            >
+              <option value="">모든 유형</option>
+              <option value="scheduled">정기</option>
+              <option value="adhoc">수시</option>
+            </MsSelect>
+
+            <MsSelect
+              value={filters.sort}
+              onChange={e => update({ sort: e.target.value as CycleSort })}
+              className="min-w-[140px]"
+            >
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </MsSelect>
+
+            <div className="ml-auto flex items-center gap-2">
+              <MsInput
+                value={filters.query}
+                onChange={e => update({ query: e.target.value })}
+                placeholder="제목·태그·생성자 검색"
+                className="w-56"
+              />
+              {filterActive && (
+                <button
+                  type="button"
+                  onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
+                  className="text-xs font-medium text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
+                >
+                  초기화
+                </button>
+              )}
+            </div>
+          </div>
+
+          {(allTags.length > 0 || filters.tags.length > 0) && (
+            <div className="flex items-start gap-2">
+              <span className="pt-1 text-[11px] font-medium text-gray-050 shrink-0">태그</span>
+              <div className="flex-1">
+                <TagInput
+                  value={filters.tags}
+                  onChange={tags => update({ tags })}
+                  suggestions={allTags}
+                  placeholder="태그로 필터"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 리스트 */}
+        {visible.length === 0 ? (
+          cycles.length === 0 ? (
+            <EmptyState
+              icon={MsRefreshIcon}
+              title="아직 생성된 리뷰가 없습니다."
+              description="새 리뷰를 만들어 팀의 성장 돌아보기를 시작해보세요."
+              actionLabel="새 리뷰 만들기"
+              onAction={() => navigate('/cycles/new')}
+            />
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-010 bg-white py-12 text-center">
+              <p className="text-sm font-semibold text-gray-070">조건에 맞는 리뷰가 없습니다.</p>
+              <p className="mt-1 text-xs text-gray-040">필터를 완화하거나 초기화해 주세요.</p>
+            </div>
+          )
         ) : (
           <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card overflow-hidden">
-            <ColHeader />
-            {active.length > 0 && (
-              <>
-                <div className="px-5 py-2 bg-white border-b border-zinc-950/5">
-                  <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">진행 중 {active.length}</span>
-                </div>
-                {active.map(c => <Row key={c.id} cycle={c} />)}
-              </>
-            )}
-            {closed.length > 0 && (
-              <>
-                <div className="px-5 py-2 bg-neutral-50/40 border-b border-zinc-950/5">
-                  <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">완료 {closed.length}</span>
-                </div>
-                {closed.map(c => <Row key={c.id} cycle={c} />)}
-              </>
-            )}
-          </div>
-        )
-      )}
-
-      {/* 리뷰 템플릿 탭 */}
-      {tab === 'templates' && (
-        templates.length === 0 ? (
-          <EmptyState
-            icon={MsArticleIcon}
-            title="아직 생성된 템플릿이 없습니다."
-            description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
-            actionLabel="새 템플릿 만들기"
-            onAction={() => navigate('/templates/new')}
-          />
-        ) : (
-          <div className="space-y-3">
-            {templates.map(tmpl => (
-              <div key={tmpl.id} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5 hover:shadow-card-hover transition-all">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                    <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <MsArticleIcon size={16} className="text-primary-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base font-semibold text-neutral-900">{tmpl.name}</h3>
-                        {tmpl.isDefault && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
-                            <MsStarIcon size={12} /> 기본
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-400 mt-0.5">{tmpl.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <button
-                      onClick={() => navigate(`/cycles/new?templateId=${tmpl.id}`)}
-                      className="px-3 py-1.5 text-xs font-medium text-primary-600 border border-primary-200 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
-                    >
-                      <MsPlusIcon size={12} className="inline mr-1" />리뷰 생성
-                    </button>
-                    <button
-                      onClick={() => navigate(`/templates/${tmpl.id}`)}
-                      className="px-3 py-1.5 text-xs font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
-                    >
-                      편집
-                    </button>
-                    {!tmpl.isDefault && (
-                      <button
-                        onClick={() => handleDeleteTemplate(tmpl.id, tmpl.name)}
-                        className="p-1.5 text-neutral-400 hover:text-danger-500 hover:bg-danger-50 rounded-xl transition-colors"
-                      >
-                        <MsDeleteIcon size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-zinc-950/5">
-                  <div className="flex items-center gap-4 text-xs text-neutral-400 mb-2">
-                    <span>{tmpl.questions.length}개 문항</span>
-                    <span>생성 {formatDate(tmpl.createdAt)}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tmpl.questions.slice(0, 4).map(q => (
-                      <span key={q.id} className={`text-xs px-2 py-0.5 rounded ${
-                        q.isPrivate ? 'bg-neutral-100 text-neutral-500' : 'bg-primary-50 text-primary-600'
-                      }`}>
-                        {q.type === 'text' ? '주관식' : q.type === 'rating' ? '평점' : '역량'} · {q.text.slice(0, 14)}…
-                      </span>
-                    ))}
-                    {tmpl.questions.length > 4 && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-neutral-100 text-neutral-400">+{tmpl.questions.length - 4}개</span>
-                    )}
-                  </div>
-                </div>
+            <div className="flex items-center gap-4 px-5 py-2.5 border-b border-zinc-950/5 bg-gray-005/50">
+              <div className="w-5 shrink-0">
+                <MsCheckbox
+                  checked={allChecked}
+                  indeterminate={!allChecked && someChecked}
+                  onChange={toggleAllVisible}
+                  aria-label="보이는 전체 선택"
+                />
               </div>
-            ))}
+              <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
+              <div className="w-28 text-xs font-semibold text-gray-040 uppercase tracking-wide">단계</div>
+              <div className="w-28 text-xs font-semibold text-gray-040 uppercase tracking-wide">완료율</div>
+              <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감일</div>
+              <div className="w-4" />
+            </div>
+            {visible.map(cycle => {
+              const isSelected = selected.has(cycle.id);
+              return (
+                <div
+                  key={cycle.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(CYCLE_DRAG_MIME, cycle.id);
+                    e.dataTransfer.setData('text/plain', cycle.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('[data-action]')) return;
+                    navigate(`/cycles/${cycle.id}`);
+                  }}
+                  className={cn(
+                    'group flex items-center gap-4 px-5 py-3.5 border-b border-zinc-950/5 last:border-0 cursor-pointer transition-colors',
+                    isSelected ? 'bg-pink-005/50' : 'hover:bg-gray-005/60',
+                  )}
+                >
+                  <div className="w-5 shrink-0" data-action>
+                    <MsCheckbox
+                      checked={isSelected}
+                      onChange={() => toggleOne(cycle.id)}
+                      aria-label={`${cycle.title} 선택`}
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-099 group-hover:text-pink-060 truncate leading-snug">
+                        {cycle.title}
+                      </p>
+                      {(cycle.tags ?? []).slice(0, 3).map(t => (
+                        <span key={t} className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', tagColor(t))}>
+                          #{t}
+                        </span>
+                      ))}
+                      {(cycle.tags?.length ?? 0) > 3 && (
+                        <span className="rounded-full bg-gray-005 px-1.5 py-0.5 text-[10px] text-gray-050">
+                          +{(cycle.tags?.length ?? 0) - 3}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-040 mt-0.5">
+                      {cycle.type === 'scheduled' ? '정기' : '수시'} · 생성 {formatDate(cycle.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="w-28 flex-shrink-0">
+                    <StatusChip status={cycle.status} />
+                  </div>
+
+                  <div className="w-28 flex-shrink-0">
+                    {cycle.status !== 'draft' ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 rounded-full bg-gray-010 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${cycle.completionRate === 100 ? 'bg-green-040' : 'bg-pink-040'}`}
+                            style={{ width: `${cycle.completionRate ?? 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-050 tabular-nums w-7 text-right">{cycle.completionRate ?? 0}%</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-030">—</span>
+                    )}
+                  </div>
+
+                  <div className="w-24 flex-shrink-0 text-right">
+                    <p className="text-xs text-gray-060">{formatDate(cycle.selfReviewDeadline)}</p>
+                    <p className="text-xs text-gray-040 mt-0.5">자기평가 마감</p>
+                  </div>
+
+                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all" data-action onClick={e => e.stopPropagation()}>
+                    <MsButton
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<MsArticleIcon size={12} />}
+                      onClick={e => handleCloneCycle(e, cycle.id)}
+                      title="이 리뷰를 복제하여 새 리뷰 생성"
+                    >
+                      복제
+                    </MsButton>
+                    <MsButton
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<MsEditIcon size={12} />}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (cycle.status === 'draft') {
+                          navigate(`/cycles/new?draft=${cycle.id}`);
+                        } else {
+                          navigate(`/cycles/${cycle.id}?edit=1`);
+                        }
+                      }}
+                    >
+                      {cycle.status === 'draft' ? '이어 쓰기' : '편집'}
+                    </MsButton>
+                    {cycle.status === 'closed' && (
+                      <MsButton
+                        size="sm"
+                        variant="outline-default"
+                        leftIcon={<MsCancelIcon size={12} />}
+                        onClick={e => handleArchiveCycle(e, cycle.id)}
+                      >
+                        보관
+                      </MsButton>
+                    )}
+                    <MsButton
+                      size="sm"
+                      variant="outline-red"
+                      leftIcon={<MsDeleteIcon size={12} />}
+                      onClick={e => handleDeleteCycle(e, cycle.id, cycle.title)}
+                    >
+                      삭제
+                    </MsButton>
+                  </div>
+                  <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:text-pink-040 flex-shrink-0" />
+                </div>
+              );
+            })}
           </div>
-        )
-      )}
+        )}
+
+        <CycleBulkBar
+          selectedCount={selected.size}
+          totalMembers={selectedStats.members}
+          totalSubmissions={selectedStats.subs}
+          onClear={clearSelection}
+          onMoveFolder={() => setFolderModal(true)}
+          onAddTag={() => setTagModal(true)}
+          onArchive={onBulkArchive}
+          onClone={onBulkClone}
+          onDelete={onBulkDelete}
+        />
+      </div>
+
+      <BulkMoveFolderModal
+        open={folderModal}
+        onClose={() => setFolderModal(false)}
+        count={selected.size}
+        onConfirm={onBulkMoveFolder}
+      />
+      <BulkAddTagModal
+        open={tagModal}
+        onClose={() => setTagModal(false)}
+        count={selected.size}
+        suggestions={allTags}
+        onConfirm={onBulkAddTag}
+      />
+      <ConfirmDialog
+        open={singleDelete !== null}
+        onClose={() => setSingleDelete(null)}
+        onConfirm={confirmSingleDelete}
+        title="리뷰 삭제"
+        description={singleDelete ? <>"<strong>{singleDelete.title}</strong>" 리뷰와 모든 제출 데이터를 영구 삭제합니다. 되돌릴 수 없습니다.</> : null}
+        confirmLabel="삭제"
+        tone="danger"
+      />
+      <ConfirmDialog
+        open={confirmBulkClone}
+        onClose={() => setConfirmBulkClone(false)}
+        onConfirm={doBulkClone}
+        title="사이클 복제"
+        description={`${selected.size}개 사이클을 초안으로 복제합니다.`}
+        confirmLabel="복제"
+      />
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        onConfirm={doBulkDelete}
+        title="선택 사이클 삭제"
+        description={`${selected.size}개 사이클과 모든 제출 데이터를 영구 삭제합니다. 되돌릴 수 없습니다.`}
+        confirmLabel="삭제"
+        tone="danger"
+      />
     </div>
   );
 }
+
+export { DEFAULT_CYCLE_FILTERS };

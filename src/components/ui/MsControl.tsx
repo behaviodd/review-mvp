@@ -1,5 +1,13 @@
-import { type InputHTMLAttributes, type ReactNode, useRef, useEffect } from 'react';
+import {
+  type InputHTMLAttributes,
+  type TextareaHTMLAttributes,
+  type SelectHTMLAttributes,
+  type ReactNode,
+  useRef,
+  useEffect,
+} from 'react';
 import { cn } from '../../utils/cn';
+import { MsChevronDownLineIcon } from './MsIcons';
 
 // ─── Checkbox ────────────────────────────────────────────────────────────────
 
@@ -20,7 +28,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
     : 'size-5 rounded-[3px]';
 
   const track = checked || indeterminate
-    ? disabled ? 'bg-primary-100 opacity-50' : 'bg-primary-500 border-primary-500'
+    ? disabled ? 'bg-pink-010 opacity-50' : 'bg-pink-040 border-pink-040'
     : disabled ? 'bg-[rgba(76,90,102,0.08)] border-[rgba(76,90,102,0.2)]' : 'bg-[#f8f9fa] border-[#dfe7e9]';
 
   const iconSize = size === 'lg' ? 13 : 11;
@@ -59,7 +67,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
           )
         )}
       </span>
-      {label && <span className={cn('text-sm text-neutral-800', disabled && 'text-neutral-400')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
     </label>
   );
 }
@@ -76,11 +84,11 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
   const dot   = size === 'lg' ? 'size-[9.6px]' : 'size-[8px]';
 
   const borderColor = checked
-    ? disabled ? 'border-primary-200' : 'border-primary-500'
+    ? disabled ? 'border-pink-020' : 'border-pink-040'
     : disabled ? 'border-[rgba(76,90,102,0.2)]' : 'border-[#dfe7e9]';
 
   const dotColor = checked
-    ? disabled ? 'bg-primary-200' : 'bg-primary-500'
+    ? disabled ? 'bg-pink-020' : 'bg-pink-040'
     : '';
 
   return (
@@ -99,7 +107,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
         />
         {checked && <span className={cn('rounded-full flex-shrink-0', dot, dotColor)} />}
       </span>
-      {label && <span className={cn('text-sm text-neutral-800', disabled && 'text-neutral-400')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
     </label>
   );
 }
@@ -127,7 +135,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
     : checked ? 'translate-x-[15px]' : 'translate-x-[3px]';
 
   const trackColor = checked
-    ? disabled ? 'bg-primary-100 opacity-50' : 'bg-primary-500'
+    ? disabled ? 'bg-pink-010 opacity-50' : 'bg-pink-040'
     : disabled ? 'bg-[rgba(76,90,102,0.08)]' : 'bg-[#dfe7e9]';
 
   return (
@@ -141,7 +149,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
         onClick={() => onChange(!checked)}
         className={cn(
           'relative inline-flex flex-shrink-0 items-center transition-colors duration-200',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-040 focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed',
           track, trackColor,
         )}
@@ -151,7 +159,195 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
           thumbSize, thumbTranslate,
         )} />
       </button>
-      {label && <span className={cn('text-sm text-neutral-800', disabled && 'text-neutral-400')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
     </label>
+  );
+}
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+
+interface MsInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  label?: string;
+  hint?: string;
+  error?: string;
+  leftSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  size?: 'sm' | 'md';
+}
+
+const INPUT_BASE =
+  'w-full border bg-gray-005 text-gray-099 placeholder:text-gray-040 transition-colors ' +
+  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'disabled:bg-gray-005 disabled:text-gray-040 disabled:cursor-not-allowed';
+
+const INPUT_SIZE = {
+  sm: 'px-2.5 py-1.5 text-xs rounded-md',
+  md: 'px-3 py-2 text-sm rounded-lg',
+} as const;
+
+export function MsInput({
+  label, hint, error,
+  leftSlot, rightSlot,
+  size = 'md',
+  className,
+  id,
+  ...props
+}: MsInputProps) {
+  const inputId = id ?? (label ? label.replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="space-y-1">
+      {label && (
+        <label htmlFor={inputId} className="block text-xs font-medium text-gray-060">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        {leftSlot && (
+          <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-040">
+            {leftSlot}
+          </div>
+        )}
+        <input
+          id={inputId}
+          className={cn(
+            INPUT_BASE,
+            INPUT_SIZE[size],
+            leftSlot  && (size === 'sm' ? 'pl-7'  : 'pl-8'),
+            rightSlot && (size === 'sm' ? 'pr-7'  : 'pr-9'),
+            error ? 'border-red-040 focus:ring-red-005 focus:border-red-040' : 'border-gray-020',
+            className,
+          )}
+          {...props}
+        />
+        {rightSlot && (
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-040">
+            {rightSlot}
+          </div>
+        )}
+      </div>
+      {(hint || error) && (
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Textarea ────────────────────────────────────────────────────────────────
+
+interface MsTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string;
+  hint?: string;
+  error?: string;
+  size?: 'sm' | 'md';
+  autoResize?: boolean;
+}
+
+const TEXTAREA_BASE =
+  'w-full border bg-gray-005 text-gray-099 placeholder:text-gray-040 transition-colors resize-y ' +
+  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'disabled:bg-gray-005 disabled:text-gray-040 disabled:cursor-not-allowed';
+
+const TEXTAREA_SIZE = {
+  sm: 'px-2.5 py-1.5 text-xs rounded-md',
+  md: 'px-3 py-2 text-sm rounded-lg',
+} as const;
+
+export function MsTextarea({
+  label, hint, error,
+  size = 'md',
+  autoResize = false,
+  className,
+  value,
+  onChange,
+  id,
+  ...props
+}: MsTextareaProps) {
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!autoResize || !taRef.current) return;
+    const el = taRef.current;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [autoResize, value]);
+
+  const textareaId = id ?? (label ? label.replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="space-y-1">
+      {label && (
+        <label htmlFor={textareaId} className="block text-xs font-medium text-gray-060">
+          {label}
+        </label>
+      )}
+      <textarea
+        ref={taRef}
+        id={textareaId}
+        value={value}
+        onChange={onChange}
+        className={cn(
+          TEXTAREA_BASE,
+          TEXTAREA_SIZE[size],
+          autoResize && 'resize-none overflow-hidden',
+          error ? 'border-red-040 focus:ring-red-005 focus:border-red-040' : 'border-gray-020',
+          className,
+        )}
+        {...props}
+      />
+      {(hint || error) && (
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Select ──────────────────────────────────────────────────────────────────
+
+interface MsSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  hint?: string;
+  error?: string;
+}
+
+const SELECT_BASE =
+  'w-full appearance-none px-3 py-2 pr-8 text-sm rounded-lg border bg-gray-005 text-gray-099 transition-colors ' +
+  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'disabled:text-gray-040 disabled:cursor-not-allowed';
+
+export function MsSelect({
+  label, hint, error,
+  className,
+  children,
+  id,
+  ...props
+}: MsSelectProps) {
+  const selectId = id ?? (label ? label.replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="space-y-1">
+      {label && (
+        <label htmlFor={selectId} className="block text-xs font-medium text-gray-060">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <select
+          id={selectId}
+          className={cn(
+            SELECT_BASE,
+            error ? 'border-red-040 focus:ring-red-005' : 'border-gray-020',
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </select>
+        <MsChevronDownLineIcon
+          size={14}
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-040"
+        />
+      </div>
+      {(hint || error) && (
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+      )}
+    </div>
   );
 }

@@ -16,26 +16,31 @@ import { Users, TrendingUp } from 'lucide-react';
 import { MsAlertIcon, MsClockIcon, MsPlusIcon } from '../components/ui/MsIcons';
 import { MsButton } from '../components/ui/MsButton';
 
+const tooltipStyle = { borderRadius: '8px', border: '1px solid #c4cdd4', fontSize: 12, color: '#111417' };
 
 function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
   label: string; value: string | number; sub?: string;
   icon: typeof MsAlertIcon; color: string; iconBg: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 md:p-5">
+    <div className="bg-white rounded-xl border border-gray-010 shadow-card p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">{label}</p>
+        <p className="text-xs font-medium text-gray-050 uppercase tracking-wide">{label}</p>
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
           <Icon size={16} className={color} />
         </div>
       </div>
-      <p className={`text-2xl font-bold leading-none text-neutral-900`}>{value}</p>
-      {sub && <p className="text-xs text-neutral-400 mt-1.5">{sub}</p>}
+      <p className="text-2xl font-bold leading-none text-gray-099">{value}</p>
+      {sub && <p className="text-xs text-gray-040 mt-1.5">{sub}</p>}
     </div>
   );
 }
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
+import { AdminCycleWidget } from '../components/dashboard/AdminCycleWidget';
+import { TodayPanel } from '../components/dashboard/TodayPanel';
+import { PeerPickReminder } from '../components/review/PeerPickReminder';
+
 function AdminDashboard() {
   const { cycles, submissions } = useReviewStore();
   const { users } = useTeamStore();
@@ -60,7 +65,8 @@ function AdminDashboard() {
   const pendingCount = submissions.filter(s => s.status === 'not_started').length;
   const urgentCount = activeCycles.filter(c => isUrgent(c.selfReviewDeadline)).length;
 
-  const barColor = (rate: number) => rate >= 80 ? '#059669' : rate >= 50 ? '#4f46e5' : '#e11d48';
+  // DS: green-060 / blue-060 / red-050
+  const barColor = (rate: number) => rate >= 80 ? '#20903c' : rate >= 50 ? '#1482b8' : '#e61919';
 
   const headerActions = useMemo(() => (
     <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>새 리뷰 생성</MsButton>
@@ -109,24 +115,26 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      {/* 통계 카드 — 모바일 2열, 데스크톱 4열 */}
+      <TodayPanel variant="admin" />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-primary-600" iconBg="bg-primary-50" />
-        <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-success-600" iconBg="bg-success-50" />
-        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={Users as typeof MsAlertIcon} color="text-neutral-600" iconBg="bg-neutral-100" />
-        <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-primary-600" iconBg="bg-primary-50" />
+        <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-pink-050" iconBg="bg-pink-005" />
+        <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-green-060" iconBg="bg-green-005" />
+        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={Users as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
+        <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-pink-050" iconBg="bg-pink-005" />
       </div>
 
-      {/* 차트 섹션 — 모바일 1열, 데스크톱 3열 */}
+      <AdminCycleWidget />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-4">부서별 완료율</h2>
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-010 shadow-card p-5">
+          <h2 className="text-sm font-semibold text-gray-080 mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={deptStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="department" tick={{ fontSize: 12, fill: '#64748b' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} domain={[0, 100]} />
-              <Tooltip formatter={(v) => [`${v}%`, '완료율']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: 12, color: '#0f172a' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
+              <XAxis dataKey="department" tick={{ fontSize: 12, fill: '#6d7f92' }} />
+              <YAxis tick={{ fontSize: 11, fill: '#6d7f92' }} domain={[0, 100]} />
+              <Tooltip formatter={(v) => [`${v}%`, '완료율']} contentStyle={tooltipStyle} />
               <Bar dataKey="completionRate" radius={[6, 6, 0, 0]} label={{ position: 'top', fontSize: 11, formatter: (v: unknown) => `${v}%` }}>
                 {deptStats.map((entry, i) => (
                   <Cell key={i} fill={barColor(entry.completionRate)} />
@@ -136,18 +144,18 @@ function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-4">액션 필요</h2>
+        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+          <h2 className="text-sm font-semibold text-gray-080 mb-4">액션 필요</h2>
           <div className="space-y-3">
             {activeCycles.map(c => (
-              <div key={c.id} className="p-3 bg-neutral-50 rounded-lg border border-zinc-950/5">
+              <div key={c.id} className="p-3 bg-gray-005 rounded-lg border border-gray-010">
                 <button
                   onClick={() => navigate(`/cycles/${c.id}`)}
-                  className="text-xs font-medium text-neutral-800 mb-1 line-clamp-1 hover:text-primary-600 hover:underline text-left w-full"
+                  className="text-xs font-medium text-gray-080 mb-1 line-clamp-1 hover:text-pink-050 hover:underline text-left w-full"
                 >
                   {c.title}
                 </button>
-                <p className="text-xs text-neutral-500 mb-2">완료율 {c.completionRate}% · {deadlineLabel(c.selfReviewDeadline)}</p>
+                <p className="text-xs text-gray-050 mb-2">완료율 {c.completionRate}% · {deadlineLabel(c.selfReviewDeadline)}</p>
                 <ProgressBar value={c.completionRate} size="sm" />
               </div>
             ))}
@@ -155,25 +163,25 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-800">최근 활동</h2>
-          <button onClick={() => navigate('/cycles')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
+          <h2 className="text-sm font-semibold text-gray-080">최근 활동</h2>
+          <button onClick={() => navigate('/cycles')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
             전체 보기
           </button>
         </div>
         {activityFeed.length === 0 ? (
-          <p className="text-sm text-neutral-400 py-2">아직 활동 이력이 없습니다.</p>
+          <p className="text-sm text-gray-040 py-2">아직 활동 이력이 없습니다.</p>
         ) : (
           <div className="space-y-1">
             {activityFeed.map(item => (
               <div
                 key={item.key}
-                className="flex items-center gap-3 py-2 border-b border-neutral-50 last:border-0 px-1"
+                className="flex items-center gap-3 py-2 border-b border-gray-005 last:border-0 px-1"
               >
-                <div className="w-1.5 h-1.5 bg-neutral-300 rounded-full flex-shrink-0" />
-                <p className="text-sm text-neutral-700 flex-1">{item.text}</p>
-                <span className="text-xs text-neutral-400 flex-shrink-0 whitespace-nowrap">{item.time}</span>
+                <div className="w-1.5 h-1.5 bg-gray-030 rounded-full flex-shrink-0" />
+                <p className="text-sm text-gray-070 flex-1">{item.text}</p>
+                <span className="text-xs text-gray-040 flex-shrink-0 whitespace-nowrap">{item.time}</span>
               </div>
             ))}
           </div>
@@ -220,28 +228,30 @@ function ManagerDashboard() {
     return sub?.status || 'not_started';
   };
 
+  // DS: green-060 / blue-060 / gray-020
   const pieData = [
-    { name: '제출 완료', value: myDownwards.filter(s => s.status === 'submitted').length, color: '#059669' },
-    { name: '작성 중',  value: myDownwards.filter(s => s.status === 'in_progress').length, color: '#4f46e5' },
-    { name: '미작성',   value: myDownwards.filter(s => s.status === 'not_started').length, color: '#e2e8f0' },
+    { name: '제출 완료', value: myDownwards.filter(s => s.status === 'submitted').length, color: '#20903c' },
+    { name: '작성 중',  value: myDownwards.filter(s => s.status === 'in_progress').length, color: '#1482b8' },
+    { name: '미작성',   value: myDownwards.filter(s => s.status === 'not_started').length, color: '#c4cdd4' },
   ];
 
   return (
     <div className="space-y-5 md:space-y-6">
-      {/* 할 일 — 모바일 1열, 태블릿+ 2열 */}
+      <TodayPanel variant="leader" />
+      <PeerPickReminder />
       <div>
-        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-3">할 일</p>
+        <p className="text-xs font-semibold text-gray-050 uppercase tracking-widest mb-3">할 일</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {mySelfs.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/me')}
-              className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="bg-white rounded-xl border border-gray-010 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
             >
-              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-primary-50 text-primary-700">
+              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
                 자기평가
               </span>
-              <p className="text-sm font-semibold text-neutral-900 group-hover:text-primary-700 line-clamp-1">{activeCycle?.title}</p>
-              {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-primary-600 font-medium' : 'text-neutral-500'}`}>
+              <p className="text-sm font-semibold text-gray-099 group-hover:text-pink-060 line-clamp-1">{activeCycle?.title}</p>
+              {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-pink-050 font-medium' : 'text-gray-050'}`}>
                 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
               </p>}
             </button>
@@ -249,23 +259,22 @@ function ManagerDashboard() {
           {myDownwards.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/team')}
-              className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="bg-white rounded-xl border border-gray-010 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
             >
-              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-success-50 text-success-700">팀원 평가</span>
-              <p className="text-sm font-semibold text-neutral-900 group-hover:text-primary-700">
+              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
+              <p className="text-sm font-semibold text-gray-099 group-hover:text-pink-060">
                 {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
               </p>
-              {activeCycle && <p className="text-xs mt-1 text-neutral-500">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
+              {activeCycle && <p className="text-xs mt-1 text-gray-050">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
             </button>
           )}
         </div>
       </div>
 
-      {/* 팀원 현황 — 모바일 2열, 데스크톱 3열 */}
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-800">팀원 리뷰 현황</h2>
-          <button onClick={() => navigate('/reports')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
+          <h2 className="text-sm font-semibold text-gray-080">팀원 리뷰 현황</h2>
+          <button onClick={() => navigate('/reports')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
             리포트 보기
           </button>
         </div>
@@ -276,11 +285,11 @@ function ManagerDashboard() {
               <button
                 key={m.id}
                 onClick={() => activeCycle && navigate(`/reviews/team/${activeCycle.id}/${m.id}`)}
-                className="flex flex-col items-center p-3.5 bg-neutral-50 rounded-lg hover:bg-primary-50 border border-transparent hover:border-primary-100 transition-all group"
+                className="flex flex-col items-center p-3.5 bg-gray-005 rounded-lg hover:bg-pink-005 border border-transparent hover:border-pink-010 transition-all group"
               >
                 <UserAvatar user={m} size="lg" />
-                <p className="text-sm font-semibold text-neutral-900 mt-2">{m.name}</p>
-                <p className="text-xs text-neutral-400 mb-2">{m.position}</p>
+                <p className="text-sm font-semibold text-gray-099 mt-2">{m.name}</p>
+                <p className="text-xs text-gray-040 mb-2">{m.position}</p>
                 <StatusBadge type="submission" value={status} />
               </button>
             );
@@ -288,22 +297,21 @@ function ManagerDashboard() {
         </div>
       </div>
 
-      {/* 하단 카드 */}
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-neutral-800 mb-4">팀 리뷰 완료율</h2>
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+        <h2 className="text-sm font-semibold text-gray-080 mb-4">팀 리뷰 완료율</h2>
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
             <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
               {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
             </Pie>
-            <Tooltip formatter={(v) => [`${v}명`, '']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: 12, color: '#0f172a' }} />
+            <Tooltip formatter={(v) => [`${v}명`, '']} contentStyle={tooltipStyle} />
           </PieChart>
         </ResponsiveContainer>
         <div className="flex gap-3 justify-center mt-2 flex-wrap">
           {pieData.map(d => (
             <div key={d.name} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="text-xs text-neutral-500">{d.name} {d.value}명</span>
+              <span className="text-xs text-gray-050">{d.name} {d.value}명</span>
             </div>
           ))}
         </div>
@@ -327,16 +335,17 @@ function EmployeeDashboard() {
   return (
     <div className="space-y-5 md:space-y-6">
 
-      {/* CTA 카드 */}
+      <PeerPickReminder />
+
       {activeCycle && mySelf && mySelf.status !== 'submitted' && (
-        <div className="bg-white rounded-xl border border-primary-300 shadow-card p-5">
+        <div className="bg-white rounded-xl border border-pink-020 shadow-card p-5">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-primary-600 mb-1">지금 진행 중</p>
-              <h2 className="text-lg font-semibold text-neutral-900 mb-3 truncate">{activeCycle.title}</h2>
+              <p className="text-xs font-semibold text-pink-050 mb-1">지금 진행 중</p>
+              <h2 className="text-lg font-semibold text-gray-099 mb-3 truncate">{activeCycle.title}</h2>
               <div className="w-full sm:w-52">
                 <ProgressBar value={mySelf.answers.length} max={6} showPercent />
-                <p className="text-xs text-neutral-400 mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
+                <p className="text-xs text-gray-040 mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
               </div>
             </div>
             <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
@@ -346,12 +355,11 @@ function EmployeeDashboard() {
         </div>
       )}
 
-      {/* 이전 리뷰 타임라인 */}
       {pastSubmissions.length > 0 && (
-        <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5">
+        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-neutral-800">리뷰 이력</h2>
-            <button onClick={() => navigate('/reviews/me')} className="text-xs text-primary-600 hover:text-primary-700 hover:underline">
+            <h2 className="text-sm font-semibold text-gray-080">리뷰 이력</h2>
+            <button onClick={() => navigate('/reviews/me')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
               전체 보기
             </button>
           </div>
@@ -363,12 +371,12 @@ function EmployeeDashboard() {
                 <button
                   key={s.id}
                   onClick={() => navigate(`/reviews/me/${s.id}`)}
-                  className="w-full flex items-center gap-4 py-2 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 rounded-lg px-1 transition-colors"
+                  className="w-full flex items-center gap-4 py-2 border-b border-gray-005 last:border-0 hover:bg-gray-005 rounded-lg px-1 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center font-bold text-primary-700 flex-shrink-0 text-sm">{grade}</div>
+                  <div className="w-9 h-9 rounded-lg bg-pink-005 flex items-center justify-center font-bold text-pink-060 flex-shrink-0 text-sm">{grade}</div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-neutral-800">{cycle?.title}</p>
-                    <p className="text-xs text-neutral-400">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
+                    <p className="text-sm font-medium text-gray-080">{cycle?.title}</p>
+                    <p className="text-xs text-gray-040">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
                   </div>
                   <StatusBadge type="submission" value={s.status} />
                 </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import { MsLockIcon } from '../ui/MsIcons';
+import { MsLockIcon, MsShowIcon, MsHideIcon } from '../ui/MsIcons';
+import { MsButton } from '../ui/MsButton';
+import { MsInput } from '../ui/MsControl';
 import { useAuthStore } from '../../stores/authStore';
 import { changePassword } from '../../utils/authApi';
 
@@ -14,8 +15,8 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
 
   const strength = pw.length === 0 ? 0 : pw.length < 6 ? 1 : pw.length < 10 ? 2 : 3;
   const strengthLabel = ['', '약함', '보통', '강함'];
-  const strengthColor = ['', 'bg-rose-400', 'bg-amber-400', 'bg-emerald-400'];
-  const strengthText  = ['', 'text-rose-500', 'text-amber-500', 'text-emerald-600'];
+  const strengthColor = ['', 'bg-red-040', 'bg-yellow-060', 'bg-green-040'];
+  const strengthText  = ['', 'text-red-040', 'text-yellow-060', 'text-green-060'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,14 +32,14 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl ring-1 ring-zinc-950/5 w-full max-w-sm mx-4 p-6 space-y-5">
+      <div className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-010 w-full max-w-sm mx-4 p-6 space-y-5">
 
         <div className="text-center space-y-1">
-          <div className="inline-flex items-center justify-center size-11 bg-amber-100 rounded-xl mb-2">
-            <MsLockIcon size={20} className="text-amber-600" />
+          <div className="inline-flex items-center justify-center size-11 bg-yellow-005 rounded-xl mb-2">
+            <MsLockIcon size={20} className="text-yellow-060" />
           </div>
-          <h2 className="text-base font-semibold text-zinc-950">비밀번호 변경 필요</h2>
-          <p className="text-xs text-zinc-500 leading-relaxed">
+          <h2 className="text-base font-semibold text-gray-099">비밀번호 변경 필요</h2>
+          <p className="text-xs text-gray-050 leading-relaxed">
             초기 비밀번호(사번)로 로그인하셨습니다.<br />
             보안을 위해 새 비밀번호를 설정해 주세요.
           </p>
@@ -47,25 +48,19 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* 새 비밀번호 */}
           <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-1.5">새 비밀번호</label>
-            <div className="relative">
-              <input
-                type={show ? 'text' : 'password'}
-                value={pw}
-                onChange={e => { setPw(e.target.value); setError(''); }}
-                placeholder="6자 이상"
-                autoFocus
-                className="w-full px-3 py-2 pr-10 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShow(v => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            </div>
-
+            <MsInput
+              label="새 비밀번호"
+              type={show ? 'text' : 'password'}
+              value={pw}
+              onChange={e => { setPw(e.target.value); setError(''); }}
+              placeholder="6자 이상"
+              autoFocus
+              rightSlot={
+                <button type="button" onClick={() => setShow(v => !v)} className="text-gray-040 hover:text-gray-060">
+                  {show ? <MsHideIcon size={16} /> : <MsShowIcon size={16} />}
+                </button>
+              }
+            />
             {/* 강도 바 */}
             {pw.length > 0 && (
               <div className="flex items-center gap-2 mt-1.5">
@@ -73,7 +68,7 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
                   {[1, 2, 3].map(i => (
                     <div
                       key={i}
-                      className={`h-1 flex-1 rounded-full transition-colors ${strength >= i ? strengthColor[strength] : 'bg-zinc-100'}`}
+                      className={`h-1 flex-1 rounded-full transition-colors ${strength >= i ? strengthColor[strength] : 'bg-gray-010'}`}
                     />
                   ))}
                 </div>
@@ -85,28 +80,26 @@ export function ChangePasswordModal({ userId, onDone }: { userId: string; onDone
           </div>
 
           {/* 비밀번호 확인 */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-1.5">비밀번호 확인</label>
-            <input
-              type={show ? 'text' : 'password'}
-              value={pwConfirm}
-              onChange={e => { setPwConfirm(e.target.value); setError(''); }}
-              placeholder="비밀번호 재입력"
-              className="w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white"
-            />
-          </div>
+          <MsInput
+            label="비밀번호 확인"
+            type={show ? 'text' : 'password'}
+            value={pwConfirm}
+            onChange={e => { setPwConfirm(e.target.value); setError(''); }}
+            placeholder="비밀번호 재입력"
+          />
 
           {error && (
-            <p className="text-xs text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>
           )}
 
-          <button
+          <MsButton
             type="submit"
-            disabled={!pw || !pwConfirm || loading}
-            className="w-full py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            disabled={!pw || !pwConfirm}
+            loading={loading}
+            className="w-full"
           >
-            {loading ? '저장 중...' : '비밀번호 변경'}
-          </button>
+            비밀번호 변경
+          </MsButton>
         </form>
       </div>
     </div>

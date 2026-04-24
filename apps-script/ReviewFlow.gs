@@ -1,33 +1,34 @@
 /**
- * ReviewFlow — 통합 Apps Script
+ * ReviewFlow — 통합 Apps Script (Phase 3.3b-1 기준)
  *
- * ★ 필수 설정: SPREADSHEET_ID 에 스프레드시트 URL의 ID를 입력하세요.
- *   URL 예: https://docs.google.com/spreadsheets/d/★여기★/edit
+ * ★ 이 파일 하나만 사용하세요.
+ *   Apps Script 프로젝트에 Code.gs / Code_v2.gs / OrgSync.gs / ReviewSync.gs 등
+ *   다른 .gs 파일이 함께 있으면 doPost/doGet 이 충돌하여 일부 action 이 사라집니다.
  *
- * 시트 이름 (기존 탭 이름이 다르면 아래 상수만 수정):
- *   SHEET_USERS     : 구성원 탭 이름
- *   SHEET_ORG       : 조직구조 탭 이름 (없으면 자동 생성)
- *   SHEET_SECONDARY : 겸임 탭 이름 (없으면 자동 생성)
- *   SHEET_CYCLES    : 리뷰 탭 이름 (없으면 자동 생성)
- *   SHEET_TEMPLATES : 템플릿 탭 이름 (없으면 자동 생성)
- *   SHEET_SUBMISSIONS: 제출 탭 이름 (없으면 자동 생성)
+ * 배포: 확장 프로그램 → Apps Script → 배포 → 배포 관리 → 편집(연필) → 새 버전
+ *       (기존 Web App URL 유지)
  *
- * 배포: 확장 프로그램 → Apps Script → 배포 → 새 배포
- *       종류: 웹 앱 / 액세스: 모든 사용자
+ * 최초 실행 시 또는 신규 컬럼 추가 후 한번:
+ *   함수 드롭다운에서 `migrate_addMissingColumns` 선택 → 실행
  */
 
 /* ★ 스프레드시트 ID ★ */
 var SPREADSHEET_ID = '138NMXPcwrG_lOIkC27BGtTZLN-3Ql3mVOttvM5xD-mg';
 
-/* ── 시트 이름 상수 ─────────────────────────────────────────────── */
+/* ── 시트 이름 ─────────────────────────────────────────────────── */
 var SHEET_USERS       = '_구성원';
 var SHEET_ORG         = '_조직구조';
 var SHEET_SECONDARY   = '_겸임';
 var SHEET_CYCLES      = '_리뷰';
 var SHEET_TEMPLATES   = '_템플릿';
 var SHEET_SUBMISSIONS = '_제출';
+var SHEET_ACCOUNTS    = '_계정';
+var SHEET_AUDIT       = '_감사로그';
 
-/* ── 컬럼 헤더 정의 ─────────────────────────────────────────────── */
+/* ── 헤더 정의 ──────────────────────────────────────────────────
+ * 신규 컬럼은 항상 뒤에만 추가. upsertRow / appendRowData 가 자동 보강하므로
+ * 기존 시트 레이아웃을 변경·삭제·재배치하지 않습니다.
+ */
 var USER_HEADERS = [
   '사번', '주조직', '부조직', '팀', '스쿼드', '직책', '역할',
   '겸임 조직', '겸임 조직 직책', '직무',
@@ -43,26 +44,43 @@ var SECONDARY_HEADERS = [
 ];
 var CYCLE_HEADERS = [
   '사이클ID', '제목', '유형', '상태', '템플릿ID', '대상부서',
-  '자기평가마감', '매니저평가마감', '생성자ID', '생성일시', '완료율'
+  '자기평가마감', '매니저평가마감', '생성자ID', '생성일시', '완료율',
+  // Phase 3.1
+  '태그', '보관일시', '템플릿스냅샷JSON', '템플릿스냅샷일시', '복제원본ID',
+  // Phase 3.2a
+  '폴더ID', '대상모드', '대상매니저ID', '대상사용자IDS',
+  // Phase 3.2b
+  '예약발행일시', '자동전환JSON', '알림정책JSON', '편집잠금일시', '자동보관플래그', '종료일시',
+  // Phase 3.3a
+  '익명정책JSON', '공개정책JSON', '참고정보JSON',
+  // Phase 3.3b-1
+  '리뷰유형', '동료선택정책JSON'
 ];
 var TEMPLATE_HEADERS = [
   '템플릿ID', '이름', '설명', '기본템플릿', '생성자ID', '생성일시', '질문JSON'
 ];
 var SUBMISSION_HEADERS = [
   '제출ID', '사이클ID', '평가자ID', '평가대상ID', '유형', '상태',
-  '종합점수', '제출일시', '최종저장일시', '답변JSON'
+  '종합점수', '제출일시', '최종저장일시', '답변JSON',
+  // Phase 1
+  '리마인드JSON',
+  // Phase 2
+  '연장기한JSON', '대리작성자', '작성자이력JSON',
+  // Phase 3.2a
+  '자동제외JSON'
+];
+var ACCOUNT_HEADERS  = ['사번', '이메일', '비밀번호해시'];
+var AUDIT_HEADERS = [
+  '로그ID', '사이클ID', '발생자ID', '액션', '대상IDS', '요약', '메타JSON', '발생일시'
 ];
 
-var SHEET_ACCOUNTS   = '_계정';
-var ACCOUNT_HEADERS  = ['사번', '이메일', '비밀번호해시'];
-
-/* ── 유틸: 스프레드시트 열기 ────────────────────────────────────── */
+/* ── 유틸: 스프레드시트 ─────────────────────────────────────────── */
 function getSpreadsheet() {
   if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
-/* ── 유틸: 시트 가져오기 (없으면 생성 + 헤더) ──────────────────── */
+/* 시트 가져오기 (없으면 생성 + 초기 헤더, 있으면 누락 컬럼 자동 보강) */
 function getSheet(name, headers) {
   var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(name);
@@ -73,11 +91,36 @@ function getSheet(name, headers) {
     sheet.getRange(1, 1, 1, headers.length)
          .setFontWeight('bold')
          .setBackground('#f3f4f6');
+  } else {
+    ensureHeaders(sheet, headers);
   }
   return sheet;
 }
 
-/* ── 유틸: 시트 전체 행 → 객체 배열 ────────────────────────────── */
+/* 누락된 헤더를 시트 뒤에 자동 추가 (기존 컬럼은 보존) */
+function ensureHeaders(sheet, requiredHeaders) {
+  var lastCol  = sheet.getLastColumn();
+  var existing = lastCol > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+    : [];
+  if (existing.length === 0 || existing.every(function(x) { return x === ''; })) {
+    sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, requiredHeaders.length)
+         .setFontWeight('bold')
+         .setBackground('#f3f4f6');
+    return;
+  }
+  var missing = requiredHeaders.filter(function(h) { return existing.indexOf(h) < 0; });
+  if (missing.length === 0) return;
+  var startCol = existing.length + 1;
+  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  sheet.getRange(1, startCol, 1, missing.length)
+       .setFontWeight('bold')
+       .setBackground('#f3f4f6');
+}
+
+/* 시트 전체 행 → 객체 배열 */
 function sheetToObjects(sheet) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
@@ -89,7 +132,7 @@ function sheetToObjects(sheet) {
   });
 }
 
-/* ── 유틸: 키 컬럼으로 행 번호 검색 ────────────────────────────── */
+/* 키 컬럼으로 행 번호 검색 */
 function findRowByKey(sheet, keyHeader, keyValue) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return -1;
@@ -102,8 +145,18 @@ function findRowByKey(sheet, keyHeader, keyValue) {
   return -1;
 }
 
-/* ── 유틸: upsert ───────────────────────────────────────────────── */
-function upsertRow(sheet, headers, keyHeader, rowData) {
+/* upsert (있으면 덮어쓰기, 없으면 추가) — 시트에 없는 키는 헤더로 자동 추가 */
+function upsertRow(sheet, knownHeaders, keyHeader, rowData) {
+  var dataKeys  = Object.keys(rowData);
+  var extraKeys = dataKeys.filter(function(k) { return knownHeaders.indexOf(k) < 0; });
+  if (extraKeys.length > 0) {
+    ensureHeaders(sheet, knownHeaders.concat(extraKeys));
+  } else {
+    ensureHeaders(sheet, knownHeaders);
+  }
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
   var keyValue = rowData[keyHeader];
   var rowNum   = findRowByKey(sheet, keyHeader, keyValue);
   var values   = headers.map(function(h) {
@@ -116,13 +169,24 @@ function upsertRow(sheet, headers, keyHeader, rowData) {
   }
 }
 
-/* ── 유틸: 키로 행 삭제 ─────────────────────────────────────────── */
+/* append-only (감사 로그) */
+function appendRowData(sheet, knownHeaders, rowData) {
+  var dataKeys  = Object.keys(rowData);
+  var extraKeys = dataKeys.filter(function(k) { return knownHeaders.indexOf(k) < 0; });
+  if (extraKeys.length > 0) ensureHeaders(sheet, knownHeaders.concat(extraKeys));
+  else ensureHeaders(sheet, knownHeaders);
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var values  = headers.map(function(h) { return rowData[h] !== undefined ? rowData[h] : ''; });
+  sheet.appendRow(values);
+}
+
 function deleteRowByKey(sheet, keyHeader, keyValue) {
   var rowNum = findRowByKey(sheet, keyHeader, keyValue);
   if (rowNum > 0) sheet.deleteRow(rowNum);
 }
 
-/* ── 유틸: ETag (djb2 해시) ─────────────────────────────────────── */
+/* ETag (djb2) */
 function simpleHash(str) {
   var hash = 5381;
   for (var i = 0; i < str.length; i++) {
@@ -135,7 +199,6 @@ function computeEtag(sheet) {
   return simpleHash(JSON.stringify(sheet.getDataRange().getValues()));
 }
 
-/* ── 유틸: 사번 자동 생성 ──────────────────────────────────────── */
 function generateEmployeeId(sheet) {
   var year    = String(new Date().getFullYear());
   var data    = sheet.getDataRange().getValues();
@@ -153,7 +216,6 @@ function generateEmployeeId(sheet) {
   return year + String(maxSeq + 1).padStart(3, '0');
 }
 
-/* ── SHA-256 해시 ───────────────────────────────────────────────── */
 function sha256Hex(text) {
   var bytes = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8
@@ -163,17 +225,14 @@ function sha256Hex(text) {
   }).join('');
 }
 
-/** 헤더 이름 정규화 — 공백 제거 + 소문자 (열 이름 변형 대응) */
 function normalizeKey(k) {
   return String(k).replace(/\s+/g, '').toLowerCase();
 }
 
-/** 특정 열의 일부 값만 업데이트 (나머지 값 유지). 행 없으면 false 반환 */
 function patchRowByKey(sheet, keyHeader, keyValue, patch) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 2) return false;
   var headers = data[0];
-  // 정규화된 키로 열 인덱스 찾기
   var keyCol = -1;
   for (var i = 0; i < headers.length; i++) {
     if (normalizeKey(headers[i]) === normalizeKey(keyHeader)) { keyCol = i; break; }
@@ -196,7 +255,7 @@ function patchRowByKey(sheet, keyHeader, keyValue, patch) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   doGet
+   doGet — 데이터 조회
    ══════════════════════════════════════════════════════════════════ */
 function doGet(e) {
   try {
@@ -204,7 +263,7 @@ function doGet(e) {
     var action     = params.action || 'getOrg';
     var clientEtag = params.etag || '';
 
-    /* ── 조직/구성원 ── */
+    /* 조직/구성원 */
     if (action === 'getOrg') {
       var sheet      = getSheet(SHEET_USERS, USER_HEADERS);
       var serverEtag = computeEtag(sheet);
@@ -220,7 +279,7 @@ function doGet(e) {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_SECONDARY, SECONDARY_HEADERS)) });
     }
 
-    /* ── 리뷰 운영 ── */
+    /* 리뷰 운영 */
     if (action === 'getCycles') {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_CYCLES, CYCLE_HEADERS)) });
     }
@@ -230,6 +289,9 @@ function doGet(e) {
     if (action === 'getSubmissions') {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_SUBMISSIONS, SUBMISSION_HEADERS)) });
     }
+    if (action === 'getAuditLogs') {
+      return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_AUDIT, AUDIT_HEADERS)) });
+    }
 
     return jsonResponse({ error: '알 수 없는 action: ' + action });
   } catch (err) {
@@ -238,7 +300,7 @@ function doGet(e) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   doPost
+   doPost — 데이터 쓰기
    ══════════════════════════════════════════════════════════════════ */
 function doPost(e) {
   try {
@@ -258,7 +320,6 @@ function doPost(e) {
           account = accounts[i]; break;
         }
       }
-      // _계정에 없으면 _구성원에서 이메일로 찾아 자동 초기화 (초기 비밀번호 = 사번)
       if (!account) {
         var allUsers = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
         var matchUser = null;
@@ -275,7 +336,6 @@ function doPost(e) {
         account = { '사번': autoId, '이메일': emailInput, '비밀번호해시': '' };
       }
       var userId  = String(account['사번']).trim();
-      // 열 이름 불일치 대응: 정규화된 키로 해시 찾기
       var hashKey = Object.keys(account).filter(function(k) {
         return normalizeKey(k) === '비밀번호해시';
       })[0] || '비밀번호해시';
@@ -291,7 +351,6 @@ function doPost(e) {
       var patched = patchRowByKey(sheet, '사번', data['userId'], {
         '비밀번호해시': data['passwordHash'],
       });
-      // 계정 행이 없으면 _구성원에서 이메일 찾아 새로 생성
       if (!patched) {
         var email   = '';
         var urows   = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
@@ -352,7 +411,6 @@ function doPost(e) {
       var userId = data['사번'] || generateEmployeeId(sheet);
       data['사번'] = userId;
       upsertRow(sheet, USER_HEADERS, '사번', data);
-      // _계정 탭에 자동 등록 (초기 비밀번호 = 사번)
       var accSheet = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
       if (findRowByKey(accSheet, '사번', userId) < 0) {
         upsertRow(accSheet, ACCOUNT_HEADERS, '사번', {
@@ -465,6 +523,12 @@ function doPost(e) {
       return jsonResponse({ ok: true });
     }
 
+    /* ── 감사 로그 (append-only) ── */
+    if (action === 'appendAudit') {
+      appendRowData(getSheet(SHEET_AUDIT, AUDIT_HEADERS), AUDIT_HEADERS, data);
+      return jsonResponse({ ok: true });
+    }
+
     return jsonResponse({ error: '알 수 없는 action: ' + action });
   } catch (err) {
     return jsonResponse({ error: String(err) });
@@ -476,4 +540,20 @@ function jsonResponse(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   마이그레이션 — 신규 컬럼을 기존 시트에 일괄 보강.
+   Apps Script 편집기에서 한번만 실행.
+   ══════════════════════════════════════════════════════════════════ */
+function migrate_addMissingColumns() {
+  ensureHeaders(getSheet(SHEET_USERS,       USER_HEADERS),       USER_HEADERS);
+  ensureHeaders(getSheet(SHEET_ORG,         ORG_HEADERS),        ORG_HEADERS);
+  ensureHeaders(getSheet(SHEET_SECONDARY,   SECONDARY_HEADERS),  SECONDARY_HEADERS);
+  ensureHeaders(getSheet(SHEET_CYCLES,      CYCLE_HEADERS),      CYCLE_HEADERS);
+  ensureHeaders(getSheet(SHEET_TEMPLATES,   TEMPLATE_HEADERS),   TEMPLATE_HEADERS);
+  ensureHeaders(getSheet(SHEET_SUBMISSIONS, SUBMISSION_HEADERS), SUBMISSION_HEADERS);
+  ensureHeaders(getSheet(SHEET_ACCOUNTS,    ACCOUNT_HEADERS),    ACCOUNT_HEADERS);
+  ensureHeaders(getSheet(SHEET_AUDIT,       AUDIT_HEADERS),      AUDIT_HEADERS);
+  Logger.log('마이그레이션 완료 — 8개 시트 헤더 점검됨.');
 }

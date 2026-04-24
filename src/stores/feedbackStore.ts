@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { safeStorage } from '../utils/safeStorage';
 import type { Feedback } from '../types';
 
 interface FeedbackState {
@@ -21,6 +22,9 @@ export const useFeedbackStore = create<FeedbackState>()(
         };
       },
     }),
-    { name: 'review-feedback-v2' }
+    {
+      name: 'review-feedback-v2',
+      storage: createJSONStorage(() => safeStorage),
+    }
   )
 );

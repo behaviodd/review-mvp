@@ -7,6 +7,7 @@
  */
 
 import type { ReviewCycle, ReviewTemplate, ReviewSubmission, User } from '../types';
+import { resolveTargetMembers } from './resolveTargets';
 
 // ─── 포맷 헬퍼 ────────────────────────────────────────────────────────────────
 
@@ -243,9 +244,7 @@ export async function syncCycle(
   const selfSubs  = cycleSubs.filter(s => s.type === 'self');
   const mgrSubs   = cycleSubs.filter(s => s.type === 'downward');
 
-  const targetMembers = allUsers.filter(
-    u => cycle.targetDepartments.includes(u.department) && u.role !== 'admin',
-  );
+  const targetMembers = resolveTargetMembers(cycle, allUsers);
 
   const comparisonRows = targetMembers.map(m =>
     buildComparisonRow(

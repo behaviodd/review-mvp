@@ -87,7 +87,7 @@ export function parseSheetUser(row: SheetRow): User | null {
     phone:           str(row['연락처'])   || undefined,
     joinDate:        normalizeDate(str(row['입사일'])),
     jobFunction:     str(row['직무'])     || undefined,
-    isActive: true,
+    isActive: str(row['재직 여부']).toLowerCase() !== 'false',
   };
 }
 

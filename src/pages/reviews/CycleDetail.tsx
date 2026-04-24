@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
+import { Pill } from '../../components/ui/Pill';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
@@ -7,12 +9,12 @@ import { useTeamStore } from '../../stores/teamStore';
 import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
-import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
 import { Users, BarChart2, Eye } from 'lucide-react';
 import {
-  MsChevronLeftIcon, MsCalendarIcon, MsCancelIcon, MsEditIcon,
+  MsCalendarIcon, MsCancelIcon, MsEditIcon,
   MsCheckIcon, MsDownloadIcon, MsRefreshIcon, MsWarningIcon, MsStarIcon, MsDeleteIcon,
+  MsSettingIcon,
 } from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
 import { exportCycleToCSV } from '../../utils/exportUtils';
@@ -20,6 +22,18 @@ import { syncCycle } from '../../utils/sheetsSync';
 import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
 import type { ReviewCycle, ReviewStatus, ReviewSubmission, ReviewTemplate, User } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
+import { MsInput } from '../../components/ui/MsControl';
+import { getSmallestOrg } from '../../utils/userUtils';
+import { OpsCenter } from '../../components/review/OpsCenter';
+import { SubmissionActionRail } from '../../components/review/SubmissionActionRail';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { useAuthStore } from '../../stores/authStore';
+import { PreflightModal } from '../../components/review/modals/PreflightModal';
+import { DryRunModal } from '../../components/review/modals/DryRunModal';
+import { CycleSettingsDrawer } from '../../components/review/CycleSettingsDrawer';
+import { runPreflight, type PreflightResult } from '../../utils/cyclePreflight';
+import { getEffectiveTemplate } from '../../utils/effectiveTemplate';
+import { resolveTargetMembers } from '../../utils/resolveTargets';
 
 // 상태 전환 정의
 const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
@@ -30,9 +44,9 @@ const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
 }>> = {
   draft: {
     next: 'self_review',
-    label: '발행하기',
+    label: '사전 점검 후 발행',
     isDanger: false,
-    msg: '발행하면 대상 구성원들이 자기평가를 시작할 수 있습니다.',
+    msg: '사전 점검을 통과하면 대상 구성원들이 자기평가를 시작할 수 있습니다.',
   },
   self_review: {
     next: 'manager_review',
@@ -106,31 +120,26 @@ function CycleEditModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-modal w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-base font-semibold text-neutral-900">리뷰 편집</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors">
-            <MsCancelIcon size={16} className="text-neutral-500" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-010">
+          <h2 className="text-base font-semibold text-gray-099">리뷰 편집</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-010 rounded-lg transition-colors">
+            <MsCancelIcon size={16} className="text-gray-050" />
           </button>
         </div>
 
         {/* 모달 본문 */}
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
           {/* 리뷰 이름 */}
-          <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-              리뷰 이름 <span className="text-danger-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
-            />
-          </div>
+          <MsInput
+            label="리뷰 이름 *"
+            type="text"
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+          />
 
           {/* 리뷰 유형 */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">리뷰 유형</label>
+            <label className="block text-xs font-semibold text-gray-060 mb-1.5">리뷰 유형</label>
             <div className="flex gap-2">
               {([['scheduled', '정기 리뷰'], ['adhoc', '수시 리뷰']] as const).map(([val, label]) => (
                 <button
@@ -139,8 +148,8 @@ function CycleEditModal({
                   onClick={() => setForm(f => ({ ...f, type: val }))}
                   className={`flex-1 py-2 rounded border-2 text-sm font-medium transition-all ${
                     form.type === val
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                      ? 'border-pink-040 bg-pink-005 text-pink-060'
+                      : 'border-gray-020 text-gray-060 hover:border-gray-030'
                   }`}
                 >
                   {label}
@@ -151,7 +160,7 @@ function CycleEditModal({
 
           {/* 리뷰 템플릿 */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">리뷰 템플릿</label>
+            <label className="block text-xs font-semibold text-gray-060 mb-1.5">리뷰 템플릿</label>
             <div className="space-y-2">
               {templates.map(t => (
                 <button
@@ -160,19 +169,19 @@ function CycleEditModal({
                   onClick={() => setForm(f => ({ ...f, templateId: t.id }))}
                   className={`w-full flex items-center justify-between p-3 rounded border-2 text-left transition-all ${
                     form.templateId === t.id
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-neutral-200 hover:border-neutral-300'
+                      ? 'border-pink-040 bg-pink-005'
+                      : 'border-gray-020 hover:border-gray-030'
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-medium ${form.templateId === t.id ? 'text-primary-700' : 'text-neutral-700'}`}>
+                    <p className={`text-sm font-medium ${form.templateId === t.id ? 'text-pink-060' : 'text-gray-070'}`}>
                       {t.name}
                     </p>
-                    <p className="text-xs text-neutral-400 mt-0.5">{t.description}</p>
+                    <p className="text-xs text-gray-040 mt-0.5">{t.description}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <span className="text-xs text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">{t.questions.length}문항</span>
-                    {form.templateId === t.id && <MsCheckIcon size={16} className="text-primary-600" />}
+                    <span className="text-xs text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded">{t.questions.length}문항</span>
+                    {form.templateId === t.id && <MsCheckIcon size={16} className="text-pink-050" />}
                   </div>
                 </button>
               ))}
@@ -181,7 +190,7 @@ function CycleEditModal({
 
           {/* 대상 부서 */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">대상 부서</label>
+            <label className="block text-xs font-semibold text-gray-060 mb-1.5">대상 부서</label>
             <div className="flex flex-wrap gap-2">
               {departments.map(dept => {
                 const selected = form.targetDepartments.includes(dept);
@@ -193,53 +202,43 @@ function CycleEditModal({
                     onClick={() => toggleDept(dept)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-medium transition-all ${
                       selected
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                        ? 'border-pink-040 bg-pink-005 text-pink-060'
+                        : 'border-gray-020 text-gray-060 hover:border-gray-030'
                     }`}
                   >
                     {selected && <MsCheckIcon size={12} />}
                     {dept}
-                    <span className="text-neutral-400">{count}명</span>
+                    <span className="text-gray-040">{count}명</span>
                   </button>
                 );
               })}
             </div>
             {form.targetDepartments.length > 0 && (
-              <p className="text-xs text-neutral-400 mt-2">
-                총 <strong className="text-neutral-700">{targetMembers.length}명</strong> 포함
+              <p className="text-xs text-gray-040 mt-2">
+                총 <strong className="text-gray-070">{targetMembers.length}명</strong> 포함
               </p>
             )}
           </div>
 
           {/* 일정 */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                자기평가 마감일 <span className="text-danger-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.selfReviewDeadline}
-                onChange={e => setForm(f => ({ ...f, selfReviewDeadline: e.target.value }))}
-                className="w-full px-3 py-2 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                조직장 리뷰 마감일 <span className="text-danger-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.managerReviewDeadline}
-                onChange={e => setForm(f => ({ ...f, managerReviewDeadline: e.target.value }))}
-                className="w-full px-3 py-2 border border-neutral-200 rounded bg-neutral-50 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:bg-white"
-              />
-            </div>
+            <MsInput
+              label="자기평가 마감일 *"
+              type="date"
+              value={form.selfReviewDeadline}
+              onChange={e => setForm(f => ({ ...f, selfReviewDeadline: e.target.value }))}
+            />
+            <MsInput
+              label="조직장 리뷰 마감일 *"
+              type="date"
+              value={form.managerReviewDeadline}
+              onChange={e => setForm(f => ({ ...f, managerReviewDeadline: e.target.value }))}
+            />
           </div>
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-neutral-100">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-010">
           <MsButton variant="outline-default" onClick={onClose}>취소</MsButton>
           <MsButton
             onClick={handleSave}
@@ -258,34 +257,34 @@ const RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매�
 
 function AnswerView({ q, ans }: { q: ReviewTemplate['questions'][0]; ans: ReviewSubmission['answers'][0] | undefined }) {
   if (q.type === 'rating' || q.type === 'competency') {
-    if (ans?.ratingValue == null) return <p className="text-xs text-neutral-300 italic">미응답</p>;
+    if (ans?.ratingValue == null) return <p className="text-xs text-gray-030 italic">미응답</p>;
     const rv = ans.ratingValue;
     return (
       <div className="space-y-1.5">
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map(n => (
             <div key={n} className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors ${
-              n === rv ? 'bg-primary-600 text-white shadow-sm' : n < rv ? 'bg-primary-100 text-primary-400' : 'bg-neutral-100 text-neutral-300'
+              n === rv ? 'bg-pink-050 text-white shadow-sm' : n < rv ? 'bg-pink-010 text-pink-040' : 'bg-gray-010 text-gray-030'
             }`}>{n}</div>
           ))}
         </div>
-        <span className="text-xs font-semibold text-primary-700">{RATING_LABELS[rv]}</span>
+        <span className="text-xs font-semibold text-pink-060">{RATING_LABELS[rv]}</span>
       </div>
     );
   }
   if (q.type === 'multiple_choice') {
     const opts = ans?.selectedOptions ?? [];
-    if (!opts.length) return <p className="text-xs text-neutral-300 italic">미응답</p>;
+    if (!opts.length) return <p className="text-xs text-gray-030 italic">미응답</p>;
     return (
       <div className="flex flex-wrap gap-1">
         {opts.map(v => (
-          <span key={v} className="px-2 py-0.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-full border border-primary-100">{v}</span>
+          <span key={v} className="px-2 py-0.5 text-xs font-medium bg-pink-005 text-pink-060 rounded-full border border-pink-010">{v}</span>
         ))}
       </div>
     );
   }
-  if (!ans?.textValue?.trim()) return <p className="text-xs text-neutral-300 italic">미응답</p>;
-  return <p className="text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">{ans.textValue}</p>;
+  if (!ans?.textValue?.trim()) return <p className="text-xs text-gray-030 italic">미응답</p>;
+  return <p className="text-xs text-gray-070 whitespace-pre-wrap leading-relaxed">{ans.textValue}</p>;
 }
 
 function SubmissionViewPanel({
@@ -294,6 +293,8 @@ function SubmissionViewPanel({
   managerSub,
   reviewer,
   template,
+  cycle,
+  currentUser,
   onClose,
 }: {
   member: User;
@@ -301,6 +302,8 @@ function SubmissionViewPanel({
   managerSub: ReviewSubmission | undefined;
   reviewer: User | undefined;
   template: ReviewTemplate | undefined;
+  cycle: ReviewCycle;
+  currentUser: User | null;
   onClose: () => void;
 }) {
   const allQuestions = template?.questions ?? [];
@@ -318,19 +321,19 @@ function SubmissionViewPanel({
   }) => (
     <div className={`px-5 py-3 ${accent}`}>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-neutral-800">{label}</span>
+        <span className="text-sm font-semibold text-gray-080">{label}</span>
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
           sub?.status === 'submitted'
-            ? 'bg-success-100 text-success-700'
+            ? 'bg-green-010 text-green-060'
             : sub?.status === 'in_progress'
-            ? 'bg-amber-100 text-amber-700'
-            : 'bg-neutral-100 text-neutral-400'
+            ? 'bg-yellow-005 text-yellow-060'
+            : 'bg-gray-010 text-gray-040'
         }`}>
           {sub?.status === 'submitted' ? '제출 완료' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
         </span>
       </div>
       {sub?.submittedAt && (
-        <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(sub.submittedAt)} 제출</p>
+        <p className="text-[11px] text-gray-040 mt-0.5">{formatDate(sub.submittedAt)} 제출</p>
       )}
       {extra}
     </div>
@@ -348,33 +351,43 @@ function SubmissionViewPanel({
       <div className="fixed top-0 right-0 h-screen w-full max-w-5xl bg-white shadow-2xl z-50 flex flex-col">
 
         {/* 패널 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-010 flex-shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <UserAvatar user={member} size="md" />
             <div>
-              <p className="text-base font-semibold text-neutral-900">{member.name}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">{member.position} · {member.department}</p>
+              <p className="text-base font-semibold text-gray-099">{member.name}</p>
+              <p className="text-xs text-gray-040 mt-0.5">{member.position} · {getSmallestOrg(member)}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
-            <MsCancelIcon size={20} className="text-neutral-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-010 rounded-lg transition-colors">
+            <MsCancelIcon size={20} className="text-gray-050" />
           </button>
         </div>
 
+        <SubmissionActionRail
+          cycle={cycle}
+          currentUser={currentUser}
+          selfSub={selfSub}
+          managerSub={managerSub}
+          revieweeId={member.id}
+          revieweeName={member.name}
+          reviewerName={reviewer?.name}
+        />
+
         {/* 컬럼 헤더 */}
-        <div className="grid grid-cols-2 border-b border-neutral-100 flex-shrink-0 divide-x divide-neutral-100">
+        <div className="grid grid-cols-2 border-b border-gray-010 flex-shrink-0 divide-x divide-gray-010">
           <ColHeader
             label="자기평가"
             sub={selfSub}
-            accent="bg-indigo-50/60"
+            accent="bg-blue-005/60"
           />
           <ColHeader
             label="조직장 리뷰"
             sub={managerSub}
-            accent="bg-emerald-50/60"
+            accent="bg-green-005/60"
             extra={reviewer && (
-              <p className="text-[11px] text-neutral-400 mt-0.5">
-                작성자: <strong className="text-neutral-600">{reviewer.name}</strong>
+              <p className="text-[11px] text-gray-040 mt-0.5">
+                작성자: <strong className="text-gray-060">{reviewer.name}</strong>
               </p>
             )}
           />
@@ -382,22 +395,22 @@ function SubmissionViewPanel({
 
         {/* 종합 평점 비교 행 */}
         {showOverall && (
-          <div className="grid grid-cols-2 divide-x divide-neutral-100 border-b border-neutral-100 flex-shrink-0">
+          <div className="grid grid-cols-2 divide-x divide-gray-010 border-b border-gray-010 flex-shrink-0">
             {[selfSub, managerSub].map((s, i) => (
-              <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i === 0 ? 'bg-indigo-50/40' : 'bg-emerald-50/40'}`}>
+              <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i === 0 ? 'bg-blue-005/40' : 'bg-green-005/40'}`}>
                 {s?.overallRating != null ? (
                   <>
-                    <MsStarIcon size={12} className="text-primary-400 flex-shrink-0" />
+                    <MsStarIcon size={12} className="text-pink-040 flex-shrink-0" />
                     <div>
-                      <span className="text-[10px] text-neutral-400 font-medium">종합 평점</span>
-                      <p className="text-base font-bold text-primary-700 leading-none mt-0.5">
+                      <span className="text-[10px] text-gray-040 font-medium">종합 평점</span>
+                      <p className="text-base font-bold text-pink-060 leading-none mt-0.5">
                         {s.overallRating.toFixed(1)}
                         <span className="text-xs font-medium ml-1">{RATING_LABELS[Math.round(s.overallRating)] ?? ''}</span>
                       </p>
                     </div>
                   </>
                 ) : (
-                  <span className="text-xs text-neutral-300 italic">종합 평점 없음</span>
+                  <span className="text-xs text-gray-030 italic">종합 평점 없음</span>
                 )}
               </div>
             ))}
@@ -407,7 +420,7 @@ function SubmissionViewPanel({
         {/* 질문별 답변 — 병렬 비교 */}
         <div className="flex-1 overflow-y-auto">
           {allQuestions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-neutral-300">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-030">
               <Eye className="w-8 h-8" />
               <p className="text-sm">템플릿 정보가 없습니다.</p>
             </div>
@@ -423,50 +436,50 @@ function SubmissionViewPanel({
                 q.type === 'multiple_choice' ? '객관식' : '주관식';
 
               return (
-                <div key={q.id} className={`${idx < allQuestions.length - 1 ? 'border-b border-neutral-100' : ''}`}>
+                <div key={q.id} className={`${idx < allQuestions.length - 1 ? 'border-b border-gray-010' : ''}`}>
                   {/* 질문 텍스트 — 전체 너비 */}
                   <div className="flex items-start gap-2.5 px-5 pt-4 pb-3">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-100 text-[10px] font-bold text-neutral-500 flex items-center justify-center mt-0.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-010 text-[10px] font-bold text-gray-050 flex items-center justify-center mt-0.5">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded">
                           {typeLabel}
                         </span>
                         {q.isPrivate && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">비공개</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-yellow-060 bg-yellow-005 px-1.5 py-0.5 rounded">비공개</span>
                         )}
                         {q.target !== 'both' && (
-                          <span className="text-[10px] font-semibold text-neutral-300 bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-100">
+                          <span className="text-[10px] font-semibold text-gray-030 bg-gray-005 px-1.5 py-0.5 rounded border border-gray-010">
                             {q.target === 'self' ? '본인 작성' : '조직장 작성'}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-semibold text-neutral-800 leading-snug">{q.text}</p>
+                      <p className="text-sm font-semibold text-gray-080 leading-snug">{q.text}</p>
                     </div>
                   </div>
 
                   {/* 답변 2컬럼 */}
-                  <div className="grid grid-cols-2 divide-x divide-neutral-100 pb-4">
-                    <div className={`px-5 ${hasSelf ? '' : 'bg-neutral-50/50'}`}>
+                  <div className="grid grid-cols-2 divide-x divide-gray-010 pb-4">
+                    <div className={`px-5 ${hasSelf ? '' : 'bg-gray-005/50'}`}>
                       {hasSelf
                         ? (selfSub?.status === 'submitted'
                           ? <AnswerView q={q} ans={selfAns} />
-                          : <p className="text-xs text-neutral-300 italic">
+                          : <p className="text-xs text-gray-030 italic">
                               {selfSub?.status === 'in_progress' ? '작성 중' : '미제출'}
                             </p>)
-                        : <p className="text-xs text-neutral-200 italic">해당 없음</p>
+                        : <p className="text-xs text-gray-020 italic">해당 없음</p>
                       }
                     </div>
-                    <div className={`px-5 ${hasMgr ? '' : 'bg-neutral-50/50'}`}>
+                    <div className={`px-5 ${hasMgr ? '' : 'bg-gray-005/50'}`}>
                       {hasMgr
                         ? (managerSub?.status === 'submitted'
                           ? <AnswerView q={q} ans={mgrAns} />
-                          : <p className="text-xs text-neutral-300 italic">
+                          : <p className="text-xs text-gray-030 italic">
                               {managerSub?.status === 'in_progress' ? '작성 중' : '미제출'}
                             </p>)
-                        : <p className="text-xs text-neutral-200 italic">해당 없음</p>
+                        : <p className="text-xs text-gray-020 italic">해당 없음</p>
                       }
                     </div>
                   </div>
@@ -483,12 +496,12 @@ function SubmissionViewPanel({
 
 export function CycleDetail() {
   const { cycleId } = useParams<{ cycleId: string }>();
-  const { cycles, submissions, updateCycle, deleteCycle, upsertSubmission, templates } = useReviewStore();
+  const { cycles, submissions, updateCycle, deleteCycle, upsertSubmission, templates, publishCycle } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
   const { addNotification } = useNotificationStore();
+  const currentUser = useAuthStore(s => s.currentUser);
   const navigate = useNavigate();
   const showToast = useShowToast();
-  const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showEdit, setShowEdit] = useState(searchParams.get('edit') === '1');
@@ -497,6 +510,12 @@ export function CycleDetail() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [preflightResult, setPreflightResult] = useState<PreflightResult | null>(null);
+  const [preflightOpen, setPreflightOpen] = useState(false);
+  const [dryRunOpen, setDryRunOpen] = useState(false);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlockReason, setUnlockReason] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { scriptUrl, enabled, markSynced, lastSyncAt } = useSheetsSyncStore();
 
   useEffect(() => {
@@ -507,11 +526,98 @@ export function CycleDetail() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cycle = cycles.find(c => c.id === cycleId);
+
+  const headerSubtitle = useMemo(() => {
+    if (!cycle) return null;
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span>{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'} · 생성 {formatDate(cycle.createdAt)}</span>
+        {cycle.scheduledPublishAt && cycle.status === 'draft' && (
+          <Pill tone="info" size="xs">⏰ 예약 발행 · {new Date(cycle.scheduledPublishAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Pill>
+        )}
+        {cycle.autoAdvance && <Pill tone="purple" size="xs">⚙ 자동 전환</Pill>}
+        {cycle.reminderPolicy && cycle.reminderPolicy.length > 0 && (
+          <Pill tone="warning" size="xs">🔔 자동 리마인드 {cycle.reminderPolicy.length}</Pill>
+        )}
+        {cycle.editLockedAt && <Pill tone="neutral" size="xs">🔒 편집 잠김</Pill>}
+        {cycle.autoArchived && <Pill tone="neutral" size="xs">자동 보관됨</Pill>}
+      </div>
+    );
+  }, [cycle]);
+
+  const headerActions = useMemo(() => {
+    if (!cycle) return null;
+    const transition = STATUS_TRANSITIONS[cycle.status];
+    return (
+      <>
+        <StatusBadge type="review" value={cycle.status} />
+        {cycle.editLockedAt && currentUser?.role === 'admin' && (
+          <MsButton size="sm" variant="outline-default" onClick={() => setUnlockOpen(true)}>잠금 해제</MsButton>
+        )}
+        {transition && !cycle.editLockedAt && (
+          <MsButton size="sm" variant={transition.isDanger ? 'outline-red' : 'outline-brand1'} onClick={handleTransitionClick}>
+            {transition.label}
+          </MsButton>
+        )}
+        {enabled && (
+          <MsButton
+            size="sm"
+            variant="outline-default"
+            onClick={handleSheetSync}
+            disabled={syncing}
+            title={lastSyncAt[cycle.id] ? `마지막 동기화: ${new Date(lastSyncAt[cycle.id]).toLocaleString('ko-KR')}` : '시트 동기화'}
+            leftIcon={<MsRefreshIcon className={syncing ? 'animate-spin' : ''} />}
+          >
+            {syncing ? '동기화 중…' : '시트 동기화'}
+          </MsButton>
+        )}
+        <MsButton size="sm" variant="outline-default" onClick={handleExport} leftIcon={<MsDownloadIcon />}>내보내기</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => setDryRunOpen(true)} leftIcon={<Eye />}>드라이런</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/new?from=${cycle.id}`)} leftIcon={<MsEditIcon />}>복제</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => setSettingsOpen(true)} leftIcon={<MsSettingIcon />}>리뷰 설정</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => setShowEdit(true)} leftIcon={<MsEditIcon />} disabled={!!cycle.editLockedAt}>편집</MsButton>
+        {cycle.status === 'closed' && !cycle.archivedAt && (
+          <MsButton
+            size="sm"
+            variant="outline-default"
+            onClick={() => {
+              const res = useReviewStore.getState().archiveCycle(cycle.id, currentUser?.id ?? 'system');
+              if (res.ok) { showToast('success', '보관함으로 이동했습니다.'); navigate('/cycles'); }
+              else { showToast('error', res.error ?? '보관에 실패했습니다.'); }
+            }}
+          >
+            보관
+          </MsButton>
+        )}
+        <MsButton size="sm" variant="outline-red" onClick={() => setShowDeleteConfirm(true)} leftIcon={<MsDeleteIcon />} disabled={!!cycle.editLockedAt}>삭제</MsButton>
+      </>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycle, currentUser, enabled, syncing, lastSyncAt]);
+
+  useSetPageHeader(cycle?.title ?? '사이클', headerActions, {
+    subtitle: headerSubtitle,
+    onBack: () => navigate('/cycles'),
+  });
+
   if (!cycle) {
-    return <div className="text-center py-20 text-neutral-400">리뷰를 찾을 수 없습니다.</div>;
+    return (
+      <EmptyState
+        illustration="empty-cycle"
+        title="리뷰를 찾을 수 없어요"
+        description={
+          <>
+            삭제되었거나 접근 권한이 없는 사이클입니다.
+            <br />
+            목록 또는 보관함에서 다시 찾아보세요.
+          </>
+        }
+        action={{ label: '리뷰 목록으로', onClick: () => navigate('/cycles') }}
+      />
+    );
   }
 
-  const targetMembers = users.filter(u => cycle.targetDepartments.includes(u.department) && u.role !== 'admin');
+  const targetMembers = resolveTargetMembers(cycle, users);
 
   const getMemberStatus = (userId: string) => {
     const selfSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === userId && s.type === 'self');
@@ -522,23 +628,13 @@ export function CycleDetail() {
   const selfSubmitted = targetMembers.filter(m => getMemberStatus(m.id).self === 'submitted').length;
   const managerSubmitted = targetMembers.filter(m => getMemberStatus(m.id).manager === 'submitted').length;
 
-  const byDept = cycle.targetDepartments.map(dept => {
-    const members = targetMembers.filter(m => m.department === dept);
-    const submitted = members.filter(m => getMemberStatus(m.id).self === 'submitted').length;
-    return { dept, members, submitted, rate: members.length ? Math.round((submitted / members.length) * 100) : 0 };
-  });
-
-  const filteredMembers = selectedDept
-    ? targetMembers.filter(m => m.department === selectedDept)
-    : targetMembers;
-
   // Google Sheets 전체 동기화
   const handleSheetSync = async () => {
     if (!scriptUrl) {
       showToast('info', '설정 > Google Sheets 연동에서 URL을 먼저 등록해주세요.');
       return;
     }
-    const template = templates.find(t => t.id === cycle.templateId);
+    const template = getEffectiveTemplate(cycle, templates);
     if (!template) return;
     setSyncing(true);
     try {
@@ -554,7 +650,7 @@ export function CycleDetail() {
 
   // CSV 내보내기
   const handleExport = () => {
-    const template = templates.find(t => t.id === cycle.templateId);
+    const template = getEffectiveTemplate(cycle, templates);
     if (!template) { showToast('error', '템플릿 정보를 찾을 수 없습니다.'); return; }
     exportCycleToCSV(cycle, template, submissions, users);
     showToast('success', '스프레드시트로 내보내기를 시작합니다.');
@@ -563,15 +659,45 @@ export function CycleDetail() {
   // 사이클 상태 전환
   const transition = STATUS_TRANSITIONS[cycle.status];
 
+  const runAndOpenPreflight = () => {
+    const template = getEffectiveTemplate(cycle, templates);
+    const result = runPreflight({
+      cycle,
+      allCycles: cycles,
+      users,
+      orgUnits,
+      template,
+    });
+    setPreflightResult(result);
+    setPreflightOpen(true);
+  };
+
+  const handleTransitionClick = () => {
+    if (cycle.status === 'draft') {
+      runAndOpenPreflight();
+      return;
+    }
+    setShowConfirm(true);
+  };
+
   const handleTransition = async () => {
     if (!transition || transitioning) return;
     setTransitioning(true);
     try {
       await new Promise(r => setTimeout(r, 300));
-      // draft 발행 시 submission 일괄 생성
+      // draft 발행 시 publishCycle 액션으로 snapshot 저장 + submissions 생성
       if (cycle.status === 'draft') {
-        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits);
+        const res = publishCycle(cycle.id, currentUser?.id ?? 'system');
+        if (!res.ok) {
+          showToast('error', res.error ?? '발행에 실패했습니다.');
+          return;
+        }
+        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle);
         subs.forEach(sub => upsertSubmission(sub));
+        showToast('success', `발행 완료 · 템플릿 스냅샷이 저장되었습니다.`);
+        setShowConfirm(false);
+        setPreflightOpen(false);
+        return;
       }
       // self_review → manager_review: 조직장에게 알림 발송
       if (cycle.status === 'self_review') {
@@ -598,7 +724,12 @@ export function CycleDetail() {
           });
         });
       }
-      updateCycle(cycle.id, { status: transition.next });
+      if (transition.next === 'closed') {
+        // closedAt 기록을 위해 closeCycle 액션 사용
+        useReviewStore.getState().closeCycle(cycle.id, currentUser?.id ?? 'system');
+      } else {
+        updateCycle(cycle.id, { status: transition.next });
+      }
       showToast('success', `${transition.label} 완료`);
       setShowConfirm(false);
     } finally {
@@ -611,7 +742,7 @@ export function CycleDetail() {
     if (!cycle || regenerating) return;
     setRegenerating(true);
     await new Promise(r => setTimeout(r, 300));
-    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits);
+    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle);
     let added = 0;
     subs.forEach(sub => {
       const exists = submissions.some(s => s.id === sub.id);
@@ -623,68 +754,17 @@ export function CycleDetail() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/cycles')} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
-          <MsChevronLeftIcon size={20} className="text-neutral-600" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold text-neutral-900">{cycle.title}</h1>
-          <p className="text-xs text-neutral-400">{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'} · 생성 {formatDate(cycle.createdAt)}</p>
-        </div>
-        <StatusBadge type="review" value={cycle.status} />
-        {transition && (
-          <MsButton
-            variant={transition.isDanger ? 'outline-red' : 'outline-brand1'}
-            onClick={() => setShowConfirm(true)}
-          >
-            {transition.label}
-          </MsButton>
-        )}
-        {enabled && (
-          <MsButton
-            variant="outline-default"
-            onClick={handleSheetSync}
-            disabled={syncing}
-            title={lastSyncAt[cycle.id] ? `마지막 동기화: ${new Date(lastSyncAt[cycle.id]).toLocaleString('ko-KR')}` : '시트 동기화'}
-            leftIcon={<MsRefreshIcon className={syncing ? 'animate-spin' : ''} />}
-          >
-            {syncing ? '동기화 중…' : '시트 동기화'}
-          </MsButton>
-        )}
-        <MsButton
-          variant="outline-default"
-          onClick={handleExport}
-          leftIcon={<MsDownloadIcon />}
-        >
-          내보내기
-        </MsButton>
-        <MsButton
-          variant="outline-default"
-          onClick={() => setShowEdit(true)}
-          leftIcon={<MsEditIcon />}
-        >
-          편집
-        </MsButton>
-        <MsButton
-          variant="outline-red"
-          onClick={() => setShowDeleteConfirm(true)}
-          leftIcon={<MsDeleteIcon />}
-        >
-          삭제
-        </MsButton>
-      </div>
 
       {/* 상태 전환 확인 배너 */}
       {showConfirm && transition && (
         <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${
           transition.isDanger
-            ? 'bg-danger-50 border-danger-200'
-            : 'bg-amber-50 border-amber-200'
+            ? 'bg-red-005 border-red-020'
+            : 'bg-yellow-005 border-yellow-060/20'
         }`}>
           <div className="flex items-center gap-2 min-w-0">
-            <MsWarningIcon size={16} className={`shrink-0 ${transition.isDanger ? 'text-danger-500' : 'text-amber-500'}`} />
-            <p className={`text-sm ${transition.isDanger ? 'text-danger-800' : 'text-amber-800'}`}>
+            <MsWarningIcon size={16} className={`shrink-0 ${transition.isDanger ? 'text-red-040' : 'text-yellow-060'}`} />
+            <p className={`text-sm ${transition.isDanger ? 'text-red-060' : 'text-yellow-070'}`}>
               {transition.msg}
             </p>
           </div>
@@ -694,7 +774,7 @@ export function CycleDetail() {
               loading={transitioning}
               onClick={handleTransition}
               size="sm"
-              className={transition.isDanger ? 'bg-danger-600 hover:bg-danger-700' : ''}
+              className={transition.isDanger ? 'bg-red-050 hover:bg-red-060' : ''}
             >
               {transition.label}
             </MsButton>
@@ -704,10 +784,10 @@ export function CycleDetail() {
 
       {/* 삭제 확인 배너 */}
       {showDeleteConfirm && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-danger-50 border-danger-200">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-red-005 border-red-020">
           <div className="flex items-center gap-2 min-w-0">
-            <MsDeleteIcon size={16} className="shrink-0 text-danger-500" />
-            <p className="text-sm text-danger-800">
+            <MsDeleteIcon size={16} className="shrink-0 text-red-040" />
+            <p className="text-sm text-red-060">
               <strong>"{cycle.title}"</strong> 리뷰와 모든 제출 데이터({submissions.filter(s => s.cycleId === cycle.id).length}건)가 영구 삭제됩니다. 되돌릴 수 없습니다.
             </p>
           </div>
@@ -732,7 +812,7 @@ export function CycleDetail() {
       {viewingMemberId && (() => {
         const member = users.find(u => u.id === viewingMemberId);
         if (!member) return null;
-        const template = templates.find(t => t.id === cycle.templateId);
+        const template = getEffectiveTemplate(cycle, templates);
         const selfSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === viewingMemberId && s.type === 'self');
         const managerSub = submissions.find(s => s.cycleId === cycle.id && s.revieweeId === viewingMemberId && s.type === 'downward');
         const reviewer = managerSub ? users.find(u => u.id === managerSub.reviewerId) : undefined;
@@ -743,6 +823,8 @@ export function CycleDetail() {
             managerSub={managerSub}
             reviewer={reviewer}
             template={template}
+            cycle={cycle}
+            currentUser={currentUser}
             onClose={() => setViewingMemberId(null)}
           />
         );
@@ -768,132 +850,105 @@ export function CycleDetail() {
           { icon: BarChart2, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
           { icon: BarChart2, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
         ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="bg-white rounded-xl border border-neutral-200 shadow-card p-4">
+          <div key={label} className="bg-white rounded-xl border border-gray-020 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-neutral-400" />
-              <span className="text-xs text-neutral-500">{label}</span>
+              <Icon className="w-4 h-4 text-gray-040" />
+              <span className="text-xs text-gray-050">{label}</span>
             </div>
-            <p className="text-xl font-semibold text-neutral-900">{value}</p>
-            <p className="text-xs text-neutral-400 mt-0.5">{sub}</p>
+            <p className="text-xl font-semibold text-gray-099">{value}</p>
+            <p className="text-xs text-gray-040 mt-0.5">{sub}</p>
           </div>
         ))}
       </div>
 
       {/* Timeline */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
+      <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5">
+        <h2 className="text-sm font-semibold text-gray-070 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
         <div className="space-y-3">
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
             { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
           ].map(({ label, date, highlight }) => (
-            <div key={label} className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-primary-50' : ''}`}>
-              <span className={`text-sm ${highlight ? 'font-semibold text-primary-700' : 'text-neutral-600'}`}>{label}</span>
-              <span className={`text-sm font-medium ${highlight ? 'text-primary-600' : 'text-neutral-500'}`}>{formatDate(date)}</span>
+            <div key={label} className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-pink-005' : ''}`}>
+              <span className={`text-sm ${highlight ? 'font-semibold text-pink-060' : 'text-gray-060'}`}>{label}</span>
+              <span className={`text-sm font-medium ${highlight ? 'text-pink-050' : 'text-gray-050'}`}>{formatDate(date)}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Department breakdown */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-700">부서별 진행 현황</h2>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-neutral-400">클릭하면 해당 부서 구성원만 표시됩니다</p>
-            <MsButton
-              variant="outline-default"
-              size="sm"
-              onClick={handleRegenerateSubmissions}
-              disabled={regenerating}
-              title="구성원 제출 누락 시 재생성"
-              leftIcon={<MsRefreshIcon className={regenerating ? 'animate-spin' : ''} />}
-            >
-              제출 재생성
-            </MsButton>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {byDept.map(({ dept, members, submitted, rate }) => {
-            const isSelected = selectedDept === dept;
-            return (
-              <button
-                key={dept}
-                onClick={() => setSelectedDept(d => d === dept ? null : dept)}
-                className={`w-full text-left rounded-xl px-3 py-2.5 transition-all border ${
-                  isSelected
-                    ? 'bg-primary-50 border-primary-200'
-                    : 'border-transparent hover:bg-neutral-50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className={`text-sm font-medium ${isSelected ? 'text-primary-700' : 'text-neutral-700'}`}>
-                    {dept}
-                  </span>
-                  <span className="text-xs text-neutral-500">{submitted}/{members.length}명 완료</span>
-                </div>
-                <ProgressBar value={rate} showPercent />
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <PreflightModal
+        open={preflightOpen}
+        onClose={() => setPreflightOpen(false)}
+        onConfirm={handleTransition}
+        result={preflightResult}
+        cycleTitle={cycle.title}
+        loading={transitioning}
+      />
 
-      {/* Member list */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-neutral-700">구성원별 현황</h2>
-            {selectedDept && (
-              <span className="flex items-center gap-1 text-xs font-medium text-primary-700 bg-primary-50 px-2 py-0.5 rounded">
-                {selectedDept}
-                <button onClick={() => setSelectedDept(null)} className="hover:text-primary-900">
-                  <MsCancelIcon size={12} />
-                </button>
-              </span>
-            )}
+      <DryRunModal
+        open={dryRunOpen}
+        onClose={() => setDryRunOpen(false)}
+        cycle={cycle}
+        title={cycle.title}
+      />
+
+      <CycleSettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        cycle={cycle}
+      />
+
+      {unlockOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-overlay-048" onClick={() => setUnlockOpen(false)} />
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-modal space-y-4">
+            <h3 className="text-base font-bold text-gray-080">편집 잠금 해제</h3>
+            <p className="text-xs text-gray-050">사유는 감사 로그에 기록됩니다.</p>
+            <MsInput
+              value={unlockReason}
+              onChange={e => setUnlockReason(e.target.value)}
+              placeholder="예) 결과 보고서 마감일 변경 요청"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <MsButton variant="ghost" size="sm" onClick={() => { setUnlockOpen(false); setUnlockReason(''); }}>취소</MsButton>
+              <MsButton
+                size="sm"
+                onClick={() => {
+                  const res = useReviewStore.getState().unlockEdit(cycle.id, currentUser?.id ?? 'system', unlockReason.trim() || undefined);
+                  if (res.ok) {
+                    showToast('success', '편집 잠금이 해제되었습니다.');
+                    setUnlockOpen(false);
+                    setUnlockReason('');
+                  } else {
+                    showToast('error', res.error ?? '해제 실패');
+                  }
+                }}
+              >
+                해제
+              </MsButton>
+            </div>
           </div>
         </div>
-        <div className="space-y-1">
-          {filteredMembers.map(member => {
-            const { self, manager } = getMemberStatus(member.id);
-            const hasAny = self === 'submitted' || manager === 'submitted' || self === 'in_progress' || manager === 'in_progress';
-            return (
-              <div
-                key={member.id}
-                className="group flex items-center gap-3 py-2.5 border-b border-neutral-50 last:border-0 rounded-xl px-1 hover:bg-neutral-50 transition-colors"
-              >
-                <UserAvatar user={member} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-800">{member.name}</p>
-                  <p className="text-xs text-neutral-400">{member.position} · {member.department}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-neutral-400">자기평가</span>
-                    <StatusBadge type="submission" value={self} />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-neutral-400">조직장</span>
-                    <StatusBadge type="submission" value={manager} />
-                  </div>
-                </div>
-                {hasAny && (
-                  <MsButton
-                    variant="outline-brand1"
-                    size="sm"
-                    onClick={() => setViewingMemberId(member.id)}
-                    className="opacity-0 group-hover:opacity-100"
-                    leftIcon={<Eye />}
-                  >
-                    리뷰 보기
-                  </MsButton>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
+
+      {/* Ops Center */}
+      <OpsCenter
+        cycleId={cycle.id}
+        onOpenMember={setViewingMemberId}
+        headerActions={
+          <MsButton
+            variant="outline-default"
+            size="sm"
+            onClick={handleRegenerateSubmissions}
+            disabled={regenerating}
+            title="구성원 제출 누락 시 재생성"
+            leftIcon={<MsRefreshIcon className={regenerating ? 'animate-spin' : ''} />}
+          >
+            제출 재생성
+          </MsButton>
+        }
+      />
     </div>
   );
 }

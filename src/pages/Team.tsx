@@ -8,15 +8,15 @@ import { useShowToast } from '../components/ui/Toast';
 import { resetAccount } from '../utils/authApi';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Building2, Users, KeyRound, Layers, ArrowRight } from 'lucide-react';
+import { KeyRound, Layers, Users } from 'lucide-react';
 import {
   MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
   MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon, MsRefreshIcon,
-  MsFriendAddIcon, MsGrabIcon, MsProfileIcon,
+  MsFriendAddIcon, MsGrabIcon, MsProfileIcon, MsChevronRightLineIcon, MsGroupIcon, MsWarningIcon,
 } from '../components/ui/MsIcons';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 import { MsButton } from '../components/ui/MsButton';
-import { MsCheckbox } from '../components/ui/MsControl';
+import { MsCheckbox, MsInput, MsSelect } from '../components/ui/MsControl';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
 const ORG_TYPE_LABEL: Record<OrgUnitType, string> = {
@@ -51,10 +51,10 @@ function Modal({ title, onClose, children, wide }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative bg-white rounded-xl shadow-xl ring-1 ring-zinc-950/5 w-full mx-4 ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-950/5">
-          <h3 className="text-sm font-semibold text-zinc-950">{title}</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+      <div className={`relative bg-white rounded-xl shadow-xl ring-1 ring-gray-010 w-full mx-4 ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-010">
+          <h3 className="text-sm font-semibold text-gray-099">{title}</h3>
+          <button onClick={onClose} className="text-gray-040 hover:text-gray-060 transition-colors">
             <MsCancelIcon size={16} className="size-4" />
           </button>
         </div>
@@ -73,8 +73,6 @@ function OrgSelector({
   onChange: (v: typeof value) => void;
 }) {
   if (orgUnits.length === 0) return null;
-  const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
-  const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
 
   const mainOrgs = orgUnits.filter(u => u.type === 'mainOrg').sort((a, b) => a.order - b.order);
   const subOrgs  = orgUnits.filter(u => u.type === 'subOrg'  && u.parentId === value.mainOrgId);
@@ -83,49 +81,45 @@ function OrgSelector({
 
   return (
     <div className="col-span-2 space-y-3">
-      <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">조직 배정</p>
+      <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">조직 배정</p>
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>주조직</label>
-          <select value={value.mainOrgId}
-            onChange={e => onChange({ mainOrgId: e.target.value, subOrgId: '', teamId: '', squadId: '' })}
-            className={sel}>
-            <option value="">선택</option>
-            {mainOrgs.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-        </div>
+        <MsSelect
+          label="주조직"
+          value={value.mainOrgId}
+          onChange={e => onChange({ mainOrgId: e.target.value, subOrgId: '', teamId: '', squadId: '' })}
+        >
+          <option value="">선택</option>
+          {mainOrgs.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </MsSelect>
         {(subOrgs.length > 0 || value.subOrgId) && (
-          <div>
-            <label className={lbl}>부조직</label>
-            <select value={value.subOrgId}
-              onChange={e => onChange({ ...value, subOrgId: e.target.value, teamId: '', squadId: '' })}
-              className={sel}>
-              <option value="">선택 안 함</option>
-              {subOrgs.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
+          <MsSelect
+            label="부조직"
+            value={value.subOrgId}
+            onChange={e => onChange({ ...value, subOrgId: e.target.value, teamId: '', squadId: '' })}
+          >
+            <option value="">선택 안 함</option>
+            {subOrgs.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </MsSelect>
         )}
         {(teams.length > 0 || value.teamId) && (
-          <div>
-            <label className={lbl}>팀</label>
-            <select value={value.teamId}
-              onChange={e => onChange({ ...value, teamId: e.target.value, squadId: '' })}
-              className={sel}>
-              <option value="">선택 안 함</option>
-              {teams.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
+          <MsSelect
+            label="팀"
+            value={value.teamId}
+            onChange={e => onChange({ ...value, teamId: e.target.value, squadId: '' })}
+          >
+            <option value="">선택 안 함</option>
+            {teams.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </MsSelect>
         )}
         {(squads.length > 0 || value.squadId) && (
-          <div>
-            <label className={lbl}>스쿼드</label>
-            <select value={value.squadId}
-              onChange={e => onChange({ ...value, squadId: e.target.value })}
-              className={sel}>
-              <option value="">선택 안 함</option>
-              {squads.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
+          <MsSelect
+            label="스쿼드"
+            value={value.squadId}
+            onChange={e => onChange({ ...value, squadId: e.target.value })}
+          >
+            <option value="">선택 안 함</option>
+            {squads.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </MsSelect>
         )}
       </div>
     </div>
@@ -141,8 +135,6 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
   const [editingRole, setEditingRole] = useState('');
   const [form, setForm] = useState({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' });
 
-  const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
-  const inp = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white';
   const allOrgs = orgUnits.filter(u => u.type !== 'squad');
 
   const handleAdd = () => {
@@ -170,34 +162,34 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">겸임 조직</p>
+        <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">겸임 조직</p>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium">
+            className="flex items-center gap-1 text-xs text-pink-050 hover:text-pink-060 font-medium">
             <MsPlusIcon size={12} className="size-3" /> 추가
           </button>
         )}
       </div>
       {myAssignments.length === 0 && !adding && (
-        <p className="text-xs text-zinc-400 py-1">겸임 조직이 없습니다.</p>
+        <p className="text-xs text-gray-040 py-1">겸임 조직이 없습니다.</p>
       )}
       {myAssignments.map(a => {
         const isHead    = orgUnits.find(u => u.id === a.orgId)?.headId === userId;
         const isEditing = editingOrgId === a.orgId;
         return (
           <div key={`${a.userId}-${a.orgId}`}
-            className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100 space-y-1.5">
+            className="p-2.5 rounded-lg bg-gray-005 border border-gray-010 space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <p className="text-xs font-medium text-zinc-800">{a.orgName ?? a.orgId}</p>
+                <p className="text-xs font-medium text-gray-080">{a.orgName ?? a.orgId}</p>
                 {isHead && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded border border-emerald-200 flex-shrink-0">조직장</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-green-010 text-green-060 rounded border border-green-020 flex-shrink-0">조직장</span>
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <MsCheckbox size="md" checked={isHead} onChange={() => toggleHead(a)} label={<span className="text-[10px] font-medium text-zinc-500">조직장</span>} />
+                <MsCheckbox size="md" checked={isHead} onChange={() => toggleHead(a)} label={<span className="text-[10px] font-medium text-gray-050">조직장</span>} />
                 <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
-                  className="p-1 text-zinc-300 hover:text-rose-500 transition-colors ml-1">
+                  className="p-1 text-gray-030 hover:text-red-040 transition-colors ml-1">
                   <MsDeleteIcon size={12} className="size-3.5" />
                 </button>
               </div>
@@ -214,15 +206,16 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
                       setEditingOrgId(null);
                     }
                   }}
-                  placeholder="역할 입력..." className={inp + ' py-1 text-xs'} />
+                  placeholder="역할 입력..."
+                  className="w-full px-2.5 py-1 text-xs border border-gray-020 rounded-md bg-gray-005 focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white" />
                 <MsButton type="button" size="sm" onClick={() => { upsertSecondaryOrg({ ...a, role: editingRole || undefined }); setEditingOrgId(null); }} className="flex-shrink-0">저장</MsButton>
                 <button type="button" onClick={() => setEditingOrgId(null)}
-                  className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800 flex-shrink-0">취소</button>
+                  className="px-2 py-1 text-xs text-gray-050 hover:text-gray-080 flex-shrink-0">취소</button>
               </div>
             ) : (
               <button type="button"
                 onClick={() => { setEditingOrgId(a.orgId); setEditingRole(a.role ?? ''); }}
-                className="text-xs text-zinc-400 hover:text-zinc-700 text-left w-full truncate transition-colors">
+                className="text-xs text-gray-040 hover:text-gray-070 text-left w-full truncate transition-colors">
                 {a.role ? a.role : <span className="italic">역할 없음 · 클릭해서 입력</span>}
                 {a.ratio ? ` · ${a.ratio}%` : ''}
               </button>
@@ -231,43 +224,59 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
         );
       })}
       {adding && (
-        <div className="p-3 rounded-lg border border-primary-100 bg-primary-50/40 space-y-2">
+        <div className="p-3 rounded-lg border border-pink-010 bg-pink-005/40 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-zinc-500 mb-1">겸임 조직</label>
-              <select value={form.orgId} onChange={e => setForm(f => ({ ...f, orgId: e.target.value }))} className={sel}>
+              <MsSelect
+                label="겸임 조직"
+                value={form.orgId}
+                onChange={e => setForm(f => ({ ...f, orgId: e.target.value }))}
+              >
                 <option value="">선택</option>
                 {allOrgs.map(u => <option key={u.id} value={u.id}>{u.name} ({ORG_TYPE_LABEL[u.type]})</option>)}
-              </select>
+              </MsSelect>
             </div>
             <div className="col-span-2">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-zinc-500 mb-1">역할</label>
-                  <input type="text" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                    placeholder="예) 프로덕트 디자이너" className={inp} />
+                  <MsInput
+                    label="역할"
+                    type="text"
+                    value={form.role}
+                    onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                    placeholder="예) 프로덕트 디자이너"
+                  />
                 </div>
-                <MsCheckbox size="md" checked={form.isHead} onChange={e => setForm(f => ({ ...f, isHead: e.target.checked }))} label={<span className="text-xs font-medium text-zinc-600">조직장</span>} className="pt-5" />
+                <MsCheckbox size="md" checked={form.isHead} onChange={e => setForm(f => ({ ...f, isHead: e.target.checked }))} label={<span className="text-xs font-medium text-gray-060">조직장</span>} className="pt-5" />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">시작일</label>
-              <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className={inp} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">종료일</label>
-              <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className={inp} />
-            </div>
+            <MsInput
+              label="시작일"
+              type="date"
+              value={form.startDate}
+              onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+            />
+            <MsInput
+              label="종료일"
+              type="date"
+              value={form.endDate}
+              onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+            />
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-zinc-500 mb-1">겸임 비율 (%)</label>
-              <input type="number" min="0" max="100" value={form.ratio}
+              <MsInput
+                label="겸임 비율 (%)"
+                type="number"
+                min="0"
+                max="100"
+                value={form.ratio}
                 onChange={e => setForm(f => ({ ...f, ratio: e.target.value }))}
-                placeholder="예) 30" className={inp} />
+                placeholder="예) 30"
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => { setAdding(false); setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' }); }}
-              className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+              className="px-3 py-1.5 text-xs font-medium text-gray-060 hover:text-gray-099">취소</button>
             <MsButton type="button" size="sm" onClick={handleAdd} disabled={!form.orgId}>저장</MsButton>
           </div>
         </div>
@@ -282,13 +291,14 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
 function buildInitOrgSel(orgId: string | undefined, orgUnits: OrgUnit[]) {
   const result = { mainOrgId: '', subOrgId: '', teamId: '', squadId: '' };
   if (!orgId) return result;
-  let unit = orgUnits.find(u => u.id === orgId);
+  let unit: OrgUnit | undefined = orgUnits.find(u => u.id === orgId);
   while (unit) {
     if (unit.type === 'mainOrg') result.mainOrgId = unit.id;
     else if (unit.type === 'subOrg') result.subOrgId = unit.id;
     else if (unit.type === 'team') result.teamId = unit.id;
     else if (unit.type === 'squad') result.squadId = unit.id;
-    unit = unit.parentId ? orgUnits.find(u => u.id === unit!.parentId) : undefined;
+    const parentId = unit.parentId;
+    unit = parentId ? orgUnits.find(u => u.id === parentId) : undefined;
   }
   return result;
 }
@@ -319,9 +329,6 @@ function AddMemberModal({
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  const inp = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white';
-  const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
-  const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
   const hasOrgUnits = orgUnits.length > 0;
 
   const mostSpecificOrgId = orgSel.squadId || orgSel.teamId || orgSel.subOrgId || orgSel.mainOrgId;
@@ -366,56 +373,36 @@ function AddMemberModal({
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
         {/* 기본 정보 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">기본 정보</p>
+          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>이름 *</label>
-              <input autoFocus type="text" value={form.name} onChange={f('name')} placeholder="홍길동" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>영문이름</label>
-              <input type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>이메일 *</label>
-              <input type="email" value={form.email} onChange={f('email')} placeholder="name@company.com" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>연락처</label>
-              <input type="text" value={form.phone} onChange={f('phone')} placeholder="010-0000-0000" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>입사일</label>
-              <input type="date" value={form.joinDate} onChange={f('joinDate')} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>직무</label>
-              <input type="text" value={form.jobFunction} onChange={f('jobFunction')} placeholder="프론트엔드 개발" className={inp} />
-            </div>
+            <MsInput autoFocus label="이름 *" type="text" value={form.name} onChange={f('name')} placeholder="홍길동" />
+            <MsInput label="영문이름" type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" />
+            <MsInput label="이메일 *" type="email" value={form.email} onChange={f('email')} placeholder="name@company.com" />
+            <MsInput label="연락처" type="text" value={form.phone} onChange={f('phone')} placeholder="010-0000-0000" />
+            <MsInput label="입사일" type="date" value={form.joinDate} onChange={f('joinDate')} />
+            <MsInput label="직무" type="text" value={form.jobFunction} onChange={f('jobFunction')} placeholder="프론트엔드 개발" />
           </div>
         </div>
 
         {/* 조직 · 역할 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 역할</p>
+          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <label className={lbl}>역할</label>
-                  <input type="text" value={form.primaryRole} onChange={f('primaryRole')} placeholder="예) iOS 개발자" className={inp} />
+                  <MsInput label="역할" type="text" value={form.primaryRole} onChange={f('primaryRole')} placeholder="예) iOS 개발자" />
                 </div>
-                <MsCheckbox size="md" checked={form.isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setForm(p => ({ ...p, isPrimaryHead: e.target.checked }))} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>} className="pt-5" />
+                <MsCheckbox size="md" checked={form.isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setForm(p => ({ ...p, isPrimaryHead: e.target.checked }))} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-gray-060' : 'text-gray-030'}`}>조직장</span>} className="pt-5" />
               </div>
             </div>
             <div className="col-span-2">
-              <label className={lbl}>보고 대상</label>
-              <select value={form.managerId} onChange={f('managerId')} className={sel}>
+              <MsSelect label="보고 대상" value={form.managerId} onChange={f('managerId')}>
                 <option value="">없음 (자동 배정)</option>
                 {allLeaders.map(m => (
                   <option key={m.id} value={m.id}>{m.name} · {m.position}</option>
                 ))}
-              </select>
+              </MsSelect>
             </div>
             {hasOrgUnits && (
               <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
@@ -423,9 +410,9 @@ function AddMemberModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
+        <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
           <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
           <MsButton type="submit" loading={submitting} disabled={!form.name.trim() || !form.email.trim()}>추가</MsButton>
         </div>
       </form>
@@ -449,9 +436,9 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
   const memberTier     = memberIsAdmin ? 'admin' : memberIsLeader ? 'leader' : 'member';
   const TIER_LABEL: Record<string, string> = { admin: '관리자', leader: '조직장', member: '멤버' };
   const TIER_COLOR: Record<string, string> = {
-    admin:  'bg-indigo-100 text-indigo-700 border-indigo-200',
-    leader: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    member: 'bg-zinc-100 text-zinc-500 border-zinc-200',
+    admin:  'bg-blue-010 text-blue-070 border-blue-020',
+    leader: 'bg-green-010 text-green-060 border-green-020',
+    member: 'bg-gray-010 text-gray-050 border-gray-020',
   };
   const [showTerminate, setShowTerminate] = useState(false);
   const [leaveDate, setLeaveDate] = useState(new Date().toISOString().slice(0, 10));
@@ -493,9 +480,6 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  const inp  = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white';
-  const sel  = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
-  const lbl  = 'block text-xs font-medium text-zinc-500 mb-1';
   const hasOrgUnits = orgUnits.length > 0;
 
   const handleResetPassword = async () => {
@@ -545,9 +529,9 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
     <Modal title={`${member.name} 정보 수정`} onClose={onClose} wide>
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
         {/* 권한 티어 */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-gray-005 border border-gray-010">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500">권한</span>
+            <span className="text-xs text-gray-050">권한</span>
             <span className={`px-2 py-0.5 text-xs font-semibold rounded border ${TIER_COLOR[memberTier]}`}>
               {TIER_LABEL[memberTier]}
             </span>
@@ -558,8 +542,8 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
               onClick={() => updateMember(member.id, { role: memberIsAdmin ? 'member' : 'admin' })}
               className={`text-xs font-medium px-2.5 py-1 rounded-md border transition-colors ${
                 memberIsAdmin
-                  ? 'text-rose-600 border-rose-200 hover:bg-rose-50'
-                  : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'
+                  ? 'text-red-050 border-red-020 hover:bg-red-005'
+                  : 'text-blue-060 border-blue-020 hover:bg-blue-005'
               }`}
             >
               {memberIsAdmin ? '관리자 해제' : '관리자 지정'}
@@ -569,62 +553,39 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
 
         {/* 기본 정보 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">기본 정보</p>
+          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>이름</label>
-              <input autoFocus type="text" value={form.name} onChange={f('name')} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>영문이름</label>
-              <input type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>이메일</label>
-              <input type="email" value={form.email} onChange={f('email')} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>연락처</label>
-              <input type="text" value={form.phone} onChange={f('phone')} placeholder="010-0000-0000" className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>입사일</label>
-              <input type="date" value={form.joinDate} onChange={f('joinDate')} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>직무</label>
-              <input type="text" value={form.jobFunction} onChange={f('jobFunction')} placeholder="프론트엔드 개발" className={inp} />
-            </div>
+            <MsInput autoFocus label="이름" type="text" value={form.name} onChange={f('name')} />
+            <MsInput label="영문이름" type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" />
+            <MsInput label="이메일" type="email" value={form.email} onChange={f('email')} />
+            <MsInput label="연락처" type="text" value={form.phone} onChange={f('phone')} placeholder="010-0000-0000" />
+            <MsInput label="입사일" type="date" value={form.joinDate} onChange={f('joinDate')} />
+            <MsInput label="직무" type="text" value={form.jobFunction} onChange={f('jobFunction')} placeholder="프론트엔드 개발" />
           </div>
         </div>
 
         {/* 조직 · 역할 */}
         <div>
-          <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">조직 · 역할</p>
+          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <label className={lbl}>역할</label>
-                  <input type="text" value={form.position} onChange={f('position')} placeholder="예) iOS 개발자" className={inp} />
+                  <MsInput label="역할" type="text" value={form.position} onChange={f('position')} placeholder="예) iOS 개발자" />
                 </div>
-                <MsCheckbox size="md" checked={isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setIsPrimaryHead(e.target.checked)} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-zinc-600' : 'text-zinc-300'}`}>조직장</span>} className="pt-5" />
+                <MsCheckbox size="md" checked={isPrimaryHead} disabled={!mostSpecificOrgId} onChange={e => setIsPrimaryHead(e.target.checked)} label={<span className={`text-xs font-medium ${mostSpecificOrgId ? 'text-gray-060' : 'text-gray-030'}`}>조직장</span>} className="pt-5" />
               </div>
             </div>
             <div className="col-span-2">
-              <label className={lbl}>보고 대상</label>
-              <select value={form.managerId} onChange={f('managerId')} className={sel}>
+              <MsSelect label="보고 대상" value={form.managerId} onChange={f('managerId')}>
                 <option value="">없음</option>
                 {allLeaders.map(m => (
                   <option key={m.id} value={m.id}>{m.name} · {m.position}</option>
                 ))}
-              </select>
+              </MsSelect>
             </div>
             {!hasOrgUnits && (
-              <div>
-                <label className={lbl}>주조직</label>
-                <input type="text" value={form.department} onChange={f('department')} className={inp} />
-              </div>
+              <MsInput label="주조직" type="text" value={form.department} onChange={f('department')} />
             )}
             {hasOrgUnits && (
               <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={v => { setOrgSel(v); }} />
@@ -633,15 +594,15 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
         </div>
 
         {/* 겸임 */}
-        <div className="border-t border-zinc-950/5 pt-4">
+        <div className="border-t border-gray-010 pt-4">
           <SecondaryOrgSection userId={member.id} />
         </div>
 
         {/* 비밀번호 초기화 (관리자 전용) */}
         {currentUser?.role === 'admin' && member.role !== 'admin' && (
-          <div className="border-t border-zinc-950/5 pt-3">
+          <div className="border-t border-gray-010 pt-3">
             <button type="button" onClick={handleResetPassword} disabled={resetting}
-              className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-amber-600 disabled:opacity-40 transition-colors">
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-040 hover:text-yellow-060 disabled:opacity-40 transition-colors">
               <KeyRound className="size-3.5" />
               {resetting ? '초기화 중...' : `비밀번호 초기화 (사번: ${member.id})`}
             </button>
@@ -650,26 +611,26 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
 
         {/* 퇴사 처리 */}
         {member.role !== 'admin' && (
-          <div className="border-t border-zinc-950/5 pt-3">
+          <div className="border-t border-gray-010 pt-3">
             {!showTerminate ? (
               <button type="button" onClick={() => setShowTerminate(true)}
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-rose-500 transition-colors">
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-040 hover:text-red-040 transition-colors">
                 <MsCancelIcon size={12} className="size-3.5" /> 퇴사 처리
               </button>
             ) : (
-              <div className="p-3 rounded-lg border border-rose-200 bg-rose-50/50 space-y-3">
-                <p className="text-xs font-semibold text-rose-700">퇴사 처리</p>
-                <p className="text-xs text-rose-600/80">퇴사 처리 시 보고 관계가 해제되고 조직도에서 제외됩니다.</p>
+              <div className="p-3 rounded-lg border border-red-020 bg-red-005/50 space-y-3">
+                <p className="text-xs font-semibold text-red-060">퇴사 처리</p>
+                <p className="text-xs text-red-050/80">퇴사 처리 시 보고 관계가 해제되고 조직도에서 제외됩니다.</p>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-500 mb-1">퇴사일</label>
+                  <label className="block text-xs font-medium text-gray-050 mb-1">퇴사일</label>
                   <input type="date" value={leaveDate} onChange={e => setLeaveDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-rose-200 rounded-lg bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10" />
+                    className="w-full px-3 py-2 text-sm border border-red-020 rounded-lg bg-white focus:outline-none focus:ring-4 focus:ring-red-040/10" />
                 </div>
                 <div className="flex justify-end gap-2">
                   <button type="button" onClick={() => setShowTerminate(false)}
-                    className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+                    className="px-3 py-1.5 text-xs font-medium text-gray-060 hover:text-gray-099">취소</button>
                   <button type="button" onClick={() => { terminateMember(member.id, leaveDate); onClose(); }} disabled={!leaveDate}
-                    className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-40">
+                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-050 rounded-lg hover:bg-red-060 disabled:opacity-40">
                     퇴사 확정
                   </button>
                 </div>
@@ -678,9 +639,9 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
+        <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
           <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
           <MsButton type="submit">저장</MsButton>
         </div>
       </form>
@@ -714,18 +675,15 @@ function BulkMoveModal({
     setManagerId(mostSpecificUnit?.headId ?? '__keep__');
   }, [mostSpecificId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sel = 'w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5';
-  const lbl = 'block text-xs font-medium text-zinc-500 mb-1';
-
   return (
     <Modal title={`${selectedUsers.length}명 조직 이동`} onClose={onClose} wide>
       <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
         {/* 선택된 구성원 미리보기 */}
         <div>
-          <p className={lbl}>이동할 구성원</p>
-          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-zinc-50 rounded-lg border border-zinc-100">
+          <p className="block text-xs font-medium text-gray-050 mb-1">이동할 구성원</p>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-gray-005 rounded-lg border border-gray-010">
             {selectedUsers.map(u => (
-              <span key={u.id} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-white border border-zinc-200 rounded-full text-zinc-700 font-medium">
+              <span key={u.id} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-white border border-gray-020 rounded-full text-gray-070 font-medium">
                 <span
                   className="size-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
                   style={{ backgroundColor: u.avatarColor }}
@@ -742,29 +700,26 @@ function BulkMoveModal({
         {orgUnits.length > 0 ? (
           <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
         ) : (
-          <p className="text-xs text-zinc-400">등록된 조직 구조가 없습니다.</p>
+          <p className="text-xs text-gray-040">등록된 조직 구조가 없습니다.</p>
         )}
 
         {/* 보고 대상 */}
-        <div>
-          <label className={lbl}>보고 대상</label>
-          <select value={managerId} onChange={e => setManagerId(e.target.value)} className={sel}>
-            <option value="__keep__">변경하지 않음</option>
-            <option value="">없음</option>
-            {allLeaders.map(u => (
-              <option key={u.id} value={u.id}>{u.name} · {u.position}</option>
-            ))}
-          </select>
-        </div>
+        <MsSelect label="보고 대상" value={managerId} onChange={e => setManagerId(e.target.value)}>
+          <option value="__keep__">변경하지 않음</option>
+          <option value="">없음</option>
+          {allLeaders.map(u => (
+            <option key={u.id} value={u.id}>{u.name} · {u.position}</option>
+          ))}
+        </MsSelect>
 
-        <div className="flex justify-end gap-2 pt-1 border-t border-zinc-950/5">
+        <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
           <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
           <MsButton
             type="button"
             disabled={!orgSel.mainOrgId}
             onClick={() => onConfirm(orgSel, managerId === '__keep__' ? null : managerId)}
-            leftIcon={<ArrowRight className="size-3.5" />}
+            leftIcon={<MsChevronRightLineIcon size={14} />}
           >
             이동 확정
           </MsButton>
@@ -814,23 +769,14 @@ function OrgUnitFormModal({
         }}
         className="space-y-4"
       >
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1">{ORG_TYPE_LABEL[type]} 이름 *</label>
-          <input autoFocus type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder={ORG_TYPE_PLACEHOLDER[type]}
-            className="w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:bg-white" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1">조직장</label>
-          <select value={headId} onChange={e => setHeadId(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-zinc-950/10 rounded-lg bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-950/5">
-            <option value="">미지정</option>
-            {eligibleHeads.map(u => <option key={u.id} value={u.id}>{u.name} · {u.position}</option>)}
-          </select>
-        </div>
+        <MsInput autoFocus label={`${ORG_TYPE_LABEL[type]} 이름 *`} type="text" value={name} onChange={e => setName(e.target.value)} placeholder={ORG_TYPE_PLACEHOLDER[type]} />
+        <MsSelect label="조직장" value={headId} onChange={e => setHeadId(e.target.value)}>
+          <option value="">미지정</option>
+          {eligibleHeads.map(u => <option key={u.id} value={u.id}>{u.name} · {u.position}</option>)}
+        </MsSelect>
         <div className="flex justify-end gap-2 pt-1">
           <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900">취소</button>
+            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
           <MsButton type="submit" disabled={!name.trim()}>{isEdit ? '저장' : '추가'}</MsButton>
         </div>
       </form>
@@ -840,10 +786,10 @@ function OrgUnitFormModal({
 
 /* ── Org Tree ─────────────────────────────────────────────────────── */
 const ORG_TYPE_COLOR: Record<OrgUnitType, string> = {
-  mainOrg: 'bg-indigo-500',
-  subOrg:  'bg-emerald-400',
-  team:    'bg-sky-400',
-  squad:   'bg-zinc-300',
+  mainOrg: 'bg-blue-050',
+  subOrg:  'bg-green-040',
+  team:    'bg-blue-050',
+  squad:   'bg-gray-030',
 };
 
 // 드래그 타겟으로 허용되는 부모 타입
@@ -934,7 +880,7 @@ function OrgTreeNode({
   return (
     <div className={isDragging ? 'opacity-40' : ''}>
       {dropPos === 'above' && (
-        <div className="h-0.5 bg-primary-500 rounded-full mx-2 my-px pointer-events-none" />
+        <div className="h-0.5 bg-pink-040 rounded-full mx-2 my-px pointer-events-none" />
       )}
 
       <div
@@ -949,10 +895,10 @@ function OrgTreeNode({
         onDragEnd={canEdit ? () => dnd.onDragEnd() : undefined}
         className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors ${
           dropPos === 'into'
-            ? 'ring-2 ring-primary-400 bg-primary-50'
+            ? 'ring-2 ring-pink-040 bg-pink-005'
             : isSelected
-              ? 'bg-primary-50 text-primary-700'
-              : 'hover:bg-zinc-50 text-zinc-700'
+              ? 'bg-pink-005 text-pink-060'
+              : 'hover:bg-gray-005 text-gray-070'
         }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         onMouseEnter={() => setHovered(true)}
@@ -962,7 +908,7 @@ function OrgTreeNode({
         {/* Drag handle */}
         {canEdit && (
           <span
-            className={`flex-shrink-0 text-zinc-400 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
+            className={`flex-shrink-0 text-gray-040 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
             title="드래그로 순서·위치 변경"
           >
             <MsGrabIcon size={12} />
@@ -972,7 +918,7 @@ function OrgTreeNode({
         {/* expand toggle */}
         <button
           onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-          className={`size-4 flex items-center justify-center flex-shrink-0 rounded transition-colors ${hasChildren ? 'text-zinc-400 hover:text-zinc-700' : 'opacity-0 pointer-events-none'}`}
+          className={`size-4 flex items-center justify-center flex-shrink-0 rounded transition-colors ${hasChildren ? 'text-gray-040 hover:text-gray-070' : 'opacity-0 pointer-events-none'}`}
         >
           {expanded ? <MsChevronDownMonoIcon size={12} /> : <MsChevronRightMonoIcon size={12} />}
         </button>
@@ -981,13 +927,13 @@ function OrgTreeNode({
         <span className={`size-2 rounded-full flex-shrink-0 ${ORG_TYPE_COLOR[unit.type]}`} />
 
         {/* name */}
-        <span className={`flex-1 text-sm truncate font-medium ${isSelected ? 'text-primary-700' : ''}`}>
+        <span className={`flex-1 text-sm truncate font-medium ${isSelected ? 'text-pink-060' : ''}`}>
           {unit.name}
         </span>
 
         {/* member count */}
         {memberCount > 0 && (
-          <span className={`text-xs flex-shrink-0 ${isSelected ? 'text-primary-500' : 'text-zinc-400'}`}>
+          <span className={`text-xs flex-shrink-0 ${isSelected ? 'text-pink-040' : 'text-gray-040'}`}>
             {memberCount}
           </span>
         )}
@@ -996,22 +942,22 @@ function OrgTreeNode({
         {canEdit && hovered && (
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
-              className="p-1 rounded text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+              className="p-1 rounded text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
               <MsFriendAddIcon size={12} />
             </button>
             {nextType && (
               <button title={`${ORG_TYPE_LABEL[nextType]} 추가`}
                 onClick={() => onAddChild(nextType, unit.id)}
-                className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
                 <MsPlusIcon size={12} />
               </button>
             )}
             <button title="편집" onClick={() => onEditUnit(unit)}
-              className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors">
+              className="p-1 rounded text-gray-040 hover:text-gray-070 hover:bg-gray-010 transition-colors">
               <MsEditIcon size={12} />
             </button>
             <button title="삭제" onClick={() => onDeleteUnit(unit)}
-              className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+              className="p-1 rounded text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
               <MsDeleteIcon size={12} />
             </button>
           </div>
@@ -1019,7 +965,7 @@ function OrgTreeNode({
       </div>
 
       {dropPos === 'below' && (
-        <div className="h-0.5 bg-primary-500 rounded-full mx-2 my-px pointer-events-none" />
+        <div className="h-0.5 bg-pink-040 rounded-full mx-2 my-px pointer-events-none" />
       )}
 
       {/* Children */}
@@ -1069,8 +1015,8 @@ function MemberRow({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 transition-colors group border-b border-zinc-950/3 last:border-0 ${
-        selected ? 'bg-primary-50/60' : 'hover:bg-zinc-50'
+      className={`flex items-center gap-3 px-4 py-3 transition-colors group border-b border-gray-005 last:border-0 ${
+        selected ? 'bg-pink-005/60' : 'hover:bg-gray-005'
       } ${canSelect ? 'cursor-pointer' : ''}`}
       onClick={canSelect ? () => onToggle!(user.id) : undefined}
     >
@@ -1087,25 +1033,25 @@ function MemberRow({
       <UserAvatar user={user} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-zinc-900">{user.name}</span>
+          <span className="text-sm font-medium text-gray-099">{user.name}</span>
           {user.role === 'admin'
             ? <StatusBadge type="role" value="admin" />
             : (isOrgHeadHere || isAnyOrgHead)
               ? <StatusBadge type="role" value="leader" />
               : null}
           {secondaryAssignmentHere ? (
-            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 rounded border border-violet-200">
+            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-010 text-purple-060 rounded border border-purple-010">
               겸임{secondaryAssignmentHere.role ? ` · ${secondaryAssignmentHere.role}` : ''}
             </span>
           ) : mySecondary.length > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 text-violet-600 rounded border border-violet-100">
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-005 text-purple-050 rounded border border-purple-010">
               겸임 {mySecondary.length}
             </span>
           )}
         </div>
-        <p className="text-xs text-zinc-400 mt-0.5 truncate">
+        <p className="text-xs text-gray-040 mt-0.5 truncate">
           {secondaryAssignmentHere ? secondaryAssignmentHere.role ?? '' : user.position}
-          {user.email && <span className="ml-2 text-zinc-300">·</span>}
+          {user.email && <span className="ml-2 text-gray-030">·</span>}
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
       </div>
@@ -1115,12 +1061,12 @@ function MemberRow({
           onClick={e => e.stopPropagation()}
         >
           <button onClick={() => onEdit(user)} title="정보 수정"
-            className="p-1.5 rounded-md text-zinc-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+            className="p-1.5 rounded-md text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
             <MsEditIcon size={12} className="size-3.5" />
           </button>
           {onTerminate && user.role !== 'admin' && (
             <button onClick={() => onTerminate(user)} title="퇴사 처리"
-              className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+              className="p-1.5 rounded-md text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
               <MsCancelIcon size={12} className="size-3.5" />
             </button>
           )}
@@ -1137,6 +1083,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const showToast = useShowToast();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
+  const [showUnassigned, setShowUnassigned]      = useState(false);
   const [search, setSearch]                      = useState('');
   const [showTerminated, setShowTerminated]       = useState(false);
   const [addMemberModal, setAddMemberModal]       = useState<{ unitId?: string; managerId?: string } | null>(null);
@@ -1152,6 +1099,10 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [showBulkMove, setShowBulkMove] = useState(false);
 
   const clearSelection = () => setSelectedIds(new Set());
+
+  const selectAll = () => { setSelectedOrgId(null); setShowUnassigned(false); setShowTerminated(false); clearSelection(); };
+  const selectUnassigned = () => { setSelectedOrgId(null); setShowUnassigned(true); setShowTerminated(false); clearSelection(); };
+  const selectOrg = (id: string) => { setSelectedOrgId(id); setShowUnassigned(false); setShowTerminated(false); clearSelection(); };
 
   const headerActions = useMemo(() => canEdit ? (
     <MsButton
@@ -1223,10 +1174,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   const getOrgPath = (unitId: string, snap: OrgUnit[]) => {
     const path: OrgUnit[] = [];
-    let cur = snap.find(u => u.id === unitId);
+    let cur: OrgUnit | undefined = snap.find(u => u.id === unitId);
     while (cur) {
       path.unshift(cur);
-      cur = cur.parentId ? snap.find(u => u.id === cur!.parentId) : undefined;
+      const parentId = cur.parentId;
+      cur = parentId ? snap.find(u => u.id === parentId) : undefined;
     }
     return {
       department: path.find(u => u.type === 'mainOrg')?.name,
@@ -1371,11 +1323,20 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const totalLeaders  = activeUsers.filter(u => headIdsAll.has(u.id)).length;
 
+  /* 소속 없는 구성원: 어떤 mainOrg 이름과도 department가 일치하지 않는 활성 비관리자 */
+  const mainOrgNames = useMemo(() => new Set(orgUnits.filter(u => u.type === 'mainOrg').map(u => u.name)), [orgUnits]);
+  const unassignedUsers = useMemo(() =>
+    activeUsers.filter(u => u.role !== 'admin' && !mainOrgNames.has(u.department))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [activeUsers, mainOrgNames]
+  );
+
   /* 선택된 조직의 구성원 */
   const { secondaryOrgs } = useTeamStore();
   const selectedUnit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
   const panelUsers = useMemo(() => {
     if (showTerminated) return terminatedUsers;
+    if (showUnassigned) return unassignedUsers;
     if (!selectedUnit) return activeUsers.filter(u => u.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     const key: Record<OrgUnitType, keyof User> = {
@@ -1395,7 +1356,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       if (b.id === selectedUnit.headId) return 1;
       return a.name.localeCompare(b.name, 'ko');
     });
-  }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, secondaryOrgs]);
+  }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
   const searchResults = useMemo(() =>
     search.trim()
@@ -1433,26 +1394,26 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       <div className="flex items-center gap-2 flex-wrap">
         {orgSyncEnabled && (
           isLoading ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-xs text-zinc-500">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-010 text-xs text-gray-050">
               <MsRefreshIcon size={12} className="animate-spin" /> 동기화 중
             </span>
           ) : orgSyncError ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-xs text-rose-500">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-005 text-xs text-red-040">
               시트 연결 오류
             </span>
           ) : orgLastSyncedAt ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-xs text-emerald-600">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-005 text-xs text-green-060">
               <MsRefreshIcon size={12} className="size-3" />
               {new Date(orgLastSyncedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화됨
             </span>
           ) : null
         )}
         {terminatedUsers.length > 0 && (
-          <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); clearSelection(); }}
+          <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
             className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
               showTerminated
-                ? 'bg-rose-50 text-rose-600 border-rose-200'
-                : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
+                ? 'bg-red-005 text-red-050 border-red-020'
+                : 'bg-white text-gray-050 border-gray-020 hover:border-gray-030'
             }`}>
             <MsCancelIcon size={12} className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
           </button>
@@ -1462,50 +1423,50 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { icon: Users,     label: '전체 구성원', value: `${totalNonAdmin}명`,  sub: '재직 중' },
-          { icon: Building2, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
+          { icon: MsGroupIcon, label: '전체 구성원', value: `${totalNonAdmin}명`,  sub: '재직 중' },
+          { icon: MsGroupIcon, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
           { icon: MsProfileIcon, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
         ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="bg-white rounded-xl ring-1 ring-zinc-950/5 shadow-card p-4">
+          <div key={label} className="bg-white rounded-xl ring-1 ring-gray-010 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="size-7 rounded-lg bg-zinc-100 flex items-center justify-center">
-                <Icon className="size-3.5 text-zinc-500" />
+              <div className="size-7 rounded-lg bg-gray-010 flex items-center justify-center">
+                <Icon className="size-3.5 text-gray-050" />
               </div>
-              <span className="text-xs text-zinc-500">{label}</span>
+              <span className="text-xs text-gray-050">{label}</span>
             </div>
-            <p className="text-2xl font-semibold text-zinc-950">{value}</p>
-            <p className="text-xs text-zinc-400 mt-0.5">{sub}</p>
+            <p className="text-2xl font-semibold text-gray-099">{value}</p>
+            <p className="text-xs text-gray-040 mt-0.5">{sub}</p>
           </div>
         ))}
       </div>
 
       {/* Search bar */}
-      <div className="relative">
-        <MsSearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-        <input type="text" value={search}
-          onChange={e => { setSearch(e.target.value); clearSelection(); }}
-          placeholder="이름, 직책, 팀으로 검색..."
-          className="w-full pl-10 pr-4 py-2.5 text-sm border border-zinc-200 rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950/20" />
-        {search && (
-          <button onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-            <MsCancelIcon size={16} className="size-4" />
+      <MsInput
+        type="text"
+        value={search}
+        onChange={e => { setSearch(e.target.value); clearSelection(); }}
+        placeholder="이름, 직책, 팀으로 검색..."
+        leftSlot={<MsSearchIcon size={16} />}
+        rightSlot={search ? (
+          <button onClick={() => setSearch('')} className="text-gray-040 hover:text-gray-060">
+            <MsCancelIcon size={16} />
           </button>
-        )}
-      </div>
+        ) : undefined}
+        className="rounded-xl"
+      />
 
       {search ? (
         /* ── 검색 결과 ── */
-        <div className="bg-white rounded-xl ring-1 ring-zinc-950/5 shadow-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-950/5">
-            <p className="text-xs text-zinc-500">
-              <span className="font-medium text-zinc-800">'{search}'</span> 검색 결과 {searchResults.length}명
+        <div className="bg-white rounded-xl ring-1 ring-gray-010 shadow-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-010">
+            <p className="text-xs text-gray-050">
+              <span className="font-medium text-gray-080">'{search}'</span> 검색 결과 {searchResults.length}명
             </p>
           </div>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-zinc-400 text-center py-12">검색 결과가 없습니다.</p>
+            <p className="text-sm text-gray-040 text-center py-12">검색 결과가 없습니다.</p>
           ) : (
-            <div className="divide-y divide-zinc-950/3">
+            <div className="divide-y divide-gray-005">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                   onEdit={canEdit ? setEditingMember : null}
@@ -1517,20 +1478,20 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       ) : (
         /* ── 조직 트리 + 구성원 패널 ── */
-        <div className="flex gap-0 bg-white rounded-xl ring-1 ring-zinc-950/5 shadow-card overflow-hidden"
+        <div className="flex gap-0 bg-white rounded-xl ring-1 ring-gray-010 shadow-card overflow-hidden"
           style={{ minHeight: '480px' }}>
 
           {/* Left: Org tree */}
-          <div className="w-64 flex-shrink-0 border-r border-zinc-950/5 flex flex-col">
-            <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-950/5">
+          <div className="w-64 flex-shrink-0 border-r border-gray-010 flex flex-col">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-gray-010">
               <div className="flex items-center gap-1.5">
-                <Layers className="size-3.5 text-zinc-400" />
-                <span className="text-xs font-semibold text-zinc-600">조직 구조</span>
+                <Layers className="size-3.5 text-gray-040" />
+                <span className="text-xs font-semibold text-gray-060">조직 구조</span>
               </div>
               {canEdit && (
                 <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
                   title="주조직 추가"
-                  className="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                  className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
                   <MsPlusIcon size={12} className="size-3.5" />
                 </button>
               )}
@@ -1539,22 +1500,36 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             <div className="flex-1 overflow-y-auto py-2">
               {/* 전체 보기 */}
               <button
-                onClick={() => { setSelectedOrgId(null); setShowTerminated(false); clearSelection(); }}
+                onClick={selectAll}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                  !selectedOrgId && !showTerminated ? 'bg-primary-50 text-primary-700 font-medium' : 'text-zinc-600 hover:bg-zinc-50'
+                  !selectedOrgId && !showTerminated && !showUnassigned ? 'bg-pink-005 text-pink-060 font-medium' : 'text-gray-060 hover:bg-gray-005'
                 }`}
               >
-                <Users className="size-3.5 flex-shrink-0" />
+                <MsGroupIcon size={14} className="flex-shrink-0" />
                 <span className="flex-1 text-left">전체 구성원</span>
-                <span className="text-xs text-zinc-400">{totalNonAdmin}</span>
+                <span className="text-xs text-gray-040">{totalNonAdmin}</span>
               </button>
+
+              {/* 소속 없음 */}
+              {unassignedUsers.length > 0 && (
+                <button
+                  onClick={selectUnassigned}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                    showUnassigned ? 'bg-pink-005 text-pink-060 font-medium' : 'text-gray-060 hover:bg-gray-005'
+                  }`}
+                >
+                  <MsWarningIcon size={14} className="flex-shrink-0 text-yellow-050" />
+                  <span className="flex-1 text-left">소속 없음</span>
+                  <span className="text-xs text-yellow-050 font-semibold">{unassignedUsers.length}</span>
+                </button>
+              )}
 
               {orgUnits.length === 0 ? (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-xs text-zinc-400 mb-2">조직 구조가 없습니다.</p>
+                  <p className="text-xs text-gray-040 mb-2">조직 구조가 없습니다.</p>
                   {canEdit && (
                     <button onClick={() => setOrgModal({ mode: 'add', type: 'mainOrg' })}
-                      className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                      className="text-xs text-pink-050 hover:text-pink-060 font-medium">
                       + 주조직 추가
                     </button>
                   )}
@@ -1567,7 +1542,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                       unit={unit}
                       allUnits={orgUnits}
                       selectedId={selectedOrgId}
-                      onSelect={id => { setSelectedOrgId(id); setShowTerminated(false); clearSelection(); }}
+                      onSelect={selectOrg}
                       onEditUnit={unit => setOrgModal({ mode: 'edit', unit })}
                       onDeleteUnit={handleDeleteUnit}
                       onAddChild={(type, parentId) => setOrgModal({ mode: 'add', type, parentId })}
@@ -1588,20 +1563,22 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           {/* Right: Member panel */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-950/5">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-010">
               <div>
                 {showTerminated ? (
-                  <p className="text-sm font-semibold text-zinc-800">퇴사자 목록</p>
+                  <p className="text-sm font-semibold text-gray-080">퇴사자 목록</p>
+                ) : showUnassigned ? (
+                  <p className="text-sm font-semibold text-gray-080">소속 없음</p>
                 ) : selectedUnit ? (
                   <div className="flex items-center gap-2">
                     <span className={`size-2 rounded-full ${ORG_TYPE_COLOR[selectedUnit.type]}`} />
-                    <p className="text-sm font-semibold text-zinc-800">{selectedUnit.name}</p>
-                    <span className="text-xs text-zinc-400">{ORG_TYPE_LABEL[selectedUnit.type]}</span>
+                    <p className="text-sm font-semibold text-gray-080">{selectedUnit.name}</p>
+                    <span className="text-xs text-gray-040">{ORG_TYPE_LABEL[selectedUnit.type]}</span>
                   </div>
                 ) : (
-                  <p className="text-sm font-semibold text-zinc-800">전체 구성원</p>
+                  <p className="text-sm font-semibold text-gray-080">전체 구성원</p>
                 )}
-                <p className="text-xs text-zinc-400 mt-0.5">{panelUsers.length}명</p>
+                <p className="text-xs text-gray-040 mt-0.5">{panelUsers.length}명</p>
               </div>
               <div className="flex items-center gap-2">
                 {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
@@ -1632,24 +1609,24 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               <div className="flex-1 space-y-0 animate-pulse p-4">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="flex items-center gap-3 py-3">
-                    <div className="size-8 rounded-full bg-zinc-200 flex-shrink-0" />
+                    <div className="size-8 rounded-full bg-gray-020 flex-shrink-0" />
                     <div className="flex-1 space-y-1.5">
-                      <div className="h-3 bg-zinc-200 rounded w-24" />
-                      <div className="h-2.5 bg-zinc-100 rounded w-40" />
+                      <div className="h-3 bg-gray-020 rounded w-24" />
+                      <div className="h-2.5 bg-gray-010 rounded w-40" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : panelUsers.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
-                <Users className="size-8 text-zinc-200" />
-                <p className="text-sm text-zinc-400">
+                <Users className="size-8 text-gray-020" />
+                <p className="text-sm text-gray-040">
                   {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
                 </p>
                 {canEdit && !showTerminated && (
                   <button
                     onClick={() => setAddMemberModal({ unitId: selectedOrgId ?? undefined })}
-                    className="text-xs font-medium text-primary-600 hover:text-primary-700">
+                    className="text-xs font-medium text-pink-050 hover:text-pink-060">
                     + 구성원 추가
                   </button>
                 )}
@@ -1670,14 +1647,14 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               </div>
             )}
             {canEdit && selectedIds.size > 0 && !showTerminated && (
-              <div className="border-t border-zinc-950/5 px-4 py-3 bg-indigo-50 flex items-center justify-between flex-shrink-0">
-                <span className="text-sm font-medium text-indigo-700">{selectedIds.size}명 선택됨</span>
+              <div className="border-t border-gray-010 px-4 py-3 bg-blue-005 flex items-center justify-between flex-shrink-0">
+                <span className="text-sm font-medium text-blue-070">{selectedIds.size}명 선택됨</span>
                 <div className="flex items-center gap-2">
-                  <button onClick={clearSelection} className="text-xs text-zinc-500 hover:text-zinc-700 transition-colors">선택 해제</button>
+                  <button onClick={clearSelection} className="text-xs text-gray-050 hover:text-gray-070 transition-colors">선택 해제</button>
                   <button
                     onClick={() => setShowBulkMove(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
-                    <ArrowRight className="size-3" /> 조직 이동
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-060 rounded-lg hover:bg-blue-070 transition-colors">
+                    <MsChevronRightLineIcon size={12} /> 조직 이동
                   </button>
                 </div>
               </div>

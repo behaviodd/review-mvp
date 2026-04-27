@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { Pill } from '../../components/ui/Pill';
 import { createPortal } from 'react-dom';
@@ -632,9 +632,11 @@ export function CycleDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cycle, currentUser, enabled, syncing, lastSyncAt]);
 
+  // onBack 은 useCallback 으로 안정화 — useSetPageHeader 의 deps 가 매 렌더 변경되지 않도록.
+  const handleBack = useCallback(() => navigate(-1), [navigate]);
   useSetPageHeader(cycle?.title ?? '사이클', headerActions, {
     subtitle: headerSubtitle,
-    onBack: () => navigate('/cycles'),
+    onBack: handleBack,
   });
 
   if (!cycle) {

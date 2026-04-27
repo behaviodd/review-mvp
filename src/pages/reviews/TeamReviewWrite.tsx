@@ -506,8 +506,9 @@ export function TeamReviewWrite() {
     setSubmitted(false);
   };
 
+  const handleBack = useCallback(() => navigate(-1), [navigate]);
   useSetPageHeader(cycle?.title ? `${cycle.title} · 팀원 평가` : '팀원 평가', undefined, {
-    onBack: () => navigate('/reviews/team'),
+    onBack: handleBack,
   });
 
   if (!reviewee || !cycle) {

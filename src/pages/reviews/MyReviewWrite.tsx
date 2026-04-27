@@ -483,8 +483,9 @@ export function MyReviewWrite() {
     sectionRefs.current = sectionRefs.current.slice(0, totalSections);
   }, [totalSections]);
 
+  const handleBack = useCallback(() => navigate(-1), [navigate]);
   useSetPageHeader(cycle?.title ?? '리뷰 작성', undefined, {
-    onBack: () => navigate('/reviews/me'),
+    onBack: handleBack,
   });
 
   if (!submission) {

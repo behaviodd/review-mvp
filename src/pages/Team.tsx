@@ -1110,6 +1110,7 @@ function MemberRow({
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
+  const { can } = usePermission();
   const navigate = useNavigate();
   const startImpersonation = useAuthStore(s => s.startImpersonation);
   const showToast = useShowToast();
@@ -1528,7 +1529,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                   onEdit={canEdit ? setEditingMember : null}
                   onTerminate={canEdit ? handleTerminate : undefined}
-                  onImpersonate={canEdit ? handleImpersonate : undefined}
+                  onImpersonate={can.impersonate ? handleImpersonate : undefined}
                   isAnyOrgHead={headIdsAll.has(u.id)} />
               ))}
             </div>
@@ -1695,7 +1696,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                     onEdit={canEdit ? setEditingMember : null}
                     onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
-                    onImpersonate={canEdit && !showTerminated ? handleImpersonate : undefined}
+                    onImpersonate={can.impersonate && !showTerminated ? handleImpersonate : undefined}
                     selected={selectedIds.has(u.id)}
                     onToggle={canEdit && !showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
@@ -1766,8 +1767,6 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         ) : null}
         confirmLabel="접속"
         tone="danger"
-        requireReason
-        reasonPlaceholder="예) 사용자 화면 점검 요청"
       />
     </div>
   );

@@ -71,9 +71,16 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
 
 function RequireRole({ roles, children }: { roles: string[]; children: React.ReactNode }) {
   const { currentUser } = useAuthStore();
+  const impersonatingFromId = useAuthStore(s => s.impersonatingFromId);
   const orgUnits = useTeamStore(s => s.orgUnits);
   const isOrgHead = !!currentUser && orgUnits.some(u => u.headId === currentUser.id);
   const effectiveRole = isOrgHead && currentUser.role === 'member' ? 'leader' : currentUser?.role;
+  // R6 Phase D: 마스터 로그인 활성 중에는 admin 전용 라우트 접근 차단.
+  // currentUser 가 admin role 사용자라도 impersonate 대상자(non-admin)이라 자동 거부되지만,
+  // 명시적 가드로 의도 표현.
+  if (impersonatingFromId && roles.length === 1 && roles[0] === 'admin') {
+    return <Navigate to="/" replace />;
+  }
   if (!currentUser || !roles.includes(effectiveRole ?? '')) {
     return <Navigate to="/" replace />;
   }

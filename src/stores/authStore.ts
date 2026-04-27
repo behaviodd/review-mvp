@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeStorage } from '../utils/safeStorage';
+import { useTeamStore } from './teamStore';
 import type { User, ImpersonationLog } from '../types';
 
 interface AuthState {
@@ -51,8 +52,16 @@ export const useAuthStore = create<AuthState>()(
       startImpersonation: (target, reason) => {
         const state = get();
         const actor = state.currentUser;
-        if (!actor || actor.role !== 'admin') return null;
+        if (!actor) return null;
         if (state.impersonatingFromId) return null; // 이미 impersonate 중
+        // R6: admin role 또는 'auth.impersonate' 권한 보유자만 허용.
+        if (actor.role !== 'admin') {
+          const tg = useTeamStore.getState();
+          const hasImpersonate = tg.permissionGroups.some(g =>
+            g.memberIds.includes(actor.id) && g.permissions.includes('auth.impersonate')
+          );
+          if (!hasImpersonate) return null;
+        }
         const log: ImpersonationLog = {
           id: `imp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
           actorId: actor.id,

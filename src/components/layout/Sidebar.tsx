@@ -43,6 +43,10 @@ function BrandIcon({ className }: { className?: string }) {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
   const { isAdmin, can } = usePermission();
   const { currentUser, logout } = useAuthStore();
+  // R6 Phase D: 마스터 로그인 활성 중에는 admin 메뉴 자동 숨김
+  // (대상자 화면을 그대로 보여줘야 하므로 admin 메뉴가 노출되면 안 됨)
+  const isImpersonating = useAuthStore(s => s.impersonatingFromId !== null);
+  const adminMenusVisible = isAdmin && !isImpersonating;
   const submissions = useReviewStore(s => s.submissions);
   const users = useTeamStore(s => s.users);
   const orgUnits = useTeamStore(s => s.orgUnits);
@@ -82,17 +86,17 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
   const navItems: NavNode[] = ([
     { kind: 'item', to: '/',                           icon: MsHomeIcon,    label: '홈',           show: true },
-    { kind: 'item', to: '/reviews/me',                 icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin },
+    { kind: 'item', to: '/reviews/me',                 icon: MsRefreshIcon, label: '내 작성',      show: !adminMenusVisible || isImpersonating },
     { kind: 'item', to: '/reviews/received',           icon: MsProfileIcon, label: '받은 리뷰',    show: true },
-    { kind: 'item', to: '/reviews/team',               icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin },
-    { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: can.viewTeamReviews || isAdmin, badge: pendingApprovals },
-    { kind: 'item', to: '/team',                       icon: MsGroupIcon,   label: '구성원',       show: true },
-    { kind: 'section', label: '리뷰 운영', show: isAdmin },
-    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',   show: isAdmin, indent: true },
-    { kind: 'item', to: '/templates',       icon: MsArticleIcon, label: '템플릿',   show: isAdmin, indent: true },
-    { kind: 'item', to: '/cycles/archive',  icon: MsDeleteIcon,  label: '보관함',   show: isAdmin, indent: true },
-    { kind: 'section', label: '관리', show: isAdmin },
-    { kind: 'item', to: '/permissions',     icon: MsLockIcon,    label: '권한 관리', show: isAdmin, indent: true },
+    { kind: 'item', to: '/reviews/team',               icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !adminMenusVisible },
+    { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin), badge: pendingApprovals },
+    { kind: 'item', to: '/team',                       icon: MsGroupIcon,   label: '구성원',       show: !isImpersonating },
+    { kind: 'section', label: '리뷰 운영', show: adminMenusVisible },
+    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',   show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/templates',       icon: MsArticleIcon, label: '템플릿',   show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/cycles/archive',  icon: MsDeleteIcon,  label: '보관함',   show: adminMenusVisible, indent: true },
+    { kind: 'section', label: '관리', show: adminMenusVisible },
+    { kind: 'item', to: '/permissions',     icon: MsLockIcon,    label: '권한 관리', show: adminMenusVisible, indent: true },
   ] satisfies NavNode[]).filter(i => i.show);
 
   const handleLogout = () => {

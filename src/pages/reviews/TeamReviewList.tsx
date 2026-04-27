@@ -175,13 +175,6 @@ export function TeamReviewList() {
     );
   }
 
-  const tabs = [
-    { value: 'all'    as StatusFilter, label: '전체',    count: byType.length },
-    { value: 'active' as StatusFilter, label: '진행 중', count: active.length },
-    { value: 'done'   as StatusFilter, label: '완료',    count: done.length },
-    { value: 'closed' as StatusFilter, label: '종료됨',  count: closed.length },
-  ];
-
   const filtered =
     statusFilter === 'active' ? active :
     statusFilter === 'done'   ? done   :
@@ -355,11 +348,21 @@ export function TeamReviewList() {
   return (
     <div className="space-y-5">
       {cycleData.length > 0 && (
-        <ListToolbar<StatusFilter>
-          tabs={tabs}
-          activeTab={statusFilter}
-          onTabChange={setStatusFilter}
+        <ListToolbar
           segments={[
+            {
+              kind: 'pills',
+              key: 'status',
+              ariaLabel: '상태 필터',
+              value: statusFilter,
+              onChange: v => setStatusFilter(v as StatusFilter),
+              options: [
+                { value: 'all',    label: '전체',    count: byType.length },
+                { value: 'active', label: '진행 중', count: active.length },
+                { value: 'done',   label: '완료',    count: done.length },
+                { value: 'closed', label: '종료됨',  count: closed.length },
+              ],
+            },
             {
               kind: 'pills',
               key: 'type',

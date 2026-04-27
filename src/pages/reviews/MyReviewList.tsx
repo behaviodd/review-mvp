@@ -153,13 +153,6 @@ export function MyReviewList() {
   const totalCount  = filteredMySubmissions.length + filteredReceived.length;
   const closedCount = closedSelf.length + closedReceived.length;
 
-  const tabs = [
-    { value: 'all'    as StatusFilter, label: '전체',    count: totalCount },
-    { value: 'active' as StatusFilter, label: '진행 중', count: active.length },
-    { value: 'done'   as StatusFilter, label: '완료',    count: doneAll.length },
-    { value: 'closed' as StatusFilter, label: '종료됨',  count: closedCount },
-  ];
-
   // ── 셀프 리뷰 행 ─────────────────────────────────────────────────────────────
   const ReviewRow = ({ sub }: { sub: typeof mySubmissions[number] }) => {
     const cycle         = cycles.find(c => c.id === sub.cycleId);
@@ -386,11 +379,21 @@ export function MyReviewList() {
     <div className="space-y-5">
       <PeerPickReminder />
 
-      <ListToolbar<StatusFilter>
-        tabs={tabs}
-        activeTab={statusFilter}
-        onTabChange={setStatusFilter}
+      <ListToolbar
         segments={[
+          {
+            kind: 'pills',
+            key: 'status',
+            ariaLabel: '상태 필터',
+            value: statusFilter,
+            onChange: v => setStatusFilter(v as StatusFilter),
+            options: [
+              { value: 'all',    label: '전체',    count: totalCount },
+              { value: 'active', label: '진행 중', count: active.length },
+              { value: 'done',   label: '완료',    count: doneAll.length },
+              { value: 'closed', label: '종료됨',  count: closedCount },
+            ],
+          },
           {
             kind: 'pills',
             key: 'type',

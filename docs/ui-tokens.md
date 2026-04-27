@@ -81,26 +81,32 @@
 | `EmptyState`   | 목록 비었을 때                         | `variant="inline"` 으로 목록 내 삽입 |
 | `Field`        | 폼 필드 공통 쉘                        | required · hint · error 표시 표준    |
 | `StatusBadge`  | submission/review/role 상태            | Pill 기반                            |
-| `ListToolbar`  | 리스트 페이지 상단 필터/검색 툴바      | tabs · segments · search · rightSlot |
+| `ListToolbar`  | 리스트 페이지 상단 필터/검색 툴바      | segments · search · rightSlot |
 
 ### 7.1 ListToolbar 사용 규칙
 
 리스트 페이지(MyReviewList, TeamReviewList, PeerApprovalPage, CycleList, ReceivedReviewList, CycleArchive 등)는 **반드시** `ListToolbar` 를 사용해 필터/검색을 구성합니다.
 
+**대원칙 (2026-04 개정)**
+- **콘텐츠 영역에 TAB 사용 금지.** 1차 분류는 LNB(Sidebar) 하위메뉴로 분리.
+- 콘텐츠 영역의 모든 필터는 segments(pills/select) 또는 search 로 통일.
+- `tabs` 슬롯은 deprecated. 신규 페이지는 사용 금지, 기존 페이지는 점진적 segments 로 마이그레이션.
+
 | 슬롯       | 시각                                            | 쓰임                                      |
 |------------|-------------------------------------------------|-------------------------------------------|
-| `tabs`     | `border-b` + bold + count chip (선택 시 black)  | **1차 분류**. 페이지에 1세트만.           |
-| `segments` | pills (≤4 옵션) / select (옵션 多 또는 라벨 길음) | **2차 분류**. 0~여러 개.                  |
+| `segments` | pills (≤4 옵션) / select (옵션 多 또는 라벨 길음) | 분류·상태·유형 필터. 여러 개 stack 가능.  |
 | `search`   | 우측 정렬, `width='sm'`(56) / `'md'`(80)        | 단일 검색 입력. 페이지에 1개만.           |
 | `rightSlot`| 임의                                            | 보조 액션(초기화 등). primary는 PageHeader |
+| ~~`tabs`~~ | ~~border-b + count chip~~                        | **deprecated.** segments[pills] 로 대체.   |
 
 **규칙**
-- 1차 분류는 항상 tabs. CycleList처럼 카운트가 없는 경우만 segments[pills] 로 대체.
-- segments 의 pill `count` 필드는 옵션 우측에 작은 숫자로 표시 (선택적).
+- 상태 필터(전체/진행 중/완료/종료됨처럼 카운트 강조 필요)는 `segments[pills]` 의 `count` 필드 사용.
+- segments 가 둘 이상이면 `flex-wrap` 으로 자동 다음 줄 배치 (`상태` 다음 `유형` 등).
 - search 단독 사용 시 `width='md'` 권장.
 - primary action(예: '새 리뷰')은 `useSetPageHeader(title, actions)` 의 `actions` 슬롯, 절대 ListToolbar `rightSlot` 에 넣지 말 것.
 
 **금지**
+- ❌ 콘텐츠 영역에 TAB UI (border-b 강조 탭) 사용 — 1차 분류는 LNB 로
 - ❌ ListToolbar 우회한 인라인 `<button className="border-b ...">` 탭
 - ❌ 페이지마다 다른 색·간격으로 자체 필터 바 구성
 

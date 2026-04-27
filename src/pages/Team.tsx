@@ -6,7 +6,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useShowToast } from '../components/ui/Toast';
 import { resetAccount } from '../utils/authApi';
-import { isUserActive } from '../utils/userCompat';
+import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { KeyRound, Layers, Users } from 'lucide-react';
@@ -26,8 +26,10 @@ const ORG_TYPE_LABEL: Record<OrgUnitType, string> = {
 const ORG_TYPE_PLACEHOLDER: Record<OrgUnitType, string> = {
   mainOrg: '예) 개발본부', subOrg: '예) 플랫폼부', team: '예) 프론트엔드팀', squad: '예) 플랫폼스쿼드',
 };
+// R5-a: squad 가 squad 의 부모가 될 수 있도록 자기재귀 허용 → 5단계 이상 표현 가능.
+//        UI 라벨은 모두 '스쿼드' 로 표시되지만 트리 깊이는 무제한.
 const ORG_TYPE_NEXT: Record<OrgUnitType, OrgUnitType | null> = {
-  mainOrg: 'subOrg', subOrg: 'team', team: 'squad', squad: null,
+  mainOrg: 'subOrg', subOrg: 'team', team: 'squad', squad: 'squad',
 };
 const AVATAR_COLORS = [
   '#4f46e5','#059669','#0891b2','#7c3aed','#0369a1',
@@ -794,8 +796,9 @@ const ORG_TYPE_COLOR: Record<OrgUnitType, string> = {
 };
 
 // 드래그 타겟으로 허용되는 부모 타입
+// R5-a: squad → squad 자기재귀로 깊이 무제한
 const ALLOWED_CHILD: Partial<Record<OrgUnitType, OrgUnitType>> = {
-  mainOrg: 'subOrg', subOrg: 'team', team: 'squad',
+  mainOrg: 'subOrg', subOrg: 'team', team: 'squad', squad: 'squad',
 };
 
 interface DnDState {
@@ -838,15 +841,23 @@ function OrgTreeNode({
   const hasChildren = children.length > 0;
 
   const memberCount = useMemo(() => {
+    // R1+R5-a: orgUnitId 트리 기반 룩업 우선, legacy 4단계 텍스트 매칭 fallback
+    const treeMembers = new Set(
+      getMembersInOrgTree(unit.id, users, allUnits)
+        .filter(isUserActive)
+        .map(u => u.id)
+    );
+    // legacy: 텍스트 필드 매칭 (마이그 전 데이터 호환)
     const key: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
-    const primaryIds = new Set(
-      users.filter(u => u[key[unit.type]] === unit.name && isUserActive(u)).map(u => u.id)
-    );
-    const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !primaryIds.has(a.userId)).length;
-    return primaryIds.size + secondaryExtra;
-  }, [users, unit, secondaryOrgs]);
+    const legacyIds = users
+      .filter(u => u[key[unit.type]] === unit.name && isUserActive(u))
+      .map(u => u.id);
+    legacyIds.forEach(id => treeMembers.add(id));
+    const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !treeMembers.has(a.userId)).length;
+    return treeMembers.size + secondaryExtra;
+  }, [users, unit, allUnits, secondaryOrgs]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
   const isSelected = selectedId === unit.id;
@@ -931,6 +942,13 @@ function OrgTreeNode({
         <span className={`flex-1 text-sm truncate font-medium ${isSelected ? 'text-pink-060' : ''}`}>
           {unit.name}
         </span>
+
+        {/* R5-a: depth hint (4단계 이상에서 표시) */}
+        {depth >= 4 && (
+          <span className="text-[10px] font-semibold text-gray-040 bg-gray-005 px-1.5 py-0.5 rounded-full flex-shrink-0" title={`트리 ${depth + 1}단계`}>
+            Lv.{depth + 1}
+          </span>
+        )}
 
         {/* member count */}
         {memberCount > 0 && (

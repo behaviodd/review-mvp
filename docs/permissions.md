@@ -85,7 +85,15 @@ canExtendDeadline({ actor, cycle, submission, assignments })
 
 - **R1**: 평가권 모델(`ReviewerAssignment`) 도입
 - **R2**: 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
-- **R4** (현재): 인사 스냅샷 사용자 UI
+- **R5-a** (현재): 자유 재귀 조직 트리
+  - `ORG_TYPE_NEXT['squad'] = 'squad'`, `ALLOWED_CHILD['squad'] = 'squad'` — squad 자기재귀로 5단계 이상 깊이 무제한
+  - OrgTreeNode 들여쓰기는 이미 depth 기반, depth ≥ 4 부터 `Lv.N` 배지 표시
+  - 멤버 카운트: `getMembersInOrgTree(orgUnitId)` 로 트리 전체 룩업 + legacy 4단계 텍스트 매칭 fallback
+  - DnD 재배치: squad → squad 이동도 ALLOWED_CHILD 자동 적용
+  - 타입(`OrgUnitType`) 보존 — R3 까지 호환을 위해 squad 라벨 유지, 향후 R6 에서 type 필드 제거 예정
+  - 영향 없는 영역: 기존 4단계 사이클(mainOrg/subOrg/team/squad), 기존 시트 데이터
+
+- **R4**: 인사 스냅샷 사용자 UI
   - 사이클 발행 시 `hrSnapshotMode` 라디오 (snapshot 권장 / live)
   - snapshot 모드 즉시 발행 시 `OrgSnapshot` 자동 생성 + `cycle.hrSnapshotId` 연결
   - `resolveEffectiveOrgData(cycle, live, snapshots)` 헬퍼로 평가자/대상자 룩업이 snapshot 데이터 사용

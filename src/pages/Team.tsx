@@ -58,7 +58,7 @@ function Modal({ title, onClose, children, wide }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative bg-white rounded-xl shadow-xl ring-1 ring-gray-010 w-full mx-4 ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
+      <div className={`relative bg-white rounded-xl shadow-modal border border-gray-020 w-full mx-4 ${wide ? 'max-w-2xl' : 'max-w-md'}`}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-010">
           <h3 className="text-sm font-semibold text-gray-099">{title}</h3>
           <button onClick={onClose} className="text-gray-040 hover:text-gray-060 transition-colors">
@@ -1485,7 +1485,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           { icon: MsGroupIcon, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
           { icon: MsProfileIcon, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
         ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="bg-white rounded-xl ring-1 ring-gray-010 shadow-card p-4">
+          <div key={label} className="bg-white rounded-xl border border-gray-020 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="size-7 rounded-lg bg-gray-010 flex items-center justify-center">
                 <Icon className="size-3.5 text-gray-050" />
@@ -1515,7 +1515,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
       {search ? (
         /* ── 검색 결과 ── */
-        <div className="bg-white rounded-xl ring-1 ring-gray-010 shadow-card overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-010">
             <p className="text-xs text-gray-050">
               <span className="font-medium text-gray-080">'{search}'</span> 검색 결과 {searchResults.length}명
@@ -1537,7 +1537,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         </div>
       ) : (
         /* ── 조직 트리 + 구성원 패널 ── */
-        <div className="flex gap-0 bg-white rounded-xl ring-1 ring-gray-010 shadow-card overflow-hidden"
+        <div className="flex gap-0 bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden"
           style={{ minHeight: '480px' }}>
 
           {/* Left: Org tree */}

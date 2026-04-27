@@ -35,14 +35,14 @@ interface CycleData {
 function StatusDot({ submitted, total, isClosed }: { submitted: number; total: number; isClosed: boolean }) {
   if (isClosed) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
         <Circle className="w-3.5 h-3.5" /> 종료
       </span>
     );
   }
   if (total > 0 && submitted === total) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-060">
         <MsCheckCircleIcon size={12} /> 평가 완료
       </span>
     );
@@ -224,7 +224,7 @@ export function TeamReviewList() {
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" /> {total}명
               </span>
-              <span className="flex items-center gap-1 text-emerald-600">
+              <span className="flex items-center gap-1 text-green-060">
                 <MsCheckCircleIcon size={12} /> {submitted}
               </span>
               {inProgress > 0 && (
@@ -294,7 +294,7 @@ export function TeamReviewList() {
                 </p>
               </div>
             ) : (
-              <div className="h-1.5 rounded-full bg-emerald-200" />
+              <div className="h-1.5 rounded-full bg-green-020" />
             )}
           </div>
 

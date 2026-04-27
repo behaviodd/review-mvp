@@ -97,7 +97,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
 
   return (
     <div className={`bg-white rounded-xl border p-5 ${
-      isUnanswered ? 'border-rose-300 bg-rose-50/20'
+      isUnanswered ? 'border-red-020 bg-red-005/30'
       : question.isPrivate ? 'border-gray-020 bg-gray-005/50'
       : 'border-gray-010 shadow-card'
     }`}>
@@ -109,7 +109,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
       )}
       <div className="mb-3">
         <p className="text-sm font-semibold text-gray-080 leading-snug mb-1">
-          {question.text}{question.isRequired && <span className="text-rose-500 ml-1">*</span>}
+          {question.text}{question.isRequired && <span className="text-red-050 ml-1">*</span>}
         </p>
         {question.helpText && (
           <p className="text-xs text-gray-040 leading-relaxed">{question.helpText}</p>
@@ -144,13 +144,13 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
           />
           <div className="flex justify-between mt-1">
             {!readOnly && answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>}
-            {!readOnly && answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-emerald-600">잘 작성하고 계십니다!</p>}
+            {!readOnly && answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>}
             {(!readOnly && !answer?.textValue) && <span />}
             <p className="text-xs text-gray-040 ml-auto">{(answer?.textValue || '').length}/1000</p>
           </div>
         </div>
       )}
-      {isUnanswered && <p className="mt-2 text-xs text-rose-600">필수 항목입니다. 답변을 입력해주세요.</p>}
+      {isUnanswered && <p className="mt-2 text-xs text-red-050">필수 항목입니다. 답변을 입력해주세요.</p>}
     </div>
   );
 }
@@ -332,7 +332,7 @@ function RightPanel({
                         ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-pink-050 hover:underline inline-flex items-center gap-0.5">{item.title}<MsOutlinkIcon size={12} className="ml-0.5" /></a>
                         : item.name}
                     </span>
-                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-gray-040 hover:text-rose-500 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
+                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-gray-040 hover:text-red-050 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
                   </li>
                 ))}
               </ul>
@@ -372,7 +372,7 @@ function RightPanel({
         <div>
           <button onClick={() => setTipsOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-005 transition-colors border-b border-gray-010">
             <div className="flex items-center gap-2">
-              <Lightbulb className="size-3.5 text-amber-400" />
+              <Lightbulb className="size-3.5 text-yellow-060" />
               <span className="text-xs font-medium text-gray-070">작성 팁</span>
             </div>
             {tipsOpen ? <MsChevronDownLineIcon size={12} className="text-gray-040" /> : <MsChevronRightLineIcon size={12} className="text-gray-040" />}
@@ -581,10 +581,10 @@ export function MyReviewWrite() {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <PartyPopper className="w-10 h-10 text-emerald-500" />
+          <div className="w-20 h-20 bg-green-005 rounded-full flex items-center justify-center mx-auto mb-6">
+            <PartyPopper className="w-10 h-10 text-green-050" />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900 mb-3">수고하셨습니다! 🎉</h1>
+          <h1 className="text-2xl font-bold text-gray-099 mb-3">수고하셨습니다! 🎉</h1>
           <p className="text-gray-060 mb-2">성장 돌아보기를 완료했습니다.</p>
           <p className="text-sm text-gray-040 mb-8">리뷰가 안전하게 제출되었습니다.</p>
           <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
@@ -648,11 +648,11 @@ export function MyReviewWrite() {
 
           {/* 자기평가 기간 마감 배너 */}
           {cyclePastSelfReview && (
-            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <MsLockIcon size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-4 bg-yellow-005 border border-yellow-060/30 rounded-xl">
+              <MsLockIcon size={16} className="text-yellow-060 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">자기평가 기간이 종료되었습니다</p>
-                <p className="text-xs text-amber-700 mt-0.5">리뷰가 조직장 평가 단계로 전환되었습니다.</p>
+                <p className="text-sm font-semibold text-yellow-070">자기평가 기간이 종료되었습니다</p>
+                <p className="text-xs text-yellow-060 mt-0.5">리뷰가 조직장 평가 단계로 전환되었습니다.</p>
               </div>
             </div>
           )}
@@ -661,7 +661,7 @@ export function MyReviewWrite() {
           {!isDownward && isReadOnly && managerReview && managerUser ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-900">리뷰 결과</h2>
+                <h2 className="text-lg font-semibold text-gray-099">리뷰 결과</h2>
                 <p className="text-sm text-gray-040 mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
               </div>
               <div className="rounded-xl overflow-hidden border border-gray-010 shadow-card">
@@ -713,7 +713,7 @@ export function MyReviewWrite() {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-pink-040 flex-shrink-0" />
-                  <h2 className="text-base font-semibold text-zinc-900">
+                  <h2 className="text-base font-semibold text-gray-099">
                     {isDownward
                       ? `${users.find(u => u.id === submission.reviewerId)?.name ?? '조직장'}님의 평가`
                       : group.name}
@@ -733,9 +733,9 @@ export function MyReviewWrite() {
 
           {/* 제출 완료 배너 */}
           {isReadOnly && (
-            <div className="flex items-center gap-2.5 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <MsCheckIcon size={20} className="text-emerald-600 flex-shrink-0" />
-              <p className="text-sm font-medium text-emerald-700">
+            <div className="flex items-center gap-2.5 p-4 bg-green-005 border border-green-010 rounded-xl">
+              <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
+              <p className="text-sm font-medium text-green-060">
                 {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
               </p>
             </div>
@@ -757,7 +757,7 @@ export function MyReviewWrite() {
           {!isReadOnly && (
             <div className="pb-10 space-y-2">
               {showValidation && !completedSections.every(Boolean) && (
-                <p className="text-sm text-rose-600 mb-3 text-center">필수 항목을 모두 작성한 후 제출해주세요.</p>
+                <p className="text-sm text-red-050 mb-3 text-center">필수 항목을 모두 작성한 후 제출해주세요.</p>
               )}
               <MsButton
                 variant="outline-default"
@@ -795,7 +795,7 @@ export function MyReviewWrite() {
               <div className="w-12 h-12 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-3">
                 <MsCheckIcon size={24} className="text-pink-050" />
               </div>
-              <h3 className="text-lg font-semibold text-zinc-900 mb-2">최종 제출하시겠습니까?</h3>
+              <h3 className="text-lg font-semibold text-gray-099 mb-2">최종 제출하시겠습니까?</h3>
               <p className="text-sm text-gray-050">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">

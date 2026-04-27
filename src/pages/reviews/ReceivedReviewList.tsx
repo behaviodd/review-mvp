@@ -79,10 +79,10 @@ export function ReceivedReviewList() {
     subtitle: `받은 리뷰 총 ${visibleSubmissions.length}건`,
   });
 
-  if (!currentUser) return <div className="text-center py-20 text-gray-040">로그인이 필요합니다.</div>;
+  if (!currentUser) return <EmptyState illustration="empty-list" title="로그인이 필요합니다." action={{ label: '로그인으로', onClick: () => navigate('/login') }} />;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <ListToolbar
         segments={[
           {

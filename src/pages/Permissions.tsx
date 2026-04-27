@@ -53,7 +53,7 @@ export function Permissions() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {sorted.length === 0 ? (
         <EmptyState
           icon={MsProfileIcon}

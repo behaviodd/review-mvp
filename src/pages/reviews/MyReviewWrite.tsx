@@ -761,7 +761,8 @@ export function MyReviewWrite() {
               )}
               <MsButton
                 variant="outline-default"
-                className="w-full h-auto py-2.5 rounded-xl"
+                size="xl"
+                className="w-full"
                 leftIcon={<Save className="w-4 h-4" />}
                 onClick={() => {
                   setSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
@@ -770,7 +771,7 @@ export function MyReviewWrite() {
               >
                 {savedAt ? `✓ ${savedAt}에 저장됨` : '임시 저장'}
               </MsButton>
-              <MsButton onClick={handleSubmitClick} className="w-full h-auto py-3 rounded-xl">
+              <MsButton size="xl" className="w-full" onClick={handleSubmitClick}>
                 검토 및 제출하기
               </MsButton>
             </div>
@@ -799,8 +800,8 @@ export function MyReviewWrite() {
               <p className="text-sm text-gray-050">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
-              <MsButton variant="default" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1 h-auto py-2.5">취소</MsButton>
-              <MsButton loading={submitting} onClick={handleSubmit} className="flex-1 h-auto py-2.5">제출</MsButton>
+              <MsButton variant="outline-default" size="lg" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1">취소</MsButton>
+              <MsButton size="lg" loading={submitting} onClick={handleSubmit} className="flex-1">제출</MsButton>
             </div>
           </div>
         </div>

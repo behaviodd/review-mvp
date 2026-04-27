@@ -44,8 +44,7 @@ export function CycleArchive() {
         icon={MsRefreshIcon}
         title="보관된 리뷰가 없습니다."
         description="종료된 리뷰를 목록에서 정리하려면 '보관'을 사용하세요."
-        actionLabel="리뷰 목록으로"
-        onAction={() => navigate('/cycles')}
+        action={{ label: '리뷰 목록으로', onClick: () => navigate('/cycles') }}
       />
     );
   }
@@ -64,22 +63,22 @@ export function CycleArchive() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-gray-010 bg-white shadow-card px-4 py-3">
-        <ListToolbar
-          search={{
-            value: query,
-            onChange: setQuery,
-            placeholder: '제목·태그 검색',
-            width: 'md',
-          }}
-        />
-      </div>
+    <div className="space-y-5">
+      <ListToolbar
+        search={{
+          value: query,
+          onChange: setQuery,
+          placeholder: '제목·태그 검색',
+          width: 'md',
+        }}
+      />
 
       {archived.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-010 bg-white py-12 text-center">
-          <p className="text-sm font-semibold text-gray-070">검색 결과가 없습니다.</p>
-        </div>
+        <EmptyState
+          icon={MsRefreshIcon}
+          title="검색 결과가 없습니다."
+          description="다른 검색어를 입력해 보세요."
+        />
       ) : (
         <div className="bg-white rounded-xl border border-gray-010 shadow-card overflow-hidden">
           {archived.map(cycle => (

@@ -203,7 +203,10 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
             </div>
             {isEditing ? (
               <div className="flex gap-1.5">
-                <input autoFocus type="text" value={editingRole}
+                <MsInput
+                  autoFocus
+                  size="sm"
+                  value={editingRole}
                   onChange={e => setEditingRole(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
@@ -214,10 +217,9 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
                     }
                   }}
                   placeholder="역할 입력..."
-                  className="w-full px-2.5 py-1 text-xs border border-gray-020 rounded-md bg-gray-005 focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white" />
+                />
                 <MsButton type="button" size="sm" onClick={() => { upsertSecondaryOrg({ ...a, role: editingRole || undefined }); setEditingOrgId(null); }} className="flex-shrink-0">저장</MsButton>
-                <button type="button" onClick={() => setEditingOrgId(null)}
-                  className="px-2 py-1 text-xs text-gray-050 hover:text-gray-080 flex-shrink-0">취소</button>
+                <MsButton type="button" variant="ghost" size="sm" onClick={() => setEditingOrgId(null)} className="flex-shrink-0">취소</MsButton>
               </div>
             ) : (
               <button type="button"
@@ -282,8 +284,7 @@ function SecondaryOrgSection({ userId }: { userId: string }) {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => { setAdding(false); setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' }); }}
-              className="px-3 py-1.5 text-xs font-medium text-gray-060 hover:text-gray-099">취소</button>
+            <MsButton type="button" variant="ghost" size="sm" onClick={() => { setAdding(false); setForm({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' }); }}>취소</MsButton>
             <MsButton type="button" size="sm" onClick={handleAdd} disabled={!form.orgId}>저장</MsButton>
           </div>
         </div>
@@ -418,8 +419,7 @@ function AddMemberModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
-          <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
+          <MsButton type="button" variant="ghost" onClick={onClose}>취소</MsButton>
           <MsButton type="submit" loading={submitting} disabled={!form.name.trim() || !form.email.trim()}>추가</MsButton>
         </div>
       </form>
@@ -629,17 +629,17 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
                 <p className="text-xs font-semibold text-red-060">퇴사 처리</p>
                 <p className="text-xs text-red-050/80">퇴사 처리 시 보고 관계가 해제되고 조직도에서 제외됩니다.</p>
                 <div>
-                  <label className="block text-xs font-medium text-gray-050 mb-1">퇴사일</label>
-                  <input type="date" value={leaveDate} onChange={e => setLeaveDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-020 rounded-lg bg-white focus:outline-none focus:ring-4 focus:ring-red-040/10" />
+                  <MsInput
+                    type="date"
+                    label="퇴사일"
+                    value={leaveDate}
+                    onChange={e => setLeaveDate(e.target.value)}
+                    className="border-red-020 focus:ring-red-005 focus:border-red-020"
+                  />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowTerminate(false)}
-                    className="px-3 py-1.5 text-xs font-medium text-gray-060 hover:text-gray-099">취소</button>
-                  <button type="button" onClick={() => { terminateMember(member.id, leaveDate); onClose(); }} disabled={!leaveDate}
-                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-050 rounded-lg hover:bg-red-060 disabled:opacity-40">
-                    퇴사 확정
-                  </button>
+                  <MsButton type="button" variant="ghost" size="sm" onClick={() => setShowTerminate(false)}>취소</MsButton>
+                  <MsButton type="button" variant="red" size="sm" onClick={() => { terminateMember(member.id, leaveDate); onClose(); }} disabled={!leaveDate}>퇴사 확정</MsButton>
                 </div>
               </div>
             )}
@@ -647,8 +647,7 @@ function EditMemberModal({ member, onClose }: { member: User; onClose: () => voi
         )}
 
         <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
-          <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
+          <MsButton type="button" variant="ghost" onClick={onClose}>취소</MsButton>
           <MsButton type="submit">저장</MsButton>
         </div>
       </form>
@@ -720,8 +719,7 @@ function BulkMoveModal({
         </MsSelect>
 
         <div className="flex justify-end gap-2 pt-1 border-t border-gray-010">
-          <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
+          <MsButton type="button" variant="ghost" onClick={onClose}>취소</MsButton>
           <MsButton
             type="button"
             disabled={!orgSel.mainOrgId}
@@ -782,8 +780,7 @@ function OrgUnitFormModal({
           {eligibleHeads.map(u => <option key={u.id} value={u.id}>{u.name} · {u.position}</option>)}
         </MsSelect>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099">취소</button>
+          <MsButton type="button" variant="ghost" onClick={onClose}>취소</MsButton>
           <MsButton type="submit" disabled={!name.trim()}>{isEdit ? '저장' : '추가'}</MsButton>
         </div>
       </form>
@@ -1710,12 +1707,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               <div className="border-t border-gray-010 px-4 py-3 bg-blue-005 flex items-center justify-between flex-shrink-0">
                 <span className="text-sm font-medium text-blue-070">{selectedIds.size}명 선택됨</span>
                 <div className="flex items-center gap-2">
-                  <button onClick={clearSelection} className="text-xs text-gray-050 hover:text-gray-070 transition-colors">선택 해제</button>
-                  <button
+                  <MsButton variant="ghost" size="sm" onClick={clearSelection}>선택 해제</MsButton>
+                  <MsButton
+                    size="sm"
+                    leftIcon={<MsChevronRightLineIcon size={12} />}
                     onClick={() => setShowBulkMove(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-060 rounded-lg hover:bg-blue-070 transition-colors">
-                    <MsChevronRightLineIcon size={12} /> 조직 이동
-                  </button>
+                    className="bg-blue-060 text-white hover:bg-blue-070"
+                  >
+                    조직 이동
+                  </MsButton>
                 </div>
               </div>
             )}

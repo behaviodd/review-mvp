@@ -88,7 +88,7 @@ export function PeerApprovalPage() {
   const rows = viewMode === 'pending' ? pending : history;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <ListToolbar
         segments={[
           {

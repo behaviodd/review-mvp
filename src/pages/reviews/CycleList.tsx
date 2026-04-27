@@ -374,14 +374,14 @@ export function CycleList() {
               icon={MsRefreshIcon}
               title="아직 생성된 리뷰가 없습니다."
               description="새 리뷰를 만들어 팀의 성장 돌아보기를 시작해보세요."
-              actionLabel="새 리뷰 만들기"
-              onAction={() => navigate('/cycles/new')}
+              action={{ label: '새 리뷰 만들기', onClick: () => navigate('/cycles/new') }}
             />
           ) : (
-            <div className="rounded-xl border border-dashed border-gray-010 bg-white py-12 text-center">
-              <p className="text-sm font-semibold text-gray-070">조건에 맞는 리뷰가 없습니다.</p>
-              <p className="mt-1 text-xs text-gray-040">필터를 완화하거나 초기화해 주세요.</p>
-            </div>
+            <EmptyState
+              icon={MsRefreshIcon}
+              title="조건에 맞는 리뷰가 없습니다."
+              description="필터를 완화하거나 초기화해 주세요."
+            />
           )
         ) : (
           <div className="bg-white rounded-xl border border-gray-010 shadow-card overflow-hidden">

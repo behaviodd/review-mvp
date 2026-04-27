@@ -31,6 +31,7 @@ import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
 import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
+import { AuditLog } from './pages/AuditLog';
 
 // 로그인 상태일 때만 시트 동기화 실행
 function OrgSyncProvider() {
@@ -271,6 +272,14 @@ export default function App() {
               element={
                 <RequireRole roles={['admin']}>
                   <RouteBoundary><Permissions /></RouteBoundary>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="security/audit"
+              element={
+                <RequireRole roles={['admin']}>
+                  <RouteBoundary><AuditLog /></RouteBoundary>
                 </RequireRole>
               }
             />

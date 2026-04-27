@@ -84,19 +84,35 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
     | { kind: 'item'; to: string; icon: typeof MsHomeIcon; label: string; show: boolean; indent?: boolean; badge?: number }
     | { kind: 'section'; label: string; show: boolean };
 
+  // 메뉴 트리: 일반 사용자 메뉴 + admin 전용 3개 섹션 (레몬베이스 어드민 메뉴 구조 참고)
+  // - 구성원 관리: 구성원 / 권한 관리
+  // - 리뷰 운영:   사이클 / 템플릿 / 보관함
+  // - 보안 관리:   감사 로그
   const navItems: NavNode[] = ([
-    { kind: 'item', to: '/',                           icon: MsHomeIcon,    label: '홈',           show: true },
-    { kind: 'item', to: '/reviews/me',                 icon: MsRefreshIcon, label: '내 작성',      show: !adminMenusVisible || isImpersonating },
-    { kind: 'item', to: '/reviews/received',           icon: MsProfileIcon, label: '받은 리뷰',    show: true },
-    { kind: 'item', to: '/reviews/team',               icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !adminMenusVisible },
+    /* 일반 사용자 메뉴 */
+    { kind: 'item', to: '/',                            icon: MsHomeIcon,    label: '홈',           show: true },
+    { kind: 'item', to: '/reviews/me',                  icon: MsRefreshIcon, label: '내 작성',      show: !adminMenusVisible || isImpersonating },
+    { kind: 'item', to: '/reviews/received',            icon: MsProfileIcon, label: '받은 리뷰',    show: true },
+    { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !adminMenusVisible },
     { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin), badge: pendingApprovals },
-    { kind: 'item', to: '/team',                       icon: MsGroupIcon,   label: '구성원',       show: !isImpersonating },
+
+    /* 어드민 — 구성원 관리 */
+    { kind: 'section', label: '구성원 관리', show: adminMenusVisible },
+    { kind: 'item', to: '/team',           icon: MsGroupIcon,   label: '구성원',     show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/permissions',    icon: MsLockIcon,    label: '권한 관리',  show: adminMenusVisible, indent: true },
+
+    /* 어드민 — 리뷰 운영 */
     { kind: 'section', label: '리뷰 운영', show: adminMenusVisible },
-    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',   show: adminMenusVisible, indent: true },
-    { kind: 'item', to: '/templates',       icon: MsArticleIcon, label: '템플릿',   show: adminMenusVisible, indent: true },
-    { kind: 'item', to: '/cycles/archive',  icon: MsDeleteIcon,  label: '보관함',   show: adminMenusVisible, indent: true },
-    { kind: 'section', label: '관리', show: adminMenusVisible },
-    { kind: 'item', to: '/permissions',     icon: MsLockIcon,    label: '권한 관리', show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',     show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/templates',      icon: MsArticleIcon, label: '템플릿',     show: adminMenusVisible, indent: true },
+    { kind: 'item', to: '/cycles/archive', icon: MsDeleteIcon,  label: '보관함',     show: adminMenusVisible, indent: true },
+
+    /* 어드민 — 보안 관리 */
+    { kind: 'section', label: '보안 관리', show: adminMenusVisible },
+    { kind: 'item', to: '/security/audit', icon: MsArticleIcon, label: '감사 로그',  show: adminMenusVisible, indent: true },
+
+    /* 일반 사용자에게도 노출되어야 하는 '구성원' (admin 미만 사용자용) */
+    { kind: 'item', to: '/team', icon: MsGroupIcon, label: '구성원', show: !isImpersonating && !adminMenusVisible },
   ] satisfies NavNode[]).filter(i => i.show);
 
   const handleLogout = () => {

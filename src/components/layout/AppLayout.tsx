@@ -11,6 +11,9 @@ import { SyncStatusBanner } from '../system/SyncStatusBanner';
 import { QUOTA_EVENT } from '../../utils/safeStorage';
 
 const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/'];
+// FULL_BLEED 매칭이 prefix 기반이어서 의도치 않게 포함되는 라우트의 예외 목록.
+// 이 목록에 들어오는 경로는 일반 컨테이너(max-w-5xl + p-6)로 렌더된다.
+const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 
 export function AppLayout() {
   const { currentUser, mustChangePassword } = useAuthStore();
@@ -30,7 +33,9 @@ export function AppLayout() {
 
   if (!currentUser) return <Navigate to="/login" replace />;
 
-  const isFullBleed = FULL_BLEED_PATHS.some(p => location.pathname.startsWith(p));
+  const isFullBleed =
+    FULL_BLEED_PATHS.some(p => location.pathname.startsWith(p)) &&
+    !FULL_BLEED_EXCLUDE.includes(location.pathname);
   const sidebarWidth = collapsed ? 'md:ml-[56px]' : 'md:ml-[220px]';
 
   return (

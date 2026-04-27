@@ -83,19 +83,24 @@ export function PeerApprovalPage() {
     setRejectTarget(null);
   };
 
-  const tabs = [
-    { value: 'pending' as ViewMode, label: '승인 대기', count: pending.length },
-    { value: 'history' as ViewMode, label: '처리 완료', count: history.length },
-  ];
-
   const rows = viewMode === 'pending' ? pending : history;
 
   return (
     <div className="space-y-5">
-      <ListToolbar<ViewMode>
-        tabs={tabs}
-        activeTab={viewMode}
-        onTabChange={setViewMode}
+      <ListToolbar
+        segments={[
+          {
+            kind: 'pills',
+            key: 'view',
+            ariaLabel: '승인 상태 필터',
+            value: viewMode,
+            onChange: v => setViewMode(v as ViewMode),
+            options: [
+              { value: 'pending', label: '승인 대기', count: pending.length },
+              { value: 'history', label: '처리 완료', count: history.length },
+            ],
+          },
+        ]}
       />
 
       {rows.length === 0 ? (

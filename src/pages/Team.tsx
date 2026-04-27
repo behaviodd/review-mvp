@@ -22,6 +22,7 @@ import { MsButton } from '../components/ui/MsButton';
 import { MsCheckbox, MsInput } from '../components/ui/MsControl';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { QuickAddMemberDialog } from '../components/team/QuickAddMemberDialog';
+import { OrgUnitDialog, type OrgUnitDialogState } from '../components/team/OrgUnitDialog';
 import { impersonationLogWriter } from '../utils/sheetWriter';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
@@ -381,6 +382,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   // 조직 트리 빠른 추가 다이얼로그
   const [quickAddOrg, setQuickAddOrg] = useState<OrgUnit | null>(null);
+  // 조직 추가·편집 다이얼로그
+  const [orgDialog, setOrgDialog] = useState<OrgUnitDialogState>(null);
 
   /* ── 복수 선택 ──────────────────────────────────────────────────── */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -393,12 +396,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     navigate(`/team/new${qs.toString() ? `?${qs}` : ''}`);
   };
   const goEditMember = (m: User) => navigate(`/team/${m.id}/edit`);
-  const goAddOrg = (type: OrgUnitType, parentId?: string) => {
-    const qs = new URLSearchParams({ type });
-    if (parentId) qs.set('parentId', parentId);
-    navigate(`/team/orgs/new?${qs}`);
-  };
-  const goEditOrg = (unit: OrgUnit) => navigate(`/team/orgs/${unit.id}/edit`);
+  const openAddOrg = (type: OrgUnitType, parentId?: string) => setOrgDialog({ mode: 'add', type, parentId });
+  const openEditOrg = (unit: OrgUnit) => setOrgDialog({ mode: 'edit', unit });
   const goBulkMove = () => {
     const ids = [...selectedIds].join(',');
     navigate(`/team/bulk-move?ids=${ids}`);
@@ -799,7 +798,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <span className="text-xs font-semibold text-gray-060">조직 구조</span>
               </div>
               {canEdit && (
-                <button onClick={() => goAddOrg('mainOrg')}
+                <button onClick={() => openAddOrg('mainOrg')}
                   title="주조직 추가"
                   className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
                   <MsPlusIcon size={12} className="size-3.5" />
@@ -838,7 +837,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <div className="px-3 py-6 text-center">
                   <p className="text-xs text-gray-040 mb-2">조직 구조가 없습니다.</p>
                   {canEdit && (
-                    <button onClick={() => goAddOrg('mainOrg')}
+                    <button onClick={() => openAddOrg('mainOrg')}
                       className="text-xs text-pink-050 hover:text-pink-060 font-medium">
                       + 주조직 추가
                     </button>
@@ -853,9 +852,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                       allUnits={orgUnits}
                       selectedId={selectedOrgId}
                       onSelect={selectOrg}
-                      onEditUnit={goEditOrg}
+                      onEditUnit={openEditOrg}
                       onDeleteUnit={handleDeleteUnit}
-                      onAddChild={goAddOrg}
+                      onAddChild={openAddOrg}
                       onAddMember={unitId => {
                         const unit = orgUnits.find(u => u.id === unitId);
                         if (unit) setQuickAddOrg(unit);
@@ -982,6 +981,12 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         open={quickAddOrg !== null}
         onClose={() => setQuickAddOrg(null)}
         orgUnit={quickAddOrg}
+      />
+
+      {/* 조직 추가·편집 */}
+      <OrgUnitDialog
+        state={orgDialog}
+        onClose={() => setOrgDialog(null)}
       />
 
       {/* R5-b: 마스터 로그인 시작 확인 */}

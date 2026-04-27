@@ -226,7 +226,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
             <NavLink
               key={node.to}
               to={node.to}
-              end={node.to === '/' || node.to === '/cycles'}
+              end={node.to === '/' || node.to === '/cycles' || node.to === '/team'}
               title={collapsed ? node.label : undefined}
               onClick={onMobileClose}
               className={({ isActive }) => cn(

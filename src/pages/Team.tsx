@@ -1031,8 +1031,10 @@ function MemberRow({
   isOrgHeadHere?: boolean;  // 현재 선택된 조직의 조직장
   isAnyOrgHead?: boolean;   // 어느 조직이든 조직장 여부
 }) {
+  const navigate = useNavigate();
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   const canSelect = onToggle && user.role !== 'admin';
+  const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); navigate(`/team/${user.id}`); };
 
   return (
     <div
@@ -1054,7 +1056,13 @@ function MemberRow({
       <UserAvatar user={user} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-gray-099">{user.name}</span>
+          <button
+            type="button"
+            onClick={goToProfile}
+            className="text-sm font-medium text-gray-099 hover:text-pink-050 hover:underline transition-colors"
+          >
+            {user.name}
+          </button>
           {user.role === 'admin'
             ? <StatusBadge type="role" value="admin" />
             : (isOrgHeadHere || isAnyOrgHead)
@@ -1076,29 +1084,33 @@ function MemberRow({
           {user.email && <span className="ml-1">{user.email}</span>}
         </p>
       </div>
-      {onEdit && (
-        <div
-          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={e => e.stopPropagation()}
-        >
+      <div
+        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={e => e.stopPropagation()}
+      >
+        <button onClick={goToProfile} title="프로필 보기"
+          className="p-1.5 rounded-md text-gray-040 hover:text-blue-060 hover:bg-blue-005 transition-colors">
+          <MsProfileIcon size={12} className="size-3.5" />
+        </button>
+        {onEdit && (
           <button onClick={() => onEdit(user)} title="정보 수정"
             className="p-1.5 rounded-md text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
             <MsEditIcon size={12} className="size-3.5" />
           </button>
-          {onImpersonate && user.role !== 'admin' && isUserActive(user) && (
-            <button onClick={() => onImpersonate(user)} title="마스터 로그인 (조회 전용)"
-              className="p-1.5 rounded-md text-gray-040 hover:text-orange-070 hover:bg-orange-005 transition-colors">
-              <MsLogoutIcon size={12} className="size-3.5" />
-            </button>
-          )}
-          {onTerminate && user.role !== 'admin' && (
-            <button onClick={() => onTerminate(user)} title="퇴사 처리"
-              className="p-1.5 rounded-md text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
-              <MsCancelIcon size={12} className="size-3.5" />
-            </button>
-          )}
-        </div>
-      )}
+        )}
+        {onImpersonate && user.role !== 'admin' && isUserActive(user) && (
+          <button onClick={() => onImpersonate(user)} title="마스터 로그인 (조회 전용)"
+            className="p-1.5 rounded-md text-gray-040 hover:text-orange-070 hover:bg-orange-005 transition-colors">
+            <MsLogoutIcon size={12} className="size-3.5" />
+          </button>
+        )}
+        {onTerminate && user.role !== 'admin' && (
+          <button onClick={() => onTerminate(user)} title="퇴사 처리"
+            className="p-1.5 rounded-md text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
+            <MsCancelIcon size={12} className="size-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

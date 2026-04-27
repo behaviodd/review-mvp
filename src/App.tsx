@@ -34,6 +34,7 @@ import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
 import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
+import { MemberProfile } from './pages/MemberProfile';
 import { AuditLog } from './pages/AuditLog';
 
 // 로그인 상태일 때만 시트 동기화 실행
@@ -303,6 +304,7 @@ export default function App() {
                 </RequirePermission>
               }
             />
+            <Route path="team/:id" element={<RouteBoundary><MemberProfile /></RouteBoundary>} />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
             <Route
               path="permissions"

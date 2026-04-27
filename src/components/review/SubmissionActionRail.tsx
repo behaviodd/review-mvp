@@ -14,6 +14,7 @@ import {
   canReassignReviewer,
   canProxyWrite,
   canReopenSubmission,
+  hasPermission,
 } from '../../utils/permissions';
 import type { ReviewCycle, ReviewSubmission, User } from '../../types';
 
@@ -39,6 +40,7 @@ export function SubmissionActionRail({
   const navigate = useNavigate();
   const reopen = useReviewStore(s => s.reopenSubmission);
   const assignments = useTeamStore(s => s.reviewerAssignments);
+  const groups = useTeamStore(s => s.permissionGroups);
   const showToast = useShowToast();
 
   const [extendOpen, setExtendOpen] = useState(false);
@@ -46,19 +48,21 @@ export function SubmissionActionRail({
   const [proxyConfirm, setProxyConfirm] = useState<null | 'self' | 'manager'>(null);
   const [peerAssignOpen, setPeerAssignOpen] = useState(false);
   const supportsPeer = cycle.reviewKinds?.includes('peer') && cycle.peerSelection?.method === 'admin_assigns';
-  const canAssignPeer = !!supportsPeer && !!revieweeId && currentUser?.role === 'admin' && !cycle.editLockedAt && cycle.status !== 'closed';
+  const canAssignPeer = !!supportsPeer && !!revieweeId
+    && hasPermission(currentUser, 'reviewer_assignments.manage', groups)
+    && !cycle.editLockedAt && cycle.status !== 'closed';
 
-  // 권한 계산 (stage별) — R2: assignments 전달로 평가권자도 권한 판정
-  const canExtendSelf = !!selfSub && canExtendDeadline({ actor: currentUser, cycle, submission: selfSub, assignments });
-  const canExtendManager = !!managerSub && canExtendDeadline({ actor: currentUser, cycle, submission: managerSub, assignments });
+  // 권한 계산 (stage별) — R2: assignments + R6: groups 전달로 평가권자/권한그룹 모두 인정
+  const canExtendSelf = !!selfSub && canExtendDeadline({ actor: currentUser, cycle, submission: selfSub, assignments, groups });
+  const canExtendManager = !!managerSub && canExtendDeadline({ actor: currentUser, cycle, submission: managerSub, assignments, groups });
   const canExtendAny = canExtendSelf || canExtendManager;
 
-  const canReassign = !!managerSub && canReassignReviewer({ actor: currentUser, cycle, submission: managerSub });
+  const canReassign = !!managerSub && canReassignReviewer({ actor: currentUser, cycle, submission: managerSub, groups });
 
-  const canProxySelf = !!selfSub && canProxyWrite({ actor: currentUser, cycle, submission: selfSub });
+  const canProxySelf = !!selfSub && canProxyWrite({ actor: currentUser, cycle, submission: selfSub, groups });
 
-  const canReopenSelf = !!selfSub && canReopenSubmission({ actor: currentUser, cycle, submission: selfSub, assignments });
-  const canReopenManager = !!managerSub && canReopenSubmission({ actor: currentUser, cycle, submission: managerSub, assignments });
+  const canReopenSelf = !!selfSub && canReopenSubmission({ actor: currentUser, cycle, submission: selfSub, assignments, groups });
+  const canReopenManager = !!managerSub && canReopenSubmission({ actor: currentUser, cycle, submission: managerSub, assignments, groups });
 
   if (!currentUser) return null;
   const anyAction =

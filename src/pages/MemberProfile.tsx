@@ -39,7 +39,7 @@ export function MemberProfile() {
       <MsButton
         variant="outline-default"
         leftIcon={<MsEditIcon size={14} />}
-        onClick={() => navigate(`/team?edit=${target.id}`)}
+        onClick={() => navigate(`/team/${target.id}/edit`)}
       >
         정보 수정
       </MsButton>

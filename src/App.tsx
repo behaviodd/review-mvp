@@ -35,6 +35,10 @@ import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
 import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
 import { MemberProfile } from './pages/MemberProfile';
+import { MemberNew } from './pages/team/MemberNew';
+import { MemberEdit } from './pages/team/MemberEdit';
+import { OrgUnitEdit } from './pages/team/OrgUnitEdit';
+import { BulkMove } from './pages/team/BulkMove';
 import { AuditLog } from './pages/AuditLog';
 
 // 로그인 상태일 때만 시트 동기화 실행
@@ -304,7 +308,47 @@ export default function App() {
                 </RequirePermission>
               }
             />
+            <Route
+              path="team/new"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><MemberNew /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="team/bulk-move"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><BulkMove /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="team/orgs/new"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><OrgUnitEdit mode="new" /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="team/orgs/:id/edit"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><OrgUnitEdit mode="edit" /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
             <Route path="team/:id" element={<RouteBoundary><MemberProfile /></RouteBoundary>} />
+            <Route
+              path="team/:id/edit"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><MemberEdit /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
             <Route
               path="permissions"

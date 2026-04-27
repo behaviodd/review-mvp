@@ -2,44 +2,56 @@
 
 > 목적: 역할 × 페이지 × 데이터 상태 조합에서 **화면이 정상 렌더되고**, **dead-end가 없고**, **데이터 유실/비일관성이 없음**을 수기로 검증한다.
 > 대상 브랜치/환경: main · 운영 스프레드시트 연동 상태.
-> 작성일: 2026-04-24 (Phase S1 + S3 직후).
+> 작성일: 2026-04-27 (R6 권한 그룹 + 신규 페이지 전환 반영).
 
 ---
 
 ## 0. 사전 준비
 
-- [ ] 로컬 개발서버(`pnpm dev`) 로 진입 가능
-- [ ] 운영 Apps Script URL 이 설정에 등록되어 있음
+- [ ] 로컬 개발서버(`npm run dev`) 로 진입 가능
+- [ ] `Settings > Google Sheets 연동` 에 운영 Apps Script URL 이 등록되어 있음
 - [ ] `users` 시트에 admin / leader / member 역할 각 1명 이상 존재
+- [ ] `_권한그룹` 시트가 비어 있거나 일부 시스템 그룹이 누락되어도 앱 부팅 후 소유자/리뷰 관리자/구성원 관리자/마스터 로그인 시스템 그룹이 복구됨
 - [ ] 진행 중(`self_review`) + 관리자 평가(`manager_review`) + 종료(`closed`) + 보관(`archivedAt`) 사이클 각 1개 이상 존재
 - [ ] DevTools 콘솔을 열어 두고 **빨간 에러가 새로 뜨지 않는지** 관찰
 
 ---
 
-## 1. 역할 × 페이지 매트릭스
+## 1. 라우트 × 가드 매트릭스
 
-| 경로 | admin | leader | member | 비target(대상X) |
-|---|---|---|---|---|
-| `/login` | 로그인 후 `/` | 로그인 후 `/` | 로그인 후 `/` | — |
-| `/` (Dashboard) | ✅ admin 뷰 | ✅ leader 뷰 | ✅ member 뷰 | — |
-| `/reviews/me` | ⚠️ 안내(EmptyState) + 사이클로 이동 | ✅ 자기평가 목록 | ✅ 자기평가 목록 | — |
-| `/reviews/me/:id` | ⚠️ 대리모드 안내 | ✅ 작성/열람 | ✅ 작성/열람 | ⚠️ 권한없음 안내 |
-| `/reviews/me/peers/:cycleId` | — | ✅ 피어 지명 | ✅ 피어 지명 | ⚠️ 자동 복귀 |
-| `/reviews/received` | ✅ 받은 리뷰 | ✅ 받은 리뷰 | ✅ 받은 리뷰 | — |
-| `/reviews/team` | 🚫 `/` 복귀 | ✅ 팀원 평가 | 🚫 `/` 복귀 | — |
-| `/reviews/team/:cycleId/:userId` | ✅ admin 허용 | ✅ 리더 허용 | 🚫 | ⚠️ 데이터없음 안내 |
-| `/reviews/team/peer-approvals` | ✅ | ✅ | 🚫 | — |
-| `/reviews/proxy/:id` | ✅ self 시 redirect, downward 시 안내 | 🚫 | 🚫 | — |
-| `/cycles` | ✅ | 🚫 | 🚫 | — |
-| `/cycles/archive` | ✅ | 🚫 | 🚫 | — |
-| `/cycles/new` | ✅ | 🚫 | 🚫 | — |
-| `/cycles/:id` | ✅ | 🚫 | 🚫 | ⚠️ 없음 안내 |
-| `/templates`, `/templates/:id` | ✅ | 🚫 | 🚫 | — |
-| `/team` | ✅ | ✅ | ✅ | — |
-| `/settings` | ✅ | ✅ | ✅ | — |
-| `/존재하지않는경로` | NotFound | NotFound | NotFound | — |
+R6 이후 관리자성 라우트는 role보다 `PermissionGroup` 권한 코드가 우선입니다. admin role은 모든 권한을 자동 보유하며, non-admin도 권한 그룹 멤버라면 해당 라우트를 통과해야 합니다.
 
-범례: ✅ 정상 · ⚠️ 안내 화면 (EmptyState) · 🚫 `/` 또는 `/login` 으로 자동 복귀 · — 무관
+| 경로 | 가드 | 기대 결과 |
+|---|---|---|
+| `/login` | `RedirectIfAuthed` | 로그인 상태면 `/`, 로그아웃 상태면 로그인 화면 |
+| `/` | `RequireAuth` | 인증 사용자 전체 접근 |
+| `/reviews/me` | role `leader/member/admin` | admin은 EmptyState 안내, leader/member는 자기평가 목록 |
+| `/reviews/me/:submissionId` | role `leader/member/admin` | 본인 또는 대리 작성 조건 충족 시 작성/열람, 아니면 EmptyState |
+| `/reviews/me/peers/:cycleId` | role `leader/member/admin` | 피어 지명 가능 정책이면 정상, 아니면 자동 복귀 |
+| `/reviews/received` | role `leader/member/admin` | 받은 리뷰 목록 |
+| `/reviews/team` | role `leader` 또는 조직장 보정 | 리더/조직장만 팀 리뷰 목록 |
+| `/reviews/team/:cycleId/:userId` | role `leader/admin` 또는 조직장 보정 | 권한 범위의 하향 평가 작성 |
+| `/reviews/team/peer-approvals` | role `leader/admin` 또는 조직장 보정 | 승인 대기 데이터가 있으면 정상 |
+| `/reviews/proxy/:submissionId` | role `admin` | self는 대리 작성 redirect, downward는 안내 |
+| `/cycles` | `cycles.manage` | 권한 보유자만 접근 |
+| `/cycles/archive` | `cycles.manage` | 권한 보유자만 접근 |
+| `/cycles/new` | `cycles.manage` | 권한 보유자만 접근 |
+| `/cycles/:cycleId` | `cycles.manage` | 권한 보유자만 접근, 잘못된 id는 EmptyState |
+| `/cycles/:cycleId/edit` | `cycles.manage` | 권한 보유자만 접근, 잠김 사이클은 EmptyState |
+| `/templates` | `templates.manage` | 권한 보유자만 접근 |
+| `/templates/:templateId` | `templates.manage` | 권한 보유자만 접근 |
+| `/team` | `RequireAuth` | 인증 사용자 전체 접근 |
+| `/team/profile-fields` | `org.manage` | 구성원 관리자 접근 |
+| `/team/new` | `org.manage` | 구성원 관리자 접근 |
+| `/team/bulk-move` | `org.manage` | 구성원 관리자 접근 |
+| `/team/:id` | `RequireAuth` | 인증 사용자 전체 접근, 필드는 프로필 설정에 따라 표시 |
+| `/team/:id/edit` | `org.manage` | 구성원 관리자 접근 |
+| `/settings` | `RequireAuth` | 인증 사용자 전체 접근 |
+| `/permissions` | `permission_groups.manage` | 권한 그룹 관리자 접근 |
+| `/security/audit` | `audit.view` | 감사 로그 권한 보유자 접근 |
+| `/존재하지않는경로` | catch-all | NotFound |
+
+범례: 권한 없음은 `/` 또는 `/login` 으로 자동 복귀, 데이터 없음은 EmptyState 표시.
 
 ---
 
@@ -58,7 +70,7 @@
 
 ---
 
-## 3. 핵심 수기 시나리오 (30건)
+## 3. 핵심 수기 시나리오 (43건)
 
 ### A. 인증/라우트 안전망 (1–5)
 - [ ] **A1.** 로그아웃 상태에서 `/cycles` 직접 접근 → `/login` 으로 자동 이동.
@@ -104,6 +116,29 @@
 - [ ] **G1.** ⌘K / Ctrl+K 로 GlobalSearch 열기 → 사이클/템플릿/구성원 검색 후 이동 동작.
 - [ ] **G2.** Dashboard "오늘 할 일" 카드 클릭 → 각 카드별 목적 페이지로 이동 (리마인드→cycles, 승인대기→peer-approvals 등).
 
+### H. 페이지 헤더 / 안정성 (31–34)
+- [ ] **H1.** `/team/new` 진입 후 헤더 뒤로가기 클릭 → `/team` 으로 이동.
+- [ ] **H2.** `/team/:id/edit` 에서 사이드바의 다른 메뉴 클릭 → 즉시 이동, 클릭이 무시되지 않음.
+- [ ] **H3.** `/cycles/:cycleId/edit` 에서 헤더 뒤로가기 → `/cycles/:cycleId` 로 복귀, 사이클 상세가 정상 렌더.
+- [ ] **H4.** `/team/:id/edit` 진입 후 5초 동안 화면 깜빡임/무한 리렌더/콘솔 에러가 없고 헤더 액션이 계속 클릭 가능.
+
+### I. 라우트 우선순위 / 동적 세그먼트 (35–37)
+- [ ] **I1.** `/team/profile-fields` URL 직접 입력 → ProfileFieldSettings 페이지가 열림 (`/team/:id` 가 아님).
+- [ ] **I2.** `/team/new` URL 직접 입력 → MemberNew 페이지가 열림 (`/team/:id` 가 아님).
+- [ ] **I3.** `/team/bulk-move?ids=u1,u2,u3` 및 빈 `ids` 로 진입 → 흰 화면 없이 정상 안내 또는 이동 폼 표시.
+
+### J. 권한 자동 복귀 (38–40)
+- [ ] **J1.** `cycles.manage` 만 보유한 non-admin 그룹 멤버로 `/permissions` 접근 → `/` 자동 복귀.
+- [ ] **J2.** `org.manage` 보유 non-admin 그룹 멤버로 `/team/profile-fields` 접근 → 정상 렌더.
+- [ ] **J3.** member role 사용자가 `/cycles/abc/edit` 직접 입력 → `/` 자동 복귀.
+
+### K. 페이지 전환 회귀 — 데이터 흐름 (41–42)
+- [ ] **K1.** 외부 알림 또는 책갈피의 `/cycles/:cycleId?edit=1` 링크 진입 → `/cycles/:cycleId/edit` 으로 replace 리다이렉트.
+- [ ] **K2.** `/cycles/:cycleId/edit` 에서 저장 → `/cycles/:cycleId` 로 이동, 변경된 필드가 상세 화면에 반영.
+
+### L. EmptyState / Edge case (43)
+- [ ] **L1.** `editLockedAt` 인 사이클의 상세에서 편집 진입이 막히고, `/cycles/:cycleId/edit` 직접 입력 시 EmptyState + "상세 화면으로" 동작.
+
 ---
 
 ## 4. 회귀 주의 체크 (자주 깨지는 곳)
@@ -122,7 +157,7 @@
 일시: YYYY-MM-DD HH:MM
 환경: dev / prod / 로컬
 브라우저: Chrome XXX
-통과: N / 30
+통과: N / 43
 이슈:
   - [id] 설명 / 재현 / 영향
 ```

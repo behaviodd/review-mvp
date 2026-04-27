@@ -10,6 +10,99 @@ import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
 import { initAccount } from '../utils/authApi';
 import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
 
+const ALL_PERMISSIONS: PermissionCode[] = [
+  'cycles.manage',
+  'templates.manage',
+  'org.manage',
+  'reviewer_assignments.manage',
+  'permission_groups.manage',
+  'auth.impersonate',
+  'audit.view',
+  'reports.view_all',
+  'settings.manage',
+];
+
+export function buildSystemPermissionGroups(users: User[], createdAt = new Date().toISOString()): PermissionGroup[] {
+  return [
+    {
+      id: 'pg_owner',
+      name: '소유자',
+      description: '시스템 전체 권한. admin role 사용자는 자동 가입되며 수동 추가/삭제 불가.',
+      permissions: ALL_PERMISSIONS,
+      memberIds: users.filter(u => u.role === 'admin').map(u => u.id),
+      isSystem: true,
+      createdAt,
+      createdBy: 'system',
+    },
+    {
+      id: 'pg_review_admin',
+      name: '리뷰 관리자',
+      description: '사이클/템플릿 관리 + 전사 리포트.',
+      permissions: ['cycles.manage', 'templates.manage', 'reports.view_all'],
+      memberIds: [],
+      isSystem: true,
+      createdAt,
+      createdBy: 'system',
+    },
+    {
+      id: 'pg_org_admin',
+      name: '구성원 관리자',
+      description: '조직/구성원/평가권자 관리.',
+      permissions: ['org.manage', 'reviewer_assignments.manage'],
+      memberIds: [],
+      isSystem: true,
+      createdAt,
+      createdBy: 'system',
+    },
+    {
+      id: 'pg_master_login',
+      name: '마스터 로그인',
+      description: '다른 사용자 화면 조회 + 감사 로그 열람. 신뢰할 수 있는 직원에게만 부여.',
+      permissions: ['auth.impersonate', 'audit.view'],
+      memberIds: [],
+      isSystem: true,
+      createdAt,
+      createdBy: 'system',
+    },
+  ];
+}
+
+export function ensureSystemPermissionGroups(groups: PermissionGroup[], users: User[]): PermissionGroup[] {
+  const seeds = buildSystemPermissionGroups(users);
+  const byId = new Map(groups.map(g => [g.id, g]));
+
+  for (const seed of seeds) {
+    const existing = byId.get(seed.id);
+    if (!existing) {
+      byId.set(seed.id, seed);
+      continue;
+    }
+
+    if (seed.id === 'pg_owner') {
+      const mergedMembers = Array.from(new Set([...existing.memberIds, ...seed.memberIds]));
+      byId.set(seed.id, {
+        ...existing,
+        name: seed.name,
+        description: seed.description,
+        permissions: seed.permissions,
+        memberIds: mergedMembers,
+        isSystem: true,
+      });
+      continue;
+    }
+
+    byId.set(seed.id, {
+      ...existing,
+      name: seed.name,
+      description: seed.description,
+      permissions: seed.permissions,
+      isSystem: true,
+    });
+  }
+
+  return Array.from(byId.values());
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -372,12 +465,7 @@ export const useTeamStore = create<TeamStore>()(
     const user = state.users.find(u => u.id === userId);
     // admin role 은 자동으로 모든 권한 (소유자)
     if (user?.role === 'admin') {
-      return [
-        'cycles.manage', 'templates.manage', 'org.manage',
-        'reviewer_assignments.manage', 'permission_groups.manage',
-        'auth.impersonate', 'audit.view', 'reports.view_all',
-        'settings.manage',
-      ] as PermissionCode[];
+      return ALL_PERMISSIONS;
     }
     // 그룹 합집합
     const set2 = new Set<PermissionCode>();
@@ -390,73 +478,8 @@ export const useTeamStore = create<TeamStore>()(
   },
 
   seedSystemGroups: () => {
-    const state = get();
-    const now = new Date().toISOString();
-    const seeds: PermissionGroup[] = [
-      {
-        id: 'pg_owner',
-        name: '소유자',
-        description: '시스템 전체 권한. admin role 사용자는 자동 가입되며 수동 추가/삭제 불가.',
-        permissions: [
-          'cycles.manage', 'templates.manage', 'org.manage',
-          'reviewer_assignments.manage', 'permission_groups.manage',
-          'auth.impersonate', 'audit.view', 'reports.view_all',
-          'settings.manage',
-        ],
-        memberIds: state.users.filter(u => u.role === 'admin').map(u => u.id),
-        isSystem: true,
-        createdAt: now,
-        createdBy: 'system',
-      },
-      {
-        id: 'pg_review_admin',
-        name: '리뷰 관리자',
-        description: '사이클/템플릿 관리 + 전사 리포트.',
-        permissions: ['cycles.manage', 'templates.manage', 'reports.view_all'],
-        memberIds: [],
-        isSystem: true,
-        createdAt: now,
-        createdBy: 'system',
-      },
-      {
-        id: 'pg_org_admin',
-        name: '구성원 관리자',
-        description: '조직/구성원/평가권자 관리.',
-        permissions: ['org.manage', 'reviewer_assignments.manage'],
-        memberIds: [],
-        isSystem: true,
-        createdAt: now,
-        createdBy: 'system',
-      },
-      {
-        id: 'pg_master_login',
-        name: '마스터 로그인',
-        description: '다른 사용자 화면 조회 + 감사 로그 열람. 신뢰할 수 있는 직원에게만 부여.',
-        permissions: ['auth.impersonate', 'audit.view'],
-        memberIds: [],
-        isSystem: true,
-        createdAt: now,
-        createdBy: 'system',
-      },
-    ];
     set(s => {
-      const existing = new Set(s.permissionGroups.map(g => g.id));
-      const next = [...s.permissionGroups];
-      // 시스템 시드 — 누락된 것만 추가
-      for (const seed of seeds) {
-        if (!existing.has(seed.id)) {
-          next.push(seed);
-        } else if (seed.id === 'pg_owner') {
-          // 소유자 그룹은 admin role 사용자 멤버십을 매번 동기화
-          const ownerIdx = next.findIndex(g => g.id === 'pg_owner');
-          if (ownerIdx >= 0) {
-            const adminIds = s.users.filter(u => u.role === 'admin').map(u => u.id);
-            const merged = Array.from(new Set([...next[ownerIdx].memberIds, ...adminIds]));
-            next[ownerIdx] = { ...next[ownerIdx], memberIds: merged };
-          }
-        }
-      }
-      return { permissionGroups: next };
+      return { permissionGroups: ensureSystemPermissionGroups(s.permissionGroups, s.users) };
     });
   },
 
@@ -490,7 +513,9 @@ export const useTeamStore = create<TeamStore>()(
       ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
       ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
       ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
-      ...(newPermissionGroups !== undefined ? { permissionGroups: newPermissionGroups } : {}),
+      ...(newPermissionGroups !== undefined
+        ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, newUsers) }
+        : {}),
     })),
 
   setLoading: (isLoading) => set({ isLoading }),

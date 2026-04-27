@@ -15,39 +15,54 @@
 
 ## 2. 권한 매트릭스
 
-| 액션 | admin | 평가권자(자기 reviewee) | 조직 리더(자조직) | member |
+R6 이후 운영 액션은 role 단독이 아니라 **권한 코드 보유 여부**가 기준입니다. admin role 사용자는 자동으로 모든 권한을 보유하며, non-admin 사용자도 `PermissionGroup` 멤버십으로 같은 권한 코드를 보유하면 해당 라우트와 액션을 사용할 수 있습니다.
+
+| 액션 | 필요한 권한/조건 | 평가권자(자기 reviewee) | 조직 리더(자조직) | 일반 member |
 |---|---|---|---|---|
-| 사이클 생성/삭제/편집 | ✅ | ❌ | ❌ | ❌ |
-| 템플릿 관리 | ✅ | ❌ | ❌ | ❌ |
-| 자기평가 작성/수정 | ✅(대리) | ✅(자신) | ✅(자신) | ✅(자신) |
-| 하향(downward) 작성 | ✅(대리) | ✅(배정된 reviewee) | ❌ | ❌ |
-| 마감 연장 | ✅(전체) | ✅(자기 reviewee) | ❌ | ❌ |
-| 평가자 변경 | ✅ | ❌ | ❌ | ❌ |
-| 대리 작성 | ✅ | ❌ | ❌ | ❌ |
-| 제출 재오픈 | ✅(전체) | ✅(자기 reviewee) | ❌ | ❌ |
-| 동료 제안 승인/반려 | ✅ | ✅(자기 reviewee) | ❌ | ❌ |
-| 결과 열람(타인) | ✅(전체) | ✅(자기 reviewee) | ❌ | ❌ |
-| 감사 로그 열람 | ✅ | ❌ | ❌ | ❌ |
-| 일괄 개입 | ✅ | ❌ | ❌ | ❌ |
+| 사이클 생성/삭제/편집 | `cycles.manage` | ❌ | ❌ | ❌ |
+| 템플릿 관리 | `templates.manage` | ❌ | ❌ | ❌ |
+| 자기평가 작성/수정 | 본인 제출물 | ✅(자신) | ✅(자신) | ✅(자신) |
+| 하향(downward) 작성 | 활성 평가권 또는 `cycles.manage` 대리 | ✅(배정된 reviewee) | ❌ | ❌ |
+| 마감 연장 | `cycles.manage` 또는 활성 평가권 | ✅(자기 reviewee) | ❌ | ❌ |
+| 평가자 변경 | `cycles.manage` 또는 `reviewer_assignments.manage` | ❌ | ❌ | ❌ |
+| 대리 작성 | `cycles.manage` | ❌ | ❌ | ❌ |
+| 제출 재오픈 | `cycles.manage` 또는 활성 평가권 | ✅(자기 reviewee) | ❌ | ❌ |
+| 동료 제안 승인/반려 | `cycles.manage` 또는 활성 평가권 | ✅(자기 reviewee) | ❌ | ❌ |
+| 결과 열람(타인) | `reports.view_all` 또는 `cycles.manage` 또는 활성 평가권 | ✅(자기 reviewee) | ❌ | ❌ |
+| 감사 로그 열람 | `audit.view` | ❌ | ❌ | ❌ |
+| 일괄 개입 | `cycles.manage` | ❌ | ❌ | ❌ |
 
 > 피평가자 본인의 자기 결과 열람은 별도 `cycle.visibility` 정책으로 처리되며 위 매트릭스 범위 외.
 
 ## 3. 핵심 함수
 
 ### `canExtendDeadline(ctx)`
-- admin: 모든 사이클·submission
+- `cycles.manage` 보유자: 모든 사이클·submission
 - 평가권자: `assignments` 에 `reviewerId === actor.id && revieweeId === submission.revieweeId && !endDate` 이면 허용
 - 사이클이 closed 또는 editLockedAt 인 경우 모두 거부
 
 ### `canReopenSubmission(ctx)`
-- admin: 모든 제출된 submission
+- `cycles.manage` 보유자: 모든 제출된 submission
 - 평가권자: 자기 reviewee 의 제출된 submission
 
-### `canReassignReviewer(ctx)` / `canProxyWrite(ctx)` / `canViewAuditLog(actor)` / `canBulkIntervene(ctx)` / `canUnlockEdit(actor)`
-- **admin only**
+### `canUnlockEdit(actor)`
+- `cycles.manage` 보유자
 
-### `canDecidePeerProposal(ctx)` / `canViewSubmissionResult(ctx)`
-- admin + 평가권자(자기 reviewee 한정)
+### `canReassignReviewer(ctx)`
+- `cycles.manage` 또는 `reviewer_assignments.manage` 보유자
+- downward 제출물만 허용
+
+### `canProxyWrite(ctx)` / `canBulkIntervene(ctx)`
+- `cycles.manage` 보유자
+
+### `canViewAuditLog(actor)`
+- `audit.view` 보유자
+
+### `canDecidePeerProposal(ctx)`
+- `cycles.manage` 보유자 + 평가권자(자기 reviewee 한정)
+
+### `canViewSubmissionResult(ctx)`
+- `reports.view_all` 또는 `cycles.manage` 보유자 + 평가권자(자기 reviewee 한정)
 
 ## 4. UI 가시성 (`usePermission()`)
 
@@ -59,7 +74,15 @@
 | `isOrgHead` | `OrgUnit.headId === currentUser.id` 인 조직 보유 |
 | `can.viewTeamReviews` | `isLeader` 와 동치 |
 | `can.writeDownwardReview` | `isLeader` 와 동치 |
-| `can.manageCycles` / `manageTemplates` / `viewAllReports` / `manageOrg` | admin only |
+| `can.manageCycles` | `cycles.manage` 보유 |
+| `can.manageTemplates` | `templates.manage` 보유 |
+| `can.viewAllReports` | `reports.view_all` 보유 |
+| `can.manageOrg` | `org.manage` 보유 |
+| `can.managePermissionGroups` | `permission_groups.manage` 보유 |
+| `can.impersonate` | `auth.impersonate` 보유 |
+| `can.viewAuditLog` | `audit.view` 보유 |
+| `can.manageSettings` | `settings.manage` 보유 |
+| `can.manageReviewerAssignments` | `reviewer_assignments.manage` 보유 |
 
 ## 5. 호출 시 주의사항
 

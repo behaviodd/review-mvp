@@ -97,6 +97,46 @@ export interface OrgSnapshot {
   assignments: ReviewerAssignment[];
 }
 
+// R6: 권한 코드 enum.
+// admin role 사용자는 자동으로 모든 권한 보유 (소유자 그룹).
+// 그 외 사용자는 PermissionGroup 멤버십에 따라 권한 누적 (합집합).
+export type PermissionCode =
+  | 'cycles.manage'                  // 사이클 생성/편집/삭제/발행
+  | 'templates.manage'               // 템플릿 관리
+  | 'org.manage'                     // 조직/구성원 추가·수정·퇴사
+  | 'reviewer_assignments.manage'    // 평가권자 배정
+  | 'permission_groups.manage'       // 권한 그룹 관리 (소유자만)
+  | 'auth.impersonate'               // 마스터 로그인 사용
+  | 'audit.view'                     // 감사 로그 열람
+  | 'reports.view_all'               // 전사 리포트 열람
+  | 'settings.manage';               // 시스템 설정 (Apps Script URL 등)
+
+export const ALL_PERMISSION_CODES: PermissionCode[] = [
+  'cycles.manage',
+  'templates.manage',
+  'org.manage',
+  'reviewer_assignments.manage',
+  'permission_groups.manage',
+  'auth.impersonate',
+  'audit.view',
+  'reports.view_all',
+  'settings.manage',
+];
+
+// R6: 권한 그룹.
+// 한 사용자가 여러 그룹에 속할 수 있고, 가진 권한은 합집합.
+// isSystem=true 그룹은 삭제 불가, 권한 항목 변경 불가 (멤버 변경만 가능).
+export interface PermissionGroup {
+  id: string;                        // 'pg_<random>' 또는 시스템 그룹은 'pg_owner' 등 고정 id
+  name: string;                      // '소유자', '리뷰 관리자' 등
+  description?: string;
+  permissions: PermissionCode[];
+  memberIds: string[];               // userId 배열
+  isSystem: boolean;                 // 시스템 기본 그룹 여부
+  createdAt: string;
+  createdBy: string;
+}
+
 // R1: 마스터 로그인 감사 로그 (R5-b 에서 UI 활성화).
 export interface ImpersonationLog {
   id: string;                   // 'imp_<random>'
@@ -343,7 +383,13 @@ export type AuditAction =
   | 'auth.impersonate_start'
   | 'auth.impersonate_end'
   | 'org.user_status_changed'
-  | 'org.migrated_to_r1';
+  | 'org.migrated_to_r1'
+  // R6
+  | 'permission_group.created'
+  | 'permission_group.updated'
+  | 'permission_group.deleted'
+  | 'permission_group.member_added'
+  | 'permission_group.member_removed';
 
 export interface AuditLogEntry {
   id: string;

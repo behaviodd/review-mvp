@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeStorage } from '../utils/safeStorage';
 import type {
   User, OrgUnit, OrgUnitType, SecondaryOrgAssignment,
-  ReviewerAssignment, OrgSnapshot,
+  ReviewerAssignment, OrgSnapshot, PermissionGroup, PermissionCode,
 } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
@@ -34,6 +34,8 @@ interface TeamStore {
   // R1: 평가권 + 인사 스냅샷
   reviewerAssignments: ReviewerAssignment[];
   orgSnapshots: OrgSnapshot[];
+  // R6: 권한 그룹
+  permissionGroups: PermissionGroup[];
   schemaVersion: SchemaVersion;
   isLoading: boolean;
 
@@ -70,6 +72,23 @@ interface TeamStore {
   // R1: 마이그레이션 강제 실행 (디버그/관리자용)
   runMigrationR1: () => void;
 
+  // R6: 권한 그룹 CRUD
+  createPermissionGroup: (
+    input: Omit<PermissionGroup, 'id' | 'createdAt' | 'isSystem'>,
+  ) => PermissionGroup;
+  updatePermissionGroup: (
+    id: string,
+    patch: Partial<Pick<PermissionGroup, 'name' | 'description' | 'permissions' | 'memberIds'>>,
+  ) => void;
+  deletePermissionGroup: (id: string) => boolean;  // 시스템 그룹 false
+  addMemberToGroup: (groupId: string, userId: string) => void;
+  removeMemberFromGroup: (groupId: string, userId: string) => void;
+  /** 사용자 id 가 보유한 모든 권한 코드 (그룹 합집합). admin role 은 자동으로 모든 권한. */
+  getUserPermissions: (userId: string) => PermissionCode[];
+
+  // R6: 시드/마이그레이션
+  seedSystemGroups: () => void;
+
   // 시트 연동
   syncFromSheet: (
     users: User[],
@@ -77,6 +96,7 @@ interface TeamStore {
     secondaryOrgs?: SecondaryOrgAssignment[],
     reviewerAssignments?: ReviewerAssignment[],
     orgSnapshots?: OrgSnapshot[],
+    permissionGroups?: PermissionGroup[],
   ) => void;
   setLoading: (v: boolean) => void;
 }
@@ -90,6 +110,7 @@ export const useTeamStore = create<TeamStore>()(
   secondaryOrgs: [],
   reviewerAssignments: [],
   orgSnapshots: [],
+  permissionGroups: [],
   schemaVersion: 'pre-r1' as SchemaVersion,
   isLoading: false,
 
@@ -296,6 +317,149 @@ export const useTeamStore = create<TeamStore>()(
   getSnapshot: (snapshotId) =>
     get().orgSnapshots.find(s => s.id === snapshotId),
 
+  /* ── R6: 권한 그룹 ─────────────────────────────────────────────── */
+  createPermissionGroup: (input) => {
+    const id = `pg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const group: PermissionGroup = {
+      id,
+      createdAt: new Date().toISOString(),
+      isSystem: false,
+      ...input,
+    };
+    set(s => ({ permissionGroups: [...s.permissionGroups, group] }));
+    return group;
+  },
+
+  updatePermissionGroup: (id, patch) =>
+    set(state => ({
+      permissionGroups: state.permissionGroups.map(g => {
+        if (g.id !== id) return g;
+        // 시스템 그룹은 멤버만 변경 허용 (이름/설명/권한 잠금)
+        if (g.isSystem) {
+          return { ...g, memberIds: patch.memberIds ?? g.memberIds };
+        }
+        return { ...g, ...patch };
+      }),
+    })),
+
+  deletePermissionGroup: (id) => {
+    const target = get().permissionGroups.find(g => g.id === id);
+    if (!target || target.isSystem) return false;
+    set(state => ({ permissionGroups: state.permissionGroups.filter(g => g.id !== id) }));
+    return true;
+  },
+
+  addMemberToGroup: (groupId, userId) =>
+    set(state => ({
+      permissionGroups: state.permissionGroups.map(g =>
+        g.id === groupId && !g.memberIds.includes(userId)
+          ? { ...g, memberIds: [...g.memberIds, userId] }
+          : g
+      ),
+    })),
+
+  removeMemberFromGroup: (groupId, userId) =>
+    set(state => ({
+      permissionGroups: state.permissionGroups.map(g =>
+        g.id === groupId
+          ? { ...g, memberIds: g.memberIds.filter(id => id !== userId) }
+          : g
+      ),
+    })),
+
+  getUserPermissions: (userId) => {
+    const state = get();
+    const user = state.users.find(u => u.id === userId);
+    // admin role 은 자동으로 모든 권한 (소유자)
+    if (user?.role === 'admin') {
+      return [
+        'cycles.manage', 'templates.manage', 'org.manage',
+        'reviewer_assignments.manage', 'permission_groups.manage',
+        'auth.impersonate', 'audit.view', 'reports.view_all',
+        'settings.manage',
+      ] as PermissionCode[];
+    }
+    // 그룹 합집합
+    const set2 = new Set<PermissionCode>();
+    for (const g of state.permissionGroups) {
+      if (g.memberIds.includes(userId)) {
+        g.permissions.forEach(p => set2.add(p));
+      }
+    }
+    return Array.from(set2);
+  },
+
+  seedSystemGroups: () => {
+    const state = get();
+    const now = new Date().toISOString();
+    const seeds: PermissionGroup[] = [
+      {
+        id: 'pg_owner',
+        name: '소유자',
+        description: '시스템 전체 권한. admin role 사용자는 자동 가입되며 수동 추가/삭제 불가.',
+        permissions: [
+          'cycles.manage', 'templates.manage', 'org.manage',
+          'reviewer_assignments.manage', 'permission_groups.manage',
+          'auth.impersonate', 'audit.view', 'reports.view_all',
+          'settings.manage',
+        ],
+        memberIds: state.users.filter(u => u.role === 'admin').map(u => u.id),
+        isSystem: true,
+        createdAt: now,
+        createdBy: 'system',
+      },
+      {
+        id: 'pg_review_admin',
+        name: '리뷰 관리자',
+        description: '사이클/템플릿 관리 + 전사 리포트.',
+        permissions: ['cycles.manage', 'templates.manage', 'reports.view_all'],
+        memberIds: [],
+        isSystem: true,
+        createdAt: now,
+        createdBy: 'system',
+      },
+      {
+        id: 'pg_org_admin',
+        name: '구성원 관리자',
+        description: '조직/구성원/평가권자 관리.',
+        permissions: ['org.manage', 'reviewer_assignments.manage'],
+        memberIds: [],
+        isSystem: true,
+        createdAt: now,
+        createdBy: 'system',
+      },
+      {
+        id: 'pg_master_login',
+        name: '마스터 로그인',
+        description: '다른 사용자 화면 조회 + 감사 로그 열람. 신뢰할 수 있는 직원에게만 부여.',
+        permissions: ['auth.impersonate', 'audit.view'],
+        memberIds: [],
+        isSystem: true,
+        createdAt: now,
+        createdBy: 'system',
+      },
+    ];
+    set(s => {
+      const existing = new Set(s.permissionGroups.map(g => g.id));
+      const next = [...s.permissionGroups];
+      // 시스템 시드 — 누락된 것만 추가
+      for (const seed of seeds) {
+        if (!existing.has(seed.id)) {
+          next.push(seed);
+        } else if (seed.id === 'pg_owner') {
+          // 소유자 그룹은 admin role 사용자 멤버십을 매번 동기화
+          const ownerIdx = next.findIndex(g => g.id === 'pg_owner');
+          if (ownerIdx >= 0) {
+            const adminIds = s.users.filter(u => u.role === 'admin').map(u => u.id);
+            const merged = Array.from(new Set([...next[ownerIdx].memberIds, ...adminIds]));
+            next[ownerIdx] = { ...next[ownerIdx], memberIds: merged };
+          }
+        }
+      }
+      return { permissionGroups: next };
+    });
+  },
+
   /* ── R1: 마이그레이션 ─────────────────────────────────────────── */
   runMigrationR1: () => {
     const state = get();
@@ -318,7 +482,7 @@ export const useTeamStore = create<TeamStore>()(
   },
 
   /* ── 시트 동기화 ─────────────────────────────────────────────────── */
-  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots) =>
+  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots, newPermissionGroups) =>
     set(() => ({
       users: newUsers,
       teams: deriveTeams(newUsers),
@@ -326,6 +490,7 @@ export const useTeamStore = create<TeamStore>()(
       ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
       ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
       ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
+      ...(newPermissionGroups !== undefined ? { permissionGroups: newPermissionGroups } : {}),
     })),
 
   setLoading: (isLoading) => set({ isLoading }),
@@ -340,21 +505,24 @@ export const useTeamStore = create<TeamStore>()(
         secondaryOrgs:       s.secondaryOrgs,
         reviewerAssignments: s.reviewerAssignments,
         orgSnapshots:        s.orgSnapshots,
+        permissionGroups:    s.permissionGroups,
         schemaVersion:       s.schemaVersion,
       }),
-      // R1: 부팅 시 마이그레이션 1회 자동 실행
+      // R1/R6: 부팅 시 마이그레이션 + 시스템 그룹 시드
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (!isMigrationApplied(state.schemaVersion)) {
-          // 다음 tick 으로 미루어 store 초기화 완료 후 실행
-          setTimeout(() => {
-            try {
+        setTimeout(() => {
+          try {
+            // R1
+            if (!isMigrationApplied(state.schemaVersion)) {
               useTeamStore.getState().runMigrationR1();
-            } catch (e) {
-              console.error('[R1 migration] rehydrate failed:', e);
             }
-          }, 0);
-        }
+            // R6: 시스템 그룹 시드 — 누락된 시스템 그룹만 추가, 소유자 멤버십 동기화
+            useTeamStore.getState().seedSystemGroups();
+          } catch (e) {
+            console.error('[R1/R6 boot] rehydrate failed:', e);
+          }
+        }, 0);
       },
     },
   ),

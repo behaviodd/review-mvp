@@ -28,6 +28,8 @@ var SHEET_AUDIT       = '_감사로그';
 var SHEET_ASSIGNMENTS = '_평가권';
 var SHEET_SNAPSHOTS   = '_인사스냅샷';
 var SHEET_IMPLOG      = '_마스터로그인';
+// R6: 권한 그룹
+var SHEET_PERMGROUPS  = '_권한그룹';
 
 /* ── 헤더 정의 ──────────────────────────────────────────────────
  * 신규 컬럼은 항상 뒤에만 추가. upsertRow / appendRowData 가 자동 보강하므로
@@ -81,6 +83,11 @@ var SNAPSHOT_HEADERS = [
 // R1: 마스터 로그인 감사 로그
 var IMPLOG_HEADERS = [
   '로그ID', '작업자사번', '대상사번', '시작일시', '종료일시', 'IP', 'UserAgent'
+];
+
+// R6: 권한 그룹
+var PERMGROUP_HEADERS = [
+  '그룹ID', '그룹명', '설명', '권한코드JSON', '멤버사번JSON', '시스템그룹', '생성일시', '생성자'
 ];
 var TEMPLATE_HEADERS = [
   '템플릿ID', '이름', '설명', '기본템플릿', '생성자ID', '생성일시', '질문JSON'
@@ -330,6 +337,10 @@ function doGet(e) {
     }
     if (action === 'getImpersonationLogs') {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_IMPLOG, IMPLOG_HEADERS)) });
+    }
+    /* R6: 권한 그룹 */
+    if (action === 'getPermissionGroups') {
+      return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_PERMGROUPS, PERMGROUP_HEADERS)) });
     }
 
     return jsonResponse({ error: '알 수 없는 action: ' + action });
@@ -590,6 +601,16 @@ function doPost(e) {
       return jsonResponse({ ok: true });
     }
 
+    /* ── R6: 권한 그룹 ── */
+    if (action === 'upsertPermissionGroup') {
+      upsertRow(getSheet(SHEET_PERMGROUPS, PERMGROUP_HEADERS), PERMGROUP_HEADERS, '그룹ID', data);
+      return jsonResponse({ ok: true });
+    }
+    if (action === 'deletePermissionGroup') {
+      deleteRowByKey(getSheet(SHEET_PERMGROUPS, PERMGROUP_HEADERS), '그룹ID', data['그룹ID']);
+      return jsonResponse({ ok: true });
+    }
+
     /* ── R1: 마스터 로그인 감사 ── */
     if (action === 'logImpersonationStart') {
       appendRowData(getSheet(SHEET_IMPLOG, IMPLOG_HEADERS), IMPLOG_HEADERS, data);
@@ -636,7 +657,9 @@ function migrate_addMissingColumns() {
   ensureHeaders(getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS), ASSIGNMENT_HEADERS);
   ensureHeaders(getSheet(SHEET_SNAPSHOTS,   SNAPSHOT_HEADERS),   SNAPSHOT_HEADERS);
   ensureHeaders(getSheet(SHEET_IMPLOG,      IMPLOG_HEADERS),     IMPLOG_HEADERS);
-  Logger.log('마이그레이션 완료 — 11개 시트 헤더 점검됨 (R1).');
+  // R6: 권한 그룹 시트
+  ensureHeaders(getSheet(SHEET_PERMGROUPS,  PERMGROUP_HEADERS),  PERMGROUP_HEADERS);
+  Logger.log('마이그레이션 완료 — 12개 시트 헤더 점검됨 (R1+R6).');
 }
 
 /* ══════════════════════════════════════════════════════════════════

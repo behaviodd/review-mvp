@@ -1,6 +1,7 @@
 import type {
   User, UserRole, OrgUnit, OrgUnitType, SecondaryOrgAssignment,
   ActivityStatus, ReviewerAssignment, ReviewerAssignmentSource, OrgSnapshot, ImpersonationLog,
+  PermissionGroup, PermissionCode,
 } from '../types';
 
 /* ── 아바타 색상: 사번 해시로 자동 배정 ─────────────────────────────── */
@@ -211,6 +212,31 @@ export function parseOrgSnapshot(row: SheetRow): OrgSnapshot | null {
 
 export function parseOrgSnapshots(rows: SheetRow[]): OrgSnapshot[] {
   return rows.map(parseOrgSnapshot).filter((s): s is OrgSnapshot => s !== null);
+}
+
+/* ── R6: 권한 그룹 시트 파싱 ──────────────────────────────────── */
+export function parsePermissionGroup(row: SheetRow): PermissionGroup | null {
+  const id   = str(row['그룹ID']);
+  const name = str(row['그룹명']);
+  if (!id || !name) return null;
+  let permissions: PermissionCode[] = [];
+  try { permissions = JSON.parse(str(row['권한코드JSON']) || '[]') as PermissionCode[]; } catch { /* ignore */ }
+  let memberIds: string[] = [];
+  try { memberIds = JSON.parse(str(row['멤버사번JSON']) || '[]') as string[]; } catch { /* ignore */ }
+  return {
+    id,
+    name,
+    description: str(row['설명']) || undefined,
+    permissions,
+    memberIds,
+    isSystem: str(row['시스템그룹']).toLowerCase() === 'true',
+    createdAt: str(row['생성일시']) || new Date().toISOString(),
+    createdBy: str(row['생성자']) || 'unknown',
+  };
+}
+
+export function parsePermissionGroups(rows: SheetRow[]): PermissionGroup[] {
+  return rows.map(parsePermissionGroup).filter((g): g is PermissionGroup => g !== null);
 }
 
 /* ── R1: 마스터 로그인 감사 로그 파싱 ──────────────────────────── */

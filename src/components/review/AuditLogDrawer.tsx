@@ -26,6 +26,12 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'auth.impersonate_end':              '마스터 로그인 종료',
   'org.user_status_changed':           '구성원 상태 변경',
   'org.migrated_to_r1':                'R1 마이그레이션',
+  // R6
+  'permission_group.created':          '권한 그룹 생성',
+  'permission_group.updated':          '권한 그룹 수정',
+  'permission_group.deleted':          '권한 그룹 삭제',
+  'permission_group.member_added':     '권한 그룹 멤버 추가',
+  'permission_group.member_removed':   '권한 그룹 멤버 제거',
 };
 
 const ACTION_TONE: Record<AuditAction, string> = {
@@ -47,6 +53,12 @@ const ACTION_TONE: Record<AuditAction, string> = {
   'auth.impersonate_end':              'bg-gray-005 text-gray-070',
   'org.user_status_changed':           'bg-orange-005 text-orange-070',
   'org.migrated_to_r1':                'bg-green-005 text-green-070',
+  // R6
+  'permission_group.created':          'bg-purple-005 text-purple-060',
+  'permission_group.updated':          'bg-purple-005 text-purple-060',
+  'permission_group.deleted':          'bg-red-005 text-red-070',
+  'permission_group.member_added':     'bg-purple-005 text-purple-060',
+  'permission_group.member_removed':   'bg-gray-005 text-gray-070',
 };
 
 interface Props {

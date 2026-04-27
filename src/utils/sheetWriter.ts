@@ -4,7 +4,7 @@
  */
 import type {
   User, OrgUnit, SecondaryOrgAssignment,
-  ReviewerAssignment, OrgSnapshot, ImpersonationLog,
+  ReviewerAssignment, OrgSnapshot, ImpersonationLog, PermissionGroup,
 } from '../types';
 import { getScriptHeaders } from './scriptHeaders';
 
@@ -76,6 +76,19 @@ function orgSnapshotToRow(s: OrgSnapshot): Record<string, string> {
       orgUnits: s.orgUnits,
       assignments: s.assignments,
     }),
+  };
+}
+
+function permissionGroupToRow(g: PermissionGroup): Record<string, string> {
+  return {
+    '그룹ID':       g.id,
+    '그룹명':       g.name,
+    '설명':         g.description ?? '',
+    '권한코드JSON': JSON.stringify(g.permissions),
+    '멤버사번JSON': JSON.stringify(g.memberIds),
+    '시스템그룹':   g.isSystem ? 'true' : 'false',
+    '생성일시':     g.createdAt,
+    '생성자':       g.createdBy,
   };
 }
 
@@ -216,6 +229,16 @@ export const orgSnapshotWriter = {
   create: (s: OrgSnapshot) =>
     post('createSnapshot', orgSnapshotToRow(s))
       .catch(e => console.error('[Sheet] snapshot create:', e)),
+};
+
+/* ── R6: 권한 그룹 시트 ──────────────────────────────────────────── */
+export const permissionGroupWriter = {
+  upsert: (g: PermissionGroup) =>
+    post('upsertPermissionGroup', permissionGroupToRow(g))
+      .catch(e => console.error('[Sheet] permissionGroup upsert:', e)),
+  delete: (id: string) =>
+    post('deletePermissionGroup', { '그룹ID': id })
+      .catch(e => console.error('[Sheet] permissionGroup delete:', e)),
 };
 
 /* ── R1: 마스터 로그인 감사 로그 시트 ──────────────────────────────── */

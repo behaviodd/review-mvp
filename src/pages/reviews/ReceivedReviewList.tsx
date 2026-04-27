@@ -35,8 +35,6 @@ export function ReceivedReviewList() {
   const users = useTeamStore(s => s.users);
   const [filter, setFilter] = useState<KindFilter>('all');
 
-  useSetPageHeader('내가 받은 리뷰');
-
   // 내가 피평가자이고 제출된 것만 + 사이클 가시성 반영
   const visibleSubmissions = useMemo(() => {
     if (!currentUser) return [] as ReviewSubmission[];
@@ -76,6 +74,10 @@ export function ReceivedReviewList() {
     { value: 'peer',     label: '동료',    count: byKindCount.peer },
     { value: 'upward',   label: '상향',    count: byKindCount.upward },
   ];
+
+  useSetPageHeader('내가 받은 리뷰', undefined, {
+    subtitle: `받은 리뷰 총 ${visibleSubmissions.length}건`,
+  });
 
   if (!currentUser) return <div className="text-center py-20 text-gray-040">로그인이 필요합니다.</div>;
 

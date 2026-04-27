@@ -29,8 +29,6 @@ export function PeerApprovalPage() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('pending');
 
-  useSetPageHeader('동료 리뷰 승인 요청');
-
   // 현재 사용자가 "리더"인 reviewee 집합
   const leadeeIds = useMemo(() => {
     if (!currentUser) return new Set<string>();
@@ -61,6 +59,10 @@ export function PeerApprovalPage() {
       )
       .sort((a, b) => (b.peerProposal?.decidedAt ?? '').localeCompare(a.peerProposal?.decidedAt ?? ''));
   }, [submissions, leadeeIds]);
+
+  useSetPageHeader('동료 리뷰 승인 요청', undefined, {
+    subtitle: `승인 대기 ${pending.length} · 처리 완료 ${history.length}`,
+  });
 
   if (!currentUser) {
     return (

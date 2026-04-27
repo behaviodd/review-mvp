@@ -9,7 +9,7 @@ import { useTeamStore } from '../../stores/teamStore';
 import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
-import { formatDate } from '../../utils/dateUtils';
+import { formatDate, daysUntil } from '../../utils/dateUtils';
 import { Users, BarChart2, Eye } from 'lucide-react';
 import {
   MsCalendarIcon, MsCancelIcon, MsEditIcon,
@@ -529,9 +529,28 @@ export function CycleDetail() {
 
   const headerSubtitle = useMemo(() => {
     if (!cycle) return null;
+    // 진행 중 마감 임박 계산
+    const activeDeadline = cycle.status === 'self_review'
+      ? cycle.selfReviewDeadline
+      : cycle.status === 'manager_review'
+      ? cycle.managerReviewDeadline
+      : null;
+    const dDay = activeDeadline ? daysUntil(activeDeadline) : null;
+    // 이 사이클의 승인 대기 수
+    const pendingApprovals = submissions.filter(s =>
+      s.cycleId === cycle.id && s.type === 'peer' && s.peerProposal?.status === 'pending'
+    ).length;
     return (
       <div className="flex items-center gap-1.5 flex-wrap">
         <span>{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'} · 생성 {formatDate(cycle.createdAt)}</span>
+        {dDay !== null && dDay >= 0 && (
+          <Pill tone={dDay <= 3 ? 'warning' : 'neutral'} size="xs">
+            마감 D-{dDay}
+          </Pill>
+        )}
+        {pendingApprovals > 0 && (
+          <Pill tone="purple" size="xs">승인 대기 {pendingApprovals}</Pill>
+        )}
         {cycle.scheduledPublishAt && cycle.status === 'draft' && (
           <Pill tone="info" size="xs">⏰ 예약 발행 · {new Date(cycle.scheduledPublishAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Pill>
         )}
@@ -543,7 +562,7 @@ export function CycleDetail() {
         {cycle.autoArchived && <Pill tone="neutral" size="xs">자동 보관됨</Pill>}
       </div>
     );
-  }, [cycle]);
+  }, [cycle, submissions]);
 
   const headerActions = useMemo(() => {
     if (!cycle) return null;
@@ -555,7 +574,7 @@ export function CycleDetail() {
           <MsButton size="sm" variant="outline-default" onClick={() => setUnlockOpen(true)}>잠금 해제</MsButton>
         )}
         {transition && !cycle.editLockedAt && (
-          <MsButton size="sm" variant={transition.isDanger ? 'outline-red' : 'outline-brand1'} onClick={handleTransitionClick}>
+          <MsButton size="sm" variant={transition.isDanger ? 'outline-red' : 'outline-brand1'} onClick={() => handleTransitionClick()}>
             {transition.label}
           </MsButton>
         )}
@@ -563,7 +582,7 @@ export function CycleDetail() {
           <MsButton
             size="sm"
             variant="outline-default"
-            onClick={handleSheetSync}
+            onClick={() => handleSheetSync()}
             disabled={syncing}
             title={lastSyncAt[cycle.id] ? `마지막 동기화: ${new Date(lastSyncAt[cycle.id]).toLocaleString('ko-KR')}` : '시트 동기화'}
             leftIcon={<MsRefreshIcon className={syncing ? 'animate-spin' : ''} />}
@@ -571,7 +590,7 @@ export function CycleDetail() {
             {syncing ? '동기화 중…' : '시트 동기화'}
           </MsButton>
         )}
-        <MsButton size="sm" variant="outline-default" onClick={handleExport} leftIcon={<MsDownloadIcon />}>내보내기</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => handleExport()} leftIcon={<MsDownloadIcon />}>내보내기</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => setDryRunOpen(true)} leftIcon={<Eye />}>드라이런</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/new?from=${cycle.id}`)} leftIcon={<MsEditIcon />}>복제</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => setSettingsOpen(true)} leftIcon={<MsSettingIcon />}>리뷰 설정</MsButton>

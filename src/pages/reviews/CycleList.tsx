@@ -105,7 +105,16 @@ export function CycleList() {
       새 리뷰
     </MsButton>
   ), [navigate]);
-  useSetPageHeader('리뷰 운영', headerActions);
+  const headerSubtitle = useMemo(() => {
+    const all = cycles.filter(c => !c.archivedAt);
+    const inProgress = all.filter(c =>
+      c.status === 'self_review' || c.status === 'manager_review' ||
+      c.status === 'calibration' || c.status === 'active'
+    ).length;
+    const archived = cycles.filter(c => c.archivedAt).length;
+    return `진행 중 ${inProgress} · 보관 ${archived} · 총 ${all.length}개`;
+  }, [cycles]);
+  useSetPageHeader('리뷰 운영', headerActions, { subtitle: headerSubtitle });
 
   /* ── 선택 상태 ─────────────────────────────────────── */
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -375,8 +384,8 @@ export function CycleList() {
             </div>
           )
         ) : (
-          <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card overflow-hidden">
-            <div className="flex items-center gap-4 px-5 py-2.5 border-b border-zinc-950/5 bg-gray-005/50">
+          <div className="bg-white rounded-xl border border-gray-010 shadow-card overflow-hidden">
+            <div className="flex items-center gap-4 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
               <div className="w-5 shrink-0">
                 <MsCheckbox
                   checked={allChecked}
@@ -407,7 +416,7 @@ export function CycleList() {
                     navigate(`/cycles/${cycle.id}`);
                   }}
                   className={cn(
-                    'group flex items-center gap-4 px-5 py-3.5 border-b border-zinc-950/5 last:border-0 cursor-pointer transition-colors',
+                    'group flex items-center gap-4 px-5 py-3.5 border-b border-gray-010 last:border-0 cursor-pointer transition-colors',
                     isSelected ? 'bg-pink-005/50' : 'hover:bg-gray-005/60',
                   )}
                 >

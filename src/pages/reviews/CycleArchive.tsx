@@ -21,8 +21,6 @@ export function CycleArchive() {
   const [query, setQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
-  useSetPageHeader('보관함');
-
   const archived = useMemo(
     () => cycles
       .filter(c => !!c.archivedAt)
@@ -35,7 +33,12 @@ export function CycleArchive() {
     [cycles, query],
   );
 
-  if (cycles.filter(c => c.archivedAt).length === 0) {
+  const totalArchived = cycles.filter(c => c.archivedAt).length;
+  useSetPageHeader('보관함', undefined, {
+    subtitle: `보관된 리뷰 ${totalArchived}개`,
+  });
+
+  if (totalArchived === 0) {
     return (
       <EmptyState
         icon={MsRefreshIcon}

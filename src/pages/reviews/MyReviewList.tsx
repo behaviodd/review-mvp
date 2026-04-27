@@ -57,8 +57,6 @@ export function MyReviewList() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
 
-  useSetPageHeader('내 리뷰');
-
   // 종료된 사이클 ID 집합
   const closedCycleIds = new Set(cycles.filter(c => c.status === 'closed').map(c => c.id));
 
@@ -87,6 +85,10 @@ export function MyReviewList() {
   const closedSelf     = filteredMySubmissions.filter(s => closedCycleIds.has(s.cycleId));
   const closedReceived = filteredReceived.filter(s => closedCycleIds.has(s.cycleId));
   const doneAll = [...done, ...filteredReceived.filter(s => !closedCycleIds.has(s.cycleId))];
+
+  useSetPageHeader('내 리뷰', undefined, {
+    subtitle: `진행 중 ${active.length} · 완료 ${doneAll.length} · 종료됨 ${closedSelf.length + closedReceived.length}`,
+  });
 
   if (currentUser?.role === 'admin' && mySubmissions.length === 0 && receivedReviews.length === 0) {
     return (

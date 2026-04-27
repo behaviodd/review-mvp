@@ -1115,7 +1115,10 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       구성원 추가
     </MsButton>
   ) : undefined, [canEdit, selectedOrgId, orgUnits]);
-  useSetPageHeader('구성원', headerActions);
+  const activeUserCount = users.filter(u => u.isActive !== false).length;
+  useSetPageHeader('구성원', headerActions, {
+    subtitle: `구성원 ${activeUserCount}명 · 조직 ${orgUnits.length}개`,
+  });
 
   const toggleMember = (id: string) =>
     setSelectedIds(prev => {

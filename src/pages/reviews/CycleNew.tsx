@@ -710,7 +710,7 @@ export function CycleNew() {
       </div>
 
       {/* 스텝 콘텐츠 */}
-      <div className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-6 mb-5 min-h-[320px]">
+      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-6 mb-5 min-h-[320px]">
 
         {/* Step 0: 기본 정보 */}
         {step === 0 && (
@@ -1185,7 +1185,7 @@ export function CycleNew() {
       </div>
 
       {/* 네비게이션 */}
-      <div className="flex items-center justify-between bg-white rounded-xl border border-zinc-950/5 px-5 py-4">
+      <div className="flex items-center justify-between bg-white rounded-xl border border-gray-010 px-5 py-4">
         <MsButton
           variant="ghost"
           leftIcon={<MsChevronLeftLineIcon size={16} />}

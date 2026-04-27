@@ -79,7 +79,6 @@ export function TeamReviewList() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
   const { currentUser } = useAuthStore();
-  useSetPageHeader('하향 평가');
   const isAdmin = currentUser?.role === 'admin';
   const { cycles, submissions, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
@@ -110,19 +109,6 @@ export function TeamReviewList() {
       )
     );
   }, [isAdmin, users, orgUnits, currentUser?.id]);
-
-  if (!isAdmin && teamMembers.length === 0) {
-    return (
-      <div className="space-y-5">
-        <h1 className="text-xl font-semibold text-gray-099">하향 평가</h1>
-        <EmptyState
-          icon={Users}
-          title="등록된 팀원이 없습니다."
-          description="귀하를 관리자로 지정한 팀원이 없습니다."
-        />
-      </div>
-    );
-  }
 
   // 관련 사이클 계산 (draft 제외)
   const cycleData: CycleData[] = cycles
@@ -174,6 +160,20 @@ export function TeamReviewList() {
   const active = byType.filter(d => d.isActive);
   const done   = byType.filter(d => d.isDone && !d.isClosed);
   const closed = byType.filter(d => d.isClosed);
+
+  useSetPageHeader('하향 평가', undefined, {
+    subtitle: `진행 중 ${active.length} · 완료 ${done.length} · 종료됨 ${closed.length}`,
+  });
+
+  if (!isAdmin && teamMembers.length === 0) {
+    return (
+      <EmptyState
+        icon={Users}
+        title="등록된 팀원이 없습니다."
+        description="귀하를 관리자로 지정한 팀원이 없습니다."
+      />
+    );
+  }
 
   const tabs = [
     { value: 'all'    as StatusFilter, label: '전체',    count: byType.length },

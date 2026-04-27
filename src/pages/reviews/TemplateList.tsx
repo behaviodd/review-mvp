@@ -20,7 +20,9 @@ export function TemplateList() {
       새 템플릿
     </MsButton>
   ), [navigate]);
-  useSetPageHeader('리뷰 템플릿', headerActions);
+  useSetPageHeader('리뷰 템플릿', headerActions, {
+    subtitle: `템플릿 ${templates.length}개`,
+  });
 
   const handleDelete = (id: string, name: string) => setDeleteTarget({ id, name });
   const confirmDelete = () => {
@@ -46,7 +48,7 @@ export function TemplateList() {
     <div className="space-y-4">
       <div className="space-y-3">
         {templates.map(tmpl => (
-          <div key={tmpl.id} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5 hover:shadow-card-hover transition-all">
+          <div key={tmpl.id} className="bg-white rounded-xl border border-gray-010 shadow-card p-5 hover:shadow-card-hover transition-all">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 <div className="w-8 h-8 bg-pink-010 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -83,7 +85,7 @@ export function TemplateList() {
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-zinc-950/5">
+            <div className="mt-3 pt-3 border-t border-gray-010">
               <div className="flex items-center gap-4 text-xs text-gray-040 mb-2">
                 <span>{tmpl.questions.length}개 문항</span>
                 <span>생성 {formatDate(tmpl.createdAt)}</span>

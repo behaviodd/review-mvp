@@ -147,31 +147,32 @@ export function TodayPanel({ variant }: Props) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         {cards.map(card => {
           const Icon = card.icon;
-          const toneBg =
-            card.tone === 'warning' ? 'bg-orange-005 border-orange-020' :
-            card.tone === 'danger'  ? 'bg-red-005 border-red-020' :
-            card.tone === 'info'    ? 'bg-blue-005 border-blue-020' :
-            'bg-purple-005 border-purple-010';
-          const toneText =
-            card.tone === 'warning' ? 'text-orange-070' :
-            card.tone === 'danger'  ? 'text-red-070' :
-            card.tone === 'info'    ? 'text-blue-070' :
+          // 아이콘 박스만 색조 액센트, 컨테이너는 통일된 white 카드
+          const iconBg =
+            card.tone === 'warning' ? 'bg-orange-005' :
+            card.tone === 'danger'  ? 'bg-red-005'    :
+            card.tone === 'info'    ? 'bg-blue-005'   :
+            'bg-purple-005';
+          const accentText =
+            card.tone === 'warning' ? 'text-orange-060' :
+            card.tone === 'danger'  ? 'text-red-060'    :
+            card.tone === 'info'    ? 'text-blue-060'   :
             'text-purple-060';
           return (
             <button
               key={card.key}
               type="button"
               onClick={card.onClick}
-              className={cn('flex items-center gap-3 rounded-xl border p-4 text-left transition-shadow hover:shadow-card-hover', toneBg)}
+              className="flex items-center gap-3 rounded-xl border border-gray-010 bg-white p-4 text-left shadow-card transition-shadow hover:shadow-card-hover"
             >
-              <div className="size-10 rounded-xl bg-white flex items-center justify-center shrink-0">
-                <Icon size={20} className={toneText} />
+              <div className={cn('size-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+                <Icon size={20} className={accentText} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={cn('text-xs font-semibold', toneText)}>{card.label}</p>
-                <p className="text-2xl font-bold text-gray-080 mt-0.5 tabular-nums">{card.count}</p>
+                <p className="text-xs font-semibold text-gray-070">{card.label}</p>
+                <p className={cn('text-2xl font-bold mt-0.5 tabular-nums', accentText)}>{card.count}</p>
               </div>
-              <MsChevronRightLineIcon size={14} className={toneText} />
+              <MsChevronRightLineIcon size={14} className="text-gray-030" />
             </button>
           );
         })}

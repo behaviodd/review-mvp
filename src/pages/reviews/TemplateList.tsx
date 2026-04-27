@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -7,12 +7,20 @@ import { MsArticleIcon, MsPlusIcon, MsStarIcon, MsDeleteIcon } from '../../compo
 import { useShowToast } from '../../components/ui/Toast';
 import { MsButton } from '../../components/ui/MsButton';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 
 export function TemplateList() {
   const { templates, deleteTemplate } = useReviewStore();
   const navigate = useNavigate();
   const showToast = useShowToast();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const headerActions = useMemo(() => (
+    <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>
+      새 템플릿
+    </MsButton>
+  ), [navigate]);
+  useSetPageHeader('리뷰 템플릿', headerActions);
 
   const handleDelete = (id: string, name: string) => setDeleteTarget({ id, name });
   const confirmDelete = () => {
@@ -24,26 +32,18 @@ export function TemplateList() {
 
   if (templates.length === 0) {
     return (
-      <div>
-        <h1 className="text-xl font-semibold text-gray-099 mb-6">리뷰 템플릿</h1>
-        <EmptyState
-          icon={MsArticleIcon}
-          title="아직 생성된 템플릿이 없습니다."
-          description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
-          actionLabel="새 템플릿 만들기"
-          onAction={() => navigate('/templates/new')}
-        />
-      </div>
+      <EmptyState
+        icon={MsArticleIcon}
+        title="아직 생성된 템플릿이 없습니다."
+        description="리뷰 템플릿을 만들어 리뷰에 활용해보세요."
+        actionLabel="새 템플릿 만들기"
+        onAction={() => navigate('/templates/new')}
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-099">리뷰 템플릿</h1>
-        <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>새 템플릿</MsButton>
-      </div>
-
+    <div className="space-y-4">
       <div className="space-y-3">
         {templates.map(tmpl => (
           <div key={tmpl.id} className="bg-white rounded-xl border border-zinc-950/5 shadow-card p-5 hover:shadow-card-hover transition-all">

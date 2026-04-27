@@ -30,6 +30,7 @@ import { TemplateList } from './pages/reviews/TemplateList';
 import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
 import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
+import { Permissions } from './pages/Permissions';
 
 // 로그인 상태일 때만 시트 동기화 실행
 function OrgSyncProvider() {
@@ -258,6 +259,14 @@ export default function App() {
             {/* Other pages */}
             <Route path="team" element={<RouteBoundary><Team /></RouteBoundary>} />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
+            <Route
+              path="permissions"
+              element={
+                <RequireRole roles={['admin']}>
+                  <RouteBoundary><Permissions /></RouteBoundary>
+                </RequireRole>
+              }
+            />
 
             {/* Catch-all inside authed layout */}
             <Route path="*" element={<RouteBoundary><NotFound /></RouteBoundary>} />

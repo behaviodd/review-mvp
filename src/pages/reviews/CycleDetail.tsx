@@ -32,6 +32,7 @@ import { PreflightModal } from '../../components/review/modals/PreflightModal';
 import { DryRunModal } from '../../components/review/modals/DryRunModal';
 import { CycleSettingsDrawer } from '../../components/review/CycleSettingsDrawer';
 import { runPreflight, type PreflightResult } from '../../utils/cyclePreflight';
+import { resolveEffectiveOrgData } from '../../utils/snapshotResolver';
 import { getEffectiveTemplate } from '../../utils/effectiveTemplate';
 import { resolveTargetMembers } from '../../utils/resolveTargets';
 
@@ -499,6 +500,7 @@ export function CycleDetail() {
   const { cycles, submissions, updateCycle, deleteCycle, upsertSubmission, templates, publishCycle } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
   const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
+  const orgSnapshots = useTeamStore(s => s.orgSnapshots);
   const { addNotification } = useNotificationStore();
   const currentUser = useAuthStore(s => s.currentUser);
   const navigate = useNavigate();
@@ -562,11 +564,23 @@ export function CycleDetail() {
         {cycle.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 1 && (
           <Pill tone="info" size="xs">평가권자 {cycle.downwardReviewerRanks.join('·')}차</Pill>
         )}
+        {cycle.hrSnapshotMode === 'snapshot' && cycle.hrSnapshotId && (() => {
+          const snap = orgSnapshots.find(s => s.id === cycle.hrSnapshotId);
+          const date = snap?.createdAt ? formatDate(snap.createdAt) : '';
+          return (
+            <Pill tone="info" size="xs" title={`스냅샷: ${snap?.description ?? ''}\n생성: ${snap?.createdAt ?? '-'}\n구성원 ${snap?.users.length ?? 0}명 · 조직 ${snap?.orgUnits.length ?? 0}개 · 평가권 ${snap?.assignments.length ?? 0}건`}>
+              📷 스냅샷 {date}
+            </Pill>
+          );
+        })()}
+        {cycle.hrSnapshotMode === 'live' && (
+          <Pill tone="neutral" size="xs" title="실시간 인사정보 적용 모드">⚡ 실시간</Pill>
+        )}
         {cycle.editLockedAt && <Pill tone="neutral" size="xs">🔒 편집 잠김</Pill>}
         {cycle.autoArchived && <Pill tone="neutral" size="xs">자동 보관됨</Pill>}
       </div>
     );
-  }, [cycle, submissions]);
+  }, [cycle, submissions, orgSnapshots]);
 
   const headerActions = useMemo(() => {
     if (!cycle) return null;
@@ -684,13 +698,19 @@ export function CycleDetail() {
 
   const runAndOpenPreflight = () => {
     const template = getEffectiveTemplate(cycle, templates);
+    // R4: snapshot 모드면 스냅샷 데이터 사용
+    const eff = resolveEffectiveOrgData(
+      cycle,
+      { users, orgUnits, assignments: reviewerAssignments },
+      orgSnapshots,
+    );
     const result = runPreflight({
       cycle,
       allCycles: cycles,
-      users,
-      orgUnits,
+      users: eff.users,
+      orgUnits: eff.orgUnits,
       template,
-      assignments: reviewerAssignments,
+      assignments: eff.assignments,
     });
     setPreflightResult(result);
     setPreflightOpen(true);
@@ -716,7 +736,8 @@ export function CycleDetail() {
           showToast('error', res.error ?? '발행에 실패했습니다.');
           return;
         }
-        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle, reviewerAssignments);
+        const _eff = resolveEffectiveOrgData(cycle, { users, orgUnits, assignments: reviewerAssignments }, orgSnapshots);
+    const subs = createCycleSubmissions(cycle.id, targetMembers, _eff.users, _eff.orgUnits, cycle, _eff.assignments);
         subs.forEach(sub => upsertSubmission(sub));
         showToast('success', `발행 완료 · 템플릿 스냅샷이 저장되었습니다.`);
         setShowConfirm(false);
@@ -766,7 +787,8 @@ export function CycleDetail() {
     if (!cycle || regenerating) return;
     setRegenerating(true);
     await new Promise(r => setTimeout(r, 300));
-    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle, reviewerAssignments);
+    const _eff = resolveEffectiveOrgData(cycle, { users, orgUnits, assignments: reviewerAssignments }, orgSnapshots);
+    const subs = createCycleSubmissions(cycle.id, targetMembers, _eff.users, _eff.orgUnits, cycle, _eff.assignments);
     let added = 0;
     subs.forEach(sub => {
       const exists = submissions.some(s => s.id === sub.id);

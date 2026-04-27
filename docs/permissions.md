@@ -85,7 +85,16 @@ canExtendDeadline({ actor, cycle, submission, assignments })
 
 - **R1**: 평가권 모델(`ReviewerAssignment`) 도입
 - **R2**: 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
-- **R3** (현재): 사이클 매핑 재설계
+- **R4** (현재): 인사 스냅샷 사용자 UI
+  - 사이클 발행 시 `hrSnapshotMode` 라디오 (snapshot 권장 / live)
+  - snapshot 모드 즉시 발행 시 `OrgSnapshot` 자동 생성 + `cycle.hrSnapshotId` 연결
+  - `resolveEffectiveOrgData(cycle, live, snapshots)` 헬퍼로 평가자/대상자 룩업이 snapshot 데이터 사용
+  - DryRunModal, runPreflight, createCycleSubmissions 호출처에서 resolver 적용
+  - CycleDetail headerSubtitle 에 `📷 스냅샷 YYYY-MM-DD` / `⚡ 실시간` pill (호버 시 스냅샷 메타 정보)
+  - 예약 발행은 R5 에서 발행 시점 자동 스냅샷 생성으로 보강 예정
+  - 호환: 기존 사이클(`hrSnapshotMode` 미설정) → live 폴백, 동작 변경 없음
+
+- **R3**: 사이클 매핑 재설계
   - `downward = manager` 하드코딩 제거
   - `cycle.downwardReviewerRanks: number[]` 도입 (기본 `[1]`, 1~5 차수 UI 노출)
   - `ReviewSubmission.reviewerRank` 추가 — downward 의 차수

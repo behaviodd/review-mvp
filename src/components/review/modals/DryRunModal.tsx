@@ -6,6 +6,7 @@ import { resolveTargetMembers } from '../../../utils/resolveTargets';
 import { createCycleSubmissions } from '../../../utils/createCycleSubmissions';
 import { getSmallestOrg } from '../../../utils/userUtils';
 import { useTeamStore } from '../../../stores/teamStore';
+import { resolveEffectiveOrgData } from '../../../utils/snapshotResolver';
 import type { ReviewCycle } from '../../../types';
 
 interface Props {
@@ -32,12 +33,22 @@ function downloadCSV(filename: string, rows: string[][]) {
 }
 
 export function DryRunModal({ open, onClose, cycle, title }: Props) {
-  const users = useTeamStore(s => s.users);
-  const orgUnits = useTeamStore(s => s.orgUnits);
-  const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
+  const liveUsers = useTeamStore(s => s.users);
+  const liveOrgUnits = useTeamStore(s => s.orgUnits);
+  const liveAssignments = useTeamStore(s => s.reviewerAssignments);
+  const orgSnapshots = useTeamStore(s => s.orgSnapshots);
 
   const dryRun = useMemo(() => {
     if (!open) return null;
+    // R4: snapshot 모드면 스냅샷 데이터, 아니면 live
+    const eff = resolveEffectiveOrgData(
+      cycle,
+      { users: liveUsers, orgUnits: liveOrgUnits, assignments: liveAssignments },
+      orgSnapshots,
+    );
+    const users = eff.users;
+    const orgUnits = eff.orgUnits;
+    const reviewerAssignments = eff.assignments;
     const targets = resolveTargetMembers(cycle, users);
     const subs = createCycleSubmissions(cycle.id || 'candidate', targets, users, orgUnits, cycle, reviewerAssignments);
     const selfCount = subs.filter(s => s.type === 'self').length;
@@ -64,8 +75,8 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
       };
     });
     const managerMissing = perMember.filter(r => r.managerMissing).length;
-    return { targets, subs, selfCount, downCount, perMember, managerMissing, ranks };
-  }, [open, cycle, users, orgUnits, reviewerAssignments]);
+    return { targets, subs, selfCount, downCount, perMember, managerMissing, ranks, source: eff.source };
+  }, [open, cycle, liveUsers, liveOrgUnits, liveAssignments, orgSnapshots]);
 
   if (!open || !dryRun) return null;
 

@@ -9,6 +9,7 @@ import { CustomTargetPicker } from '../../components/review/cycleNew/CustomTarge
 import { AutomationSection } from '../../components/review/cycleNew/AutomationSection';
 import { PolicySection } from '../../components/review/cycleNew/PolicySection';
 import { ReviewKindsSection } from '../../components/review/cycleNew/ReviewKindsSection';
+import { HrSnapshotSection } from '../../components/review/cycleNew/HrSnapshotSection';
 import { DryRunModal } from '../../components/review/modals/DryRunModal';
 import type { AutoAdvanceRule, ReminderRule, AnonymityPolicy, VisibilityPolicy, ReferenceInfoPolicy, ReviewKind, PeerSelectionPolicy, DistributionPolicy } from '../../types';
 import { formToCyclePatch, cycleToForm } from '../../utils/cycleDraft';
@@ -64,6 +65,8 @@ interface FormState {
   distribution?: DistributionPolicy;
   // R3: downward 평가를 어느 차수의 평가권자가 작성할지 (기본 [1])
   downwardReviewerRanks?: number[];
+  // R4: 인사정보 적용 방식 (기본 'snapshot')
+  hrSnapshotMode?: 'live' | 'snapshot';
 }
 
 const today = new Date();
@@ -86,6 +89,7 @@ export function CycleNew() {
   const { addCycle, updateCycle, upsertSubmission, templates, cycles: allCycles } = useReviewStore();
   const { users, orgUnits, isLoading: usersLoading } = useTeamStore();
   const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
+  const createSnapshot = useTeamStore(s => s.createSnapshot);
   const showToast = useShowToast();
 
   useSetPageHeader('리뷰 사이클 생성');
@@ -164,6 +168,7 @@ export function CycleNew() {
           calibrationDeadline:   addDays(today, 28),
           tags:                  [],
           targetMode:            'org',
+          hrSnapshotMode:        'snapshot',  // R4: 기본 snapshot
         }),
   );
   const toggleDept = (dept: string) => {
@@ -528,6 +533,15 @@ export function CycleNew() {
       const snapshot = isScheduled ? undefined : template;
       const snapshotAt = isScheduled ? undefined : (template ? now : undefined);
 
+      // R4: snapshot 모드 + 즉시 발행이면 인사 스냅샷 자동 생성.
+      // 예약 발행이면 스케줄러가 발행 시점에 스냅샷을 만들도록 미루는 게 정확하지만,
+      // 현 구조상 스케줄러가 createSnapshot 을 호출하는 경로가 없어 일단 즉시 발행만 처리.
+      // (scheduled 사이클은 발행 직전 effective data 가 발행 시점 기준으로 캡처되도록 R5 에서 보강 예정)
+      const shouldCreateSnapshot = form.hrSnapshotMode === 'snapshot' && !isScheduled;
+      const hrSnapshotId = shouldCreateSnapshot
+        ? createSnapshot(`사이클 발행 시 스냅샷: ${form.title || cycleId}`, currentUser.id).id
+        : undefined;
+
       if (draftCycleId) {
         // 기존 draft 승격
         updateCycle(draftCycleId, {
@@ -556,6 +570,8 @@ export function CycleNew() {
           peerSelection: form.peerSelection,
           distribution: form.distribution,
           downwardReviewerRanks: form.downwardReviewerRanks,
+          hrSnapshotMode: form.hrSnapshotMode ?? 'snapshot',
+          hrSnapshotId,
         });
       } else {
         addCycle({
@@ -587,6 +603,8 @@ export function CycleNew() {
           peerSelection:         form.peerSelection,
           distribution:          form.distribution,
           downwardReviewerRanks: form.downwardReviewerRanks,
+          hrSnapshotMode:        form.hrSnapshotMode ?? 'snapshot',
+          hrSnapshotId,
         });
       }
 
@@ -766,6 +784,7 @@ export function CycleNew() {
             </div>
 
             <ReviewKindsSection form={form} setForm={setForm} />
+            <HrSnapshotSection form={form} setForm={setForm} />
             {cloneOrigin && (
               <div className="flex items-start gap-2 rounded-lg border border-blue-020 bg-blue-005 px-3 py-2.5">
                 <MsInfoIcon size={14} className="mt-0.5 shrink-0 text-blue-070" />

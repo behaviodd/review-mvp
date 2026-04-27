@@ -27,6 +27,8 @@ export interface WizardFormShape {
   referenceInfo?: ReferenceInfoPolicy;
   // R3
   downwardReviewerRanks?: number[];
+  // R4: 인사정보 적용 방식 (기본 'snapshot')
+  hrSnapshotMode?: 'live' | 'snapshot';
 }
 
 function toYmd(iso?: string): string {
@@ -61,6 +63,7 @@ export function formToCyclePatch(form: WizardFormShape): Partial<ReviewCycle> {
     visibility: form.visibility,
     referenceInfo: form.referenceInfo,
     downwardReviewerRanks: form.downwardReviewerRanks,
+    hrSnapshotMode: form.hrSnapshotMode,
   };
 }
 
@@ -91,5 +94,6 @@ export function cycleToForm(cycle: ReviewCycle, fallbackCalibration: string): Wi
     visibility: cycle.visibility,
     referenceInfo: cycle.referenceInfo,
     downwardReviewerRanks: cycle.downwardReviewerRanks ? [...cycle.downwardReviewerRanks] : undefined,
+    hrSnapshotMode: cycle.hrSnapshotMode,
   };
 }

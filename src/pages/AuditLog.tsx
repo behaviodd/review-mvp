@@ -82,10 +82,17 @@ export function AuditLog() {
 
   return (
     <div className="space-y-4">
-      <ListToolbar<TabKey>
-        tabs={tabs}
-        activeTab={tab}
-        onTabChange={setTab}
+      <ListToolbar
+        segments={[
+          {
+            kind: 'pills',
+            key: 'audit-tab',
+            ariaLabel: '감사 로그 분류',
+            value: tab,
+            onChange: v => setTab(v as TabKey),
+            options: tabs.map(t => ({ value: t.value, label: t.label, count: t.count })),
+          },
+        ]}
         rightSlot={
           <MsButton size="sm" variant="ghost" leftIcon={<MsRefreshIcon size={12} />} onClick={() => refetch()}>
             새로고침

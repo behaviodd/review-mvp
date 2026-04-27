@@ -1,16 +1,17 @@
-# 권한 매트릭스 (R2 적용)
+# 권한 매트릭스 (R6 기준)
 
 리뷰 운영의 모든 액션 권한은 `src/utils/permissions.ts` 에 단일 소스로 정의됩니다. UI 가시성(`src/hooks/usePermission.ts`)은 동일 어휘를 사용합니다.
 
-## 1. 액션 주체 (3축)
+## 1. 액션 주체 (4축, R6 기준)
 
 | 주체 | 정의 | 식별 방법 |
 |---|---|---|
-| **admin** | `user.role === 'admin'` 인 사용자 | `isAdmin()` |
+| **소유자(admin)** | `user.role === 'admin'` 인 사용자. 자동으로 모든 권한 보유. | `isAdmin()` / `pg_owner` 그룹 자동 가입 |
+| **권한 그룹 멤버** | `PermissionGroup.memberIds` 에 포함되어 그룹의 권한 코드 누적 보유 | `hasPermission(actor, code, groups)` |
 | **평가권자** (Reviewer) | 활성 `ReviewerAssignment` 를 1개 이상 보유 | `isAssignedReviewer(actor, submission, assignments)` |
 | **조직 리더** (Org Head) | `OrgUnit.headId === actor.id` 인 조직을 1개 이상 보유 | `usePermission().isOrgHead` |
 
-> 한 사람이 여러 주체를 동시에 가질 수 있음. admin > 평가권자 > 조직 리더 순으로 권한 우선순위.
+> 한 사람이 여러 주체를 동시에 가질 수 있음. 권한은 합집합으로 누적.
 
 ## 2. 권한 매트릭스
 
@@ -81,11 +82,101 @@ canExtendDeadline({ actor, cycle, submission, assignments })
 - `src/components/review/modals/DryRunModal.tsx`
 - `src/pages/reviews/CycleNew.tsx`
 
-## 6. 변경 이력
+## R6: 권한 그룹 (PermissionGroup)
 
-- **R1**: 평가권 모델(`ReviewerAssignment`) 도입
-- **R2**: 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
-- **R5-b** (현재): 마스터 로그인 (impersonation) UI
+R6 부터 admin role 단일 게이트 외에 **권한 그룹** 으로 액션을 분리. 9종 권한 코드 + 4개 시스템 그룹.
+
+### 권한 코드
+
+| 카테고리 | 코드 | 의미 |
+|---|---|---|
+| 리뷰 운영 | `cycles.manage` | 사이클 생성/편집/발행/삭제, 마감 연장, 대리 작성 |
+| 리뷰 운영 | `templates.manage` | 템플릿 관리 |
+| 리뷰 운영 | `reports.view_all` | 전사 리포트 열람 |
+| 구성원 | `org.manage` | 조직 구조/구성원/퇴사 처리 |
+| 구성원 | `reviewer_assignments.manage` | 평가권자 배정 |
+| 보안 | `auth.impersonate` | 마스터 로그인 |
+| 보안 | `audit.view` | 감사 로그 열람 |
+| 시스템 | `permission_groups.manage` | 권한 그룹 관리 |
+| 시스템 | `settings.manage` | 시스템 설정 |
+
+### 시스템 기본 그룹 (자동 시드)
+
+| 그룹 ID | 이름 | 권한 | 멤버 |
+|---|---|---|---|
+| `pg_owner` | 소유자 | 모든 권한 | admin role 사용자 자동 가입 |
+| `pg_review_admin` | 리뷰 관리자 | cycles.manage, templates.manage, reports.view_all | 비어있음 |
+| `pg_org_admin` | 구성원 관리자 | org.manage, reviewer_assignments.manage | 비어있음 |
+| `pg_master_login` | 마스터 로그인 | auth.impersonate, audit.view | 비어있음 |
+
+시스템 그룹은 `isSystem=true` — 멤버만 변경 가능, 이름/설명/권한/삭제 잠금.
+
+### 권한 부여 흐름
+
+1. admin이 `/permissions` 진입 → 권한 관리 페이지
+2. 시스템 그룹 카드 클릭 → SideDrawer 에서 멤버 추가
+3. 또는 "새 그룹" 버튼으로 사용자 정의 그룹 생성
+4. 멤버는 자동으로 그룹의 권한 코드 누적 보유
+5. 시트(`_권한그룹`) 양방향 동기화
+
+### 마스터 로그인 (R5-b → R6 통합)
+
+- 권한: `auth.impersonate` (시스템 그룹 또는 admin role)
+- 흐름: Team 페이지 행 → 마스터 로그인 버튼 → ConfirmDialog (사유 미요구) → 즉시 접속
+- 활성 중:
+  - admin Sidebar 섹션 (구성원 관리/리뷰 운영/보안 관리) 자동 숨김
+  - admin 라우트 (`/permissions`, `/cycles` 등) 직접 URL 입력 차단
+  - MyReviewWrite/TeamReviewWrite 의 isReadOnly 강제 (작성·저장·제출 차단)
+  - 빨간 sticky `ImpersonationBanner` 표시 + "원래대로" 버튼
+- 종료: `endImpersonation()` → originalUser 자동 복원
+- 감사 로그: `_마스터로그인` 시트 + `/security/audit` 페이지
+
+## 7. R6 운영자 작업 가이드 (Apps Script)
+
+R6 코드 배포 후 운영자가 1회 수행해야 할 작업입니다 (약 5분).
+
+### 1. 사전 백업
+- 스프레드시트 → 파일 → 사본 만들기 → "백업_R6_YYYYMMDD"
+
+### 2. ReviewFlow.gs 새 버전 배포
+- Apps Script 편집기에서 `ReviewFlow.gs` 전체 코드 → 삭제
+- GitHub `apps-script/ReviewFlow.gs` 최신본 붙여넣기
+- ⌘S 저장 → 배포 → 배포 관리 → 새 버전 (Web App URL 유지)
+
+### 3. `migrate_addMissingColumns()` 실행
+- 함수 드롭다운 → 선택 → ▶ 실행
+- 콘솔 로그: `"마이그레이션 완료 — 12개 시트 헤더 점검됨 (R1+R6)."`
+- 신규 시트 자동 생성: `_권한그룹`
+
+### 4. 클라이언트 부팅 시 자동 시드
+- 사용자가 사이트 첫 방문 시 `seedSystemGroups()` 자동 실행
+- `_권한그룹` 시트에 시스템 그룹 4종 자동 push
+- admin role 사용자가 `pg_owner` 그룹에 자동 가입됨
+
+### 5. 검증
+- `_권한그룹` 시트에 4행 (소유자/리뷰관리자/구성원관리자/마스터로그인)
+- 소유자 그룹의 `멤버사번JSON` 에 admin 사용자 사번 포함
+- admin 이 `/permissions` 페이지 진입 가능
+- admin 이 `/security/audit` 페이지 진입 가능
+
+### 롤백 (문제 발생 시)
+- ReviewFlow.gs 백업 버전으로 되돌리기 + 새 버전 배포
+- `_권한그룹` 시트는 그대로 두면 무영향 (옛 코드는 무시)
+- 클라이언트 측: localStorage 의 `team-data-v1` 키 삭제 후 새로고침 → 시트에서 재 fetch
+
+## 8. 변경 이력
+
+- **R6** (현재): 권한 그룹 + 마스터 로그인 권한 분리
+  - Phase A: PermissionCode 9종 + PermissionGroup 모델 + 시스템 그룹 4종 시드
+  - Phase B: hasPermission 헬퍼 + permissions.ts/usePermission.ts 일원화
+  - Phase C: /permissions 페이지 (그룹 카드 + SideDrawer 편집)
+  - Phase D: 마스터 로그인 권한을 auth.impersonate 로 분리, 사유 입력 제거,
+    Sidebar admin 메뉴 자동 숨김, RequireRole 가드 강화
+  - Phase E: /security/audit 통합 감사 로그 페이지 + Sidebar 메뉴 트리 재구성
+    (구성원 관리 / 리뷰 운영 / 보안 관리 3개 admin 섹션)
+  - Phase F: AuditLog 탭 segments[pills] 통일, 5종 시나리오 검증, docs 통합, 운영자 가이드
+
+- **R5-b**: 마스터 로그인 (impersonation) UI
   - Team.tsx 구성원 행에 admin only "마스터 로그인" 버튼 추가
   - ConfirmDialog 시작 다이얼로그 (사유 필수 입력)
   - AppLayout 상단 빨간 sticky 배너 — "현재 [홍길동]으로 보기 중 · [원래대로]"

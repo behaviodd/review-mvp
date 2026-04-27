@@ -104,6 +104,29 @@
 - ❌ ListToolbar 우회한 인라인 `<button className="border-b ...">` 탭
 - ❌ 페이지마다 다른 색·간격으로 자체 필터 바 구성
 
+### 7.2 EmptyState 사용 규칙
+
+| 상황 | prop                  | 사용 컨벤션                                     |
+|------|-----------------------|------------------------------------------------|
+| 페이지 자체 빈 (데이터 0) / 필터 결과 0 | `icon`         | 아이콘 1개 + 짧은 안내 + 보조 action            |
+| 라우트 dead-end / 권한 없음 / 오류 | `illustration` | 일러스트 + 명확한 복귀 CTA                      |
+
+**illustration variant**
+
+| variant       | 쓰임                                  |
+|---------------|---------------------------------------|
+| `empty-list`  | 일반 목록 없음 / 잘못된 경로 / 권한 없음 |
+| `empty-inbox` | 작성·수신 데이터 없음 (제출물·메일함류) |
+| `empty-cycle` | 사이클 자체가 없거나 찾을 수 없음        |
+
+**variant prop**
+- 기본 `default` — 페이지 가운데 배치 (큰 패딩)
+- `inline` — 점선 박스, 리스트/카드 내부 자리 채움용
+
+**금지**
+- ❌ `<div className="text-center py-20 text-gray-040">데이터 없음</div>` 같은 임시 placeholder
+- ❌ illustration + icon 동시 지정 (illustration 우선이지만 시각적 혼란)
+
 ## 8. 아이콘
 
 - 기본 사이즈: `size={14}` (리스트/배지), `size={16}` (버튼), `size={20}` (헤더/강조).

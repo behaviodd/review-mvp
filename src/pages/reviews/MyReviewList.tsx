@@ -15,6 +15,18 @@ import { useTeamStore } from '../../stores/teamStore';
 type StatusFilter = 'all' | 'active' | 'done' | 'closed';
 type TypeFilter   = 'all' | 'scheduled' | 'adhoc';
 
+function SectionHeader() {
+  return (
+    <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
+      <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-gray-040 uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">상태</div>
+      <div className="w-24" />
+    </div>
+  );
+}
+
 function StatusDot({ status }: { status: string }) {
   if (status === 'submitted') {
     return (
@@ -361,16 +373,6 @@ export function MyReviewList() {
       </div>
     );
   };
-
-  const SectionHeader = () => (
-    <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
-      <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-xs font-semibold text-gray-040 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">상태</div>
-      <div className="w-24" />
-    </div>
-  );
 
   const isFilterEmpty =
     (statusFilter === 'active' && active.length === 0) ||

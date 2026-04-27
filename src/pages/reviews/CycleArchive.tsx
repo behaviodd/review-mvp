@@ -19,6 +19,7 @@ export function CycleArchive() {
   const navigate = useNavigate();
   const showToast = useShowToast();
   const [query, setQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   useSetPageHeader('보관함');
 
@@ -51,7 +52,6 @@ export function CycleArchive() {
     showToast(res.ok ? 'success' : 'error', res.ok ? '보관을 해제했습니다.' : (res.error ?? '실패'));
   };
 
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const handleDelete = (id: string, title: string) => setDeleteTarget({ id, title });
   const confirmDelete = () => {
     if (!deleteTarget) return;

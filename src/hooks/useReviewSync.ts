@@ -114,6 +114,8 @@ export function useReviewSync() {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibility);
     };
+    // scriptUrl 변경은 fetchAndSync 의 deps 통해 전이적으로 반영됨.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAndSync, reviewSyncEnabled]);
 
   return { refetch: fetchAndSync };

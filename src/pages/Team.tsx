@@ -21,6 +21,7 @@ import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../type
 import { MsButton } from '../components/ui/MsButton';
 import { MsCheckbox, MsInput } from '../components/ui/MsControl';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { QuickAddMemberDialog } from '../components/team/QuickAddMemberDialog';
 import { impersonationLogWriter } from '../utils/sheetWriter';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
@@ -377,6 +378,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [showTerminated, setShowTerminated]       = useState(false);
   // R5-b: 마스터 로그인 시작 확인
   const [impersonateTarget, setImpersonateTarget] = useState<User | null>(null);
+
+  // 조직 트리 빠른 추가 다이얼로그
+  const [quickAddOrg, setQuickAddOrg] = useState<OrgUnit | null>(null);
 
   /* ── 복수 선택 ──────────────────────────────────────────────────── */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -854,7 +858,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                       onAddChild={goAddOrg}
                       onAddMember={unitId => {
                         const unit = orgUnits.find(u => u.id === unitId);
-                        goAddMember(unitId, unit?.headId);
+                        if (unit) setQuickAddOrg(unit);
                       }}
                       depth={0}
                       dnd={dnd}
@@ -972,6 +976,13 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           </div>
         </div>
       )}
+
+      {/* 조직 트리 빠른 구성원 추가 */}
+      <QuickAddMemberDialog
+        open={quickAddOrg !== null}
+        onClose={() => setQuickAddOrg(null)}
+        orgUnit={quickAddOrg}
+      />
 
       {/* R5-b: 마스터 로그인 시작 확인 */}
       <ConfirmDialog

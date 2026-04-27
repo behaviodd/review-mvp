@@ -18,7 +18,6 @@ const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 
 export function AppLayout() {
   const { currentUser, mustChangePassword } = useAuthStore();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const showToast = useShowToast();
@@ -37,7 +36,8 @@ export function AppLayout() {
   const isFullBleed =
     FULL_BLEED_PATHS.some(p => location.pathname.startsWith(p)) &&
     !FULL_BLEED_EXCLUDE.includes(location.pathname);
-  const sidebarWidth = collapsed ? 'md:ml-[56px]' : 'md:ml-[220px]';
+  // R7 prep: Sidebar 접기 제거 — 데스크탑 고정 220px
+  const sidebarWidth = 'md:ml-[220px]';
 
   return (
     <PageHeaderProvider>
@@ -51,8 +51,6 @@ export function AppLayout() {
       )}
 
       <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed(c => !c)}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
@@ -98,7 +96,9 @@ export function AppLayout() {
           {isFullBleed ? (
             <Outlet />
           ) : (
-            <div className="w-full max-w-5xl mx-auto">
+            // R7 prep: 콘텐츠 영역 확장 — max-w-5xl 제한 제거.
+            // 화면 가로를 가득 활용하되 매우 큰 모니터(>1920)에서만 부드럽게 캡(2560px ≒ max-w-screen-2xl 더 위).
+            <div className="w-full mx-auto max-w-[1920px]">
               <Outlet />
             </div>
           )}

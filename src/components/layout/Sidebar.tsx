@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  MsHomeIcon, MsSettingIcon, MsChevronLeftLineIcon, MsChevronRightLineIcon,
+  MsHomeIcon, MsSettingIcon, MsChevronRightLineIcon,
   MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsGroupIcon,
   MsArticleIcon, MsDeleteIcon, MsLockIcon,
 } from '../ui/MsIcons';
@@ -14,8 +14,6 @@ import { cn } from '../ui/cn';
 import { useMemo } from 'react';
 
 interface Props {
-  collapsed: boolean;
-  onToggle: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
 }
@@ -40,7 +38,9 @@ function BrandIcon({ className }: { className?: string }) {
   );
 }
 
-export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Props) {
+export function Sidebar({ mobileOpen, onMobileClose }: Props) {
+  // R7 prep: collapsed/onToggle 제거 — 데스크탑은 220px 고정.
+  const collapsed = false;
   const { isAdmin, can } = usePermission();
   const { currentUser, logout } = useAuthStore();
   // R6 Phase D: 마스터 로그인 활성 중에는 admin 메뉴 자동 숨김
@@ -123,11 +123,10 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
 
   return (
     <aside className={cn(
-      'fixed left-0 top-0 h-screen bg-white border-r border-gray-020 flex flex-col z-30 transition-all duration-200',
+      'fixed left-0 top-0 h-screen bg-white border-r border-gray-020 flex flex-col z-30 transition-transform duration-200',
       mobileOpen ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0',
-      collapsed ? 'md:w-[56px]' : 'md:w-[220px]',
-      'w-[220px]',
+      'md:w-[220px] w-[220px]',
     )}>
 
       {/* ── 로고 ── */}
@@ -142,13 +141,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Prop
         )}>
           메이크스타 리뷰시스템
         </span>
-        <button
-          onClick={onToggle}
-          className="hidden md:flex items-center justify-center size-6 rounded-md text-gray-040 hover:text-gray-060 hover:bg-gray-010 transition-colors flex-shrink-0"
-          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-        >
-          {collapsed ? <MsChevronRightLineIcon size={12} /> : <MsChevronLeftLineIcon size={12} />}
-        </button>
       </div>
 
       {/* ── 유저 이메일 + 드롭다운 ── */}

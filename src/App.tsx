@@ -27,6 +27,7 @@ import { ReceivedReviewList } from './pages/reviews/ReceivedReviewList';
 import { CycleList } from './pages/reviews/CycleList';
 import { CycleNew } from './pages/reviews/CycleNew';
 import { CycleDetail } from './pages/reviews/CycleDetail';
+import { CycleEdit } from './pages/reviews/CycleEdit';
 import { CycleArchive } from './pages/reviews/CycleArchive';
 import { TemplateList } from './pages/reviews/TemplateList';
 import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
@@ -275,6 +276,14 @@ export default function App() {
               element={
                 <RequirePermission permissions={['cycles.manage']}>
                   <RouteBoundary><CycleDetail /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="cycles/:cycleId/edit"
+              element={
+                <RequirePermission permissions={['cycles.manage']}>
+                  <RouteBoundary><CycleEdit /></RouteBoundary>
                 </RequirePermission>
               }
             />

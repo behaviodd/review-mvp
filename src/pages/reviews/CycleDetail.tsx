@@ -13,7 +13,7 @@ import { formatDate, daysUntil } from '../../utils/dateUtils';
 import { Eye } from 'lucide-react';
 import {
   MsCalendarIcon, MsCancelIcon, MsEditIcon,
-  MsCheckIcon, MsDownloadIcon, MsRefreshIcon, MsWarningIcon, MsStarIcon, MsDeleteIcon,
+  MsDownloadIcon, MsRefreshIcon, MsWarningIcon, MsStarIcon, MsDeleteIcon,
   MsSettingIcon, MsUsersIcon, MsBarChart2Icon,
 } from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
@@ -68,190 +68,6 @@ const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
     msg: '모든 리뷰를 종료합니다. 종료 후에는 되돌릴 수 없습니다.',
   },
 };
-
-// ─── 편집 모달 ────────────────────────────────────────────────────────────────
-function CycleEditModal({
-  cycle,
-  onSave,
-  onClose,
-}: {
-  cycle: ReviewCycle;
-  onSave: (updates: Partial<typeof cycle>) => void;
-  onClose: () => void;
-}) {
-  const { users } = useTeamStore();
-  const { templates } = useReviewStore();
-  const departments = Array.from(new Set(users.filter(u => u.role !== 'admin').map(u => u.department))).sort();
-  const toDateInput = (iso: string) => iso.slice(0, 10);
-
-  const [form, setForm] = useState({
-    title: cycle.title,
-    type: cycle.type,
-    templateId: cycle.templateId,
-    targetDepartments: [...cycle.targetDepartments],
-    selfReviewDeadline: toDateInput(cycle.selfReviewDeadline),
-    managerReviewDeadline: toDateInput(cycle.managerReviewDeadline),
-  });
-
-  const targetMembers = users.filter(
-    u => form.targetDepartments.includes(u.department) && u.role !== 'admin'
-  );
-
-  const handleSave = () => {
-    if (!form.title.trim()) return;
-    onSave({
-      title: form.title,
-      type: form.type,
-      templateId: form.templateId,
-      targetDepartments: form.targetDepartments,
-      selfReviewDeadline: new Date(form.selfReviewDeadline).toISOString(),
-      managerReviewDeadline: new Date(form.managerReviewDeadline).toISOString(),
-    });
-  };
-
-  const toggleDept = (dept: string) =>
-    setForm(f => ({
-      ...f,
-      targetDepartments: f.targetDepartments.includes(dept)
-        ? f.targetDepartments.filter(d => d !== dept)
-        : [...f.targetDepartments, dept],
-    }));
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-modal w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* 모달 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-010">
-          <h2 className="text-base font-semibold text-gray-099">리뷰 편집</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-010 rounded-lg transition-colors">
-            <MsCancelIcon size={16} className="text-gray-050" />
-          </button>
-        </div>
-
-        {/* 모달 본문 */}
-        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
-          {/* 리뷰 이름 */}
-          <MsInput
-            label="리뷰 이름 *"
-            type="text"
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-          />
-
-          {/* 리뷰 유형 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-060 mb-1.5">리뷰 유형</label>
-            <div className="flex gap-2">
-              {([['scheduled', '정기 리뷰'], ['adhoc', '수시 리뷰']] as const).map(([val, label]) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, type: val }))}
-                  className={`flex-1 py-2 rounded border-2 text-sm font-medium transition-all ${
-                    form.type === val
-                      ? 'border-pink-040 bg-pink-005 text-pink-060'
-                      : 'border-gray-020 text-gray-060 hover:border-gray-030'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 리뷰 템플릿 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-060 mb-1.5">리뷰 템플릿</label>
-            <div className="space-y-2">
-              {templates.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, templateId: t.id }))}
-                  className={`w-full flex items-center justify-between p-3 rounded border-2 text-left transition-all ${
-                    form.templateId === t.id
-                      ? 'border-pink-040 bg-pink-005'
-                      : 'border-gray-020 hover:border-gray-030'
-                  }`}
-                >
-                  <div>
-                    <p className={`text-sm font-medium ${form.templateId === t.id ? 'text-pink-060' : 'text-gray-070'}`}>
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-gray-040 mt-0.5">{t.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <span className="text-xs text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded">{t.questions.length}문항</span>
-                    {form.templateId === t.id && <MsCheckIcon size={16} className="text-pink-050" />}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 대상 부서 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-060 mb-1.5">대상 부서</label>
-            <div className="flex flex-wrap gap-2">
-              {departments.map(dept => {
-                const selected = form.targetDepartments.includes(dept);
-                const count = users.filter(u => u.department === dept && u.role !== 'admin').length;
-                return (
-                  <button
-                    key={dept}
-                    type="button"
-                    onClick={() => toggleDept(dept)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-medium transition-all ${
-                      selected
-                        ? 'border-pink-040 bg-pink-005 text-pink-060'
-                        : 'border-gray-020 text-gray-060 hover:border-gray-030'
-                    }`}
-                  >
-                    {selected && <MsCheckIcon size={12} />}
-                    {dept}
-                    <span className="text-gray-040">{count}명</span>
-                  </button>
-                );
-              })}
-            </div>
-            {form.targetDepartments.length > 0 && (
-              <p className="text-xs text-gray-040 mt-2">
-                총 <strong className="text-gray-070">{targetMembers.length}명</strong> 포함
-              </p>
-            )}
-          </div>
-
-          {/* 일정 */}
-          <div className="grid grid-cols-2 gap-3">
-            <MsInput
-              label="자기평가 마감일 *"
-              type="date"
-              value={form.selfReviewDeadline}
-              onChange={e => setForm(f => ({ ...f, selfReviewDeadline: e.target.value }))}
-            />
-            <MsInput
-              label="조직장 리뷰 마감일 *"
-              type="date"
-              value={form.managerReviewDeadline}
-              onChange={e => setForm(f => ({ ...f, managerReviewDeadline: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        {/* 모달 푸터 */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-010">
-          <MsButton variant="outline-default" onClick={onClose}>취소</MsButton>
-          <MsButton
-            onClick={handleSave}
-            disabled={!form.title.trim() || form.targetDepartments.length === 0}
-          >
-            저장하기
-          </MsButton>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── 제출 리뷰 사이드 패널 (자기평가 ↔ 조직장 리뷰 병렬 비교) ─────────────────
 const RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
@@ -507,7 +323,6 @@ export function CycleDetail() {
   const showToast = useShowToast();
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showEdit, setShowEdit] = useState(searchParams.get('edit') === '1');
   const [syncing, setSyncing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -521,14 +336,14 @@ export function CycleDetail() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { scriptUrl, enabled, markSynced, lastSyncAt } = useSheetsSyncStore();
 
-  useEffect(() => {
-    if (searchParams.get('edit') === '1') {
-      setShowEdit(true);
-      setSearchParams({}, { replace: true });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const cycle = cycles.find(c => c.id === cycleId);
+
+  useEffect(() => {
+    if (searchParams.get('edit') === '1' && cycle) {
+      setSearchParams({}, { replace: true });
+      navigate(`/cycles/${cycle.id}/edit`, { replace: true });
+    }
+  }, [cycle, navigate, searchParams, setSearchParams]);
 
   const headerSubtitle = useMemo(() => {
     if (!cycle) return null;
@@ -612,7 +427,7 @@ export function CycleDetail() {
         <MsButton size="sm" variant="outline-default" onClick={() => setDryRunOpen(true)} leftIcon={<Eye />}>드라이런</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/new?from=${cycle.id}`)} leftIcon={<MsEditIcon />}>복제</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => setSettingsOpen(true)} leftIcon={<MsSettingIcon />}>리뷰 설정</MsButton>
-        <MsButton size="sm" variant="outline-default" onClick={() => setShowEdit(true)} leftIcon={<MsEditIcon />} disabled={!!cycle.editLockedAt}>편집</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/${cycle.id}/edit`)} leftIcon={<MsEditIcon />} disabled={!!cycle.editLockedAt}>편집</MsButton>
         {cycle.status === 'closed' && !cycle.archivedAt && (
           <MsButton
             size="sm"
@@ -877,19 +692,6 @@ export function CycleDetail() {
           />
         );
       })()}
-
-      {/* 편집 모달 */}
-      {showEdit && (
-        <CycleEditModal
-          cycle={cycle}
-          onSave={(updates) => {
-            updateCycle(cycle.id, updates);
-            showToast('success', '리뷰가 수정되었습니다.');
-            setShowEdit(false);
-          }}
-          onClose={() => setShowEdit(false)}
-        />
-      )}
 
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3">

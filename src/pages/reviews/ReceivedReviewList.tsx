@@ -7,6 +7,7 @@ import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { Pill } from '../../components/ui/Pill';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ListToolbar } from '../../components/ui/ListToolbar';
 import { MsChevronRightLineIcon, MsProfileIcon } from '../../components/ui/MsIcons';
 import { formatDate } from '../../utils/dateUtils';
 import type { ReviewKind, ReviewSubmission } from '../../types';
@@ -80,24 +81,18 @@ export function ReceivedReviewList() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5">
-        {kindFilters.map(k => {
-          const active = filter === k.value;
-          return (
-            <button
-              key={k.value}
-              type="button"
-              onClick={() => setFilter(k.value)}
-              className={`px-3 h-7 text-xs font-semibold rounded-md transition-colors ${
-                active ? 'bg-white text-gray-080 shadow-card' : 'text-gray-050 hover:text-gray-070'
-              }`}
-            >
-              {k.label}
-              <span className="ml-1 text-[11px] tabular-nums opacity-70">{k.count}</span>
-            </button>
-          );
-        })}
-      </div>
+      <ListToolbar
+        segments={[
+          {
+            kind: 'pills',
+            key: 'kind',
+            ariaLabel: '리뷰 유형 필터',
+            value: filter,
+            onChange: v => setFilter(v as KindFilter),
+            options: kindFilters.map(k => ({ value: k.value, label: k.label, count: k.count })),
+          },
+        ]}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState

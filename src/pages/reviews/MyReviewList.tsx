@@ -5,6 +5,7 @@ import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ListToolbar } from '../../components/ui/ListToolbar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
 import { Circle, ShieldCheck, Users, BarChart2 } from 'lucide-react';
 import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsArticleIcon } from '../../components/ui/MsIcons';
@@ -138,11 +139,11 @@ export function MyReviewList() {
   const totalCount  = filteredMySubmissions.length + filteredReceived.length;
   const closedCount = closedSelf.length + closedReceived.length;
 
-  const TABS: { key: StatusFilter; label: string; count: number }[] = [
-    { key: 'all',    label: '전체',    count: totalCount },
-    { key: 'active', label: '진행 중', count: active.length },
-    { key: 'done',   label: '완료',    count: doneAll.length },
-    { key: 'closed', label: '종료됨',  count: closedCount },
+  const tabs = [
+    { value: 'all'    as StatusFilter, label: '전체',    count: totalCount },
+    { value: 'active' as StatusFilter, label: '진행 중', count: active.length },
+    { value: 'done'   as StatusFilter, label: '완료',    count: doneAll.length },
+    { value: 'closed' as StatusFilter, label: '종료됨',  count: closedCount },
   ];
 
   // ── 셀프 리뷰 행 ─────────────────────────────────────────────────────────────
@@ -381,47 +382,25 @@ export function MyReviewList() {
     <div className="space-y-5">
       <PeerPickReminder />
 
-      {/* 필터 영역 */}
-      <div className="space-y-3">
-        {/* 상태 탭 */}
-        <div className="flex gap-6 border-b border-gray-020">
-          {TABS.map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setStatusFilter(key)}
-              className={`flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
-                statusFilter === key
-                  ? 'border-gray-099 text-gray-099'
-                  : 'border-transparent text-gray-030 hover:text-gray-050'
-              }`}
-            >
-              {label}
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                statusFilter === key ? 'bg-gray-099 text-white' : 'bg-gray-010 text-gray-030'
-              }`}>
-                {count}
-              </span>
-            </button>
-          ))}
-        </div>
-        {/* 유형 칩 */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-040 font-medium">유형</span>
-          {(['all', 'scheduled', 'adhoc'] as TypeFilter[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                typeFilter === t
-                  ? 'bg-gray-099 text-white'
-                  : 'bg-gray-010 text-gray-050 hover:bg-gray-020'
-              }`}
-            >
-              {t === 'all' ? '전체' : t === 'scheduled' ? '정기' : '수시'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ListToolbar<StatusFilter>
+        tabs={tabs}
+        activeTab={statusFilter}
+        onTabChange={setStatusFilter}
+        segments={[
+          {
+            kind: 'pills',
+            key: 'type',
+            ariaLabel: '유형 필터',
+            value: typeFilter,
+            onChange: v => setTypeFilter(v as TypeFilter),
+            options: [
+              { value: 'all',       label: '전체' },
+              { value: 'scheduled', label: '정기' },
+              { value: 'adhoc',     label: '수시' },
+            ],
+          },
+        ]}
+      />
 
       {/* 빈 상태 */}
       {isFilterEmpty ? (

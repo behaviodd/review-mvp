@@ -11,7 +11,8 @@ import {
   MsDeleteIcon, MsArticleIcon, MsCancelIcon,
 } from '../../components/ui/MsIcons';
 import { MsButton } from '../../components/ui/MsButton';
-import { MsInput, MsSelect, MsCheckbox } from '../../components/ui/MsControl';
+import { MsCheckbox } from '../../components/ui/MsControl';
+import { ListToolbar } from '../../components/ui/ListToolbar';
 import { useShowToast } from '../../components/ui/Toast';
 import { TagInput, tagColor } from '../../components/review/TagInput';
 import { FolderSidebar, CYCLE_DRAG_MIME } from '../../components/review/FolderSidebar';
@@ -290,65 +291,57 @@ export function CycleList() {
       <div className="flex-1 min-w-0 space-y-4">
         {/* 필터 바 */}
         <div className="rounded-xl border border-gray-010 bg-white shadow-card px-4 py-3 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5">
-              {([
-                ['all',         '전체'],
-                ['draft',       '초안'],
-                ['in_progress', '진행중'],
-                ['closed',      '완료'],
-              ] as const).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setPreset(val)}
-                  className={cn(
-                    'px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap',
-                    preset === val ? 'bg-white text-gray-080 shadow-card' : 'text-gray-050 hover:text-gray-070',
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="h-5 w-px bg-gray-010" />
-
-            <MsSelect
-              value={filters.types[0] ?? ''}
-              onChange={e => update({ types: e.target.value ? [e.target.value as ReviewType] : [] })}
-              className="min-w-[120px]"
-            >
-              <option value="">모든 유형</option>
-              <option value="scheduled">정기</option>
-              <option value="adhoc">수시</option>
-            </MsSelect>
-
-            <MsSelect
-              value={filters.sort}
-              onChange={e => update({ sort: e.target.value as CycleSort })}
-              className="min-w-[140px]"
-            >
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </MsSelect>
-
-            <div className="ml-auto flex items-center gap-2">
-              <MsInput
-                value={filters.query}
-                onChange={e => update({ query: e.target.value })}
-                placeholder="제목·태그·생성자 검색"
-                className="w-56"
-              />
-              {filterActive && (
-                <button
-                  type="button"
-                  onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
-                  className="text-xs font-medium text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
-                >
-                  초기화
-                </button>
-              )}
-            </div>
-          </div>
+          <ListToolbar
+            segments={[
+              {
+                kind: 'pills',
+                key: 'preset',
+                ariaLabel: '상태 필터',
+                value: preset,
+                onChange: v => setPreset(v as StatusPreset),
+                options: [
+                  { value: 'all',         label: '전체' },
+                  { value: 'draft',       label: '초안' },
+                  { value: 'in_progress', label: '진행중' },
+                  { value: 'closed',      label: '완료' },
+                ],
+              },
+              {
+                kind: 'select',
+                key: 'type',
+                ariaLabel: '유형',
+                value: filters.types[0] ?? '',
+                onChange: v => update({ types: v ? [v as ReviewType] : [] }),
+                options: [
+                  { value: '',          label: '모든 유형' },
+                  { value: 'scheduled', label: '정기' },
+                  { value: 'adhoc',     label: '수시' },
+                ],
+              },
+              {
+                kind: 'select',
+                key: 'sort',
+                ariaLabel: '정렬',
+                value: filters.sort,
+                onChange: v => update({ sort: v as CycleSort }),
+                options: SORT_OPTIONS.map(o => ({ value: o.value, label: o.label })),
+              },
+            ]}
+            search={{
+              value: filters.query,
+              onChange: v => update({ query: v }),
+              placeholder: '제목·태그·생성자 검색',
+            }}
+            rightSlot={filterActive ? (
+              <button
+                type="button"
+                onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
+                className="text-xs font-medium text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
+              >
+                초기화
+              </button>
+            ) : undefined}
+          />
 
           {(allTags.length > 0 || filters.tags.length > 0) && (
             <div className="flex items-start gap-2">

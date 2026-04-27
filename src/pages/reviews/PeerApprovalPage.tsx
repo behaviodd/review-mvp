@@ -9,6 +9,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { Pill } from '../../components/ui/Pill';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { ListToolbar } from '../../components/ui/ListToolbar';
 import { useShowToast } from '../../components/ui/Toast';
 import { MsCheckIcon, MsCancelIcon, MsProfileIcon } from '../../components/ui/MsIcons';
 import { getSmallestOrg } from '../../utils/userUtils';
@@ -82,37 +83,20 @@ export function PeerApprovalPage() {
     setRejectTarget(null);
   };
 
-  const TABS: { key: ViewMode; label: string; count: number }[] = [
-    { key: 'pending', label: '승인 대기', count: pending.length },
-    { key: 'history', label: '처리 완료', count: history.length },
+  const tabs = [
+    { value: 'pending' as ViewMode, label: '승인 대기', count: pending.length },
+    { value: 'history' as ViewMode, label: '처리 완료', count: history.length },
   ];
 
   const rows = viewMode === 'pending' ? pending : history;
 
   return (
     <div className="space-y-5">
-      {/* 상태 탭 — MyReviewList/TeamReviewList와 동일한 패턴 */}
-      <div className="flex gap-6 border-b border-gray-020">
-        {TABS.map(({ key, label, count }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setViewMode(key)}
-            className={`flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px ${
-              viewMode === key
-                ? 'border-gray-099 text-gray-099'
-                : 'border-transparent text-gray-030 hover:text-gray-050'
-            }`}
-          >
-            {label}
-            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-              viewMode === key ? 'bg-gray-099 text-white' : 'bg-gray-010 text-gray-030'
-            }`}>
-              {count}
-            </span>
-          </button>
-        ))}
-      </div>
+      <ListToolbar<ViewMode>
+        tabs={tabs}
+        activeTab={viewMode}
+        onTabChange={setViewMode}
+      />
 
       {rows.length === 0 ? (
         <EmptyState

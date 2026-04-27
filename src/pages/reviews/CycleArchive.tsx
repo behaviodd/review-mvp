@@ -7,7 +7,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
 import { MsRefreshIcon, MsChevronRightLineIcon, MsDeleteIcon } from '../../components/ui/MsIcons';
 import { MsButton } from '../../components/ui/MsButton';
-import { MsInput } from '../../components/ui/MsControl';
+import { ListToolbar } from '../../components/ui/ListToolbar';
 import { useShowToast } from '../../components/ui/Toast';
 import { tagColor } from '../../components/review/TagInput';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -63,11 +63,13 @@ export function CycleArchive() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-gray-010 bg-white shadow-card px-4 py-3">
-        <MsInput
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="제목·태그 검색"
-          className="w-full md:w-80"
+        <ListToolbar
+          search={{
+            value: query,
+            onChange: setQuery,
+            placeholder: '제목·태그 검색',
+            width: 'md',
+          }}
         />
       </div>
 

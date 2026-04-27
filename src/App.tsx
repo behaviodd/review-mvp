@@ -33,6 +33,7 @@ import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
 import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
+import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
 import { AuditLog } from './pages/AuditLog';
 
 // 로그인 상태일 때만 시트 동기화 실행
@@ -294,6 +295,14 @@ export default function App() {
 
             {/* Other pages */}
             <Route path="team" element={<RouteBoundary><Team /></RouteBoundary>} />
+            <Route
+              path="team/profile-fields"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><ProfileFieldSettings /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
             <Route
               path="permissions"

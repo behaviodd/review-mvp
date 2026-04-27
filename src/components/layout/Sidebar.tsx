@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   MsHomeIcon, MsSettingIcon, MsChevronRightLineIcon,
   MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsGroupIcon,
-  MsArticleIcon, MsDeleteIcon, MsLockIcon,
+  MsArticleIcon, MsDeleteIcon, MsLockIcon, MsIdcardIcon,
 } from '../ui/MsIcons';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
@@ -126,8 +126,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
     /* 어드민 — 구성원 관리 */
     { kind: 'section', label: '구성원 관리', show: showOrgSection },
-    { kind: 'item', to: '/team',        icon: MsGroupIcon, label: '구성원',     show: showOrgAdmin,    indent: true },
-    { kind: 'item', to: '/permissions', icon: MsLockIcon,  label: '권한 관리',  show: showPermissions, indent: true },
+    { kind: 'item', to: '/team',                icon: MsGroupIcon,    label: '구성원',         show: showOrgAdmin,    indent: true },
+    { kind: 'item', to: '/team/profile-fields', icon: MsIdcardIcon,   label: '프로필 설정',    show: showOrgAdmin,    indent: true },
+    { kind: 'item', to: '/permissions',         icon: MsLockIcon,     label: '권한 관리',      show: showPermissions, indent: true },
 
     /* 어드민 — 리뷰 운영 */
     { kind: 'section', label: '리뷰 운영', show: showCycleSection },

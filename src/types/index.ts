@@ -123,6 +123,27 @@ export const ALL_PERMISSION_CODES: PermissionCode[] = [
   'settings.manage',
 ];
 
+// 구성원 프로필 설정 — 기본 정보 항목의 노출 순서·열람 권한을 어드민이 구성.
+export type ProfileFieldKey =
+  | 'name'         // 잠금 — 항상 모두 노출
+  | 'nameEn'
+  | 'email'        // 잠금 — 항상 모두 노출
+  | 'phone'
+  | 'joinDate'
+  | 'jobFunction';
+
+export type ProfileFieldViewer =
+  | 'self'         // 본인
+  | 'orgLeader'    // 조직 리더
+  | 'reviewer'     // 평가권자
+  | 'allMembers';  // 모든 구성원
+
+export interface ProfileFieldConfig {
+  key: ProfileFieldKey;
+  order: number;
+  viewers: ProfileFieldViewer[];
+}
+
 // R6: 권한 그룹.
 // 한 사용자가 여러 그룹에 속할 수 있고, 가진 권한은 합집합.
 // isSystem=true 그룹은 삭제 불가, 권한 항목 변경 불가 (멤버 변경만 가능).

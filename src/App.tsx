@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useTeamStore } from './stores/teamStore';
+import { hasPermission } from './utils/permissions';
+import type { PermissionCode } from './types';
 import { useSheetsSyncStore } from './stores/sheetsSyncStore';
 import { useOrgSync } from './hooks/useOrgSync';
 import { useReviewSync } from './hooks/useReviewSync';
@@ -83,6 +85,32 @@ function RequireRole({ roles, children }: { roles: string[]; children: React.Rea
     return <Navigate to="/" replace />;
   }
   if (!currentUser || !roles.includes(effectiveRole ?? '')) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
+/**
+ * R6 Bugfix: 권한 코드 기반 라우트 가드.
+ * `permissions` 중 하나라도 보유하면 통과 (OR 합집합).
+ * admin role 은 자동으로 모든 권한 보유 (hasPermission 내부에서 처리).
+ */
+function RequirePermission({
+  permissions,
+  children,
+}: {
+  permissions: PermissionCode[];
+  children: React.ReactNode;
+}) {
+  const { currentUser } = useAuthStore();
+  const impersonatingFromId = useAuthStore(s => s.impersonatingFromId);
+  const groups = useTeamStore(s => s.permissionGroups);
+  // 마스터 로그인 활성 중에는 admin/권한 라우트 접근 차단 (대상자 화면에 가깝게)
+  if (impersonatingFromId) {
+    return <Navigate to="/" replace />;
+  }
+  const ok = !!currentUser && permissions.some(p => hasPermission(currentUser, p, groups));
+  if (!ok) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -212,55 +240,55 @@ export default function App() {
               }
             />
 
-            {/* Cycles (admin+) */}
+            {/* Cycles — cycles.manage 권한 보유자 */}
             <Route
               path="cycles"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['cycles.manage']}>
                   <RouteBoundary><CycleList /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
             <Route
               path="cycles/archive"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['cycles.manage']}>
                   <RouteBoundary><CycleArchive /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
             <Route
               path="cycles/new"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['cycles.manage']}>
                   <RouteBoundary><CycleNew /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
             <Route
               path="cycles/:cycleId"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['cycles.manage']}>
                   <RouteBoundary><CycleDetail /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
 
-            {/* Templates (admin+) */}
+            {/* Templates — templates.manage 권한 보유자 */}
             <Route
               path="templates"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['templates.manage']}>
                   <RouteBoundary><TemplateList /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
             <Route
               path="templates/:templateId"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['templates.manage']}>
                   <RouteBoundary><TemplateBuilder /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
 
@@ -270,17 +298,17 @@ export default function App() {
             <Route
               path="permissions"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['permission_groups.manage']}>
                   <RouteBoundary><Permissions /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
             <Route
               path="security/audit"
               element={
-                <RequireRole roles={['admin']}>
+                <RequirePermission permissions={['audit.view']}>
                   <RouteBoundary><AuditLog /></RouteBoundary>
-                </RequireRole>
+                </RequirePermission>
               }
             />
 

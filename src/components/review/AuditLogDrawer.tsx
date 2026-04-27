@@ -17,6 +17,15 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'submission.proxy_write_started':    '대리 작성 진입',
   'submission.proxy_submitted':        '대리 제출',
   'submission.reopened':                '제출 재오픈',
+  // R1
+  'reviewer_assignment.created':       '평가권 부여',
+  'reviewer_assignment.ended':         '평가권 종료',
+  'reviewer_assignment.bulk_inherit':  '평가권 일괄 부여',
+  'org_snapshot.created':              '인사 스냅샷 생성',
+  'auth.impersonate_start':            '마스터 로그인 시작',
+  'auth.impersonate_end':              '마스터 로그인 종료',
+  'org.user_status_changed':           '구성원 상태 변경',
+  'org.migrated_to_r1':                'R1 마이그레이션',
 };
 
 const ACTION_TONE: Record<AuditAction, string> = {
@@ -29,6 +38,15 @@ const ACTION_TONE: Record<AuditAction, string> = {
   'submission.proxy_write_started':    'bg-red-005 text-red-060',
   'submission.proxy_submitted':        'bg-red-005 text-red-070',
   'submission.reopened':                'bg-blue-005 text-blue-070',
+  // R1
+  'reviewer_assignment.created':       'bg-purple-005 text-purple-060',
+  'reviewer_assignment.ended':         'bg-gray-005 text-gray-070',
+  'reviewer_assignment.bulk_inherit':  'bg-purple-005 text-purple-060',
+  'org_snapshot.created':              'bg-blue-005 text-blue-070',
+  'auth.impersonate_start':            'bg-red-005 text-red-070',
+  'auth.impersonate_end':              'bg-gray-005 text-gray-070',
+  'org.user_status_changed':           'bg-orange-005 text-orange-070',
+  'org.migrated_to_r1':                'bg-green-005 text-green-070',
 };
 
 interface Props {

@@ -170,7 +170,7 @@ function buildComparisonRow(
     reviewee.id,
     cycle.title,
     reviewee.name,
-    reviewee.department,
+    reviewee.department ?? '',
     reviewee.position,
     manager?.name ?? '',
     selfScore != null ? +selfScore.toFixed(2) : '',

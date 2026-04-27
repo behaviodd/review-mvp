@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeStorage } from '../utils/safeStorage';
-import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
+import type {
+  User, OrgUnit, OrgUnitType, SecondaryOrgAssignment,
+  ReviewerAssignment, OrgSnapshot,
+} from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
 import { initAccount } from '../utils/authApi';
+import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
 
 export interface Team {
   id: string;
@@ -27,6 +31,10 @@ interface TeamStore {
   teams: Team[];
   orgUnits: OrgUnit[];
   secondaryOrgs: SecondaryOrgAssignment[];
+  // R1: 평가권 + 인사 스냅샷
+  reviewerAssignments: ReviewerAssignment[];
+  orgSnapshots: OrgSnapshot[];
+  schemaVersion: SchemaVersion;
   isLoading: boolean;
 
   // 구성원 CRUD
@@ -49,11 +57,26 @@ interface TeamStore {
   upsertSecondaryOrg: (assignment: SecondaryOrgAssignment) => void;
   removeSecondaryOrg: (userId: string, orgId: string) => void;
 
+  // R1: 평가권 CRUD
+  upsertAssignment: (
+    input: Omit<ReviewerAssignment, 'id' | 'createdAt'>,
+  ) => ReviewerAssignment;
+  endAssignment: (assignmentId: string, endDate?: string) => void;
+
+  // R1: 인사 스냅샷
+  createSnapshot: (description: string, actorId: string) => OrgSnapshot;
+  getSnapshot: (snapshotId: string) => OrgSnapshot | undefined;
+
+  // R1: 마이그레이션 강제 실행 (디버그/관리자용)
+  runMigrationR1: () => void;
+
   // 시트 연동
   syncFromSheet: (
     users: User[],
     orgUnits?: OrgUnit[],
     secondaryOrgs?: SecondaryOrgAssignment[],
+    reviewerAssignments?: ReviewerAssignment[],
+    orgSnapshots?: OrgSnapshot[],
   ) => void;
   setLoading: (v: boolean) => void;
 }
@@ -65,6 +88,9 @@ export const useTeamStore = create<TeamStore>()(
   teams: [],
   orgUnits: [],
   secondaryOrgs: [],
+  reviewerAssignments: [],
+  orgSnapshots: [],
+  schemaVersion: 'pre-r1' as SchemaVersion,
   isLoading: false,
 
   /* ── 구성원 ──────────────────────────────────────────────────────── */
@@ -142,7 +168,8 @@ export const useTeamStore = create<TeamStore>()(
   /* ── 조직 단위 ───────────────────────────────────────────────────── */
   addOrgUnit: (unit) =>
     set(state => {
-      const id = generateOrgUnitId(unit.type, unit.name);
+      // R1: type 은 deprecated 이지만 마이그레이션 전 코드 호환을 위해 fallback 'team'.
+      const id = generateOrgUnitId(unit.type ?? 'team', unit.name);
       const newUnit: OrgUnit = { id, ...unit };
       orgUnitWriter.upsert(newUnit);
       return { orgUnits: [...state.orgUnits, newUnit] };
@@ -222,13 +249,83 @@ export const useTeamStore = create<TeamStore>()(
     }));
   },
 
+  /* ── R1: 평가권 ───────────────────────────────────────────────── */
+  upsertAssignment: (input) => {
+    const id = `ra_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const createdAt = new Date().toISOString();
+    const newAssignment: ReviewerAssignment = { id, createdAt, ...input };
+    set(state => {
+      // 기존 같은 revieweeId+rank 활성 항목이 있으면 endDate 마감
+      const closed = state.reviewerAssignments.map(a =>
+        a.revieweeId === input.revieweeId && a.rank === input.rank && !a.endDate && a.id !== id
+          ? { ...a, endDate: createdAt }
+          : a
+      );
+      return { reviewerAssignments: [...closed, newAssignment] };
+    });
+    return newAssignment;
+  },
+
+  endAssignment: (assignmentId, endDate) => {
+    const at = endDate ?? new Date().toISOString();
+    set(state => ({
+      reviewerAssignments: state.reviewerAssignments.map(a =>
+        a.id === assignmentId ? { ...a, endDate: at } : a
+      ),
+    }));
+  },
+
+  /* ── R1: 인사 스냅샷 ───────────────────────────────────────────── */
+  createSnapshot: (description, actorId) => {
+    const id = `snap_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const state = get();
+    const snapshot: OrgSnapshot = {
+      id,
+      createdAt: new Date().toISOString(),
+      createdBy: actorId,
+      description,
+      // 깊은 복제 (JSON serialize/parse)
+      users: JSON.parse(JSON.stringify(state.users)),
+      orgUnits: JSON.parse(JSON.stringify(state.orgUnits)),
+      assignments: JSON.parse(JSON.stringify(state.reviewerAssignments)),
+    };
+    set(s => ({ orgSnapshots: [...s.orgSnapshots, snapshot] }));
+    return snapshot;
+  },
+
+  getSnapshot: (snapshotId) =>
+    get().orgSnapshots.find(s => s.id === snapshotId),
+
+  /* ── R1: 마이그레이션 ─────────────────────────────────────────── */
+  runMigrationR1: () => {
+    const state = get();
+    if (isMigrationApplied(state.schemaVersion)) return;
+    const result = migrateToR1({
+      users: state.users,
+      orgUnits: state.orgUnits,
+      existingAssignments: state.reviewerAssignments,
+    });
+    set({
+      users: result.users,
+      reviewerAssignments: [...state.reviewerAssignments, ...result.newAssignments],
+      schemaVersion: result.schemaVersion,
+    });
+    if (result.report.warnings.length > 0) {
+      console.warn('[R1 migration]', result.report);
+    } else {
+      console.info('[R1 migration]', result.report);
+    }
+  },
+
   /* ── 시트 동기화 ─────────────────────────────────────────────────── */
-  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs) =>
+  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots) =>
     set(() => ({
       users: newUsers,
       teams: deriveTeams(newUsers),
       ...(newOrgUnits !== undefined ? { orgUnits: newOrgUnits } : {}),
       ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
+      ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
+      ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
     })),
 
   setLoading: (isLoading) => set({ isLoading }),
@@ -237,11 +334,28 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-data-v1',
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => ({
-        users:         s.users,
-        teams:         s.teams,
-        orgUnits:      s.orgUnits,
-        secondaryOrgs: s.secondaryOrgs,
+        users:               s.users,
+        teams:               s.teams,
+        orgUnits:            s.orgUnits,
+        secondaryOrgs:       s.secondaryOrgs,
+        reviewerAssignments: s.reviewerAssignments,
+        orgSnapshots:        s.orgSnapshots,
+        schemaVersion:       s.schemaVersion,
       }),
+      // R1: 부팅 시 마이그레이션 1회 자동 실행
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (!isMigrationApplied(state.schemaVersion)) {
+          // 다음 tick 으로 미루어 store 초기화 완료 후 실행
+          setTimeout(() => {
+            try {
+              useTeamStore.getState().runMigrationR1();
+            } catch (e) {
+              console.error('[R1 migration] rehydrate failed:', e);
+            }
+          }, 0);
+        }
+      },
     },
   ),
 );

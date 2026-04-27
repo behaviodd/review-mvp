@@ -10,6 +10,8 @@ import {
   parseSheetUsers,
   parseOrgUnits,
   parseSecondaryOrgs,
+  parseReviewerAssignments,
+  parseOrgSnapshots,
 } from '../utils/sheetParser';
 import { getScriptHeaders } from '../utils/scriptHeaders';
 
@@ -41,29 +43,35 @@ export function useOrgSync() {
     setLoading(true);
     setOrgSyncError(null);
     try {
-      const [orgResp, orgUnitRows, secondaryOrgRows] = await Promise.all([
+      const [orgResp, orgUnitRows, secondaryOrgRows, assignmentRows, snapshotRows] = await Promise.all([
         fetchTab('getOrg', orgEtagRef.current),
         fetchTab('getOrgStructure').then(r => r.rows ?? r.users ?? []).catch(() => [] as Record<string, unknown>[]),
         fetchTab('getSecondaryOrgs').then(r => r.rows ?? r.users ?? []).catch(() => [] as Record<string, unknown>[]),
+        // R1: 평가권/스냅샷 — Apps Script 미배포 시 빈 배열로 폴백
+        fetchTab('getAssignments').then(r => r.rows ?? []).catch(() => [] as Record<string, unknown>[]),
+        fetchTab('getSnapshots').then(r => r.rows ?? []).catch(() => [] as Record<string, unknown>[]),
       ]);
 
+      const orgUnits     = parseOrgUnits(orgUnitRows as Record<string, unknown>[]);
+      const secondary    = parseSecondaryOrgs(secondaryOrgRows as Record<string, unknown>[]);
+      const assignments  = parseReviewerAssignments(assignmentRows as Record<string, unknown>[]);
+      const snapshots    = parseOrgSnapshots(snapshotRows as Record<string, unknown>[]);
+
       if (orgResp.unchanged) {
-        // 시트 변경 없음 — 파싱·렌더 스킵, 조직구조/겸임만 갱신
+        // 시트 변경 없음 — 파싱·렌더 스킵, 조직구조/겸임/평가권/스냅샷만 갱신
         syncFromSheet(
           useTeamStore.getState().users,
-          parseOrgUnits(orgUnitRows as Record<string, unknown>[]),
-          parseSecondaryOrgs(secondaryOrgRows as Record<string, unknown>[]),
+          orgUnits,
+          secondary,
+          assignments,
+          snapshots,
         );
       } else {
         if (orgResp.etag) orgEtagRef.current = orgResp.etag;
         const parsedUsers = parseSheetUsers(orgResp.rows ?? orgResp.users ?? []);
         // 시트가 비어 있으면 로컬 데이터 보존
         if (parsedUsers.length === 0) return;
-        syncFromSheet(
-          parsedUsers,
-          parseOrgUnits(orgUnitRows as Record<string, unknown>[]),
-          parseSecondaryOrgs(secondaryOrgRows as Record<string, unknown>[]),
-        );
+        syncFromSheet(parsedUsers, orgUnits, secondary, assignments, snapshots);
       }
 
       setOrgLastSyncedAt(new Date().toISOString());

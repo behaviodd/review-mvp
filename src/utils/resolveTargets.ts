@@ -30,7 +30,7 @@ export function resolveTargetMembers(
   }
 
   return users.filter(u =>
-    cycle.targetDepartments.includes(u.department) && u.role !== 'admin'
+    cycle.targetDepartments.includes(u.department ?? '') && u.role !== 'admin'
   );
 }
 

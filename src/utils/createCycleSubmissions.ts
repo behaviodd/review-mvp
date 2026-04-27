@@ -1,11 +1,54 @@
-import type { OrgUnit, ReviewCycle, ReviewKind, ReviewSubmission, User } from '../types';
+import type { OrgUnit, ReviewCycle, ReviewKind, ReviewSubmission, ReviewerAssignment, User } from '../types';
 
 function makeId() {
   return `sub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function resolveManager(member: User, allUsers: User[], orgUnits: OrgUnit[]): User | undefined {
+/**
+ * R1: 평가자 결정.
+ * 1순위: ReviewerAssignment(rank=1, 활성) — useTeamStore.reviewerAssignments
+ *        호출자가 assignments 를 전달하면 우선 사용.
+ * 2순위: user.managerId (legacy)
+ * 3순위: orgUnitId 또는 legacy 4단계 텍스트와 매칭되는 OrgUnit.headId
+ *
+ * R3 에서 `assignments` 를 필수 인자로 승격하고 2~3 순위 제거 예정.
+ */
+function resolveManager(
+  member: User,
+  allUsers: User[],
+  orgUnits: OrgUnit[],
+  assignments?: ReviewerAssignment[],
+): User | undefined {
+  // 1) ReviewerAssignment (rank=1) 활성 항목
+  if (assignments) {
+    const ra = assignments.find(a =>
+      a.revieweeId === member.id && a.rank === 1 && !a.endDate
+    );
+    if (ra) {
+      const reviewer = allUsers.find(u => u.id === ra.reviewerId);
+      if (reviewer && reviewer.role !== 'admin') return reviewer;
+    }
+  }
+
+  // 2) legacy: user.managerId
   let manager = allUsers.find(u => u.id === member.managerId);
+
+  // 3) orgUnitId 트리에서 headId 탐색
+  if (!manager || manager.role === 'admin') {
+    let cursor = orgUnits.find(o => o.id === member.orgUnitId);
+    while (cursor) {
+      if (cursor.headId && cursor.headId !== member.id) {
+        const head = allUsers.find(u => u.id === cursor!.headId);
+        if (head && head.role !== 'admin') {
+          manager = head;
+          break;
+        }
+      }
+      cursor = cursor.parentId ? orgUnits.find(o => o.id === cursor!.parentId) : undefined;
+    }
+  }
+
+  // 4) legacy: dept/subOrg/team/squad 이름 매칭 (마이그 전 데이터 호환)
   if (!manager || manager.role === 'admin') {
     const memberOrg = orgUnits.find(o =>
       o.headId &&
@@ -17,6 +60,7 @@ function resolveManager(member: User, allUsers: User[], orgUnits: OrgUnit[]): Us
     );
     if (memberOrg?.headId) manager = allUsers.find(u => u.id === memberOrg.headId);
   }
+
   if (!manager || manager.role === 'admin') return undefined;
   return manager;
 }
@@ -39,6 +83,7 @@ export function createCycleSubmissions(
   allUsers: User[],
   orgUnits: OrgUnit[] = [],
   cycle?: Pick<ReviewCycle, 'reviewKinds'>,
+  assignments?: ReviewerAssignment[],
 ): ReviewSubmission[] {
   const now = new Date().toISOString();
   const submissions: ReviewSubmission[] = [];
@@ -49,7 +94,7 @@ export function createCycleSubmissions(
 
   for (const member of targetMembers) {
     if (member.role === 'admin') continue;
-    const manager = resolveManager(member, allUsers, orgUnits);
+    const manager = resolveManager(member, allUsers, orgUnits, assignments);
 
     if (include('self')) {
       submissions.push({

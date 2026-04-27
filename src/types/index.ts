@@ -1,4 +1,5 @@
 export type UserRole = 'admin' | 'leader' | 'member';
+/** @deprecated R3 에서 제거 — 자유 재귀 트리는 depth 로 표현. 호환 어댑터 userCompat.ts 참조. */
 export type OrgUnitType = 'mainOrg' | 'subOrg' | 'team' | 'squad';
 export type ReviewStatus = 'draft' | 'active' | 'self_review' | 'manager_review' | 'calibration' | 'closed';
 export type ReviewType = 'scheduled' | 'adhoc';
@@ -8,37 +9,103 @@ export type SubmissionStatus = 'not_started' | 'in_progress' | 'submitted';
 export type GoalStatus = 'on_track' | 'at_risk' | 'completed' | 'cancelled';
 export type NotificationType = 'deadline' | 'feedback' | 'review_result' | 'system';
 
+// R1: 휴직 분류 4종 + active. 기존 User.isActive 를 대체.
+export type ActivityStatus =
+  | 'active'        // 정상 근무
+  | 'leave_short'   // 단기 휴직 (사이클 기본 포함, 옵션으로 제외 가능)
+  | 'leave_long'    // 장기 휴직 (사이클 자동 제외 권장)
+  | 'terminated'    // 퇴사 (사이클 자동 제외)
+  | 'other';        // 기타 (관리자 판단)
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  department: string;   // 주조직명 (backward compat + 리뷰 타겟팅 기준)
   position: string;
-  managerId?: string;
   avatarColor: string;
-  // 계층 조직 (다단계)
-  subOrg?: string;      // 부조직명
-  team?: string;        // 팀명
-  squad?: string;       // 스쿼드명
+  // R1: 단일 주조직 (자유 재귀 트리에서 OrgUnit.id 참조)
+  orgUnitId?: string;          // 마이그레이션 후 모든 사용자에 채워짐
+  // R1: 휴직 분류 (기존 isActive/leaveDate 대체)
+  activityStatus?: ActivityStatus;
+  statusChangedAt?: string;
+  statusReason?: string;
   // 시트 연동 확장 필드
   nameEn?: string;
   phone?: string;
   joinDate?: string;
   jobFunction?: string;
+
+  /** @deprecated R3 에서 제거. orgUnitId + OrgUnit 트리에서 mainOrg 이름 조회 → userCompat.legacyDepartment(). 단 R1 동안 호환을 위해 항상 값 유지. */
+  department: string;
+  /** @deprecated R3 에서 제거. userCompat.legacySubOrg() 사용. */
+  subOrg?: string;
+  /** @deprecated R3 에서 제거. userCompat.legacyTeam() 사용. */
+  team?: string;
+  /** @deprecated R3 에서 제거. userCompat.legacySquad() 사용. */
+  squad?: string;
+  /** @deprecated R5 에서 SecondaryOrgAssignment 로 일원화. */
   secondaryDept?: string;
+  /** @deprecated R5 에서 SecondaryOrgAssignment 로 일원화. */
   secondaryPosition?: string;
+  /** @deprecated R3 에서 제거. activityStatus 사용 (active/terminated 등). userCompat.isUserActive() 사용. */
   isActive?: boolean;
+  /** @deprecated R3 에서 제거. statusChangedAt 사용. */
   leaveDate?: string;
+  /** @deprecated R3 에서 제거. ReviewerAssignment(rank=1) 로 이전됨. */
+  managerId?: string;
 }
 
 export interface OrgUnit {
   id: string;
   name: string;
+  /** @deprecated R3 에서 제거 — 자유 재귀 트리는 depth 로만 표현. 호환은 userCompat.getOrgDepth(). 단 R1 동안 값 유지. */
   type: OrgUnitType;
-  parentId?: string;
-  headId?: string;   // 조직장 사번
+  parentId?: string;          // null 또는 undefined = 루트
+  headId?: string;            // 조직 리더 (목표 승인 + 일부 UI 가시성)
   order: number;
+}
+
+// R1: 평가권 테이블. 조직 리더(orgUnit.headId)와 분리되어 별도 운영.
+export type ReviewerAssignmentSource =
+  | 'org_head_inherited'  // 조직 리더 자동 부여 (시드 시 사용)
+  | 'manual'              // 직접 지정
+  | 'excel_import';       // 엑셀 일괄 업로드
+
+export interface ReviewerAssignment {
+  id: string;                   // 'ra_<random>'
+  revieweeId: string;
+  reviewerId: string;
+  rank: number;                 // 1~N (UI 는 1~5 강제, 데이터는 무제한)
+  source: ReviewerAssignmentSource;
+  startDate: string;            // ISO
+  endDate?: string;             // 활성: undefined
+  createdAt: string;
+  createdBy: string;            // actorId
+  note?: string;
+}
+
+// R1: 인사 스냅샷. 사이클 발행 시 자동 생성 (hrSnapshotMode='snapshot' 일 때).
+export interface OrgSnapshot {
+  id: string;                   // 'snap_<random>'
+  createdAt: string;
+  createdBy: string;
+  description: string;
+  // 시점 동결 데이터 — 깊은 복제
+  users: User[];
+  orgUnits: OrgUnit[];
+  assignments: ReviewerAssignment[];
+}
+
+// R1: 마스터 로그인 감사 로그 (R5-b 에서 UI 활성화).
+export interface ImpersonationLog {
+  id: string;                   // 'imp_<random>'
+  actorId: string;              // 마스터 로그인 한 admin
+  targetUserId: string;
+  startedAt: string;
+  endedAt?: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 export interface SecondaryOrgAssignment {
@@ -92,6 +159,9 @@ export interface ReviewCycle {
   peerSelection?: PeerSelectionPolicy;
   // Phase 3.3c-2
   distribution?: DistributionPolicy;
+  // R1: 인사정보 적용 방식
+  hrSnapshotMode?: 'live' | 'snapshot';   // 기본 R4 에서 'snapshot' 으로 변경, R1 은 미설정 = 'live' 호환
+  hrSnapshotId?: string;                  // 'snapshot' 모드 시 OrgSnapshot.id
 }
 
 export interface CycleFolder {
@@ -259,7 +329,16 @@ export type AuditAction =
   | 'submission.reviewer_reassigned'
   | 'submission.proxy_write_started'
   | 'submission.proxy_submitted'
-  | 'submission.reopened';
+  | 'submission.reopened'
+  // R1: 평가권/스냅샷/마스터 로그인
+  | 'reviewer_assignment.created'
+  | 'reviewer_assignment.ended'
+  | 'reviewer_assignment.bulk_inherit'
+  | 'org_snapshot.created'
+  | 'auth.impersonate_start'
+  | 'auth.impersonate_end'
+  | 'org.user_status_changed'
+  | 'org.migrated_to_r1';
 
 export interface AuditLogEntry {
   id: string;

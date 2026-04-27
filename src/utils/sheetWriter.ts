@@ -2,7 +2,10 @@
  * 앱 → Google Sheets 쓰기 유틸리티
  * /api/org-sync 프록시를 통해 Apps Script doPost() 를 호출함.
  */
-import type { User, OrgUnit, SecondaryOrgAssignment } from '../types';
+import type {
+  User, OrgUnit, SecondaryOrgAssignment,
+  ReviewerAssignment, OrgSnapshot, ImpersonationLog,
+} from '../types';
 import { getScriptHeaders } from './scriptHeaders';
 
 /* ── 사번 자동 생성 ────────────────────────────────────────────────── */
@@ -21,7 +24,7 @@ export function generateEmployeeId(users: User[]): string {
 function toSheetRow(user: User, active = true): Record<string, string> {
   const row: Record<string, string> = {
     '사번':           user.id,
-    '주조직':         user.department,
+    '주조직':         user.department    ?? '',
     '부조직':         user.subOrg        ?? '',
     '팀':             user.team          ?? '',
     '스쿼드':         user.squad         ?? '',
@@ -34,17 +37,65 @@ function toSheetRow(user: User, active = true): Record<string, string> {
     '이메일':         user.email,
     '재직 여부':      active ? 'true' : 'false',
     '보고대상(사번)':  user.managerId     ?? '',
+    // R1: 신규 컬럼
+    '주조직ID':       user.orgUnitId     ?? '',
+    '상태분류':       user.activityStatus ?? '',
+    '상태변경일시':   user.statusChangedAt ?? '',
+    '상태사유':       user.statusReason  ?? '',
   };
   // position이 비어 있으면 역할 키를 생략 → patchRow가 기존 시트 값 유지
   if (user.position) row['역할'] = user.position;
   return row;
 }
 
+// R1: 평가권/스냅샷/임퍼소네이션 행 매핑
+
+function reviewerAssignmentToRow(a: ReviewerAssignment): Record<string, string> {
+  return {
+    '평가권ID':     a.id,
+    '피평가자사번': a.revieweeId,
+    '평가자사번':   a.reviewerId,
+    '차수':         String(a.rank),
+    '부여출처':     a.source,
+    '시작일':       a.startDate,
+    '종료일':       a.endDate ?? '',
+    '생성일시':     a.createdAt,
+    '생성자':       a.createdBy,
+    '비고':         a.note ?? '',
+  };
+}
+
+function orgSnapshotToRow(s: OrgSnapshot): Record<string, string> {
+  return {
+    '스냅샷ID':   s.id,
+    '생성일시':   s.createdAt,
+    '생성자':     s.createdBy,
+    '설명':       s.description,
+    'payloadJSON': JSON.stringify({
+      users: s.users,
+      orgUnits: s.orgUnits,
+      assignments: s.assignments,
+    }),
+  };
+}
+
+function impersonationLogToRow(l: ImpersonationLog): Record<string, string> {
+  return {
+    '로그ID':      l.id,
+    '작업자사번':  l.actorId,
+    '대상사번':    l.targetUserId,
+    '시작일시':    l.startedAt,
+    '종료일시':    l.endedAt   ?? '',
+    'IP':          l.ip        ?? '',
+    'UserAgent':   l.userAgent ?? '',
+  };
+}
+
 function orgUnitToRow(u: OrgUnit): Record<string, string> {
   return {
     '조직ID':     u.id,
     '조직명':     u.name,
-    '조직유형':   u.type,
+    '조직유형':   u.type ?? '',
     '상위조직ID': u.parentId    ?? '',
     '조직장사번': u.headId      ?? '',
     '순서':       String(u.order),
@@ -148,4 +199,31 @@ export const sheetWriter = {
   batchUpsert: (users: User[]) =>
     postPayload({ action: 'batchUpsertUsers', rows: users.map(u => toSheetRow(u)) })
       .catch(e => console.error('[Sheet] batchUpsert:', e)),
+};
+
+/* ── R1: 평가권 시트 ──────────────────────────────────────────────── */
+export const reviewerAssignmentWriter = {
+  upsert: (a: ReviewerAssignment) =>
+    post('upsertAssignment', reviewerAssignmentToRow(a))
+      .catch(e => console.error('[Sheet] assignment upsert:', e)),
+  end: (assignmentId: string, endDate: string) =>
+    post('endAssignment', { '평가권ID': assignmentId, '종료일': endDate })
+      .catch(e => console.error('[Sheet] assignment end:', e)),
+};
+
+/* ── R1: 인사 스냅샷 시트 ─────────────────────────────────────────── */
+export const orgSnapshotWriter = {
+  create: (s: OrgSnapshot) =>
+    post('createSnapshot', orgSnapshotToRow(s))
+      .catch(e => console.error('[Sheet] snapshot create:', e)),
+};
+
+/* ── R1: 마스터 로그인 감사 로그 시트 ──────────────────────────────── */
+export const impersonationLogWriter = {
+  start: (l: ImpersonationLog) =>
+    post('logImpersonationStart', impersonationLogToRow(l))
+      .catch(e => console.error('[Sheet] impersonation start:', e)),
+  end: (logId: string, endedAt: string) =>
+    post('logImpersonationEnd', { '로그ID': logId, '종료일시': endedAt })
+      .catch(e => console.error('[Sheet] impersonation end:', e)),
 };

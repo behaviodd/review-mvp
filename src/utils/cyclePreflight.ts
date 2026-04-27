@@ -1,5 +1,6 @@
-import type { OrgUnit, ReviewCycle, ReviewTemplate, User } from '../types';
+import type { OrgUnit, ReviewCycle, ReviewTemplate, ReviewerAssignment, User } from '../types';
 import { resolveTargetMembers, resolveTargetIds } from './resolveTargets';
+import { isUserActive, shouldAutoExcludeFromCycle } from './userCompat';
 
 export type PreflightSeverity = 'block' | 'warn';
 
@@ -22,13 +23,41 @@ function isWeekend(iso: string): boolean {
   return d === 0 || d === 6;
 }
 
+/**
+ * R1: assignments 우선 → managerId → orgUnitId 트리 → legacy 4단계 매칭.
+ */
 function resolveManager(
   member: User,
   allUsers: User[],
   orgUnits: OrgUnit[],
+  assignments?: ReviewerAssignment[],
 ): User | undefined {
+  // 1) ReviewerAssignment(rank=1) 활성
+  if (assignments) {
+    const ra = assignments.find(a =>
+      a.revieweeId === member.id && a.rank === 1 && !a.endDate
+    );
+    if (ra) {
+      const reviewer = allUsers.find(u => u.id === ra.reviewerId);
+      if (reviewer && reviewer.role !== 'admin' && isUserActive(reviewer)) return reviewer;
+    }
+  }
+
+  // 2) legacy: managerId
   let mgr = allUsers.find(u => u.id === member.managerId);
-  if (mgr && mgr.role !== 'admin' && mgr.isActive !== false) return mgr;
+  if (mgr && mgr.role !== 'admin' && isUserActive(mgr)) return mgr;
+
+  // 3) orgUnitId 트리에서 headId
+  let cursor = orgUnits.find(o => o.id === member.orgUnitId);
+  while (cursor) {
+    if (cursor.headId && cursor.headId !== member.id) {
+      const head = allUsers.find(u => u.id === cursor!.headId);
+      if (head && head.role !== 'admin' && isUserActive(head)) return head;
+    }
+    cursor = cursor.parentId ? orgUnits.find(o => o.id === cursor!.parentId) : undefined;
+  }
+
+  // 4) legacy: 부서명 매칭
   const memberOrg = orgUnits.find(o =>
     o.headId &&
     o.headId !== member.id &&
@@ -39,7 +68,7 @@ function resolveManager(
   );
   if (memberOrg?.headId) {
     mgr = allUsers.find(u => u.id === memberOrg.headId);
-    if (mgr && mgr.role !== 'admin' && mgr.isActive !== false) return mgr;
+    if (mgr && mgr.role !== 'admin' && isUserActive(mgr)) return mgr;
   }
   return undefined;
 }
@@ -53,28 +82,31 @@ export function runPreflight(params: {
   users: User[];
   orgUnits: OrgUnit[];
   template: ReviewTemplate | undefined;
+  assignments?: ReviewerAssignment[];
 }): PreflightResult {
-  const { cycle, allCycles, users, orgUnits, template } = params;
+  const { cycle, allCycles, users, orgUnits, template, assignments } = params;
   const checks: PreflightCheck[] = [];
 
   const targetMembers = resolveTargetMembers(cycle, users);
   const today = new Date().toISOString().slice(0, 10);
 
-  // 1. 활성/퇴사 분리
-  const inactive = targetMembers.filter(u => u.isActive === false || (u.leaveDate && u.leaveDate <= today));
+  // 1. 비활성/퇴사 분리 — R1: shouldAutoExcludeFromCycle 사용 (terminated/leave_long)
+  const inactive = targetMembers.filter(u =>
+    shouldAutoExcludeFromCycle(u) || (u.leaveDate && u.leaveDate <= today)
+  );
   if (inactive.length > 0) {
     checks.push({
       id: 'inactive_targets',
       severity: 'warn',
       title: '대상자 중 비활성/퇴사 예정자 포함',
-      detail: `${inactive.length}명이 퇴사 또는 비활성 상태입니다. 발행 시 자동 제외되지 않으므로 수동으로 대상에서 빼주세요.`,
+      detail: `${inactive.length}명이 퇴사 또는 장기휴직 상태입니다. 발행 시 자동 제외되지 않으므로 수동으로 대상에서 빼주세요.`,
       affectedIds: inactive.map(u => u.id),
     });
   }
 
   // 2. 매니저 미배정 (차단)
   const activeMembers = targetMembers.filter(u => !inactive.includes(u));
-  const missingMgr = activeMembers.filter(u => !resolveManager(u, users, orgUnits));
+  const missingMgr = activeMembers.filter(u => !resolveManager(u, users, orgUnits, assignments));
   if (missingMgr.length > 0) {
     checks.push({
       id: 'missing_managers',

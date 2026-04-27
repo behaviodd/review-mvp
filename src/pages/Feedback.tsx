@@ -110,7 +110,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
   const filteredRecipients = q
     ? recipients.filter(u =>
         u.name.toLowerCase().includes(q) ||
-        u.department.toLowerCase().includes(q) ||
+        (u.department ?? '').toLowerCase().includes(q) ||
         u.position.toLowerCase().includes(q),
       )
     : recipients;

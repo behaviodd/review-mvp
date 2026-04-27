@@ -144,7 +144,7 @@ export function exportCycleToCSV(
   allUsers: User[],
 ): void {
   const targetMembers = allUsers.filter(
-    u => cycle.targetDepartments.includes(u.department) && u.role !== 'admin',
+    u => cycle.targetDepartments.includes(u.department ?? '') && u.role !== 'admin',
   );
 
   const questions = [...template.questions].sort((a, b) => a.order - b.order);

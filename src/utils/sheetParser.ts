@@ -1,4 +1,7 @@
-import type { User, UserRole, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
+import type {
+  User, UserRole, OrgUnit, OrgUnitType, SecondaryOrgAssignment,
+  ActivityStatus, ReviewerAssignment, ReviewerAssignmentSource, OrgSnapshot, ImpersonationLog,
+} from '../types';
 
 /* ── 아바타 색상: 사번 해시로 자동 배정 ─────────────────────────────── */
 const AVATAR_COLORS = [
@@ -71,6 +74,16 @@ export function parseSheetUser(row: SheetRow): User | null {
       ? (roleRaw as UserRole)
       : deriveRole(position);
 
+  // R1: 신규 컬럼 (있으면 사용, 없으면 undefined)
+  const orgUnitId      = str(row['주조직ID']) || undefined;
+  const rawStatus      = str(row['상태분류']);
+  const validStatuses: ActivityStatus[] = ['active', 'leave_short', 'leave_long', 'terminated', 'other'];
+  const activityStatus = validStatuses.includes(rawStatus as ActivityStatus)
+    ? (rawStatus as ActivityStatus)
+    : undefined;
+  const statusChangedAt = str(row['상태변경일시']) || undefined;
+  const statusReason    = str(row['상태사유']) || undefined;
+
   return {
     id,
     name,
@@ -88,6 +101,11 @@ export function parseSheetUser(row: SheetRow): User | null {
     joinDate:        normalizeDate(str(row['입사일'])),
     jobFunction:     str(row['직무'])     || undefined,
     isActive: str(row['재직 여부']).toLowerCase() !== 'false',
+    // R1
+    orgUnitId,
+    activityStatus,
+    statusChangedAt,
+    statusReason,
   };
 }
 
@@ -135,6 +153,85 @@ export function parseSecondaryOrg(row: SheetRow): SecondaryOrgAssignment | null 
 
 export function parseSecondaryOrgs(rows: SheetRow[]): SecondaryOrgAssignment[] {
   return rows.map(parseSecondaryOrg).filter((a): a is SecondaryOrgAssignment => a !== null);
+}
+
+/* ── R1: 평가권 시트 파싱 ──────────────────────────────────────── */
+const VALID_RA_SOURCES: ReviewerAssignmentSource[] = ['org_head_inherited', 'manual', 'excel_import'];
+export function parseReviewerAssignment(row: SheetRow): ReviewerAssignment | null {
+  const id         = str(row['평가권ID']);
+  const revieweeId = str(row['피평가자사번']);
+  const reviewerId = str(row['평가자사번']);
+  if (!id || !revieweeId || !reviewerId) return null;
+  const rank   = parseInt(str(row['차수']), 10) || 1;
+  const rawSrc = str(row['부여출처']);
+  const source: ReviewerAssignmentSource = VALID_RA_SOURCES.includes(rawSrc as ReviewerAssignmentSource)
+    ? (rawSrc as ReviewerAssignmentSource)
+    : 'manual';
+  return {
+    id,
+    revieweeId,
+    reviewerId,
+    rank,
+    source,
+    startDate: str(row['시작일']) || new Date().toISOString(),
+    endDate:   str(row['종료일']) || undefined,
+    createdAt: str(row['생성일시']) || new Date().toISOString(),
+    createdBy: str(row['생성자']) || 'unknown',
+    note:      str(row['비고']) || undefined,
+  };
+}
+
+export function parseReviewerAssignments(rows: SheetRow[]): ReviewerAssignment[] {
+  return rows.map(parseReviewerAssignment).filter((a): a is ReviewerAssignment => a !== null);
+}
+
+/* ── R1: 인사 스냅샷 시트 파싱 ─────────────────────────────────── */
+export function parseOrgSnapshot(row: SheetRow): OrgSnapshot | null {
+  const id = str(row['스냅샷ID']);
+  if (!id) return null;
+  const payloadRaw = str(row['payloadJSON']);
+  let payload: { users: User[]; orgUnits: OrgUnit[]; assignments: ReviewerAssignment[] } = {
+    users: [], orgUnits: [], assignments: [],
+  };
+  try {
+    if (payloadRaw) payload = JSON.parse(payloadRaw);
+  } catch (e) {
+    console.warn('[parseOrgSnapshot] payload parse failed', id, e);
+  }
+  return {
+    id,
+    createdAt:   str(row['생성일시']) || new Date().toISOString(),
+    createdBy:   str(row['생성자']) || 'unknown',
+    description: str(row['설명']),
+    users:       payload.users ?? [],
+    orgUnits:    payload.orgUnits ?? [],
+    assignments: payload.assignments ?? [],
+  };
+}
+
+export function parseOrgSnapshots(rows: SheetRow[]): OrgSnapshot[] {
+  return rows.map(parseOrgSnapshot).filter((s): s is OrgSnapshot => s !== null);
+}
+
+/* ── R1: 마스터 로그인 감사 로그 파싱 ──────────────────────────── */
+export function parseImpersonationLog(row: SheetRow): ImpersonationLog | null {
+  const id = str(row['로그ID']);
+  const actorId = str(row['작업자사번']);
+  const targetUserId = str(row['대상사번']);
+  if (!id || !actorId || !targetUserId) return null;
+  return {
+    id,
+    actorId,
+    targetUserId,
+    startedAt: str(row['시작일시']) || new Date().toISOString(),
+    endedAt:   str(row['종료일시']) || undefined,
+    ip:        str(row['IP']) || undefined,
+    userAgent: str(row['UserAgent']) || undefined,
+  };
+}
+
+export function parseImpersonationLogs(rows: SheetRow[]): ImpersonationLog[] {
+  return rows.map(parseImpersonationLog).filter((l): l is ImpersonationLog => l !== null);
 }
 
 /* ── 배열 파싱 ───────────────────────────────────────────────────────── */

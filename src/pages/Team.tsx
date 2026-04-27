@@ -6,6 +6,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useShowToast } from '../components/ui/Toast';
 import { resetAccount } from '../utils/authApi';
+import { isUserActive } from '../utils/userCompat';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { KeyRound, Layers, Users } from 'lucide-react';
@@ -39,7 +40,7 @@ function matchesSearch(u: User, q: string) {
   return (
     u.name.toLowerCase().includes(lq) ||
     u.position.toLowerCase().includes(lq) ||
-    u.department.toLowerCase().includes(lq) ||
+    (u.department ?? '').toLowerCase().includes(lq) ||
     u.email.toLowerCase().includes(lq)
   );
 }
@@ -747,7 +748,7 @@ function OrgUnitFormModal({
   const [name,   setName]   = useState(editing?.name   ?? '');
   const [headId, setHeadId] = useState(editing?.headId ?? '');
 
-  const eligibleHeads = users.filter(u => u.isActive !== false);
+  const eligibleHeads = users.filter(u => isUserActive(u));
   const title = isEdit
     ? `${ORG_TYPE_LABEL[type]} 편집`
     : `${ORG_TYPE_LABEL[type]} 추가${parentUnit ? ` — ${parentUnit.name}` : ''}`;
@@ -841,7 +842,7 @@ function OrgTreeNode({
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
     const primaryIds = new Set(
-      users.filter(u => u[key[unit.type]] === unit.name && u.isActive !== false).map(u => u.id)
+      users.filter(u => u[key[unit.type]] === unit.name && isUserActive(u)).map(u => u.id)
     );
     const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !primaryIds.has(a.userId)).length;
     return primaryIds.size + secondaryExtra;
@@ -1115,7 +1116,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       구성원 추가
     </MsButton>
   ) : undefined, [canEdit, selectedOrgId, orgUnits]);
-  const activeUserCount = users.filter(u => u.isActive !== false).length;
+  const activeUserCount = users.filter(u => isUserActive(u)).length;
   useSetPageHeader('구성원', headerActions, {
     subtitle: `구성원 ${activeUserCount}명 · 조직 ${orgUnits.length}개`,
   });
@@ -1200,7 +1201,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
 
     // 각 구성원이 변경된 조직 중 가장 하위 조직에 속하는지 확인 후 경로 재계산
-    for (const user of users.filter(u => u.isActive !== false && u.role !== 'admin')) {
+    for (const user of users.filter(u => isUserActive(u) && u.role !== 'admin')) {
       let bestId: string | null = null;
       let bestDepth = -1;
       for (const c of orgChanges) {
@@ -1319,8 +1320,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     onDrop: handleDrop,
   };
 
-  const activeUsers     = useMemo(() => users.filter(u => u.isActive !== false), [users]);
-  const terminatedUsers = useMemo(() => users.filter(u => u.isActive === false), [users]);
+  const activeUsers     = useMemo(() => users.filter(u => isUserActive(u)), [users]);
+  const terminatedUsers = useMemo(() => users.filter(u => !isUserActive(u)), [users]);
 
   const totalNonAdmin = activeUsers.filter(u => u.role !== 'admin').length;
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);

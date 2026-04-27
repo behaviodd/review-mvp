@@ -24,6 +24,10 @@ var SHEET_TEMPLATES   = '_템플릿';
 var SHEET_SUBMISSIONS = '_제출';
 var SHEET_ACCOUNTS    = '_계정';
 var SHEET_AUDIT       = '_감사로그';
+// R1: 평가권 / 인사 스냅샷 / 마스터 로그인
+var SHEET_ASSIGNMENTS = '_평가권';
+var SHEET_SNAPSHOTS   = '_인사스냅샷';
+var SHEET_IMPLOG      = '_마스터로그인';
 
 /* ── 헤더 정의 ──────────────────────────────────────────────────
  * 신규 컬럼은 항상 뒤에만 추가. upsertRow / appendRowData 가 자동 보강하므로
@@ -33,7 +37,9 @@ var USER_HEADERS = [
   '사번', '주조직', '부조직', '팀', '스쿼드', '직책', '역할',
   '겸임 조직', '겸임 조직 직책', '직무',
   '성명', '영문이름', '입사일', '연락처', '이메일',
-  '재직 여부', '보고대상(사번)'
+  '재직 여부', '보고대상(사번)',
+  // R1
+  '주조직ID', '상태분류', '상태변경일시', '상태사유'
 ];
 var ORG_HEADERS = [
   '조직ID', '조직명', '조직유형', '상위조직ID', '조직장사번', '순서'
@@ -54,7 +60,25 @@ var CYCLE_HEADERS = [
   // Phase 3.3a
   '익명정책JSON', '공개정책JSON', '참고정보JSON',
   // Phase 3.3b-1
-  '리뷰유형', '동료선택정책JSON'
+  '리뷰유형', '동료선택정책JSON',
+  // R1: 인사정보 적용 방식
+  '인사적용방식', '인사스냅샷ID'
+];
+
+// R1: 평가권 시트
+var ASSIGNMENT_HEADERS = [
+  '평가권ID', '피평가자사번', '평가자사번', '차수', '부여출처',
+  '시작일', '종료일', '생성일시', '생성자', '비고'
+];
+
+// R1: 인사 스냅샷 시트
+var SNAPSHOT_HEADERS = [
+  '스냅샷ID', '생성일시', '생성자', '설명', 'payloadJSON'
+];
+
+// R1: 마스터 로그인 감사 로그
+var IMPLOG_HEADERS = [
+  '로그ID', '작업자사번', '대상사번', '시작일시', '종료일시', 'IP', 'UserAgent'
 ];
 var TEMPLATE_HEADERS = [
   '템플릿ID', '이름', '설명', '기본템플릿', '생성자ID', '생성일시', '질문JSON'
@@ -293,6 +317,17 @@ function doGet(e) {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_AUDIT, AUDIT_HEADERS)) });
     }
 
+    /* R1: 평가권 / 스냅샷 / 마스터 로그인 */
+    if (action === 'getAssignments') {
+      return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS)) });
+    }
+    if (action === 'getSnapshots') {
+      return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_SNAPSHOTS, SNAPSHOT_HEADERS)) });
+    }
+    if (action === 'getImpersonationLogs') {
+      return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_IMPLOG, IMPLOG_HEADERS)) });
+    }
+
     return jsonResponse({ error: '알 수 없는 action: ' + action });
   } catch (err) {
     return jsonResponse({ error: String(err) });
@@ -529,6 +564,44 @@ function doPost(e) {
       return jsonResponse({ ok: true });
     }
 
+    /* ── R1: 평가권 ── */
+    if (action === 'upsertAssignment') {
+      upsertRow(getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS), ASSIGNMENT_HEADERS, '평가권ID', data);
+      return jsonResponse({ ok: true });
+    }
+    if (action === 'endAssignment') {
+      var assignSheet = getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS);
+      var rowNum = findRowByKey(assignSheet, '평가권ID', data['평가권ID']);
+      if (rowNum > 0) {
+        var hdrs = assignSheet.getRange(1, 1, 1, assignSheet.getLastColumn()).getValues()[0];
+        var col  = hdrs.indexOf('종료일') + 1;
+        if (col > 0) assignSheet.getRange(rowNum, col).setValue(data['종료일'] || new Date().toISOString());
+      }
+      return jsonResponse({ ok: true });
+    }
+
+    /* ── R1: 인사 스냅샷 ── */
+    if (action === 'createSnapshot') {
+      appendRowData(getSheet(SHEET_SNAPSHOTS, SNAPSHOT_HEADERS), SNAPSHOT_HEADERS, data);
+      return jsonResponse({ ok: true });
+    }
+
+    /* ── R1: 마스터 로그인 감사 ── */
+    if (action === 'logImpersonationStart') {
+      appendRowData(getSheet(SHEET_IMPLOG, IMPLOG_HEADERS), IMPLOG_HEADERS, data);
+      return jsonResponse({ ok: true });
+    }
+    if (action === 'logImpersonationEnd') {
+      var implogSheet = getSheet(SHEET_IMPLOG, IMPLOG_HEADERS);
+      var rowNum2 = findRowByKey(implogSheet, '로그ID', data['로그ID']);
+      if (rowNum2 > 0) {
+        var hdrs2 = implogSheet.getRange(1, 1, 1, implogSheet.getLastColumn()).getValues()[0];
+        var col2  = hdrs2.indexOf('종료일시') + 1;
+        if (col2 > 0) implogSheet.getRange(rowNum2, col2).setValue(data['종료일시'] || new Date().toISOString());
+      }
+      return jsonResponse({ ok: true });
+    }
+
     return jsonResponse({ error: '알 수 없는 action: ' + action });
   } catch (err) {
     return jsonResponse({ error: String(err) });
@@ -555,5 +628,176 @@ function migrate_addMissingColumns() {
   ensureHeaders(getSheet(SHEET_SUBMISSIONS, SUBMISSION_HEADERS), SUBMISSION_HEADERS);
   ensureHeaders(getSheet(SHEET_ACCOUNTS,    ACCOUNT_HEADERS),    ACCOUNT_HEADERS);
   ensureHeaders(getSheet(SHEET_AUDIT,       AUDIT_HEADERS),      AUDIT_HEADERS);
-  Logger.log('마이그레이션 완료 — 8개 시트 헤더 점검됨.');
+  // R1: 신규 시트 3종
+  ensureHeaders(getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS), ASSIGNMENT_HEADERS);
+  ensureHeaders(getSheet(SHEET_SNAPSHOTS,   SNAPSHOT_HEADERS),   SNAPSHOT_HEADERS);
+  ensureHeaders(getSheet(SHEET_IMPLOG,      IMPLOG_HEADERS),     IMPLOG_HEADERS);
+  Logger.log('마이그레이션 완료 — 11개 시트 헤더 점검됨 (R1).');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   R1 마이그레이션 — _구성원 시트의 기존 데이터를 신규 컬럼에 채워넣음
+   + _평가권 시트에 시드 데이터 생성.
+   1회 실행 후에는 멱등 (이미 채워진 행은 건드리지 않음).
+   ══════════════════════════════════════════════════════════════════ */
+function migrateUsersToR1() {
+  // 사전: 컬럼 보강
+  migrate_addMissingColumns();
+
+  var userSheet     = getSheet(SHEET_USERS, USER_HEADERS);
+  var users         = sheetToObjects(userSheet);
+  var orgSheet      = getSheet(SHEET_ORG, ORG_HEADERS);
+  var orgUnits      = sheetToObjects(orgSheet);
+  var assignSheet   = getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS);
+  var existAssigns  = sheetToObjects(assignSheet);
+
+  // 활성 평가권 키 셋
+  var activeKeys = {};
+  existAssigns.forEach(function(a) {
+    if (!a['종료일']) {
+      activeKeys[a['피평가자사번'] + ':' + a['차수']] = true;
+    }
+  });
+
+  // 헤더 행 확인 (사번 → 행 번호 매핑)
+  var userData = userSheet.getDataRange().getValues();
+  var userHdrs = userData[0];
+  var idCol         = userHdrs.indexOf('사번');
+  var orgUnitIdCol  = userHdrs.indexOf('주조직ID');
+  var statusCol     = userHdrs.indexOf('상태분류');
+  var statusAtCol   = userHdrs.indexOf('상태변경일시');
+  var deptCol       = userHdrs.indexOf('주조직');
+  var subOrgCol     = userHdrs.indexOf('부조직');
+  var teamCol       = userHdrs.indexOf('팀');
+  var squadCol      = userHdrs.indexOf('스쿼드');
+  var activeCol     = userHdrs.indexOf('재직 여부');
+  var leaveCol      = userHdrs.indexOf('보고대상(사번)'); // not directly used
+  void leaveCol;
+
+  // 1) User 매핑
+  var migratedCount = 0;
+  var fallbackCount = 0;
+  for (var r = 1; r < userData.length; r++) {
+    var row = userData[r];
+    var userId = String(row[idCol] || '').trim();
+    if (!userId) continue;
+
+    // 주조직ID 채우기 (이미 있으면 보존)
+    if (orgUnitIdCol >= 0 && !String(row[orgUnitIdCol] || '').trim()) {
+      var found = null;
+      var candidates = [
+        { name: row[squadCol],  type: 'squad' },
+        { name: row[teamCol],   type: 'team' },
+        { name: row[subOrgCol], type: 'subOrg' },
+        { name: row[deptCol],   type: 'mainOrg' },
+      ];
+      for (var ci = 0; ci < candidates.length && !found; ci++) {
+        var c = candidates[ci];
+        if (!c.name) continue;
+        for (var oi = 0; oi < orgUnits.length; oi++) {
+          var ou = orgUnits[oi];
+          if (String(ou['조직명']) === String(c.name) && String(ou['조직유형']) === c.type) {
+            found = ou; break;
+          }
+        }
+        if (!found) {
+          for (var oi2 = 0; oi2 < orgUnits.length; oi2++) {
+            if (String(orgUnits[oi2]['조직명']) === String(c.name)) { found = orgUnits[oi2]; break; }
+          }
+        }
+      }
+      if (!found) {
+        // fallback: 첫 mainOrg
+        for (var oi3 = 0; oi3 < orgUnits.length; oi3++) {
+          if (String(orgUnits[oi3]['조직유형']) === 'mainOrg') { found = orgUnits[oi3]; break; }
+        }
+        if (found) fallbackCount++;
+      }
+      if (found) {
+        userSheet.getRange(r + 1, orgUnitIdCol + 1).setValue(found['조직ID']);
+        migratedCount++;
+      }
+    }
+
+    // 상태분류 채우기 (이미 있으면 보존)
+    if (statusCol >= 0 && !String(row[statusCol] || '').trim()) {
+      var isActiveRaw = String(row[activeCol] || 'true').toLowerCase().trim();
+      var status = isActiveRaw === 'false' ? 'terminated' : 'active';
+      userSheet.getRange(r + 1, statusCol + 1).setValue(status);
+      if (status === 'terminated' && statusAtCol >= 0) {
+        userSheet.getRange(r + 1, statusAtCol + 1).setValue(new Date().toISOString());
+      }
+    }
+  }
+
+  // 2) ReviewerAssignment 시드
+  var seededFromManager = 0;
+  var seededFromOrgHead = 0;
+  var skipped           = 0;
+  var freshUsers = sheetToObjects(userSheet); // 방금 업데이트된 데이터
+  for (var ui = 0; ui < freshUsers.length; ui++) {
+    var u = freshUsers[ui];
+    if (String(u['권한']).trim() === 'admin' || String(u['역할']).trim() === 'admin') continue;
+    var key = u['사번'] + ':1';
+    if (activeKeys[key]) { skipped++; continue; }
+
+    var managerId = String(u['보고대상(사번)'] || '').trim();
+    var seedRow = null;
+
+    // a) managerId 우선
+    if (managerId) {
+      seedRow = {
+        '평가권ID':     'ra_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+        '피평가자사번': u['사번'],
+        '평가자사번':   managerId,
+        '차수':         '1',
+        '부여출처':     'manual',
+        '시작일':       new Date().toISOString(),
+        '종료일':       '',
+        '생성일시':     new Date().toISOString(),
+        '생성자':       'system_migration_r1',
+        '비고':         '',
+      };
+      seededFromManager++;
+    } else if (u['주조직ID']) {
+      // b) 조직 트리에서 head 찾기
+      var orgId = u['주조직ID'];
+      var visited = {};
+      var headFound = null;
+      while (orgId && !visited[orgId]) {
+        visited[orgId] = true;
+        var ou = null;
+        for (var oi = 0; oi < orgUnits.length; oi++) {
+          if (String(orgUnits[oi]['조직ID']) === String(orgId)) { ou = orgUnits[oi]; break; }
+        }
+        if (!ou) break;
+        if (ou['조직장사번'] && ou['조직장사번'] !== u['사번']) {
+          headFound = ou['조직장사번']; break;
+        }
+        orgId = ou['상위조직ID'];
+      }
+      if (headFound) {
+        seedRow = {
+          '평가권ID':     'ra_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+          '피평가자사번': u['사번'],
+          '평가자사번':   headFound,
+          '차수':         '1',
+          '부여출처':     'org_head_inherited',
+          '시작일':       new Date().toISOString(),
+          '종료일':       '',
+          '생성일시':     new Date().toISOString(),
+          '생성자':       'system_migration_r1',
+          '비고':         '',
+        };
+        seededFromOrgHead++;
+      }
+    }
+
+    if (seedRow) {
+      appendRowData(assignSheet, ASSIGNMENT_HEADERS, seedRow);
+      activeKeys[key] = true;
+    }
+  }
+
+  Logger.log('R1 user 마이그레이션 완료: 주조직ID 채움=' + migratedCount + ', fallback=' + fallbackCount + ', 평가권 시드(매니저)=' + seededFromManager + ', 시드(조직장)=' + seededFromOrgHead + ', skip=' + skipped);
 }

@@ -59,26 +59,44 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   // 일반 사용자가 admin 권한이 하나도 없을 때만 '구성원' 메뉴를 일반 위치에 노출
   const showMemberItemForUser = !isImpersonating && !showOrgAdmin;
   const submissions = useReviewStore(s => s.submissions);
+  const cycles = useReviewStore(s => s.cycles);
   const users = useTeamStore(s => s.users);
   const orgUnits = useTeamStore(s => s.orgUnits);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // 승인 대기 개수 계산 — leader/admin에만 노출
-  const pendingApprovals = useMemo(() => {
-    if (!currentUser || !can.viewTeamReviews) return 0;
+  // leader 자격으로 평가/승인 권한을 갖는 leadee 집합
+  // - 직속 매니저(users.managerId)로 지정 + 조직장(orgUnits.headId) 으로 지정된 조직 소속
+  const leadeeIds = useMemo(() => {
+    if (!currentUser) return new Set<string>();
     const byMgr = new Set(users.filter(u => u.managerId === currentUser.id).map(u => u.id));
     const headOrgs = new Set(orgUnits.filter(o => o.headId === currentUser.id).map(o => o.name));
     const orgMembers = new Set(users.filter(u =>
       headOrgs.has(u.department) || headOrgs.has(u.subOrg ?? '__') ||
       headOrgs.has(u.team ?? '__') || headOrgs.has(u.squad ?? '__')
     ).map(u => u.id));
-    const leadeeIds = new Set([...byMgr, ...orgMembers]);
+    return new Set([...byMgr, ...orgMembers]);
+  }, [currentUser, users, orgUnits]);
+
+  // 승인 대기 개수 (뱃지 표기용)
+  const pendingApprovals = useMemo(() => {
+    if (!can.viewTeamReviews && !isAdmin) return 0;
     return submissions.filter(s =>
       s.type === 'peer' && s.peerProposal?.status === 'pending' && leadeeIds.has(s.revieweeId)
     ).length;
-  }, [submissions, users, orgUnits, currentUser, can.viewTeamReviews]);
+  }, [submissions, leadeeIds, can.viewTeamReviews, isAdmin]);
+
+  // 승인 대기 메뉴 자체의 가시성 — peerProposal 데이터(pending + 처리완료) 1건이라도 있어야 노출
+  const peerApprovalsHasData = useMemo(() => {
+    if (!can.viewTeamReviews && !isAdmin) return false;
+    return submissions.some(s =>
+      s.type === 'peer' && s.peerProposal && leadeeIds.has(s.revieweeId)
+    );
+  }, [submissions, leadeeIds, can.viewTeamReviews, isAdmin]);
+
+  // 보관함 가시성 — 보관된 사이클이 1건이라도 있어야 노출
+  const hasArchivedCycles = useMemo(() => cycles.some(c => !!c.archivedAt), [cycles]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -102,8 +120,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
     { kind: 'item', to: '/',                            icon: MsHomeIcon,    label: '홈',           show: true },
     { kind: 'item', to: '/reviews/me',                  icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin || isImpersonating },
     { kind: 'item', to: '/reviews/received',            icon: MsProfileIcon, label: '받은 리뷰',    show: true },
-    { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin && !isImpersonating },
-    { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin), badge: pendingApprovals },
+    { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin && !isImpersonating && leadeeIds.size > 0 },
+    { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin) && peerApprovalsHasData, badge: pendingApprovals },
     { kind: 'item', to: '/team',                        icon: MsGroupIcon,   label: '구성원',       show: showMemberItemForUser },
 
     /* 어드민 — 구성원 관리 */
@@ -115,7 +133,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
     { kind: 'section', label: '리뷰 운영', show: showCycleSection },
     { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',  show: showCycles,    indent: true },
     { kind: 'item', to: '/templates',      icon: MsArticleIcon, label: '템플릿',  show: showTemplates, indent: true },
-    { kind: 'item', to: '/cycles/archive', icon: MsDeleteIcon,  label: '보관함',  show: showCycles,    indent: true },
+    { kind: 'item', to: '/cycles/archive', icon: MsDeleteIcon,  label: '보관함',  show: showCycles && hasArchivedCycles, indent: true },
 
     /* 어드민 — 보안 관리 */
     { kind: 'section', label: '보안 관리', show: showSecuritySection },

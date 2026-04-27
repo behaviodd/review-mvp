@@ -83,6 +83,13 @@ canExtendDeadline({ actor, cycle, submission, assignments })
 
 ## 6. 변경 이력
 
-- **R1** (이전): 평가권 모델(`ReviewerAssignment`) 도입
-- **R2** (현재): 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
-- **R3 예정**: 사이클 매핑 재설계, downward = manager 하드코딩 제거
+- **R1**: 평가권 모델(`ReviewerAssignment`) 도입
+- **R2**: 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
+- **R3** (현재): 사이클 매핑 재설계
+  - `downward = manager` 하드코딩 제거
+  - `cycle.downwardReviewerRanks: number[]` 도입 (기본 `[1]`, 1~5 차수 UI 노출)
+  - `ReviewSubmission.reviewerRank` 추가 — downward 의 차수
+  - `createCycleSubmissions` 가 차수별로 1건씩 생성 (1차/2차 동일인이면 1건)
+  - `cyclePreflight` 가 차수별 평가권자 누락을 별도 block 으로 감지
+  - rank ≥ 2 는 명시적 `ReviewerAssignment` 만 인정 (legacy fallback 없음)
+  - 운영자 작업: Apps Script 새 버전 배포 + `migrate_addMissingColumns()` 1회 실행 (CYCLE/SUBMISSION 컬럼 보강)

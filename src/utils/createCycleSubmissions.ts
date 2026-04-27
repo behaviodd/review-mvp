@@ -5,24 +5,26 @@ function makeId() {
 }
 
 /**
- * R1: 평가자 결정.
- * 1순위: ReviewerAssignment(rank=1, 활성) — useTeamStore.reviewerAssignments
- *        호출자가 assignments 를 전달하면 우선 사용.
- * 2순위: user.managerId (legacy)
- * 3순위: orgUnitId 또는 legacy 4단계 텍스트와 매칭되는 OrgUnit.headId
+ * R3: 특정 차수의 평가권자를 결정.
  *
- * R3 에서 `assignments` 를 필수 인자로 승격하고 2~3 순위 제거 예정.
+ * 우선순위:
+ * 1) ReviewerAssignment(rank=N, 활성) — 명시적 배정
+ * 2) rank === 1 인 경우 only: legacy fallback (managerId / orgUnit head)
+ *    rank ≥ 2 는 명시적 배정만 인정 (legacy 데이터 없음)
+ *
+ * 반환: reviewer User 또는 undefined (배정 없음)
  */
-function resolveManager(
+function resolveReviewerByRank(
   member: User,
+  rank: number,
   allUsers: User[],
   orgUnits: OrgUnit[],
-  assignments?: ReviewerAssignment[],
+  assignments: ReviewerAssignment[] | undefined,
 ): User | undefined {
-  // 1) ReviewerAssignment (rank=1) 활성 항목
+  // 1) 명시적 ReviewerAssignment
   if (assignments) {
     const ra = assignments.find(a =>
-      a.revieweeId === member.id && a.rank === 1 && !a.endDate
+      a.revieweeId === member.id && a.rank === rank && !a.endDate
     );
     if (ra) {
       const reviewer = allUsers.find(u => u.id === ra.reviewerId);
@@ -30,10 +32,13 @@ function resolveManager(
     }
   }
 
-  // 2) legacy: user.managerId
+  // 2) rank=1 fallback (R1/R2 호환)
+  if (rank !== 1) return undefined;
+
+  // legacy: user.managerId
   let manager = allUsers.find(u => u.id === member.managerId);
 
-  // 3) orgUnitId 트리에서 headId 탐색
+  // orgUnitId 트리에서 headId 탐색
   if (!manager || manager.role === 'admin') {
     let cursor = orgUnits.find(o => o.id === member.orgUnitId);
     while (cursor) {
@@ -48,7 +53,7 @@ function resolveManager(
     }
   }
 
-  // 4) legacy: dept/subOrg/team/squad 이름 매칭 (마이그 전 데이터 호환)
+  // legacy: dept/subOrg/team/squad 이름 매칭 (마이그 전 데이터 호환)
   if (!manager || manager.role === 'admin') {
     const memberOrg = orgUnits.find(o =>
       o.headId &&
@@ -68,21 +73,23 @@ function resolveManager(
 /**
  * 리뷰 사이클 발행 시 submission 레코드를 일괄 생성.
  *
- * Phase 3.3b-1:
- *   - cycle.reviewKinds (없으면 ['self','downward'] 기본) 기준으로 각 유형별 생성.
- *   - self:     reviewer=reviewee=member 본인
- *   - downward: reviewer=manager, reviewee=member
- *   - upward:   reviewer=member, reviewee=manager (부하가 매니저를 평가)
- *   - peer:     생성하지 않음 — admin/leader/reviewee가 나중에 assignPeerReviewers로 배정
+ * R3 변경
+ * - downward 평가는 cycle.downwardReviewerRanks 의 각 차수마다 1건씩 생성.
+ * - 미설정 시 [1] 기본 (R1/R2 호환).
+ * - 각 downward submission 에 reviewerRank 부여.
+ * - upward 는 1차 매니저(rank=1)만 평가 대상.
  *
- * 4번째 인자 cycle은 하위호환을 위해 optional. 없으면 기본 self+downward로 동작.
+ * 사용 예
+ * - 1차 매니저만 평가: downwardReviewerRanks=[1] (또는 미설정)
+ * - 2차 매니저까지 평가: downwardReviewerRanks=[1, 2]
+ * - 2차만 평가: downwardReviewerRanks=[2]
  */
 export function createCycleSubmissions(
   cycleId: string,
   targetMembers: User[],
   allUsers: User[],
   orgUnits: OrgUnit[] = [],
-  cycle?: Pick<ReviewCycle, 'reviewKinds'>,
+  cycle?: Pick<ReviewCycle, 'reviewKinds' | 'downwardReviewerRanks'>,
   assignments?: ReviewerAssignment[],
 ): ReviewSubmission[] {
   const now = new Date().toISOString();
@@ -91,10 +98,12 @@ export function createCycleSubmissions(
     ? cycle.reviewKinds
     : ['self', 'downward'];
   const include = (k: ReviewKind) => kinds.includes(k);
+  const ranks = cycle?.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 0
+    ? cycle.downwardReviewerRanks
+    : [1];
 
   for (const member of targetMembers) {
     if (member.role === 'admin') continue;
-    const manager = resolveManager(member, allUsers, orgUnits, assignments);
 
     if (include('self')) {
       submissions.push({
@@ -109,30 +118,43 @@ export function createCycleSubmissions(
       });
     }
 
-    if (include('downward') && manager) {
-      submissions.push({
-        id:          makeId(),
-        cycleId,
-        reviewerId:  manager.id,
-        revieweeId:  member.id,
-        type:        'downward',
-        status:      'not_started',
-        answers:     [],
-        lastSavedAt: now,
-      });
+    if (include('downward')) {
+      // 차수별 1건씩 생성 (중복 reviewer 는 제거)
+      const seen = new Set<string>();
+      for (const rank of ranks) {
+        const reviewer = resolveReviewerByRank(member, rank, allUsers, orgUnits, assignments);
+        if (!reviewer) continue;
+        if (seen.has(reviewer.id)) continue; // 1차/2차가 동일인이면 1건만
+        seen.add(reviewer.id);
+        submissions.push({
+          id:          makeId(),
+          cycleId,
+          reviewerId:  reviewer.id,
+          revieweeId:  member.id,
+          type:        'downward',
+          status:      'not_started',
+          answers:     [],
+          lastSavedAt: now,
+          reviewerRank: rank,
+        });
+      }
     }
 
-    if (include('upward') && manager) {
-      submissions.push({
-        id:          makeId(),
-        cycleId,
-        reviewerId:  member.id,
-        revieweeId:  manager.id,
-        type:        'upward',
-        status:      'not_started',
-        answers:     [],
-        lastSavedAt: now,
-      });
+    if (include('upward')) {
+      // upward 는 1차 매니저(rank=1)만 평가 대상
+      const primaryManager = resolveReviewerByRank(member, 1, allUsers, orgUnits, assignments);
+      if (primaryManager) {
+        submissions.push({
+          id:          makeId(),
+          cycleId,
+          reviewerId:  member.id,
+          revieweeId:  primaryManager.id,
+          type:        'upward',
+          status:      'not_started',
+          answers:     [],
+          lastSavedAt: now,
+        });
+      }
     }
 
     // peer — 이 단계에선 생성하지 않음. admin/leader/reviewee가 이후에 배정.

@@ -98,6 +98,11 @@ export function cycleToRow(c: ReviewCycle): Record<string, unknown> {
     '동료선택정책JSON': c.peerSelection ? JSON.stringify(c.peerSelection) : '',
     // Phase 3.3c-2
     '분포정책JSON':   c.distribution ? JSON.stringify(c.distribution) : '',
+    // R1
+    '인사적용방식':   c.hrSnapshotMode ?? '',
+    '인사스냅샷ID':   c.hrSnapshotId ?? '',
+    // R3: downward 평가 차수 배열 (콤마 구분)
+    '평가차수배열':   (c.downwardReviewerRanks ?? []).join(','),
   };
 }
 
@@ -131,6 +136,8 @@ export function submissionToRow(s: ReviewSubmission): Record<string, unknown> {
     '작성자이력JSON': JSON.stringify(s.reviewerHistory ?? []),
     // Phase 3.2a
     '자동제외JSON': s.autoExcluded ? JSON.stringify(s.autoExcluded) : '',
+    // R3: downward submission 의 평가자 차수 (1차/2차 등). 다른 type 은 빈값.
+    '평가자차수':   s.reviewerRank != null ? String(s.reviewerRank) : '',
   };
 }
 

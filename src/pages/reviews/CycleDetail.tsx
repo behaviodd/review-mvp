@@ -559,6 +559,9 @@ export function CycleDetail() {
         {cycle.reminderPolicy && cycle.reminderPolicy.length > 0 && (
           <Pill tone="warning" size="xs">🔔 자동 리마인드 {cycle.reminderPolicy.length}</Pill>
         )}
+        {cycle.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 1 && (
+          <Pill tone="info" size="xs">평가권자 {cycle.downwardReviewerRanks.join('·')}차</Pill>
+        )}
         {cycle.editLockedAt && <Pill tone="neutral" size="xs">🔒 편집 잠김</Pill>}
         {cycle.autoArchived && <Pill tone="neutral" size="xs">자동 보관됨</Pill>}
       </div>

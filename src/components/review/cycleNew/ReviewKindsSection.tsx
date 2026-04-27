@@ -6,7 +6,18 @@ import type { PeerSelectionPolicy, ReviewKind } from '../../../types';
 interface KindsFormSlice {
   reviewKinds?: ReviewKind[];
   peerSelection?: PeerSelectionPolicy;
+  // R3
+  downwardReviewerRanks?: number[];
 }
+
+// R3: UI 노출 차수 범위 (1~5). 데이터 모델은 무제한이지만 UX 단순화 위해 5차로 제한.
+const RANK_OPTIONS: { rank: number; label: string }[] = [
+  { rank: 1, label: '1차 (직속)' },
+  { rank: 2, label: '2차' },
+  { rank: 3, label: '3차' },
+  { rank: 4, label: '4차' },
+  { rank: 5, label: '5차' },
+];
 
 interface Props<F extends KindsFormSlice> {
   form: F;
@@ -39,6 +50,16 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
   };
 
   const includesPeer = current.includes('peer');
+  const includesDownward = current.includes('downward');
+  const ranks = form.downwardReviewerRanks ?? [1];
+
+  const toggleRank = (rank: number) => {
+    const has = ranks.includes(rank);
+    let next = has ? ranks.filter(r => r !== rank) : [...ranks, rank];
+    next = next.sort((a, b) => a - b);
+    if (next.length === 0) next = [1]; // 최소 1차는 유지
+    setForm(f => ({ ...f, downwardReviewerRanks: next }));
+  };
 
   const updatePeer = (patch: Partial<PeerSelectionPolicy>) => {
     setForm(f => ({
@@ -75,6 +96,36 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
           );
         })}
       </div>
+
+      {includesDownward && (
+        <div className="rounded-lg border border-blue-010 bg-blue-005/40 p-3 space-y-2">
+          <p className="text-xs font-semibold text-blue-070">평가권자 차수</p>
+          <div className="flex flex-wrap gap-2">
+            {RANK_OPTIONS.map(opt => {
+              const active = ranks.includes(opt.rank);
+              return (
+                <label
+                  key={opt.rank}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 cursor-pointer transition-colors',
+                    active ? 'border-blue-040 bg-white' : 'border-gray-010 bg-white hover:bg-gray-005',
+                  )}
+                >
+                  <MsCheckbox checked={active} onChange={() => toggleRank(opt.rank)} />
+                  <span className={cn('text-xs font-semibold', active ? 'text-blue-070' : 'text-gray-070')}>
+                    {opt.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-gray-050">
+            선택한 차수의 평가권자가 각각 1건씩 조직장 리뷰를 작성합니다.
+            {' '}1차는 직속 매니저(평가권 또는 조직장 자동 매핑), 2차 이상은 명시적으로 배정된 평가권자만 인정됩니다.
+            {' '}1차/2차가 동일인이면 1건만 생성됩니다.
+          </p>
+        </div>
+      )}
 
       {includesPeer && (
         <div className="rounded-lg border border-pink-010 bg-pink-005/40 p-3 space-y-2">

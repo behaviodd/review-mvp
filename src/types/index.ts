@@ -162,6 +162,9 @@ export interface ReviewCycle {
   // R1: 인사정보 적용 방식
   hrSnapshotMode?: 'live' | 'snapshot';   // 기본 R4 에서 'snapshot' 으로 변경, R1 은 미설정 = 'live' 호환
   hrSnapshotId?: string;                  // 'snapshot' 모드 시 OrgSnapshot.id
+  // R3: downward 평가를 어느 차수의 평가권자가 작성할지 (기본 [1] = 1차만)
+  // 예: [1, 2] = 1차+2차 모두 평가, [2] = 2차만
+  downwardReviewerRanks?: number[];
 }
 
 export interface CycleFolder {
@@ -318,6 +321,8 @@ export interface ReviewSubmission {
   reviewerHistory?: ReviewerChange[];
   autoExcluded?: { at: string; reason: 'inactive' | 'leave_date' | 'removed' };
   peerProposal?: PeerProposal;    // peer 타입 + leader_approves 방식에서만 사용
+  // R3: downward submission 의 차수 (1차/2차 매니저 등). 다른 type 은 미사용.
+  reviewerRank?: number;
 }
 
 export type AuditAction =

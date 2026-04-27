@@ -25,6 +25,8 @@ export interface WizardFormShape {
   anonymity?: AnonymityPolicy;
   visibility?: VisibilityPolicy;
   referenceInfo?: ReferenceInfoPolicy;
+  // R3
+  downwardReviewerRanks?: number[];
 }
 
 function toYmd(iso?: string): string {
@@ -58,6 +60,7 @@ export function formToCyclePatch(form: WizardFormShape): Partial<ReviewCycle> {
     anonymity: form.anonymity,
     visibility: form.visibility,
     referenceInfo: form.referenceInfo,
+    downwardReviewerRanks: form.downwardReviewerRanks,
   };
 }
 
@@ -87,5 +90,6 @@ export function cycleToForm(cycle: ReviewCycle, fallbackCalibration: string): Wi
     anonymity: cycle.anonymity,
     visibility: cycle.visibility,
     referenceInfo: cycle.referenceInfo,
+    downwardReviewerRanks: cycle.downwardReviewerRanks ? [...cycle.downwardReviewerRanks] : undefined,
   };
 }

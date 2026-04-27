@@ -62,7 +62,9 @@ var CYCLE_HEADERS = [
   // Phase 3.3b-1
   '리뷰유형', '동료선택정책JSON',
   // R1: 인사정보 적용 방식
-  '인사적용방식', '인사스냅샷ID'
+  '인사적용방식', '인사스냅샷ID',
+  // R3: downward 평가 차수
+  '평가차수배열'
 ];
 
 // R1: 평가권 시트
@@ -91,7 +93,9 @@ var SUBMISSION_HEADERS = [
   // Phase 2
   '연장기한JSON', '대리작성자', '작성자이력JSON',
   // Phase 3.2a
-  '자동제외JSON'
+  '자동제외JSON',
+  // R3: 평가자 차수 (downward 만 사용)
+  '평가자차수'
 ];
 var ACCOUNT_HEADERS  = ['사번', '이메일', '비밀번호해시'];
 var AUDIT_HEADERS = [

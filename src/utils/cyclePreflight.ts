@@ -24,24 +24,30 @@ function isWeekend(iso: string): boolean {
 }
 
 /**
- * R1: assignments 우선 → managerId → orgUnitId 트리 → legacy 4단계 매칭.
+ * R3: 차수별 평가권자 결정 (preflight 전용).
+ * - rank=1 일 때만 legacy fallback (managerId / orgUnit head / dept name)
+ * - rank≥2 는 명시적 ReviewerAssignment 만 인정
+ * - 비활성 사용자는 제외
  */
-function resolveManager(
+function resolveReviewerByRankForPreflight(
   member: User,
+  rank: number,
   allUsers: User[],
   orgUnits: OrgUnit[],
   assignments?: ReviewerAssignment[],
 ): User | undefined {
-  // 1) ReviewerAssignment(rank=1) 활성
+  // 1) ReviewerAssignment(rank=N) 활성
   if (assignments) {
     const ra = assignments.find(a =>
-      a.revieweeId === member.id && a.rank === 1 && !a.endDate
+      a.revieweeId === member.id && a.rank === rank && !a.endDate
     );
     if (ra) {
       const reviewer = allUsers.find(u => u.id === ra.reviewerId);
       if (reviewer && reviewer.role !== 'admin' && isUserActive(reviewer)) return reviewer;
     }
   }
+
+  if (rank !== 1) return undefined; // 2차 이상은 명시적 배정만
 
   // 2) legacy: managerId
   let mgr = allUsers.find(u => u.id === member.managerId);
@@ -104,17 +110,26 @@ export function runPreflight(params: {
     });
   }
 
-  // 2. 매니저 미배정 (차단)
+  // 2. 매니저 미배정 (차단) — R3: cycle.downwardReviewerRanks 의 모든 차수에 대해 체크
   const activeMembers = targetMembers.filter(u => !inactive.includes(u));
-  const missingMgr = activeMembers.filter(u => !resolveManager(u, users, orgUnits, assignments));
-  if (missingMgr.length > 0) {
-    checks.push({
-      id: 'missing_managers',
-      severity: 'block',
-      title: '조직장이 없는 대상자 존재',
-      detail: `${missingMgr.length}명에게 조직장(관리자 아님)이 배정되지 않았습니다. 조직장 리뷰가 생성되지 않습니다.`,
-      affectedIds: missingMgr.map(u => u.id),
-    });
+  const ranks = cycle.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 0
+    ? cycle.downwardReviewerRanks
+    : [1];
+  const includesDownward = !cycle.reviewKinds || cycle.reviewKinds.includes('downward');
+  if (includesDownward) {
+    for (const rank of ranks) {
+      const missing = activeMembers.filter(u => !resolveReviewerByRankForPreflight(u, rank, users, orgUnits, assignments));
+      if (missing.length > 0) {
+        const rankLabel = rank === 1 ? '1차(직속)' : `${rank}차`;
+        checks.push({
+          id: `missing_reviewer_rank_${rank}`,
+          severity: 'block',
+          title: `${rankLabel} 평가권자가 없는 대상자 존재`,
+          detail: `${missing.length}명에게 ${rankLabel} 평가권자가 배정되지 않았습니다. 해당 차수의 조직장 리뷰가 생성되지 않습니다.`,
+          affectedIds: missing.map(u => u.id),
+        });
+      }
+    }
   }
 
   // 3. 템플릿 유효성

@@ -42,34 +42,44 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
     const subs = createCycleSubmissions(cycle.id || 'candidate', targets, users, orgUnits, cycle, reviewerAssignments);
     const selfCount = subs.filter(s => s.type === 'self').length;
     const downCount = subs.filter(s => s.type === 'downward').length;
+    const ranks = cycle.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 0
+      ? cycle.downwardReviewerRanks
+      : [1];
     const perMember = targets.map(m => {
       const self = subs.find(s => s.type === 'self' && s.revieweeId === m.id);
       const downward = subs.filter(s => s.type === 'downward' && s.revieweeId === m.id);
-      const reviewer = downward[0] ? users.find(u => u.id === downward[0].reviewerId) : undefined;
+      // R3: 차수별 reviewer 표기
+      const reviewersByRank = ranks.map(r => {
+        const sub = downward.find(s => s.reviewerRank === r) ?? (r === 1 ? downward.find(s => s.reviewerRank == null) : undefined);
+        const reviewer = sub ? users.find(u => u.id === sub.reviewerId) : undefined;
+        return { rank: r, name: reviewer?.name, missing: !sub };
+      });
+      const managerMissing = downward.length === 0;
       return {
         user: m,
         hasSelf: !!self,
-        managerName: reviewer?.name,
-        managerMissing: downward.length === 0,
+        reviewersByRank,
+        managerMissing,
         inactive: m.isActive === false || !!m.leaveDate,
       };
     });
     const managerMissing = perMember.filter(r => r.managerMissing).length;
-    return { targets, subs, selfCount, downCount, perMember, managerMissing };
+    return { targets, subs, selfCount, downCount, perMember, managerMissing, ranks };
   }, [open, cycle, users, orgUnits, reviewerAssignments]);
 
   if (!open || !dryRun) return null;
 
   const handleCSV = () => {
+    const rankHeaders = dryRun.ranks.map(r => r === 1 ? '1차 평가권자' : `${r}차 평가권자`);
     const rows: string[][] = [
-      ['이름', '이메일', '조직', '직책', '자기평가', '조직장 리뷰', '비고'],
+      ['이름', '이메일', '조직', '직책', '자기평가', ...rankHeaders, '비고'],
       ...dryRun.perMember.map(r => [
         r.user.name,
         r.user.email,
         getSmallestOrg(r.user),
         r.user.position,
         r.hasSelf ? 'O' : '-',
-        r.managerMissing ? '매니저 없음' : (r.managerName ?? ''),
+        ...r.reviewersByRank.map(rb => rb.missing ? '미배정' : (rb.name ?? '')),
         r.inactive ? '비활성/퇴사 예정' : '',
       ]),
     ];
@@ -135,7 +145,11 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
                   <span className="truncate text-gray-060">{getSmallestOrg(r.user)}</span>
                   <span className="truncate text-gray-060">{r.user.position}</span>
                   <span className={r.managerMissing ? 'text-red-060 font-semibold' : 'text-gray-070'}>
-                    {r.managerMissing ? '매니저 없음' : r.managerName}
+                    {r.managerMissing ? '매니저 없음' : (
+                      r.reviewersByRank.length === 1
+                        ? (r.reviewersByRank[0].name ?? '미배정')
+                        : r.reviewersByRank.map(rb => `${rb.rank}차 ${rb.missing ? '미배정' : rb.name}`).join(' · ')
+                    )}
                   </span>
                   <span className="text-[10px] font-semibold">
                     {r.inactive ? <span className="text-orange-060">비활성</span> : <span className="text-green-060">OK</span>}

@@ -28,6 +28,16 @@ export function parseSheetCycle(row: Row): ReviewCycle | null {
   const id = str(row['사이클ID']);
   if (!id) return null;
   const deptRaw = str(row['대상부서']);
+  // R3: 평가차수배열 — "1,2" → [1, 2]
+  const ranksRaw = str(row['평가차수배열']);
+  const downwardReviewerRanks = ranksRaw
+    ? ranksRaw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0)
+    : undefined;
+  // R1: 인사적용방식
+  const hrModeRaw = str(row['인사적용방식']);
+  const hrSnapshotMode: ReviewCycle['hrSnapshotMode'] = hrModeRaw === 'snapshot' ? 'snapshot'
+    : hrModeRaw === 'live' ? 'live'
+    : undefined;
   return {
     id,
     title:                 str(row['제목']),
@@ -40,6 +50,13 @@ export function parseSheetCycle(row: Row): ReviewCycle | null {
     createdBy:             str(row['생성자ID']),
     createdAt:             str(row['생성일시']),
     completionRate:        num(row['완료율']),
+    // R1
+    hrSnapshotMode,
+    hrSnapshotId:          str(row['인사스냅샷ID']) || undefined,
+    // R3
+    downwardReviewerRanks: downwardReviewerRanks && downwardReviewerRanks.length > 0
+      ? downwardReviewerRanks
+      : undefined,
   };
 }
 
@@ -72,6 +89,9 @@ export function parseSheetSubmission(row: Row): ReviewSubmission | null {
   if (!id) return null;
   const rating = row['종합점수'] !== '' && row['종합점수'] !== null && row['종합점수'] !== undefined
     ? num(row['종합점수']) : undefined;
+  // R3: 평가자차수
+  const rankRaw = str(row['평가자차수']);
+  const reviewerRank = rankRaw ? parseInt(rankRaw, 10) : undefined;
   return {
     id,
     cycleId:      str(row['사이클ID']),
@@ -83,6 +103,7 @@ export function parseSheetSubmission(row: Row): ReviewSubmission | null {
     submittedAt:  str(row['제출일시']) || undefined,
     lastSavedAt:  str(row['최종저장일시']),
     answers:      parseJSON<Answer[]>(row['답변JSON'], []),
+    reviewerRank: reviewerRank && !isNaN(reviewerRank) ? reviewerRank : undefined,
   };
 }
 

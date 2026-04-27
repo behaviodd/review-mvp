@@ -62,6 +62,8 @@ interface FormState {
   reviewKinds?: ReviewKind[];
   peerSelection?: PeerSelectionPolicy;
   distribution?: DistributionPolicy;
+  // R3: downward 평가를 어느 차수의 평가권자가 작성할지 (기본 [1])
+  downwardReviewerRanks?: number[];
 }
 
 const today = new Date();
@@ -553,6 +555,7 @@ export function CycleNew() {
           reviewKinds: form.reviewKinds,
           peerSelection: form.peerSelection,
           distribution: form.distribution,
+          downwardReviewerRanks: form.downwardReviewerRanks,
         });
       } else {
         addCycle({
@@ -583,6 +586,7 @@ export function CycleNew() {
           reviewKinds:           form.reviewKinds,
           peerSelection:         form.peerSelection,
           distribution:          form.distribution,
+          downwardReviewerRanks: form.downwardReviewerRanks,
         });
       }
 
@@ -595,6 +599,7 @@ export function CycleNew() {
         const eligible = targetMembers.filter(m => m.isActive !== false && !(m.leaveDate && m.leaveDate <= todayKey));
         subs = createCycleSubmissions(actualId, eligible, users, orgUnits, {
           reviewKinds: form.reviewKinds,
+          downwardReviewerRanks: form.downwardReviewerRanks,
         }, reviewerAssignments);
         subs.forEach(sub => upsertSubmission(sub));
       }

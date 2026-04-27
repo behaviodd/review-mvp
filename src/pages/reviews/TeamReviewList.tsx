@@ -9,8 +9,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { Users, Circle } from 'lucide-react';
-import { MsChevronRightLineIcon, MsDownloadIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon } from '../../components/ui/MsIcons';
+import { MsChevronRightLineIcon, MsDownloadIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsUsersIcon, MsCircleIcon } from '../../components/ui/MsIcons';
 import { exportCycleToCSV } from '../../utils/exportUtils';
 import type { ReviewCycle } from '../../types';
 
@@ -36,7 +35,7 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
   if (isClosed) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
-        <Circle className="w-3.5 h-3.5" /> 종료
+        <MsCircleIcon size={14} /> 종료
       </span>
     );
   }
@@ -56,7 +55,7 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
-      <Circle className="w-3.5 h-3.5" /> 미시작
+      <MsCircleIcon size={14} /> 미시작
     </span>
   );
 }
@@ -168,7 +167,7 @@ export function TeamReviewList() {
   if (!isAdmin && teamMembers.length === 0) {
     return (
       <EmptyState
-        icon={Users}
+        icon={MsUsersIcon}
         title="등록된 팀원이 없습니다."
         description="귀하를 관리자로 지정한 팀원이 없습니다."
       />
@@ -222,7 +221,7 @@ export function TeamReviewList() {
             </div>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-040">
               <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> {total}명
+                <MsUsersIcon size={12} /> {total}명
               </span>
               <span className="flex items-center gap-1 text-green-060">
                 <MsCheckCircleIcon size={12} /> {submitted}
@@ -234,7 +233,7 @@ export function TeamReviewList() {
               )}
               {notStarted > 0 && (
                 <span className="flex items-center gap-1">
-                  <Circle className="w-3 h-3" /> {notStarted}
+                  <MsCircleIcon size={12} /> {notStarted}
                 </span>
               )}
             </div>
@@ -274,7 +273,7 @@ export function TeamReviewList() {
             <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-040">
               <span>{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'}</span>
               <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> {total}명
+                <MsUsersIcon size={12} /> {total}명
               </span>
               {inProgress > 0 && (
                 <span className="flex items-center gap-1 text-pink-040">
@@ -382,7 +381,7 @@ export function TeamReviewList() {
       {/* 빈 상태 */}
       {isEmpty ? (
         <EmptyState
-          icon={Users}
+          icon={MsUsersIcon}
           title={
             statusFilter === 'active' ? '진행 중인 팀원 평가가 없습니다.' :
             statusFilter === 'done'   ? '완료한 팀원 평가가 없습니다.' :

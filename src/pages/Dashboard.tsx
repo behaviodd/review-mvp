@@ -12,8 +12,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { deadlineLabel, formatDate, isUrgent } from '../utils/dateUtils';
-import { Users, TrendingUp } from 'lucide-react';
-import { MsAlertIcon, MsClockIcon, MsPlusIcon } from '../components/ui/MsIcons';
+import { TrendingUp } from 'lucide-react';
+import { MsAlertIcon, MsClockIcon, MsPlusIcon, MsUsersIcon } from '../components/ui/MsIcons';
 import { MsButton } from '../components/ui/MsButton';
 
 const tooltipStyle = { borderRadius: '8px', border: '1px solid #c4cdd4', fontSize: 12, color: '#111417' };
@@ -120,7 +120,7 @@ function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-pink-050" iconBg="bg-pink-005" />
         <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-green-060" iconBg="bg-green-005" />
-        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={Users as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
+        <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={MsUsersIcon as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
         <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-pink-050" iconBg="bg-pink-005" />
       </div>
 
@@ -240,7 +240,7 @@ function ManagerDashboard() {
       <TodayPanel variant="leader" />
       <PeerPickReminder />
       <div>
-        <p className="text-xs font-semibold text-gray-050 uppercase tracking-widest mb-3">할 일</p>
+        <p className="text-xs font-semibold text-gray-050 uppercase tracking-wide mb-3">할 일</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {mySelfs.some(s => s.status !== 'submitted') && (
             <button

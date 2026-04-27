@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyModeBanner } from '../../components/review/ProxyModeBanner';
-import { PartyPopper, ShieldCheck, Lightbulb, Save } from 'lucide-react';
+import { PartyPopper, Lightbulb, Save } from 'lucide-react';
 import {
   MsChevronLeftLineIcon, MsChevronRightLineIcon, MsCheckIcon, MsLockIcon,
   MsMessageIcon, MsDownloadIcon, MsCalendarIcon,
   MsArticleIcon, MsChevronDownLineIcon,
   MsLinkIcon, MsPaperclipIcon, MsOutlinkIcon, MsCancelIcon, MsPlusIcon, MsProfileIcon,
+  MsShieldCheckIcon,
 } from '../../components/ui/MsIcons';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useReviewStore } from '../../stores/reviewStore';
@@ -285,7 +286,7 @@ function RightPanel({
         </div>
         <div className="p-3 bg-gray-005 rounded-lg border border-gray-010">
           <div className="flex items-center gap-1.5 mb-2">
-            <ShieldCheck className="size-3.5 text-gray-050" />
+            <MsShieldCheckIcon size={14} className="text-gray-050" />
             <p className="text-xs font-semibold text-gray-060">개인정보 보호</p>
           </div>
           <p className="text-xs text-gray-050 leading-relaxed">작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 매니저와 관리자만 열람합니다.</p>

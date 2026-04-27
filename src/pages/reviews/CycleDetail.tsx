@@ -10,11 +10,11 @@ import { createCycleSubmissions } from '../../utils/createCycleSubmissions';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { formatDate, daysUntil } from '../../utils/dateUtils';
-import { Users, BarChart2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import {
   MsCalendarIcon, MsCancelIcon, MsEditIcon,
   MsCheckIcon, MsDownloadIcon, MsRefreshIcon, MsWarningIcon, MsStarIcon, MsDeleteIcon,
-  MsSettingIcon,
+  MsSettingIcon, MsUsersIcon, MsBarChart2Icon,
 } from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
 import { exportCycleToCSV } from '../../utils/exportUtils';
@@ -894,9 +894,9 @@ export function CycleDetail() {
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: Users, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
-          { icon: BarChart2, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
-          { icon: BarChart2, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
+          { icon: MsUsersIcon, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
+          { icon: MsBarChart2Icon, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
+          { icon: MsBarChart2Icon, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
         ].map(({ icon: Icon, label, value, sub }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-020 shadow-card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -911,7 +911,7 @@ export function CycleDetail() {
 
       {/* Timeline */}
       <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-gray-070 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
+        <h2 className="text-sm font-semibold text-gray-080 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
         <div className="space-y-3">
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
@@ -950,7 +950,7 @@ export function CycleDetail() {
       {unlockOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-overlay-048" onClick={() => setUnlockOpen(false)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-modal space-y-4">
+          <div className="relative w-full max-w-md rounded-xl bg-white p-5 shadow-modal space-y-4">
             <h3 className="text-base font-bold text-gray-080">편집 잠금 해제</h3>
             <p className="text-xs text-gray-050">사유는 감사 로그에 기록됩니다.</p>
             <MsInput

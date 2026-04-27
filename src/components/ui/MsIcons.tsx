@@ -288,3 +288,10 @@ export function MsHideIcon({ size = 24, ...props }: IconProps) {
 <path fillRule="evenodd" clipRule="evenodd" d="M1.293 1.293a1 1 0 0 1 1.414 0l14 14a1 1 0 0 1-1.414 1.414l-1.55-1.55A8.07 8.07 0 0 1 9 16C5.36 16 2.258 13.728 1 10.5a8.47 8.47 0 0 1 2.13-3.243L1.293 5.707a1 1 0 0 1 0-1.414zm4.251 4.251A6.49 6.49 0 0 0 3.042 10.5C4.3 13.128 6.96 14.6 9 14.6c.9 0 1.773-.213 2.563-.588L10.1 12.549A3.5 3.5 0 0 1 5.451 7.9L5.544 7.544zM9 5.4c-.353 0-.698.04-1.03.115L6.03 3.577A8.07 8.07 0 0 1 9 3c3.64 0 6.742 2.272 8 5.5a8.47 8.47 0 0 1-1.97 2.96l-1.424-1.424A3.5 3.5 0 0 0 9 5.4z" fill="currentColor"/>
 </g></MsIcon>;
 }
+
+// Lucide wrappers — unified size prop API for icons not yet in the DS
+import { Users, Circle, ShieldCheck, BarChart2, type LucideProps } from 'lucide-react';
+export function MsUsersIcon(props: LucideProps) { return <Users {...props} />; }
+export function MsCircleIcon(props: LucideProps) { return <Circle {...props} />; }
+export function MsShieldCheckIcon(props: LucideProps) { return <ShieldCheck {...props} />; }
+export function MsBarChart2Icon(props: LucideProps) { return <BarChart2 {...props} />; }

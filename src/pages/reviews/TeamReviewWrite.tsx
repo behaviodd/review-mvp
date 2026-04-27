@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { History, ShieldCheck, BookOpen } from 'lucide-react';
+import { History, BookOpen } from 'lucide-react';
 import {
   MsLockIcon, MsWarningIcon, MsArticleIcon,
   MsCheckIcon, MsCheckCircleIcon, MsStarIcon, MsDownloadIcon, MsSearchIcon,
   MsChevronDownLineIcon, MsChevronRightLineIcon, MsChevronLeftLineIcon, MsCalendarIcon,
+  MsShieldCheckIcon,
 } from '../../components/ui/MsIcons';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
@@ -157,7 +158,7 @@ function RightPanel({
         {/* 열람 권한 */}
         <div className="p-3 bg-gray-005 rounded-lg border border-gray-010">
           <div className="flex items-center gap-1.5 mb-2">
-            <ShieldCheck className="size-3.5 text-gray-050" />
+            <MsShieldCheckIcon size={14} className="text-gray-050" />
             <p className="text-xs font-semibold text-gray-060">열람 권한</p>
           </div>
           <ul className="space-y-1">
@@ -654,7 +655,7 @@ export function TeamReviewWrite() {
           {/* ── 관리자 관찰 모드 배너 ── */}
           {isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-yellow-005 border border-yellow-060/20 rounded-xl">
-              <ShieldCheck className="w-4 h-4 text-yellow-060 mt-0.5 flex-shrink-0" />
+              <MsShieldCheckIcon size={16} className="text-yellow-060 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-yellow-070">관리자 열람 모드</p>
                 <p className="text-xs text-yellow-060 mt-0.5">

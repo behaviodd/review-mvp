@@ -7,8 +7,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { Circle, ShieldCheck, Users, BarChart2 } from 'lucide-react';
-import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsArticleIcon } from '../../components/ui/MsIcons';
+import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsArticleIcon, MsCircleIcon, MsShieldCheckIcon, MsUsersIcon, MsBarChart2Icon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { useTeamStore } from '../../stores/teamStore';
 
@@ -44,7 +43,7 @@ function StatusDot({ status }: { status: string }) {
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
-      <Circle className="w-3.5 h-3.5" /> 미시작
+      <MsCircleIcon size={14} /> 미시작
     </span>
   );
 }
@@ -95,7 +94,7 @@ export function MyReviewList() {
       <div className="space-y-5">
         <div className="bg-white rounded-xl border border-gray-020 shadow-card p-8 text-center space-y-5">
           <div className="w-14 h-14 bg-blue-005 rounded-2xl flex items-center justify-center mx-auto">
-            <ShieldCheck className="w-7 h-7 text-blue-050" />
+            <MsShieldCheckIcon size={28} className="text-blue-050" />
           </div>
           <div>
             <p className="text-base font-semibold text-gray-099 mb-1">관리자는 셀프 리뷰 대상이 아닙니다</p>
@@ -106,7 +105,7 @@ export function MyReviewList() {
               onClick={() => navigate('/reviews/team')}
               className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-020 hover:border-blue-020 hover:bg-blue-005/40 transition-colors text-left"
             >
-              <Users className="w-5 h-5 text-blue-050" />
+              <MsUsersIcon size={20} className="text-blue-050" />
               <div>
                 <p className="text-sm font-semibold text-gray-080">팀원 평가</p>
                 <p className="text-xs text-gray-040 mt-0.5">팀원별 평가 현황 열람</p>
@@ -116,7 +115,7 @@ export function MyReviewList() {
               onClick={() => navigate('/cycles')}
               className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-020 hover:border-blue-020 hover:bg-blue-005/40 transition-colors text-left"
             >
-              <BarChart2 className="w-5 h-5 text-blue-050" />
+              <MsBarChart2Icon size={20} className="text-blue-050" />
               <div>
                 <p className="text-sm font-semibold text-gray-080">리뷰 운영</p>
                 <p className="text-xs text-gray-040 mt-0.5">주기 생성 및 현황 관리</p>

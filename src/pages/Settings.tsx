@@ -62,7 +62,7 @@ function PasswordChangeSection() {
       >
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-gray-040" />
-          <h2 className="text-sm font-semibold text-gray-070">개인정보 및 보안</h2>
+          <h2 className="text-sm font-semibold text-gray-080">개인정보 및 보안</h2>
         </div>
         <MsChevronDownLineIcon size={16} className={`text-gray-040 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -214,7 +214,7 @@ export function Settings() {
       <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">
           <MsProfileIcon size={16} className="text-gray-040" />
-          <h2 className="text-sm font-semibold text-gray-070">프로필</h2>
+          <h2 className="text-sm font-semibold text-gray-080">프로필</h2>
         </div>
         <div className="flex items-center gap-4">
           <UserAvatar user={currentUser} size="xl" />
@@ -243,7 +243,7 @@ export function Settings() {
       <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sheet className="w-4 h-4 text-gray-040" />
-          <h2 className="text-sm font-semibold text-gray-070">Google Sheets 연동</h2>
+          <h2 className="text-sm font-semibold text-gray-080">Google Sheets 연동</h2>
         </div>
 
         <div className="space-y-5">

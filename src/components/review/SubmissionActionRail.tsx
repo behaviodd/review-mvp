@@ -7,6 +7,7 @@ import { ReassignReviewerModal } from './modals/ReassignReviewerModal';
 import { ProxyWriteConfirmModal } from './modals/ProxyWriteConfirmModal';
 import { PeerAssignModal } from './modals/PeerAssignModal';
 import { useReviewStore } from '../../stores/reviewStore';
+import { useTeamStore } from '../../stores/teamStore';
 import { useShowToast } from '../ui/Toast';
 import {
   canExtendDeadline,
@@ -37,6 +38,7 @@ export function SubmissionActionRail({
 }: Props) {
   const navigate = useNavigate();
   const reopen = useReviewStore(s => s.reopenSubmission);
+  const assignments = useTeamStore(s => s.reviewerAssignments);
   const showToast = useShowToast();
 
   const [extendOpen, setExtendOpen] = useState(false);
@@ -46,17 +48,17 @@ export function SubmissionActionRail({
   const supportsPeer = cycle.reviewKinds?.includes('peer') && cycle.peerSelection?.method === 'admin_assigns';
   const canAssignPeer = !!supportsPeer && !!revieweeId && currentUser?.role === 'admin' && !cycle.editLockedAt && cycle.status !== 'closed';
 
-  // 권한 계산 (stage별)
-  const canExtendSelf = !!selfSub && canExtendDeadline({ actor: currentUser, cycle, submission: selfSub });
-  const canExtendManager = !!managerSub && canExtendDeadline({ actor: currentUser, cycle, submission: managerSub });
+  // 권한 계산 (stage별) — R2: assignments 전달로 평가권자도 권한 판정
+  const canExtendSelf = !!selfSub && canExtendDeadline({ actor: currentUser, cycle, submission: selfSub, assignments });
+  const canExtendManager = !!managerSub && canExtendDeadline({ actor: currentUser, cycle, submission: managerSub, assignments });
   const canExtendAny = canExtendSelf || canExtendManager;
 
   const canReassign = !!managerSub && canReassignReviewer({ actor: currentUser, cycle, submission: managerSub });
 
   const canProxySelf = !!selfSub && canProxyWrite({ actor: currentUser, cycle, submission: selfSub });
 
-  const canReopenSelf = !!selfSub && canReopenSubmission({ actor: currentUser, cycle, submission: selfSub });
-  const canReopenManager = !!managerSub && canReopenSubmission({ actor: currentUser, cycle, submission: managerSub });
+  const canReopenSelf = !!selfSub && canReopenSubmission({ actor: currentUser, cycle, submission: selfSub, assignments });
+  const canReopenManager = !!managerSub && canReopenSubmission({ actor: currentUser, cycle, submission: managerSub, assignments });
 
   if (!currentUser) return null;
   const anyAction =

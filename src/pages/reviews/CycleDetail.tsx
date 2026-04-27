@@ -498,6 +498,7 @@ export function CycleDetail() {
   const { cycleId } = useParams<{ cycleId: string }>();
   const { cycles, submissions, updateCycle, deleteCycle, upsertSubmission, templates, publishCycle } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
+  const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
   const { addNotification } = useNotificationStore();
   const currentUser = useAuthStore(s => s.currentUser);
   const navigate = useNavigate();
@@ -686,6 +687,7 @@ export function CycleDetail() {
       users,
       orgUnits,
       template,
+      assignments: reviewerAssignments,
     });
     setPreflightResult(result);
     setPreflightOpen(true);
@@ -711,7 +713,7 @@ export function CycleDetail() {
           showToast('error', res.error ?? '발행에 실패했습니다.');
           return;
         }
-        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle);
+        const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle, reviewerAssignments);
         subs.forEach(sub => upsertSubmission(sub));
         showToast('success', `발행 완료 · 템플릿 스냅샷이 저장되었습니다.`);
         setShowConfirm(false);
@@ -761,7 +763,7 @@ export function CycleDetail() {
     if (!cycle || regenerating) return;
     setRegenerating(true);
     await new Promise(r => setTimeout(r, 300));
-    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle);
+    const subs = createCycleSubmissions(cycle.id, targetMembers, users, orgUnits, cycle, reviewerAssignments);
     let added = 0;
     subs.forEach(sub => {
       const exists = submissions.some(s => s.id === sub.id);

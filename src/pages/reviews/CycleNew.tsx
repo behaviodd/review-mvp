@@ -83,6 +83,7 @@ export function CycleNew() {
   const { currentUser } = useAuthStore();
   const { addCycle, updateCycle, upsertSubmission, templates, cycles: allCycles } = useReviewStore();
   const { users, orgUnits, isLoading: usersLoading } = useTeamStore();
+  const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
   const showToast = useShowToast();
 
   useSetPageHeader('리뷰 사이클 생성');
@@ -504,6 +505,7 @@ export function CycleNew() {
       users,
       orgUnits,
       template,
+      assignments: reviewerAssignments,
     });
     setPreflightResult(result);
     setPreflightOpen(true);
@@ -593,7 +595,7 @@ export function CycleNew() {
         const eligible = targetMembers.filter(m => m.isActive !== false && !(m.leaveDate && m.leaveDate <= todayKey));
         subs = createCycleSubmissions(actualId, eligible, users, orgUnits, {
           reviewKinds: form.reviewKinds,
-        });
+        }, reviewerAssignments);
         subs.forEach(sub => upsertSubmission(sub));
       }
 

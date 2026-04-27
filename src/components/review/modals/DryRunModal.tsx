@@ -34,11 +34,12 @@ function downloadCSV(filename: string, rows: string[][]) {
 export function DryRunModal({ open, onClose, cycle, title }: Props) {
   const users = useTeamStore(s => s.users);
   const orgUnits = useTeamStore(s => s.orgUnits);
+  const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
 
   const dryRun = useMemo(() => {
     if (!open) return null;
     const targets = resolveTargetMembers(cycle, users);
-    const subs = createCycleSubmissions(cycle.id || 'candidate', targets, users, orgUnits, cycle);
+    const subs = createCycleSubmissions(cycle.id || 'candidate', targets, users, orgUnits, cycle, reviewerAssignments);
     const selfCount = subs.filter(s => s.type === 'self').length;
     const downCount = subs.filter(s => s.type === 'downward').length;
     const perMember = targets.map(m => {
@@ -55,7 +56,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
     });
     const managerMissing = perMember.filter(r => r.managerMissing).length;
     return { targets, subs, selfCount, downCount, perMember, managerMissing };
-  }, [open, cycle, users, orgUnits]);
+  }, [open, cycle, users, orgUnits, reviewerAssignments]);
 
   if (!open || !dryRun) return null;
 

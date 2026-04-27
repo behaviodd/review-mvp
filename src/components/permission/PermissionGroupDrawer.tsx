@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTeamStore } from '../../stores/teamStore';
 import { useShowToast } from '../ui/Toast';
-import { SideDrawer } from '../ui/SideDrawer';
+import { ModalShell } from '../review/modals/ModalShell';
 import { MsButton } from '../ui/MsButton';
-import { MsInput } from '../ui/MsControl';
+import { MsInput, MsCheckbox } from '../ui/MsControl';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { UserAvatar } from '../ui/UserAvatar';
-import { MsCheckbox } from '../ui/MsControl';
 import { MsCancelIcon, MsDeleteIcon, MsLockIcon } from '../ui/MsIcons';
 import { permissionGroupWriter } from '../../utils/sheetWriter';
 import { PERMISSION_META, PERMISSION_CATEGORIES } from '../../utils/permissionLabels';
@@ -22,9 +21,14 @@ interface Props {
 }
 
 /**
- * R6 Phase C3: 권한 그룹 편집 drawer.
+ * R6 Phase C3: 권한 그룹 편집/생성 모달.
  * - 시스템 그룹: 멤버만 변경 가능 (이름/설명/권한 잠금, 삭제 비활성)
  * - 일반 그룹: 모두 변경 가능
+ *
+ * 레이아웃: ModalShell (구성원 추가 모달과 동일 패턴)
+ *  - 섹션별 uppercase 헤더
+ *  - 그리드 폼
+ *  - 푸터: 취소 + 추가/저장 (편집 시 삭제)
  */
 export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
   const users = useTeamStore(s => s.users);
@@ -125,12 +129,12 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
 
   return (
     <>
-      <SideDrawer
+      <ModalShell
         open={open}
         onClose={onClose}
         title={isNew ? '새 권한 그룹' : (group?.name ?? '권한 그룹')}
         description={isSystem ? '시스템 기본 그룹 — 이름/설명/권한은 잠겨 있습니다. 멤버만 변경 가능.' : undefined}
-        width="lg"
+        widthClass="max-w-2xl"
         footer={
           <>
             {!isNew && !isSystem && (
@@ -139,39 +143,52 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
               </MsButton>
             )}
             <div className="flex-1" />
-            <MsButton size="sm" variant="ghost" onClick={onClose}>취소</MsButton>
-            <MsButton size="sm" variant="brand1" onClick={handleSave}>
-              {isNew ? '생성' : '저장'}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099"
+            >
+              취소
+            </button>
+            <MsButton onClick={handleSave} disabled={!name.trim()}>
+              {isNew ? '추가' : '저장'}
             </MsButton>
           </>
         }
       >
         <div className="space-y-5">
           {/* 기본 정보 */}
-          <section className="space-y-3">
-            <h4 className="text-xs font-semibold text-gray-050 uppercase tracking-wider">기본 정보</h4>
-            <MsInput
-              label="그룹 이름"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="예) 리뷰 관리자"
-              disabled={lockMeta}
-            />
-            <MsInput
-              label="설명 (선택)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="이 그룹의 책임/범위"
-              disabled={lockMeta}
-            />
-          </section>
+          <div>
+            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <MsInput
+                  autoFocus
+                  label="그룹 이름 *"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="예) 리뷰 관리자"
+                  disabled={lockMeta}
+                />
+              </div>
+              <div className="col-span-2">
+                <MsInput
+                  label="설명"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="이 그룹의 책임/범위"
+                  disabled={lockMeta}
+                />
+              </div>
+            </div>
+          </div>
 
           {/* 권한 */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs font-semibold text-gray-050 uppercase tracking-wider">권한</h4>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">권한</p>
               {lockMeta && <MsLockIcon size={12} className="text-gray-040" />}
-              <span className="text-xs text-gray-040">{permissions.length}개 선택</span>
+              <span className="text-[11px] text-gray-040">{permissions.length}개 선택</span>
             </div>
             <div className="space-y-3">
               {PERMISSION_CATEGORIES.map(cat => {
@@ -180,7 +197,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                 return (
                   <div key={cat} className="rounded-lg border border-gray-010 p-3">
                     <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wider mb-2">{cat}</p>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {items.map(meta => {
                         const checked = permissions.includes(meta.code);
                         return (
@@ -207,18 +224,18 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                 );
               })}
             </div>
-          </section>
+          </div>
 
           {/* 멤버 */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs font-semibold text-gray-050 uppercase tracking-wider">멤버</h4>
-              <span className="text-xs text-gray-040">{memberIds.length}명</span>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">멤버</p>
+              <span className="text-[11px] text-gray-040">{memberIds.length}명</span>
             </div>
 
             {/* 현재 멤버 칩 */}
             {memberIds.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-010 bg-gray-001 p-2">
+              <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-010 bg-gray-001 p-2 mb-3">
                 {memberIds.map(id => {
                   const u = users.find(x => x.id === id);
                   if (!u) return null;
@@ -248,7 +265,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
               onChange={e => setMemberQuery(e.target.value)}
               placeholder="이름·이메일·부서로 검색"
             />
-            <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-010 divide-y divide-gray-005">
+            <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-gray-010 divide-y divide-gray-005">
               {candidateUsers.length === 0 ? (
                 <p className="px-4 py-6 text-center text-xs text-gray-040">검색 결과가 없습니다.</p>
               ) : (
@@ -277,12 +294,12 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                 })
               )}
             </div>
-            <p className="text-[11px] text-gray-040">
+            <p className="mt-2 text-[11px] text-gray-040">
               admin 역할 사용자는 자동으로 모든 권한을 보유하므로 별도 가입이 불필요합니다 (소유자 그룹).
             </p>
-          </section>
+          </div>
         </div>
-      </SideDrawer>
+      </ModalShell>
 
       <ConfirmDialog
         open={confirmDelete}

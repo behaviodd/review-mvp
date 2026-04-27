@@ -8,6 +8,7 @@ import { ToastContainer, useShowToast } from '../ui/Toast';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
 import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
 import { SyncStatusBanner } from '../system/SyncStatusBanner';
+import { ImpersonationBanner } from '../system/ImpersonationBanner';
 import { QUOTA_EVENT } from '../../utils/safeStorage';
 
 const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/'];
@@ -90,6 +91,7 @@ export function AppLayout() {
           <Header />
         </div>
 
+        <ImpersonationBanner />
         <SyncStatusBanner />
 
         <main className={`flex-1 flex flex-col min-h-0 ${isFullBleed ? 'overflow-hidden' : 'overflow-y-auto p-6'}`}>

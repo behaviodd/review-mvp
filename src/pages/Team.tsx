@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { usePermission } from '../hooks/usePermission';
@@ -14,10 +15,13 @@ import {
   MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
   MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon, MsRefreshIcon,
   MsFriendAddIcon, MsGrabIcon, MsProfileIcon, MsChevronRightLineIcon, MsGroupIcon, MsWarningIcon,
+  MsLogoutIcon,
 } from '../components/ui/MsIcons';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 import { MsButton } from '../components/ui/MsButton';
 import { MsCheckbox, MsInput, MsSelect } from '../components/ui/MsControl';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { impersonationLogWriter } from '../utils/sheetWriter';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
 const ORG_TYPE_LABEL: Record<OrgUnitType, string> = {
@@ -1014,13 +1018,14 @@ function OrgTreeNode({
 
 /* ── Member Row ─────────────────────────────────────────────────────── */
 function MemberRow({
-  user, onEdit, onTerminate, secondaryOrgs,
+  user, onEdit, onTerminate, onImpersonate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
   secondaryAssignmentHere, isOrgHeadHere = false, isAnyOrgHead = false,
 }: {
   user: User;
   onEdit: ((u: User) => void) | null;
   onTerminate?: (u: User) => void;
+  onImpersonate?: (u: User) => void;
   secondaryOrgs: SecondaryOrgAssignment[];
   selected?: boolean;
   onToggle?: (id: string) => void;
@@ -1083,6 +1088,12 @@ function MemberRow({
             className="p-1.5 rounded-md text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
             <MsEditIcon size={12} className="size-3.5" />
           </button>
+          {onImpersonate && user.role !== 'admin' && isUserActive(user) && (
+            <button onClick={() => onImpersonate(user)} title="마스터 로그인 (조회 전용)"
+              className="p-1.5 rounded-md text-gray-040 hover:text-orange-070 hover:bg-orange-005 transition-colors">
+              <MsLogoutIcon size={12} className="size-3.5" />
+            </button>
+          )}
           {onTerminate && user.role !== 'admin' && (
             <button onClick={() => onTerminate(user)} title="퇴사 처리"
               className="p-1.5 rounded-md text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
@@ -1099,6 +1110,8 @@ function MemberRow({
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
+  const navigate = useNavigate();
+  const startImpersonation = useAuthStore(s => s.startImpersonation);
   const showToast = useShowToast();
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
@@ -1112,6 +1125,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     | { mode: 'edit'; unit: OrgUnit }
     | null
   >(null);
+  // R5-b: 마스터 로그인 시작 확인
+  const [impersonateTarget, setImpersonateTarget] = useState<User | null>(null);
 
   /* ── 복수 선택 & 이동 ────────────────────────────────────────────── */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -1410,6 +1425,26 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     }
   };
 
+  // R5-b: 마스터 로그인 시작
+  const handleImpersonate = (user: User) => {
+    setImpersonateTarget(user);
+  };
+
+  const confirmImpersonate = (reason?: string) => {
+    if (!impersonateTarget) return;
+    const log = startImpersonation(impersonateTarget, reason);
+    if (!log) {
+      showToast('error', '마스터 로그인을 시작할 수 없습니다.');
+      setImpersonateTarget(null);
+      return;
+    }
+    // 시트로 비동기 push (실패해도 세션 진행)
+    impersonationLogWriter.start(log);
+    showToast('success', `${impersonateTarget.name}(으)로 접속했습니다. 작성/수정은 차단됩니다.`);
+    setImpersonateTarget(null);
+    navigate('/'); // 대상자 대시보드로 이동
+  };
+
   return (
     <div className="space-y-5">
       {/* 동기화 상태 + 퇴사자 토글 */}
@@ -1493,6 +1528,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                   onEdit={canEdit ? setEditingMember : null}
                   onTerminate={canEdit ? handleTerminate : undefined}
+                  onImpersonate={canEdit ? handleImpersonate : undefined}
                   isAnyOrgHead={headIdsAll.has(u.id)} />
               ))}
             </div>
@@ -1659,6 +1695,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                     onEdit={canEdit ? setEditingMember : null}
                     onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
+                    onImpersonate={canEdit && !showTerminated ? handleImpersonate : undefined}
                     selected={selectedIds.has(u.id)}
                     onToggle={canEdit && !showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
@@ -1711,6 +1748,27 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           onClose={() => setOrgModal(null)}
         />
       )}
+
+      {/* R5-b: 마스터 로그인 시작 확인 */}
+      <ConfirmDialog
+        open={impersonateTarget !== null}
+        onClose={() => setImpersonateTarget(null)}
+        onConfirm={(reason) => confirmImpersonate(reason)}
+        title="마스터 로그인 시작"
+        description={impersonateTarget ? (
+          <>
+            <strong>{impersonateTarget.name}</strong>({impersonateTarget.email})으로 접속합니다.
+            <br />
+            화면 조회만 가능하며 작성·수정·제출은 차단됩니다.
+            <br />
+            모든 동작은 감사 로그에 기록됩니다.
+          </>
+        ) : null}
+        confirmLabel="접속"
+        tone="danger"
+        requireReason
+        reasonPlaceholder="예) 사용자 화면 점검 요청"
+      />
     </div>
   );
 }

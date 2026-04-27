@@ -85,7 +85,16 @@ canExtendDeadline({ actor, cycle, submission, assignments })
 
 - **R1**: 평가권 모델(`ReviewerAssignment`) 도입
 - **R2**: 권한 매트릭스 일원화. 평가권자가 자기 reviewee 액션 가능
-- **R5-a** (현재): 자유 재귀 조직 트리
+- **R5-b** (현재): 마스터 로그인 (impersonation) UI
+  - Team.tsx 구성원 행에 admin only "마스터 로그인" 버튼 추가
+  - ConfirmDialog 시작 다이얼로그 (사유 필수 입력)
+  - AppLayout 상단 빨간 sticky 배너 — "현재 [홍길동]으로 보기 중 · [원래대로]"
+  - authStore: originalUser 스냅샷 저장 → endImpersonation 시 자동 복원
+  - MyReviewWrite/TeamReviewWrite: isReadOnly 에 isImpersonating 추가 → 작성·저장·제출 차단
+  - impersonationLogWriter.start/end 로 시트 자동 동기화
+  - 호환: 일반 사용자 미영향, R1 데이터 모델 그대로 사용
+
+- **R5-a**: 자유 재귀 조직 트리
   - `ORG_TYPE_NEXT['squad'] = 'squad'`, `ALLOWED_CHILD['squad'] = 'squad'` — squad 자기재귀로 5단계 이상 깊이 무제한
   - OrgTreeNode 들여쓰기는 이미 depth 기반, depth ≥ 4 부터 `Lv.N` 배지 표시
   - 멤버 카운트: `getMembersInOrgTree(orgUnitId)` 로 트리 전체 룩업 + legacy 4단계 텍스트 매칭 fallback

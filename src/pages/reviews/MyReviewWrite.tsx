@@ -527,7 +527,9 @@ export function MyReviewWrite() {
     isSelf && !isProxyMode && submission.status !== 'submitted' &&
     (cycle?.status === 'manager_review' || cycle?.status === 'closed');
 
-  const isReadOnly = submission.status === 'submitted' || isDownwardViewingByReviewee || cyclePastSelfReview;
+  // R5-b: 마스터 로그인 중이면 모든 작성/제출 차단 (조회 전용)
+  const isImpersonating = useAuthStore.getState().impersonatingFromId !== null;
+  const isReadOnly = submission.status === 'submitted' || isDownwardViewingByReviewee || cyclePastSelfReview || isImpersonating;
 
   const downwardVisibility = cycle?.visibility?.downwardToReviewee ?? 'cycle_close';
   const visibleToReviewee = downwardVisibility === 'submission' || cycle?.status === 'closed';

@@ -9,6 +9,7 @@ import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
+import { usePendingApprovalsStore } from '../../stores/pendingApprovalsStore';
 import { Pill } from '../ui/Pill';
 import { cn } from '../ui/cn';
 import { useMemo } from 'react';
@@ -98,6 +99,17 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   // 보관함 가시성 — 보관된 사이클이 1건이라도 있어야 노출
   const hasArchivedCycles = useMemo(() => cycles.some(c => !!c.archivedAt), [cycles]);
 
+  // R7: 신규 회원 승인 대기 카운트 — 구성원 메뉴 옆 빨간 배지
+  const pendingApprovalCount = usePendingApprovalsStore(s => s.count);
+  const refreshPendingApprovals = usePendingApprovalsStore(s => s.refresh);
+  useEffect(() => {
+    if (!showOrgAdmin) return;
+    void refreshPendingApprovals();
+    // 5분마다 새로고침
+    const t = window.setInterval(() => { void refreshPendingApprovals(); }, 5 * 60 * 1000);
+    return () => window.clearInterval(t);
+  }, [showOrgAdmin, refreshPendingApprovals]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -126,7 +138,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
     /* 어드민 — 구성원 관리 */
     { kind: 'section', label: '구성원 관리', show: showOrgSection },
-    { kind: 'item', to: '/team',                icon: MsGroupIcon,    label: '구성원',         show: showOrgAdmin,    indent: true },
+    { kind: 'item', to: '/team',                icon: MsGroupIcon,    label: '구성원',         show: showOrgAdmin,    indent: true, badge: pendingApprovalCount },
     { kind: 'item', to: '/team/profile-fields', icon: MsIdcardIcon,   label: '프로필 설정',    show: showOrgAdmin,    indent: true },
     { kind: 'item', to: '/permissions',         icon: MsLockIcon,     label: '권한 관리',      show: showPermissions, indent: true },
 

@@ -11,8 +11,6 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { OrgSelector } from '../../components/team/OrgSelector';
 import { SecondaryOrgSection } from '../../components/team/SecondaryOrgSection';
 import { buildOrgSelFromMember, resolveOrgNamesFromSel } from '../../utils/teamUtils';
-import { resetAccount } from '../../utils/authApi';
-import { KeyRound } from 'lucide-react';
 
 const TIER_LABEL: Record<string, string> = { admin: '관리자', leader: '조직장', member: '멤버' };
 const TIER_COLOR: Record<string, string> = {
@@ -44,7 +42,6 @@ export function MemberEdit() {
 
   const [showTerminate, setShowTerminate] = useState(false);
   const [leaveDate, setLeaveDate] = useState(new Date().toISOString().slice(0, 10));
-  const [resetting, setResetting] = useState(false);
 
   const [orgSel, setOrgSel] = useState(() => member ? buildOrgSelFromMember(member, orgUnits) : { mainOrgId: '', subOrgId: '', teamId: '', squadId: '' });
 
@@ -90,18 +87,6 @@ export function MemberEdit() {
   }
 
   const hasOrgUnits = orgUnits.length > 0;
-
-  const handleResetPassword = async () => {
-    if (!confirm(`${member.name}님의 비밀번호를 사번(${member.id})으로 초기화하시겠습니까?`)) return;
-    setResetting(true);
-    const ok = await resetAccount(member.id);
-    setResetting(false);
-    if (ok) {
-      showToast('success', `${member.name}님 비밀번호 초기화 완료. 초기 비밀번호: 사번(${member.id})`);
-    } else {
-      showToast('error', '비밀번호 초기화에 실패했습니다.');
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,17 +193,6 @@ export function MemberEdit() {
           <section className="border-t border-gray-010 pt-4">
             <SecondaryOrgSection userId={member.id} />
           </section>
-
-          {/* 비밀번호 초기화 */}
-          {currentUser?.role === 'admin' && member.role !== 'admin' && (
-            <div className="border-t border-gray-010 pt-3">
-              <button type="button" onClick={handleResetPassword} disabled={resetting}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-040 hover:text-yellow-060 disabled:opacity-40 transition-colors">
-                <KeyRound className="size-3.5" />
-                {resetting ? '초기화 중...' : `비밀번호 초기화 (사번: ${member.id})`}
-              </button>
-            </div>
-          )}
 
           {/* 퇴사 처리 */}
           {member.role !== 'admin' && (

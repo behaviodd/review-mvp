@@ -5,7 +5,6 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuthStore } from '../../stores/authStore';
 import { ToastContainer, useShowToast } from '../ui/Toast';
-import { ChangePasswordModal } from '../common/ChangePasswordModal';
 import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
 import { SyncStatusBanner } from '../system/SyncStatusBanner';
 import { ImpersonationBanner } from '../system/ImpersonationBanner';
@@ -17,7 +16,7 @@ const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templ
 const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 
 export function AppLayout() {
-  const { currentUser, mustChangePassword } = useAuthStore();
+  const { currentUser } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const showToast = useShowToast();
@@ -106,10 +105,6 @@ export function AppLayout() {
       </div>
 
       <ToastContainer />
-
-      {mustChangePassword && (
-        <ChangePasswordModal userId={currentUser.id} onDone={() => {}} />
-      )}
     </div>
     </PageHeaderProvider>
   );

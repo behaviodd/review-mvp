@@ -17,15 +17,26 @@ export type ActivityStatus =
   | 'terminated'    // 퇴사 (사이클 자동 제외)
   | 'other';        // 기타 (관리자 판단)
 
+// R7: 사용자 승인 상태. Google SSO 신규 회원 흐름에 사용.
+//   active   = 정상 — 모든 화면 사용 가능
+//   pending  = 승인 대기 — 로그인은 되지만 /pending-approval 외 모든 라우트 차단
+//   inactive = 비활성 (반려/퇴사) — 로그인 차단
+export type ApprovalStatus = 'active' | 'pending' | 'inactive';
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  /** @deprecated R7 — 권한그룹 멤버십으로 일원화 (`pg_owner` 멤버 = admin). 호환을 위해 유지. */
   role: UserRole;
   position: string;
   avatarColor: string;
   // R1: 단일 주조직 (자유 재귀 트리에서 OrgUnit.id 참조)
   orgUnitId?: string;          // 마이그레이션 후 모든 사용자에 채워짐
+  // R7: 보조조직 ID 배열 (구성원_v2.보조조직IDs 콤마 → 배열)
+  secondaryOrgIds?: string[];
+  // R7: 승인 상태 (Google SSO 신규 회원 승인 흐름)
+  status?: ApprovalStatus;
   // R1: 휴직 분류 (기존 isActive/leaveDate 대체)
   activityStatus?: ActivityStatus;
   statusChangedAt?: string;
@@ -59,11 +70,26 @@ export interface User {
 export interface OrgUnit {
   id: string;
   name: string;
-  /** @deprecated R3 에서 제거 — 자유 재귀 트리는 depth 로만 표현. 호환은 userCompat.getOrgDepth(). 단 R1 동안 값 유지. */
+  /** @deprecated R7 — 부모 체인 depth 로 표현 예정. R3~R7 호환을 위해 required 유지(읽기 코드가 의존).
+   *  Phase 3 에서 호출처 일괄 정리 후 optional → 제거. 마이그레이션 시 임시 타입 부여(depth 기반 매핑). */
   type: OrgUnitType;
   parentId?: string;          // null 또는 undefined = 루트
   headId?: string;            // 조직 리더 (목표 승인 + 일부 UI 가시성)
   order: number;
+  // R7
+  note?: string;
+}
+
+// R7: Google SSO 신규 회원 승인 대기열 — `대기승인` 시트 매핑.
+// 라이프사이클: pending(자동 생성) → approved(관리자 처리 + 사번 발번 + 권한그룹 배정) | rejected
+export interface PendingApproval {
+  email: string;                                       // PK (lowercase)
+  name?: string;                                       // Google JWT name 클레임
+  googleSub?: string;                                  // Google 영구 식별자
+  firstLoginAt: string;                                // ISO 8601
+  status: 'pending' | 'approved' | 'rejected';
+  processedBy?: string;                                // 처리한 admin 사번
+  processedAt?: string;
 }
 
 // R1: 평가권 테이블. 조직 리더(orgUnit.headId)와 분리되어 별도 운영.

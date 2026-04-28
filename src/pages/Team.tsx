@@ -6,6 +6,7 @@ import { usePermission } from '../hooks/usePermission';
 import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useShowToast } from '../components/ui/Toast';
+import { usePendingApprovalsStore } from '../stores/pendingApprovalsStore';
 import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
 import { ORG_TYPE_LABEL, ORG_TYPE_NEXT } from '../utils/teamUtils';
 import { UserAvatar } from '../components/ui/UserAvatar';
@@ -698,6 +699,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   return (
     <div className="space-y-5">
+      {/* R7: 신규 회원 승인 대기 배너 — org.manage 보유자에게만 노출, count > 0 일 때만 */}
+      <PendingApprovalsBanner />
+
       {/* 동기화 상태 + 퇴사자 토글 */}
       <div className="flex items-center gap-2 flex-wrap">
         {orgSyncEnabled && (
@@ -1015,4 +1019,29 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 export function Team() {
   const { isAdmin } = usePermission();
   return <AdminView canEdit={isAdmin} />;
+}
+
+/* ── R7: 신규 회원 승인 대기 배너 ───────────────────────────────────── */
+function PendingApprovalsBanner() {
+  const navigate = useNavigate();
+  const { can } = usePermission();
+  const count = usePendingApprovalsStore(s => s.count);
+  if (!can.manageOrg || count <= 0) return null;
+  return (
+    <button
+      onClick={() => navigate('/team/pending-approvals')}
+      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-yellow-005 border border-yellow-060/20 hover:bg-yellow-060/10 transition-colors text-left"
+    >
+      <div className="flex items-center gap-3">
+        <div className="size-8 rounded-full bg-yellow-060/15 flex items-center justify-center flex-shrink-0">
+          <MsFriendAddIcon size={16} className="text-yellow-060" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-099">신규 회원 {count}명 승인 대기</p>
+          <p className="text-xs text-gray-050 mt-0.5">관리자가 승인해야 시스템을 사용할 수 있습니다.</p>
+        </div>
+      </div>
+      <MsChevronRightLineIcon size={14} className="text-gray-040" />
+    </button>
+  );
 }

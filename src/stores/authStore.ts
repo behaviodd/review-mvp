@@ -6,16 +6,14 @@ import type { User, ImpersonationLog } from '../types';
 
 interface AuthState {
   currentUser: User | null;
-  mustChangePassword: boolean;
   // R1/R5-b: 마스터 로그인 (impersonation)
   impersonatingFromId: string | null;       // 마스터 로그인 시 원본 admin id
   originalUser: User | null;                 // 복원용 admin 스냅샷
   activeImpersonationLogId: string | null;   // 현재 활성 로그 id (endedAt 기록용)
   impersonationLogs: ImpersonationLog[];     // 세션 내 발생 기록 — 시트로 동기화
 
-  login: (user: User, mustChangePassword?: boolean) => void;
+  login: (user: User) => void;
   logout: () => void;
-  clearMustChangePassword: () => void;
 
   startImpersonation: (target: User, reason?: string) => ImpersonationLog | null;
   endImpersonation: () => void;
@@ -25,16 +23,14 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       currentUser: null,
-      mustChangePassword: false,
       impersonatingFromId: null,
       originalUser: null,
       activeImpersonationLogId: null,
       impersonationLogs: [],
 
-      login: (user, mustChangePassword = false) =>
+      login: (user) =>
         set({
           currentUser: user,
-          mustChangePassword,
           impersonatingFromId: null,
           originalUser: null,
           activeImpersonationLogId: null,
@@ -42,12 +38,10 @@ export const useAuthStore = create<AuthState>()(
       logout: () =>
         set({
           currentUser: null,
-          mustChangePassword: false,
           impersonatingFromId: null,
           originalUser: null,
           activeImpersonationLogId: null,
         }),
-      clearMustChangePassword: () => set({ mustChangePassword: false }),
 
       startImpersonation: (target, reason) => {
         const state = get();
@@ -104,7 +98,6 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => ({
         currentUser:               s.currentUser,
-        mustChangePassword:        s.mustChangePassword,
         impersonatingFromId:       s.impersonatingFromId,
         originalUser:              s.originalUser,
         activeImpersonationLogId:  s.activeImpersonationLogId,

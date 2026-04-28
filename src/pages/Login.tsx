@@ -1,30 +1,42 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '../stores/authStore';
 import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
-import { verifyLogin } from '../utils/authApi';
+import { verifyGoogleLogin } from '../utils/authApi';
 import type { User } from '../types';
 import { Loader2 } from 'lucide-react';
-import { MsSettingIcon, MsShowIcon, MsHideIcon } from '../components/ui/MsIcons';
-import { MsButton } from '../components/ui/MsButton';
-import { MsInput } from '../components/ui/MsControl';
+import { MsSettingIcon } from '../components/ui/MsIcons';
 
-/* ── 메인 로그인 페이지 ────────────────────────────────────────────────── */
+const ALLOWED_DOMAIN = 'makestar.com';
+
 export function Login() {
   const { login } = useAuthStore();
   const { users, isLoading: usersLoading } = useTeamStore();
   const { scriptUrl } = useSheetsSyncStore();
   const navigate = useNavigate();
 
-  // scriptUrl이 있어도 구성원이 없으면 초기 설정 모드 표시
-  const isSetupMode = users.length === 0 && !usersLoading;
+  // scriptUrl 도 없고 구성원도 비어있는 최초 부팅 상태에서만 부트스트랩 모드 노출
+  const isSetupMode = users.length === 0 && !usersLoading && !scriptUrl;
 
-  const handleSetupLogin = () => {
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  const handleSetupLogin = (credentialResponse: CredentialResponse) => {
+    // 부트스트랩: 시트 연동 전에 makestar.com 계정으로 임시 admin 진입
+    const cred = credentialResponse.credential;
+    if (!cred) { setError('Google 응답이 비어 있습니다.'); return; }
+    const claims = decodeJwtPayload(cred);
+    if (!claims) { setError('토큰 파싱에 실패했습니다.'); return; }
+    if (claims.hd !== ALLOWED_DOMAIN || claims.email_verified !== true) {
+      setError(`@${ALLOWED_DOMAIN} 계정으로만 로그인할 수 있습니다.`);
+      return;
+    }
     const bootstrapAdmin: User = {
       id: 'setup_admin',
-      name: '초기 관리자',
-      email: 'admin@setup.local',
+      name: claims.name || '초기 관리자',
+      email: String(claims.email ?? 'admin@setup.local'),
       role: 'admin',
       department: '관리',
       position: '관리자',
@@ -34,24 +46,35 @@ export function Login() {
     navigate('/settings');
   };
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw,   setShowPw]   = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  /* 이메일 + 비밀번호 로그인 */
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    const cred = credentialResponse.credential;
+    if (!cred) { setError('Google 응답이 비어 있습니다.'); return; }
     setLoading(true);
     setError('');
     try {
-      const result = await verifyLogin(email.trim(), password);
+      const result = await verifyGoogleLogin(cred);
 
-      // 로컬 users 스토어에서 찾기 — 아직 org sync 중이면 최대 3초 대기
+      // R7: 신규 회원 (시트 미등록 → 대기승인 큐) — 빈 페이지로 이동
+      if (result.status === 'pending') {
+        const pendingUser: User = {
+          id: `pending_${result.email}`,
+          name: result.name || result.email.split('@')[0],
+          email: result.email,
+          role: 'member',                // 컴파일 호환 — 권한그룹 미부여
+          position: '',
+          department: '',                // legacy 필수 필드 호환
+          avatarColor: '#9ca3af',
+          status: 'pending',
+        };
+        login(pendingUser);
+        navigate('/pending-approval');
+        return;
+      }
+
+      // 기존 회원 — _구성원 시트의 사번/이메일로 매칭
       const findUser = () =>
         useTeamStore.getState().users.find(
-          u => u.id === result.userId || u.email.toLowerCase() === email.trim().toLowerCase()
+          u => u.id === result.userId || u.email.toLowerCase() === result.email.toLowerCase()
         );
 
       let user: User | undefined = findUser();
@@ -64,14 +87,17 @@ export function Login() {
         setError('구성원 데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
         return;
       }
-      login(user, result.isTemp);
+      login({ ...user, status: 'active' });
       navigate('/');
     } catch (e) {
-      // verifyLogin이 throw한 실제 원인을 그대로 표시
       setError(e instanceof Error ? e.message : '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google 로그인에 실패했습니다.');
   };
 
   return (
@@ -95,7 +121,7 @@ export function Login() {
             </svg>
           </div>
           <h1 className="text-2xl/8 font-semibold text-gray-099 tracking-tight">메이크스타 리뷰시스템</h1>
-          <p className="text-sm/6 text-gray-050 mt-1">이메일과 비밀번호로 로그인하세요</p>
+          <p className="text-sm/6 text-gray-050 mt-1">@{ALLOWED_DOMAIN} 계정으로 로그인하세요</p>
         </div>
 
         {/* org 동기화 중 안내 */}
@@ -106,8 +132,8 @@ export function Login() {
           </div>
         )}
 
-        {/* 초기 설정 모드 배너 */}
-        {isSetupMode && !scriptUrl && (
+        {/* 초기 설정 모드 — 시트 연동 전 부트스트랩 */}
+        {isSetupMode && (
           <div className="bg-white rounded-2xl ring-1 ring-yellow-060/20 shadow-sm p-5 space-y-3">
             <div className="flex items-start gap-3">
               <div className="size-8 rounded-lg bg-yellow-005 flex items-center justify-center flex-shrink-0">
@@ -117,65 +143,70 @@ export function Login() {
                 <p className="text-sm font-semibold text-gray-099">초기 설정이 필요합니다</p>
                 <p className="text-xs text-gray-050 mt-0.5 leading-relaxed">
                   Google Sheets 연동이 설정되지 않았습니다.<br />
-                  설정 모드로 진입해 Apps Script URL을 먼저 등록해 주세요.
+                  @{ALLOWED_DOMAIN} 계정으로 로그인하여 Apps Script URL을 먼저 등록해 주세요.
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleSetupLogin}
-              className="w-full py-2 text-sm font-semibold text-yellow-070 bg-yellow-005 border border-yellow-060/20 rounded-lg hover:bg-yellow-060/10 transition-colors"
-            >
-              설정 모드로 진입
-            </button>
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleSetupLogin}
+                onError={handleGoogleError}
+                hosted_domain={ALLOWED_DOMAIN}
+                text="signin_with"
+                theme="outline"
+                size="large"
+              />
+            </div>
           </div>
         )}
 
-        {/* 로그인 폼 */}
-        <div className="bg-white rounded-2xl ring-1 ring-gray-010 shadow-sm">
-          <form onSubmit={handleLogin} className="p-5 space-y-3">
-            <MsInput
-              label="이메일"
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(''); }}
-              placeholder="name@company.com"
-              autoComplete="email"
-              autoFocus
-            />
+        {/* 일반 로그인 — Google 버튼 */}
+        {!isSetupMode && (
+          <div className="bg-white rounded-2xl ring-1 ring-gray-010 shadow-sm">
+            <div className="p-5 space-y-3">
+              {loading ? (
+                <div className="flex items-center justify-center py-3 text-sm text-gray-050">
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  로그인 중...
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    hosted_domain={ALLOWED_DOMAIN}
+                    text="signin_with"
+                    theme="outline"
+                    size="large"
+                  />
+                </div>
+              )}
 
-            <MsInput
-              label="비밀번호"
-              type={showPw ? 'text' : 'password'}
-              value={password}
-              onChange={e => { setPassword(e.target.value); setError(''); }}
-              placeholder="비밀번호 (초기: 사번)"
-              autoComplete="current-password"
-              rightSlot={
-                <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-040 hover:text-gray-060 transition-colors">
-                  {showPw ? <MsHideIcon size={16} /> : <MsShowIcon size={16} />}
-                </button>
-              }
-            />
-
-            {error && (
-              <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>
-            )}
-
-            <MsButton
-              type="submit"
-              disabled={!email.trim() || !password}
-              loading={loading}
-              className="w-full"
-            >
-              로그인
-            </MsButton>
-          </form>
-        </div>
+              {error && (
+                <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <p className="text-center text-xs text-gray-040 pb-4">
-          초기 비밀번호는 사번입니다. 분실 시 관리자에게 초기화를 요청하세요.
+          @{ALLOWED_DOMAIN} 도메인의 구성원만 로그인할 수 있습니다.
         </p>
       </div>
     </div>
   );
+}
+
+/** ID Token(JWT) payload base64url 디코드 — 부트스트랩 모드의 도메인 힌트 검증용. */
+function decodeJwtPayload(jwt: string): { email?: string; email_verified?: boolean; hd?: string; name?: string } | null {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length !== 3) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch {
+    return null;
+  }
 }

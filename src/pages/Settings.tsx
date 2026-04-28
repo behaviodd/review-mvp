@@ -8,136 +8,13 @@ import { useReviewSync } from '../hooks/useReviewSync';
 import { useReviewStore } from '../stores/reviewStore';
 import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
-import { Shield, Sheet } from 'lucide-react';
-import { MsProfileIcon, MsCheckCircleIcon, MsCancelIcon, MsRefreshIcon, MsInfoIcon, MsChevronDownLineIcon, MsShowIcon, MsHideIcon } from '../components/ui/MsIcons';
+import { Sheet } from 'lucide-react';
+import { MsProfileIcon, MsCheckCircleIcon, MsCancelIcon, MsRefreshIcon, MsInfoIcon } from '../components/ui/MsIcons';
 import { MsSwitch, MsInput } from '../components/ui/MsControl';
-import { verifyLogin, changePassword, batchInitAccounts } from '../utils/authApi';
 import { MsButton } from '../components/ui/MsButton';
 import { SyncRetryDrawer } from '../components/review/SyncRetryDrawer';
 import { timeAgo } from '../utils/dateUtils';
-
-
-/* ── 비밀번호 변경 섹션 ──────────────────────────────────────────────── */
-function PasswordChangeSection() {
-  const { currentUser } = useAuthStore();
-  const showToast = useShowToast();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ current: '', next: '', confirm: '' });
-  const [show, setShow] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const strength = form.next.length === 0 ? 0 : form.next.length < 6 ? 1 : form.next.length < 10 ? 2 : 3;
-  const strengthLabel = ['', '약함', '보통', '강함'];
-  const strengthColor = ['', 'bg-red-040', 'bg-yellow-060', 'bg-green-040'];
-
-  const reset = () => { setForm({ current: '', next: '', confirm: '' }); setError(''); setOpen(false); };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    if (form.next !== form.confirm) { setError('새 비밀번호가 일치하지 않습니다.'); return; }
-    if (form.next.length < 6)      { setError('새 비밀번호는 6자 이상이어야 합니다.'); return; }
-    if (form.current === form.next) { setError('현재 비밀번호와 다른 비밀번호를 사용해 주세요.'); return; }
-
-    setLoading(true);
-    setError('');
-    try {
-      const verified = await verifyLogin(currentUser.email, form.current);
-      if (!verified) { setError('현재 비밀번호가 올바르지 않습니다.'); return; }
-      const ok = await changePassword(currentUser.id, form.next);
-      if (!ok) { setError('변경에 실패했습니다. 다시 시도해 주세요.'); return; }
-      showToast('success', '비밀번호가 변경되었습니다.');
-      reset();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between"
-      >
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-gray-040" />
-          <h2 className="text-sm font-semibold text-gray-080">개인정보 및 보안</h2>
-        </div>
-        <MsChevronDownLineIcon size={16} className={`text-gray-040 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide">비밀번호 변경</p>
-
-          {/* 현재 비밀번호 */}
-          <MsInput
-            label="현재 비밀번호"
-            type={show ? 'text' : 'password'}
-            value={form.current}
-            onChange={e => { setForm(f => ({ ...f, current: e.target.value })); setError(''); }}
-            placeholder="현재 비밀번호"
-            autoComplete="current-password"
-            rightSlot={
-              <button type="button" onClick={() => setShow(v => !v)} className="text-gray-040 hover:text-gray-060">
-                {show ? <MsHideIcon size={16} /> : <MsShowIcon size={16} />}
-              </button>
-            }
-          />
-
-          {/* 새 비밀번호 */}
-          <div>
-            <MsInput
-              label="새 비밀번호"
-              type={show ? 'text' : 'password'}
-              value={form.next}
-              onChange={e => { setForm(f => ({ ...f, next: e.target.value })); setError(''); }}
-              placeholder="새 비밀번호 (6자 이상)"
-              autoComplete="new-password"
-            />
-            {form.next.length > 0 && (
-              <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex gap-1 flex-1">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${strength >= i ? strengthColor[strength] : 'bg-gray-010'}`} />
-                  ))}
-                </div>
-                <span className={`text-[11px] font-medium ${strength === 1 ? 'text-red-040' : strength === 2 ? 'text-yellow-060' : 'text-green-060'}`}>
-                  {strengthLabel[strength]}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* 새 비밀번호 확인 */}
-          <MsInput
-            label="새 비밀번호 확인"
-            type={show ? 'text' : 'password'}
-            value={form.confirm}
-            onChange={e => { setForm(f => ({ ...f, confirm: e.target.value })); setError(''); }}
-            placeholder="새 비밀번호 재입력"
-            autoComplete="new-password"
-          />
-
-          {error && <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <MsButton type="button" variant="ghost" size="sm" onClick={reset}>취소</MsButton>
-            <MsButton
-              type="submit"
-              size="sm"
-              disabled={!form.current || !form.next || !form.confirm}
-              loading={loading}
-            >
-              비밀번호 변경
-            </MsButton>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-}
+import { syncAccounts } from '../utils/authApi';
 
 export function Settings() {
   const { currentUser } = useAuthStore();
@@ -159,18 +36,18 @@ export function Settings() {
 
   useSetPageHeader('설정');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
-  const [batchInitState, setBatchInitState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
+  const [syncAccountsState, setSyncAccountsState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
 
-  const handleBatchInitAccounts = async () => {
-    setBatchInitState('loading');
-    const result = await batchInitAccounts();
-    setBatchInitState(result.ok ? 'ok' : 'fail');
+  const handleSyncAccounts = async () => {
+    setSyncAccountsState('loading');
+    const result = await syncAccounts();
+    setSyncAccountsState(result.ok ? 'ok' : 'fail');
     if (result.ok) {
-      showToast('success', `계정 일괄 초기화 완료 — ${result.created}명 신규 등록`);
+      showToast('success', `_계정 시트 동기화 완료 — ${result.created}명 신규 추가`);
     } else {
-      showToast('error', '계정 초기화에 실패했습니다. Apps Script URL을 확인해 주세요.');
+      showToast('error', '_계정 시트 동기화에 실패했습니다. Apps Script URL을 확인해 주세요.');
     }
-    setTimeout(() => setBatchInitState('idle'), 3000);
+    setTimeout(() => setSyncAccountsState('idle'), 3000);
   };
 
   const handleSaveUrl = () => {
@@ -234,9 +111,6 @@ export function Settings() {
           <MsButton variant="outline-default" size="sm" disabled title="프로필 편집은 아직 지원되지 않습니다">편집</MsButton>
         </div>
       </div>
-
-      {/* Privacy */}
-      <PasswordChangeSection />
 
       {/* Google Sheets 연동 (관리자 전용) */}
       {currentUser.role === 'admin' && (
@@ -380,20 +254,20 @@ export function Settings() {
 
           </div>
 
-          {/* 저장 / 계정 일괄 초기화 */}
+          {/* 저장 / _계정 시트 동기화 */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2">
               {scriptUrl && (
                 <button
-                  onClick={handleBatchInitAccounts}
-                  disabled={batchInitState === 'loading'}
+                  onClick={handleSyncAccounts}
+                  disabled={syncAccountsState === 'loading'}
                   className="px-3 py-2 text-xs font-semibold text-yellow-070 bg-yellow-005 border border-yellow-060/20 rounded-lg hover:bg-yellow-060/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  {batchInitState === 'loading' ? '처리 중...' : '계정 일괄 초기화'}
+                  {syncAccountsState === 'loading' ? '처리 중...' : '_계정 시트 동기화'}
                 </button>
               )}
               {scriptUrl && (
-                <p className="text-[11px] text-gray-040">시트에서 가져온 구성원의 초기 비밀번호를 사번으로 설정</p>
+                <p className="text-[11px] text-gray-040">_구성원 시트의 사번/이메일을 _계정 시트에 누락 없이 채워 권한관리 인덱스로 사용</p>
               )}
             </div>
             <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>

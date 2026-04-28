@@ -22,7 +22,7 @@ var SHEET_SECONDARY   = '_겸임';
 var SHEET_CYCLES      = '_리뷰';
 var SHEET_TEMPLATES   = '_템플릿';
 var SHEET_SUBMISSIONS = '_제출';
-var SHEET_ACCOUNTS    = '_계정';
+var SHEET_ACCOUNTS    = '_계정';   /* @deprecated R7 — 폐기 예정. Migrate_R7 의 cleanupDeadSheets 로 삭제. */
 var SHEET_AUDIT       = '_감사로그';
 // R1: 평가권 / 인사 스냅샷 / 마스터 로그인
 var SHEET_ASSIGNMENTS = '_평가권';
@@ -30,6 +30,11 @@ var SHEET_SNAPSHOTS   = '_인사스냅샷';
 var SHEET_IMPLOG      = '_마스터로그인';
 // R6: 권한 그룹
 var SHEET_PERMGROUPS  = '_권한그룹';
+// R7: 신규 시트 (Migrate_R7.gs migrateR7_run() 으로 생성)
+var SHEET_USERS_V2    = '구성원_v2';
+var SHEET_ORG_V2      = '조직_v2';
+var SHEET_PENDING     = '대기승인';
+var SHEET_CYCLES_V2   = '사이클_v2';
 
 /* ── 헤더 정의 ──────────────────────────────────────────────────
  * 신규 컬럼은 항상 뒤에만 추가. upsertRow / appendRowData 가 자동 보강하므로
@@ -104,9 +109,36 @@ var SUBMISSION_HEADERS = [
   // R3: 평가자 차수 (downward 만 사용)
   '평가자차수'
 ];
-var ACCOUNT_HEADERS  = ['사번', '이메일', '비밀번호해시'];
+// _계정 시트는 권한관리 인덱스로 사용 — 사번/이메일만 자동 동기화. 비밀번호 컬럼은 코드에서 더 이상 다루지 않음.
+// @deprecated R7 — Google SSO 도입으로 폐기. Migrate_R7.migrateR7_cleanupDeadSheets() 로 삭제.
+var ACCOUNT_HEADERS  = ['사번', '이메일'];
 var AUDIT_HEADERS = [
   '로그ID', '사이클ID', '발생자ID', '액션', '대상IDS', '요약', '메타JSON', '발생일시'
+];
+
+/* R7: 새 시트 헤더 (단일 진실 = docs/db-schema.md / Migrate_R7.gs) */
+var USER_V2_HEADERS = [
+  '사번', '이메일', '이름', '직책', '소속조직ID', '보조조직IDs',
+  '입사일', '퇴사일', '비고'
+];
+var ORG_V2_HEADERS = [
+  '조직ID', '조직명', '부모조직ID', '표시순서', '조직장사번', '비고'
+];
+var PENDING_HEADERS = [
+  '이메일', '이름', 'Google_sub', '최초로그인일시',
+  '상태', '처리자', '처리일시'
+];
+// CYCLE_V2_HEADERS 는 핵심 9 + 스페이서 + 부가. 기존 CYCLE_HEADERS 의 모든 컬럼 호환.
+var CYCLE_V2_HEADERS = [
+  '사이클ID', '제목', '상태', '자기평가시작', '자기평가종료',
+  '하향평가시작', '하향평가종료', '템플릿ID', '비고',
+  '_',
+  '유형', '리뷰유형', '대상모드', '대상매니저ID', '대상사용자IDS', '폴더ID', '태그',
+  '인사적용방식', '인사스냅샷ID', '평가차수배열',
+  '자기평가마감', '매니저평가마감', '예약발행일시', '편집잠금일시', '종료일시', '보관일시',
+  '익명정책JSON', '공개정책JSON', '참고정보JSON', '동료선택정책JSON', '자동전환JSON', '알림정책JSON',
+  '템플릿스냅샷JSON', '템플릿스냅샷일시', '복제원본ID',
+  '생성자ID', '생성일시', '완료율', '자동보관플래그'
 ];
 
 /* ── 유틸: 스프레드시트 ─────────────────────────────────────────── */
@@ -260,6 +292,53 @@ function sha256Hex(text) {
   }).join('');
 }
 
+/**
+ * Google ID Token (JWT) 검증.
+ * Google `tokeninfo` 엔드포인트로 서명·만료까지 검증한 뒤
+ * aud / iss / hd / email_verified 클레임을 추가 확인.
+ *
+ * @param {string} idToken
+ * @returns {{ email: string, name: string, sub: string } | { error: string }}
+ */
+var ALLOWED_HD_DEFAULT_ = 'makestar.com';
+function verifyGoogleIdToken_(idToken) {
+  var props = PropertiesService.getScriptProperties();
+  var clientId = props.getProperty('GOOGLE_CLIENT_ID');
+  if (!clientId) return { error: '서버 설정 오류: GOOGLE_CLIENT_ID 가 Script Properties 에 없습니다.' };
+  var allowedHd = props.getProperty('ALLOWED_HD') || ALLOWED_HD_DEFAULT_;
+
+  var url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken);
+  var res;
+  try {
+    res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  } catch (e) {
+    return { error: 'Google 토큰 검증 호출 실패: ' + String(e) };
+  }
+  if (res.getResponseCode() !== 200) {
+    return { error: 'Google 토큰 검증 실패 (HTTP ' + res.getResponseCode() + ')' };
+  }
+  var claims;
+  try { claims = JSON.parse(res.getContentText()); }
+  catch (e) { return { error: '토큰 응답 파싱 실패' }; }
+
+  if (claims.aud !== clientId) return { error: 'aud 불일치 — 다른 클라이언트의 토큰입니다.' };
+  var iss = String(claims.iss || '');
+  if (iss !== 'accounts.google.com' && iss !== 'https://accounts.google.com') {
+    return { error: 'iss 불일치: ' + iss };
+  }
+  var nowSec = Math.floor(Date.now() / 1000);
+  if (Number(claims.exp) <= nowSec) return { error: '토큰이 만료되었습니다.' };
+  if (String(claims.email_verified) !== 'true') return { error: '이메일이 검증되지 않은 계정입니다.' };
+  if (String(claims.hd || '') !== allowedHd) {
+    return { error: '@' + allowedHd + ' 계정으로만 로그인할 수 있습니다.' };
+  }
+  return {
+    email: String(claims.email || ''),
+    name:  String(claims.name  || ''),
+    sub:   String(claims.sub   || ''),
+  };
+}
+
 function normalizeKey(k) {
   return String(k).replace(/\s+/g, '').toLowerCase();
 }
@@ -359,84 +438,218 @@ function doPost(e) {
     var data    = payload.data || {};
     var rows    = payload.rows || [];
 
-    /* ── 인증 ── */
-    if (action === 'verifyLogin') {
-      var accountSheet = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
-      var accounts     = sheetToObjects(accountSheet);
-      var account      = null;
-      var emailInput   = String(data['email'] || '').toLowerCase().trim();
-      for (var i = 0; i < accounts.length; i++) {
-        if (String(accounts[i]['이메일']).toLowerCase().trim() === emailInput) {
-          account = accounts[i]; break;
-        }
-      }
-      if (!account) {
-        var allUsers = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
-        var matchUser = null;
-        for (var j = 0; j < allUsers.length; j++) {
-          if (String(allUsers[j]['이메일']).toLowerCase().trim() === emailInput) {
-            matchUser = allUsers[j]; break;
-          }
-        }
-        if (!matchUser) return jsonResponse({ error: '계정을 찾을 수 없습니다.' });
-        var autoId = String(matchUser['사번']).trim();
-        upsertRow(accountSheet, ACCOUNT_HEADERS, '사번', {
-          '사번': autoId, '이메일': emailInput, '비밀번호해시': '',
-        });
-        account = { '사번': autoId, '이메일': emailInput, '비밀번호해시': '' };
-      }
-      var userId  = String(account['사번']).trim();
-      var hashKey = Object.keys(account).filter(function(k) {
-        return normalizeKey(k) === '비밀번호해시';
-      })[0] || '비밀번호해시';
-      var stored   = String(account[hashKey] !== undefined ? account[hashKey] : '').trim();
-      var provided = String(data['passwordHash'] || '').trim();
-      var expected = (stored === '') ? sha256Hex(userId) : stored;
-      if (provided !== expected) return jsonResponse({ error: '비밀번호가 올바르지 않습니다.' });
-      return jsonResponse({ userId: userId, isTemp: stored === '' });
-    }
+    /* ── 인증 (Google SSO, 도메인 제한) ──
+       사전 설정:
+         확장 → Apps Script → 프로젝트 설정 → 스크립트 속성 에서
+           GOOGLE_CLIENT_ID = <웹 클라이언트 ID>.apps.googleusercontent.com
+         (선택) ALLOWED_HD = makestar.com  ← 미설정 시 코드 상수 사용 */
+    if (action === 'verifyGoogleLogin') {
+      var idToken = String(data['idToken'] || '').trim();
+      if (!idToken) return jsonResponse({ error: 'idToken 누락' });
+      var verified = verifyGoogleIdToken_(idToken);
+      if (verified.error) return jsonResponse({ error: verified.error });
 
-    if (action === 'setPassword') {
-      var sheet   = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
-      var patched = patchRowByKey(sheet, '사번', data['userId'], {
-        '비밀번호해시': data['passwordHash'],
+      var emailInput = String(verified.email).toLowerCase().trim();
+
+      // 1) 기존 구성원이면 정상 로그인
+      var allUsers   = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
+      var matchUser  = null;
+      for (var i = 0; i < allUsers.length; i++) {
+        if (String(allUsers[i]['이메일']).toLowerCase().trim() === emailInput) {
+          matchUser = allUsers[i]; break;
+        }
+      }
+      if (matchUser) {
+        return jsonResponse({
+          userId: String(matchUser['사번']).trim(),
+          email:  emailInput,
+          status: 'active',
+        });
+      }
+
+      // 2) 미등록 → _대기승인 시트 확인 / upsert
+      var pendingSheet = getSheet(SHEET_PENDING, PENDING_HEADERS);
+      var pendingRows  = sheetToObjects(pendingSheet);
+      var existing     = null;
+      for (var p = 0; p < pendingRows.length; p++) {
+        if (String(pendingRows[p]['이메일']).toLowerCase().trim() === emailInput) {
+          existing = pendingRows[p]; break;
+        }
+      }
+
+      // 반려된 이메일은 차단
+      if (existing && String(existing['상태']).toLowerCase() === 'rejected') {
+        return jsonResponse({ error: '승인이 거절된 계정입니다. 관리자에게 문의해주세요.' });
+      }
+      // 정합성 오류: approved 인데 _구성원에 행이 없음
+      if (existing && String(existing['상태']).toLowerCase() === 'approved') {
+        return jsonResponse({ error: '계정 데이터 정합성 오류입니다. 관리자에게 문의해주세요. (' + emailInput + ')' });
+      }
+
+      // 신규 또는 기존 pending — upsert (최초로그인일시는 보존, status 강제로 pending)
+      upsertRow(pendingSheet, PENDING_HEADERS, '이메일', {
+        '이메일':         emailInput,
+        '이름':           String(verified.name || (existing && existing['이름']) || ''),
+        'Google_sub':     String(verified.sub  || (existing && existing['Google_sub']) || ''),
+        '최초로그인일시': (existing && existing['최초로그인일시']) || new Date().toISOString(),
+        '상태':           'pending',
+        '처리자':         '',
+        '처리일시':       '',
       });
-      if (!patched) {
-        var email   = '';
-        var urows   = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
-        for (var k = 0; k < urows.length; k++) {
-          if (String(urows[k]['사번']).trim() === String(data['userId']).trim()) {
-            email = String(urows[k]['이메일'] || '').toLowerCase().trim(); break;
-          }
-        }
-        upsertRow(sheet, ACCOUNT_HEADERS, '사번', {
-          '사번': data['userId'], '이메일': email, '비밀번호해시': data['passwordHash'],
+
+      return jsonResponse({
+        userId: null,
+        email:  emailInput,
+        name:   String(verified.name || ''),
+        status: 'pending',
+      });
+    }
+
+    /* ── R7: 신규 회원 승인 흐름 ───────────────────────────────── */
+
+    if (action === 'getPendingApprovals') {
+      // /team 승인 대기 탭 + 사이드바 배지에서 사용. status='pending' 만 반환.
+      var pendingSheet = getSheet(SHEET_PENDING, PENDING_HEADERS);
+      var pendingRows  = sheetToObjects(pendingSheet);
+      var items = [];
+      for (var pi = 0; pi < pendingRows.length; pi++) {
+        var p = pendingRows[pi];
+        if (String(p['상태']).toLowerCase() !== 'pending') continue;
+        items.push({
+          email:        String(p['이메일'] || '').toLowerCase().trim(),
+          name:         String(p['이름'] || ''),
+          googleSub:    String(p['Google_sub'] || ''),
+          firstLoginAt: String(p['최초로그인일시'] || ''),
+          status:       'pending',
         });
       }
+      return jsonResponse({ ok: true, items: items });
+    }
+
+    if (action === 'approveMember') {
+      // 입력: { email, userId, name, position, orgUnitId, permissionGroupIds[], approverId }
+      var emailA       = String(data['email'] || '').toLowerCase().trim();
+      var userIdA      = String(data['userId'] || '').trim();
+      var nameA        = String(data['name'] || '').trim();
+      var positionA    = String(data['position'] || '').trim();
+      var orgUnitIdA   = String(data['orgUnitId'] || '').trim();
+      var groupIdsA    = Array.isArray(data['permissionGroupIds']) ? data['permissionGroupIds'] : [];
+      var approverIdA  = String(data['approverId'] || '').trim();
+
+      if (!emailA)  return jsonResponse({ error: 'email 필요' });
+      if (!userIdA) return jsonResponse({ error: '사번(userId) 필요' });
+
+      // 1) _구성원 시트에 row 추가 (이미 있으면 덮어쓰지 않음)
+      var userSheet = getSheet(SHEET_USERS, USER_HEADERS);
+      if (findRowByKey(userSheet, '사번', userIdA) >= 0) {
+        return jsonResponse({ error: '이미 존재하는 사번입니다: ' + userIdA });
+      }
+      upsertRow(userSheet, USER_HEADERS, '사번', {
+        '사번':       userIdA,
+        '이메일':     emailA,
+        '성명':       nameA,
+        '직책':       positionA,
+        '주조직ID':   orgUnitIdA,
+        '역할':       'member',
+        '입사일':     new Date().toISOString().slice(0, 10),
+        '재직 여부':  'true',
+        '상태분류':   'active',
+      });
+
+      // 2) 권한 그룹 멤버 추가
+      var permSheet = getSheet(SHEET_PERMGROUPS, PERMGROUP_HEADERS);
+      var permData  = permSheet.getDataRange().getValues();
+      var permHdrs  = permData[0];
+      var idColG    = permHdrs.indexOf('그룹ID');
+      var memColG   = permHdrs.indexOf('멤버사번JSON');
+      groupIdsA.forEach(function(gid) {
+        for (var gr = 1; gr < permData.length; gr++) {
+          if (String(permData[gr][idColG]) !== String(gid)) continue;
+          var members = [];
+          try {
+            var raw = String(permData[gr][memColG] || '[]');
+            members = JSON.parse(raw);
+            if (!Array.isArray(members)) members = [];
+          } catch (e) { members = []; }
+          if (members.indexOf(userIdA) < 0) {
+            members.push(userIdA);
+            permSheet.getRange(gr + 1, memColG + 1).setValue(JSON.stringify(members));
+          }
+          break;
+        }
+      });
+
+      // 3) _대기승인 상태 변경
+      var pendingSheet2 = getSheet(SHEET_PENDING, PENDING_HEADERS);
+      upsertRow(pendingSheet2, PENDING_HEADERS, '이메일', {
+        '이메일':   emailA,
+        '상태':     'approved',
+        '처리자':   approverIdA,
+        '처리일시': new Date().toISOString(),
+      });
+
+      // 4) 감사 로그
+      appendRowData(getSheet(SHEET_AUDIT, AUDIT_HEADERS), AUDIT_HEADERS, {
+        '로그ID':     'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        '사이클ID':   '',
+        '발생자ID':   approverIdA,
+        '액션':       'member.approved',
+        '대상IDS':    userIdA,
+        '요약':       emailA + ' 신규 회원 승인 (사번 ' + userIdA + ')',
+        '메타JSON':   JSON.stringify({ email: emailA, userId: userIdA, permissionGroupIds: groupIdsA }),
+        '발생일시':   new Date().toISOString(),
+      });
+
+      return jsonResponse({ ok: true, userId: userIdA });
+    }
+
+    if (action === 'rejectMember') {
+      // 입력: { email, reason, approverId }
+      var emailR      = String(data['email'] || '').toLowerCase().trim();
+      var reasonR     = String(data['reason'] || '').trim();
+      var approverIdR = String(data['approverId'] || '').trim();
+      if (!emailR) return jsonResponse({ error: 'email 필요' });
+
+      var pendingSheet3 = getSheet(SHEET_PENDING, PENDING_HEADERS);
+      if (findRowByKey(pendingSheet3, '이메일', emailR) < 0) {
+        return jsonResponse({ error: '대기 row 가 없습니다: ' + emailR });
+      }
+      upsertRow(pendingSheet3, PENDING_HEADERS, '이메일', {
+        '이메일':   emailR,
+        '상태':     'rejected',
+        '처리자':   approverIdR,
+        '처리일시': new Date().toISOString(),
+      });
+
+      appendRowData(getSheet(SHEET_AUDIT, AUDIT_HEADERS), AUDIT_HEADERS, {
+        '로그ID':     'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        '사이클ID':   '',
+        '발생자ID':   approverIdR,
+        '액션':       'member.rejected',
+        '대상IDS':    emailR,
+        '요약':       emailR + ' 신규 회원 반려 — ' + (reasonR || '사유 없음'),
+        '메타JSON':   JSON.stringify({ email: emailR, reason: reasonR }),
+        '발생일시':   new Date().toISOString(),
+      });
+
       return jsonResponse({ ok: true });
     }
 
-    if (action === 'resetAccount') {
-      var sheet   = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
-      var patched = patchRowByKey(sheet, '사번', data['userId'], { '비밀번호해시': '' });
-      if (!patched) return jsonResponse({ error: '계정을 찾을 수 없습니다: ' + data['userId'] });
-      return jsonResponse({ ok: true });
-    }
-
+    /* ── _계정 시트 동기화 (권한관리 인덱스) ──
+       비밀번호 검증은 더 이상 수행하지 않으나, 시트에 사번/이메일 행을 유지하여
+       관리자가 추가 컬럼(예: 권한 활성여부 등)으로 권한관리할 수 있도록 동기화. */
     if (action === 'initAccount') {
       var sheet  = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
-      var rowNum = findRowByKey(sheet, '사번', data['userId']);
-      if (rowNum < 0) {
+      if (findRowByKey(sheet, '사번', data['userId']) < 0) {
         upsertRow(sheet, ACCOUNT_HEADERS, '사번', {
-          '사번':         data['userId'],
-          '이메일':       String(data['email'] || '').toLowerCase().trim(),
-          '비밀번호해시': '',
+          '사번':   data['userId'],
+          '이메일': String(data['email'] || '').toLowerCase().trim(),
         });
       }
       return jsonResponse({ ok: true });
     }
 
-    if (action === 'batchInitAccounts') {
+    if (action === 'syncAccounts') {
       var accountSheet = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
       var uRows        = sheetToObjects(getSheet(SHEET_USERS, USER_HEADERS));
       var created      = 0;
@@ -445,9 +658,8 @@ function doPost(e) {
         if (!uid) return;
         if (findRowByKey(accountSheet, '사번', uid) < 0) {
           upsertRow(accountSheet, ACCOUNT_HEADERS, '사번', {
-            '사번':         uid,
-            '이메일':       String(u['이메일'] || '').toLowerCase().trim(),
-            '비밀번호해시': '',
+            '사번':   uid,
+            '이메일': String(u['이메일'] || '').toLowerCase().trim(),
           });
           created++;
         }
@@ -461,10 +673,12 @@ function doPost(e) {
       var userId = data['사번'] || generateEmployeeId(sheet);
       data['사번'] = userId;
       upsertRow(sheet, USER_HEADERS, '사번', data);
+      // _계정 시트 인덱스 동기화 (권한관리용)
       var accSheet = getSheet(SHEET_ACCOUNTS, ACCOUNT_HEADERS);
       if (findRowByKey(accSheet, '사번', userId) < 0) {
         upsertRow(accSheet, ACCOUNT_HEADERS, '사번', {
-          '사번': userId, '이메일': String(data['이메일'] || '').toLowerCase().trim(), '비밀번호해시': '',
+          '사번':   userId,
+          '이메일': String(data['이메일'] || '').toLowerCase().trim(),
         });
       }
       return jsonResponse({ ok: true, userId: userId });

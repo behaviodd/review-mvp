@@ -37,9 +37,11 @@ import { Permissions } from './pages/Permissions';
 import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
 import { MemberProfile } from './pages/MemberProfile';
 import { MemberNew } from './pages/team/MemberNew';
+import { PendingApprovals } from './pages/team/PendingApprovals';
 import { MemberEdit } from './pages/team/MemberEdit';
 import { BulkMove } from './pages/team/BulkMove';
 import { AuditLog } from './pages/AuditLog';
+import { PendingApproval } from './pages/PendingApproval';
 
 // 로그인 상태일 때만 시트 동기화 실행
 function OrgSyncProvider() {
@@ -69,12 +71,26 @@ function SyncQueueBootRetry() {
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuthStore();
   if (!currentUser) return <Navigate to="/login" replace />;
+  // R7: 승인 대기 사용자는 /pending-approval 외 모든 라우트 차단
+  if (currentUser.status === 'pending') return <Navigate to="/pending-approval" replace />;
+  return <>{children}</>;
+}
+
+/** /pending-approval 전용 가드 — 인증된 pending 사용자만 통과. */
+function RequirePending({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useAuthStore();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (currentUser.status !== 'pending') return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuthStore();
-  if (currentUser) return <Navigate to="/" replace />;
+  if (currentUser) {
+    // pending 이면 /pending-approval 로, active 면 /
+    if (currentUser.status === 'pending') return <Navigate to="/pending-approval" replace />;
+    return <Navigate to="/" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -162,6 +178,16 @@ export default function App() {
               <RedirectIfAuthed>
                 <RouteBoundary><Login /></RouteBoundary>
               </RedirectIfAuthed>
+            }
+          />
+
+          {/* R7: 승인 대기 — AppLayout 적용 안 함 (사이드바/헤더 없는 빈 페이지) */}
+          <Route
+            path="/pending-approval"
+            element={
+              <RequirePending>
+                <RouteBoundary><PendingApproval /></RouteBoundary>
+              </RequirePending>
             }
           />
 
@@ -321,6 +347,14 @@ export default function App() {
               element={
                 <RequirePermission permissions={['org.manage']}>
                   <RouteBoundary><MemberNew /></RouteBoundary>
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="team/pending-approvals"
+              element={
+                <RequirePermission permissions={['org.manage']}>
+                  <RouteBoundary><PendingApprovals /></RouteBoundary>
                 </RequirePermission>
               }
             />

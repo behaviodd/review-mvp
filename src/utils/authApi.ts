@@ -1,24 +1,16 @@
 /**
- * 인증 API — /api/org-sync 프록시를 통해 Apps Script _계정 탭과 통신
- * 비밀번호는 SHA-256 해시로 브라우저에서 변환 후 전송
+ * 인증 API — Google SSO (makestar.com 도메인 제한)
  *
- * 초기 비밀번호 정책:
- *   - 계정 생성 시 passwordHash = "" (빈값)
- *   - 로그인 시 빈 hash → 사번(userId) SHA-256과 비교
- *   - 관리자 초기화 = passwordHash를 다시 "" 로 설정
+ * 흐름:
+ *   1) 프런트가 Google Identity Services 로 ID Token(JWT) 획득
+ *   2) /api/org-sync 프록시 → Apps Script `verifyGoogleLogin` 으로 전달
+ *   3) Apps Script 가 Google `tokeninfo` 로 서명·aud·exp·hd·email_verified 검증
+ *   4) `_구성원` 시트에서 이메일 매칭 → 사번(userId) 반환
  */
 
 import { getScriptHeaders } from './scriptHeaders';
 
-export async function sha256(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-/** 내부 POST — 실패 시 실제 원인을 throw */
-async function post(action: string, data: Record<string, string | boolean>): Promise<Record<string, unknown>> {
+async function post(action: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
   let rawBody = '';
   try {
     const res = await fetch('/api/org-sync', {
@@ -29,56 +21,104 @@ async function post(action: string, data: Record<string, string | boolean>): Pro
     rawBody = await res.text();
     if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status}): ${rawBody.slice(0, 200)}`);
   } catch (e) {
-    // 네트워크 오류 또는 위에서 던진 HTTP 오류
     throw e instanceof Error ? e : new Error(String(e));
   }
 
   try {
     return JSON.parse(rawBody) as Record<string, unknown>;
   } catch {
-    // Apps Script가 JSON 대신 HTML 등을 반환한 경우
     throw new Error(`응답 파싱 오류 — 받은 내용: ${rawBody.slice(0, 300)}`);
   }
 }
 
 /**
- * 이메일 + 비밀번호로 로그인 검증.
- * 성공: { userId, isTemp } 반환
- * 실패: 실제 원인 메시지로 throw
+ * Google ID Token 으로 로그인 검증.
+ * 응답 분기:
+ *   - 기존 회원:    { status: 'active', userId, email }
+ *   - 신규 회원:    { status: 'pending', userId: null, email, name }
+ * 실패 (도메인 미일치/반려/만료/정합성 오류 등): throw.
  */
-export async function verifyLogin(
-  email: string,
-  password: string,
-): Promise<{ userId: string; isTemp: boolean }> {
-  const passwordHash = await sha256(password);
-  const json = await post('verifyLogin', { email: email.toLowerCase(), passwordHash });
+export type VerifyGoogleResult =
+  | { status: 'active';  userId: string; email: string }
+  | { status: 'pending'; userId: null;   email: string; name: string };
+
+export async function verifyGoogleLogin(idToken: string): Promise<VerifyGoogleResult> {
+  const json = await post('verifyGoogleLogin', { idToken });
   if (json.error) throw new Error(String(json.error));
+  const status = String(json.status ?? 'active');
+  const email = String(json.email ?? '');
+  if (status === 'pending') {
+    return { status: 'pending', userId: null, email, name: String(json.name ?? '') };
+  }
   if (!json.userId) throw new Error('응답에 userId가 없습니다.');
-  return { userId: String(json.userId), isTemp: json.isTemp === true };
+  return { status: 'active', userId: String(json.userId), email };
 }
 
-/** 비밀번호 변경 */
-export async function changePassword(userId: string, newPassword: string): Promise<boolean> {
-  try {
-    const passwordHash = await sha256(newPassword);
-    const json = await post('setPassword', { userId, passwordHash, isTemp: false });
-    return json.ok === true;
-  } catch {
-    return false;
-  }
+/* ── R7: 신규 회원 승인 ───────────────────────────────────────── */
+
+export interface PendingApprovalRecord {
+  email: string;
+  name: string;
+  googleSub: string;
+  firstLoginAt: string;
+  status: 'pending';
 }
 
-/** 계정 초기화 (관리자 전용) — passwordHash를 빈값으로 설정 */
-export async function resetAccount(userId: string): Promise<boolean> {
-  try {
-    const json = await post('resetAccount', { userId });
-    return json.ok === true;
-  } catch {
-    return false;
-  }
+/** /team 승인 대기 탭 + 사이드바 배지 카운트용. */
+export async function getPendingApprovals(): Promise<PendingApprovalRecord[]> {
+  const json = await post('getPendingApprovals', {});
+  if (json.error) throw new Error(String(json.error));
+  const items = Array.isArray(json.items) ? json.items : [];
+  return items.map((it) => {
+    const o = it as Record<string, unknown>;
+    return {
+      email:        String(o.email ?? ''),
+      name:         String(o.name ?? ''),
+      googleSub:    String(o.googleSub ?? ''),
+      firstLoginAt: String(o.firstLoginAt ?? ''),
+      status:       'pending' as const,
+    };
+  });
 }
 
-/** 신규 구성원 계정 초기화 */
+export interface ApproveMemberInput {
+  email: string;
+  userId: string;
+  name: string;
+  position?: string;
+  orgUnitId?: string;
+  permissionGroupIds: string[];
+  approverId: string;
+}
+
+export async function approveMember(input: ApproveMemberInput): Promise<{ ok: boolean; userId: string }> {
+  const json = await post('approveMember', {
+    email:              input.email.toLowerCase(),
+    userId:             input.userId,
+    name:               input.name,
+    position:           input.position ?? '',
+    orgUnitId:          input.orgUnitId ?? '',
+    permissionGroupIds: input.permissionGroupIds,
+    approverId:         input.approverId,
+  });
+  if (json.error) throw new Error(String(json.error));
+  return { ok: json.ok === true, userId: String(json.userId ?? input.userId) };
+}
+
+export async function rejectMember(input: { email: string; reason?: string; approverId: string }): Promise<{ ok: boolean }> {
+  const json = await post('rejectMember', {
+    email:      input.email.toLowerCase(),
+    reason:     input.reason ?? '',
+    approverId: input.approverId,
+  });
+  if (json.error) throw new Error(String(json.error));
+  return { ok: json.ok === true };
+}
+
+/**
+ * `_계정` 시트에 신규 사번/이메일 인덱스 행을 생성 (권한관리용).
+ * 이미 존재하는 행은 건드리지 않음 (수동으로 추가된 권한 컬럼 보존).
+ */
 export async function initAccount(userId: string, email: string): Promise<boolean> {
   try {
     const json = await post('initAccount', { userId, email: email.toLowerCase() });
@@ -88,10 +128,13 @@ export async function initAccount(userId: string, email: string): Promise<boolea
   }
 }
 
-/** 관리자 전용 — _구성원 전체를 _계정 탭에 일괄 등록 (이미 있는 행은 유지) */
-export async function batchInitAccounts(): Promise<{ ok: boolean; created: number }> {
+/**
+ * `_구성원` 전체를 `_계정` 시트에 일괄 동기화 — 누락된 사번만 추가.
+ * 기존 행(수동 권한 컬럼 포함)은 건드리지 않음.
+ */
+export async function syncAccounts(): Promise<{ ok: boolean; created: number }> {
   try {
-    const json = await post('batchInitAccounts', {});
+    const json = await post('syncAccounts', {});
     return { ok: json.ok === true, created: Number(json.created ?? 0) };
   } catch {
     return { ok: false, created: 0 };

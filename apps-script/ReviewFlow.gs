@@ -397,6 +397,36 @@ function patchRowByKey(sheet, keyHeader, keyValue, patch) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
+   동시성 가드 — LockService
+
+   B 그룹 audit (docs/stability-audit-B.md) 의 P0 수정.
+   doPost 진입 시 ScriptLock 을 획득해 모든 쓰기를 직렬화.
+   - tryLock(15_000) — Vercel Edge proxy 18s timeout 보다 짧게 잡아
+     lock 대기 도중 timeout 으로 끊기지 않게 함
+   - 획득 실패 시 {error:'lock_busy', retryAfterMs} 반환 — client 가
+     transient 로 인식하고 재시도 가능 (idempotent action 만 자동 retry).
+   - 본 audit 의 invariant 보장: B1(doPost 직렬화), B2(last-write-wins
+     의 race window 제거), B3·B4(multi-step write 의 inter-write race 제거).
+   doGet 은 read-only 라 lock 불필요 (시트는 row-level snapshot 일관성 제공).
+   ══════════════════════════════════════════════════════════════════ */
+var POST_LOCK_TIMEOUT_MS = 15000;
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(POST_LOCK_TIMEOUT_MS)) {
+    return jsonResponse({
+      error: 'lock_busy',
+      retryAfterMs: 1000,
+      message: '다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요.',
+    });
+  }
+  try {
+    return fn();
+  } finally {
+    try { lock.releaseLock(); } catch (e) { /* graceful */ }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
    doGet — 데이터 조회
    ══════════════════════════════════════════════════════════════════ */
 function doGet(e) {
@@ -524,6 +554,12 @@ var BULK_AFFECTING_ACTIONS_ = {
 };
 
 function doPost(e) {
+  return withLock_(function() {
+    return doPostInner_(e);
+  });
+}
+
+function doPostInner_(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action;
@@ -636,22 +672,37 @@ function doPost(e) {
       if (!emailA)  return jsonResponse({ error: 'email 필요' });
       if (!userIdA) return jsonResponse({ error: '사번(userId) 필요' });
 
-      // 1) _구성원 시트에 row 추가 (이미 있으면 덮어쓰지 않음)
+      // 1) _구성원 시트 — idempotent (B 그룹 audit B-1.2)
+      //   - 같은 (사번, 이메일) 이미 있으면 OK 처리해 retry 시 차단 안 됨
+      //   - 다른 이메일이 같은 사번을 점유 중이면 거부
       var userSheet = getSheet(SHEET_USERS, USER_HEADERS);
+      var userExisted = false;
       if (findRowByKey(userSheet, '사번', userIdA) >= 0) {
-        return jsonResponse({ error: '이미 존재하는 사번입니다: ' + userIdA });
+        var existingUsersA = sheetToObjects(userSheet);
+        var existingUserA = null;
+        for (var eiA = 0; eiA < existingUsersA.length; eiA++) {
+          if (String(existingUsersA[eiA]['사번']).trim() === userIdA) {
+            existingUserA = existingUsersA[eiA]; break;
+          }
+        }
+        var existingEmailA = existingUserA ? String(existingUserA['이메일'] || '').toLowerCase().trim() : '';
+        if (existingEmailA && existingEmailA !== emailA) {
+          return jsonResponse({ error: '이미 존재하는 사번입니다 (다른 이메일): ' + userIdA });
+        }
+        userExisted = true;
+      } else {
+        upsertRow(userSheet, USER_HEADERS, '사번', {
+          '사번':       userIdA,
+          '이메일':     emailA,
+          '성명':       nameA,
+          '직책':       positionA,
+          '주조직ID':   orgUnitIdA,
+          '역할':       'member',
+          '입사일':     new Date().toISOString().slice(0, 10),
+          '재직 여부':  'true',
+          '상태분류':   'active',
+        });
       }
-      upsertRow(userSheet, USER_HEADERS, '사번', {
-        '사번':       userIdA,
-        '이메일':     emailA,
-        '성명':       nameA,
-        '직책':       positionA,
-        '주조직ID':   orgUnitIdA,
-        '역할':       'member',
-        '입사일':     new Date().toISOString().slice(0, 10),
-        '재직 여부':  'true',
-        '상태분류':   'active',
-      });
 
       // 2) 권한 그룹 멤버 추가
       var permSheet = getSheet(SHEET_PERMGROUPS, PERMGROUP_HEADERS);
@@ -686,6 +737,7 @@ function doPost(e) {
       });
 
       // 4) 감사 로그
+      // 주의: 현재 retry 시 중복 append 가능. B-2.4 (audit idempotency key) 에서 처리 예정.
       appendRowData(getSheet(SHEET_AUDIT, AUDIT_HEADERS), AUDIT_HEADERS, {
         '로그ID':     'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
         '사이클ID':   '',
@@ -697,7 +749,16 @@ function doPost(e) {
         '발생일시':   new Date().toISOString(),
       });
 
-      return jsonResponse({ ok: true, userId: userIdA });
+      return jsonResponse({
+        ok: true,
+        userId: userIdA,
+        steps: {
+          user:             userExisted ? 'already_exists' : 'created',
+          permissionGroups: 'updated',
+          pending:          'updated',
+          audit:            'appended',
+        },
+      });
     }
 
     if (action === 'rejectMember') {

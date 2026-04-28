@@ -3,7 +3,7 @@ import { useTeamStore } from '../../stores/teamStore';
 import { MsButton } from '../ui/MsButton';
 import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
 import { MsPlusIcon, MsDeleteIcon } from '../ui/MsIcons';
-import { ORG_TYPE_LABEL } from '../../utils/teamUtils';
+import { getOrgDepth, getOrgLevelLabel } from '../../utils/teamUtils';
 import type { SecondaryOrgAssignment } from '../../types';
 
 export function SecondaryOrgSection({ userId }: { userId: string }) {
@@ -114,7 +114,7 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
                 onChange={e => setForm(f => ({ ...f, orgId: e.target.value }))}
               >
                 <option value="">선택</option>
-                {allOrgs.map(u => <option key={u.id} value={u.id}>{u.name} ({ORG_TYPE_LABEL[u.type]})</option>)}
+                {allOrgs.map(u => <option key={u.id} value={u.id}>{u.name} ({getOrgLevelLabel(getOrgDepth(u, orgUnits))})</option>)}
               </MsSelect>
             </div>
             <div className="col-span-2">

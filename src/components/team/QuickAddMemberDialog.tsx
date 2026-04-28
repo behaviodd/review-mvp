@@ -4,7 +4,7 @@ import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
 import { MsInput } from '../ui/MsControl';
 import { ModalShell } from '../review/modals/ModalShell';
-import { AVATAR_COLORS, ORG_TYPE_LABEL } from '../../utils/teamUtils';
+import { AVATAR_COLORS, getOrgDepth, getOrgLevelLabel } from '../../utils/teamUtils';
 import type { OrgUnit, OrgUnitType } from '../../types';
 
 /**
@@ -52,7 +52,7 @@ export function QuickAddMemberDialog({
   if (!orgUnit) return null;
 
   const isValid = !!form.name.trim() && !!form.email.trim();
-  const orgLabel = `${orgUnit.name} (${ORG_TYPE_LABEL[orgUnit.type]})`;
+  const orgLabel = `${orgUnit.name} (${getOrgLevelLabel(getOrgDepth(orgUnit, orgUnits))})`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

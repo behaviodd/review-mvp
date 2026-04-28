@@ -8,7 +8,10 @@ import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useShowToast } from '../components/ui/Toast';
 import { usePendingApprovalsStore } from '../stores/pendingApprovalsStore';
 import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
-import { ORG_TYPE_LABEL, ORG_TYPE_NEXT } from '../utils/teamUtils';
+import {
+  ORG_TYPE_NEXT,
+  MAX_ORG_DEPTH, getOrgDepth, getOrgLevelLabel,
+} from '../utils/teamUtils';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Layers, Users } from 'lucide-react';
@@ -111,6 +114,9 @@ function OrgTreeNode({
   }, [users, unit, allUnits, secondaryOrgs]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
+  // R7: depth+1 이 5단계(=MAX_ORG_DEPTH=4)를 초과하면 자식 추가 버튼 비활성화
+  const canAddChild = depth < MAX_ORG_DEPTH;
+  const childAddLabel = canAddChild ? `${getOrgLevelLabel(depth + 1)} 추가` : '';
   const isSelected = selectedId === unit.id;
   const isDragging = dnd.state.draggingId === unit.id;
   const dropPos = dnd.state.dropTarget?.id === unit.id ? dnd.state.dropTarget.pos : null;
@@ -215,8 +221,8 @@ function OrgTreeNode({
               className="p-1 rounded text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
               <MsFriendAddIcon size={12} />
             </button>
-            {nextType && (
-              <button title={`${ORG_TYPE_LABEL[nextType]} 추가`}
+            {nextType && canAddChild && (
+              <button title={childAddLabel}
                 onClick={() => onAddChild(nextType, unit.id)}
                 className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
                 <MsPlusIcon size={12} />
@@ -539,6 +545,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
     if (pos === 'into') {
       if (getDescendantIds(draggingId).includes(targetId)) return;
+      // R7: 5단계 제한 — 자식 추가 불가하면 거부 + 토스트
+      if (getOrgDepth(target, orgUnits) >= MAX_ORG_DEPTH) {
+        showToast('warning', `최대 ${MAX_ORG_DEPTH + 1}단계까지만 만들 수 있습니다.`);
+        return;
+      }
 
       if (dragged.type === target.type) {
         // 같은 레벨 → 하위 이동 + 타입 재귀 조정 + 구성원 이동
@@ -886,7 +897,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   <div className="flex items-center gap-2">
                     <span className={`size-2 rounded-full ${ORG_TYPE_COLOR[selectedUnit.type]}`} />
                     <p className="text-sm font-semibold text-gray-080">{selectedUnit.name}</p>
-                    <span className="text-xs text-gray-040">{ORG_TYPE_LABEL[selectedUnit.type]}</span>
+                    <span className="text-xs text-gray-040">{getOrgLevelLabel(getOrgDepth(selectedUnit, orgUnits))}</span>
                   </div>
                 ) : (
                   <p className="text-sm font-semibold text-gray-080">전체 구성원</p>

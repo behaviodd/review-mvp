@@ -5,7 +5,7 @@ import { MsButton } from '../ui/MsButton';
 import { MsInput, MsSelect } from '../ui/MsControl';
 import { ModalShell } from '../review/modals/ModalShell';
 import { isUserActive } from '../../utils/userCompat';
-import { ORG_TYPE_LABEL, ORG_TYPE_PLACEHOLDER } from '../../utils/teamUtils';
+import { getOrgDepth, getOrgLevelLabel, getOrgLevelPlaceholder, validateOrgDepth } from '../../utils/teamUtils';
 import type { OrgUnit, OrgUnitType } from '../../types';
 
 export type OrgUnitDialogState =
@@ -47,9 +47,14 @@ export function OrgUnitDialog({
   if (!state) return null;
 
   const isEdit = state.mode === 'edit';
+  // R7: depth 기반 라벨. edit 모드는 본인 depth, add 모드는 parent depth + 1.
+  const depth = isEdit && editing
+    ? getOrgDepth(editing, orgUnits)
+    : (parentUnit ? getOrgDepth(parentUnit, orgUnits) + 1 : 0);
+  const levelLabel = getOrgLevelLabel(depth);
   const title = isEdit
-    ? `${ORG_TYPE_LABEL[type]} 편집`
-    : `${ORG_TYPE_LABEL[type]} 추가${parentUnit ? ` — ${parentUnit.name}` : ''}`;
+    ? `${levelLabel} 편집`
+    : `${levelLabel} 추가${parentUnit ? ` — ${parentUnit.name}` : ''}`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +64,12 @@ export function OrgUnitDialog({
       updateOrgUnit(editing.id, { name: trimmed, headId: headId || undefined });
       showToast('success', '조직 정보를 저장했습니다.');
     } else {
+      // R7: 5단계 제한 검증
+      const check = validateOrgDepth(parentUnit, orgUnits);
+      if (!check.ok) {
+        showToast('error', check.reason);
+        return;
+      }
       const siblings = orgUnits.filter(u => u.type === type && u.parentId === parentId);
       const maxOrder = siblings.reduce((m, u) => Math.max(m, u.order), 0);
       addOrgUnit({ name: trimmed, type, parentId, headId: headId || undefined, order: maxOrder + 1 });
@@ -85,11 +96,11 @@ export function OrgUnitDialog({
       <form id="org-unit-dialog-form" onSubmit={handleSubmit} className="space-y-3">
         <MsInput
           autoFocus
-          label={`${ORG_TYPE_LABEL[type]} 이름 *`}
+          label={`${levelLabel} 이름 *`}
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder={ORG_TYPE_PLACEHOLDER[type]}
+          placeholder={getOrgLevelPlaceholder(depth)}
         />
         <MsSelect label="조직장" value={headId} onChange={e => setHeadId(e.target.value)}>
           <option value="">미지정</option>

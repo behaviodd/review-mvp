@@ -1,7 +1,10 @@
 /**
  * Google Sheets ↔ 조직 데이터 동기화 훅
- * - 구성원(전체 탭 집계) + 조직구조(_조직구조 탭) + 겸임(_겸임 탭) 병렬 조회
- * - ETag 기반 조건부 조회: 시트 변경이 없으면 파싱/렌더 스킵
+ *
+ * R7 Phase 4: 단일 `bulkGetAll` 호출로 6개 시트를 한 번에 조회.
+ *   - 통합 ETag 로 변경 없으면 파싱/렌더 스킵
+ *   - Apps Script 측 ScriptCache 5분 TTL — 캐시 적중 시 시트 read 0회
+ *   - bulkGetAll 미배포(에러)면 기존 6개 병렬 fetch 로 폴백
  */
 import { useEffect, useCallback, useRef } from 'react';
 import { useTeamStore } from '../stores/teamStore';
@@ -26,6 +29,20 @@ interface SheetResponse {
   error?: string;
 }
 
+interface BulkResponse {
+  ok?: boolean;
+  unchanged?: boolean;
+  cached?: boolean;
+  etag?: string;
+  error?: string;
+  users?: Record<string, unknown>[];
+  orgUnits?: Record<string, unknown>[];
+  secondaryOrgs?: Record<string, unknown>[];
+  assignments?: Record<string, unknown>[];
+  snapshots?: Record<string, unknown>[];
+  permissionGroups?: Record<string, unknown>[];
+}
+
 async function fetchTab(action: string, etag?: string): Promise<SheetResponse> {
   const qs = etag ? `action=${action}&etag=${encodeURIComponent(etag)}` : `action=${action}`;
   const res = await fetch(`/api/org-sync?${qs}`, { headers: getScriptHeaders() });
@@ -35,23 +52,77 @@ async function fetchTab(action: string, etag?: string): Promise<SheetResponse> {
   return data;
 }
 
+async function fetchBulk(etag?: string): Promise<BulkResponse> {
+  const qs = etag ? `action=bulkGetAll&etag=${encodeURIComponent(etag)}` : 'action=bulkGetAll';
+  const res = await fetch(`/api/org-sync?${qs}`, { headers: getScriptHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: BulkResponse = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
 export function useOrgSync() {
   const { scriptUrl, orgSyncEnabled, setOrgLastSyncedAt, setOrgSyncError } = useSheetsSyncStore();
   const { syncFromSheet, setLoading } = useTeamStore();
+  // bulkGetAll 의 통합 ETag (구버전 Apps Script 폴백 시 무시됨)
+  const bulkEtagRef = useRef<string | undefined>(undefined);
+  // 폴백 경로의 _구성원 단일 ETag
   const orgEtagRef = useRef<string | undefined>(undefined);
+  // bulkGetAll 미지원 감지 후 폴백 모드 고정 — 매 호출마다 재시도하지 않음
+  const fallbackModeRef = useRef(false);
 
   const fetchAndSync = useCallback(async () => {
     setLoading(true);
     setOrgSyncError(null);
+    const t0 = performance.now();
     try {
+      // 1) bulkGetAll 우선 시도
+      if (!fallbackModeRef.current) {
+        try {
+          const bulk = await fetchBulk(bulkEtagRef.current);
+          if (bulk.unchanged) {
+            // 변경 없음 — 파싱/렌더 스킵
+            setOrgLastSyncedAt(new Date().toISOString());
+            console.debug(`[OrgSync] bulk unchanged ${(performance.now() - t0).toFixed(0)}ms${bulk.cached ? ' (cached)' : ''}`);
+            return;
+          }
+          if (bulk.etag) bulkEtagRef.current = bulk.etag;
+          const parsedUsers = parseSheetUsers(bulk.users ?? []);
+          if (parsedUsers.length === 0) {
+            // 시트가 비어 있으면 로컬 데이터 보존
+            setOrgLastSyncedAt(new Date().toISOString());
+            return;
+          }
+          syncFromSheet(
+            parsedUsers,
+            parseOrgUnits(bulk.orgUnits ?? []),
+            parseSecondaryOrgs(bulk.secondaryOrgs ?? []),
+            parseReviewerAssignments(bulk.assignments ?? []),
+            parseOrgSnapshots(bulk.snapshots ?? []),
+            parsePermissionGroups(bulk.permissionGroups ?? []),
+          );
+          setOrgLastSyncedAt(new Date().toISOString());
+          console.debug(`[OrgSync] bulk fresh ${(performance.now() - t0).toFixed(0)}ms${bulk.cached ? ' (cached)' : ''}`);
+          return;
+        } catch (e) {
+          // bulkGetAll 미지원 — 폴백 모드로 전환 (1회만 로깅)
+          const msg = e instanceof Error ? e.message : String(e);
+          if (/알 수 없는 action|Unknown action|action.*bulkGetAll/i.test(msg)) {
+            fallbackModeRef.current = true;
+            console.warn('[OrgSync] bulkGetAll 미지원 — 6개 병렬 fetch 폴백');
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      // 2) 폴백: 기존 6개 병렬 fetch
       const [orgResp, orgUnitRows, secondaryOrgRows, assignmentRows, snapshotRows, permissionGroupRows] = await Promise.all([
         fetchTab('getOrg', orgEtagRef.current),
         fetchTab('getOrgStructure').then(r => r.rows ?? r.users ?? []).catch(() => [] as Record<string, unknown>[]),
         fetchTab('getSecondaryOrgs').then(r => r.rows ?? r.users ?? []).catch(() => [] as Record<string, unknown>[]),
-        // R1: 평가권/스냅샷 — Apps Script 미배포 시 빈 배열로 폴백
         fetchTab('getAssignments').then(r => r.rows ?? []).catch(() => [] as Record<string, unknown>[]),
         fetchTab('getSnapshots').then(r => r.rows ?? []).catch(() => [] as Record<string, unknown>[]),
-        // R6: 권한 그룹 — Apps Script 미배포 시 빈 배열
         fetchTab('getPermissionGroups').then(r => r.rows ?? []).catch(() => [] as Record<string, unknown>[]),
       ]);
 
@@ -62,24 +133,16 @@ export function useOrgSync() {
       const groups       = parsePermissionGroups(permissionGroupRows as Record<string, unknown>[]);
 
       if (orgResp.unchanged) {
-        // 시트 변경 없음 — 파싱·렌더 스킵, 조직구조/겸임/평가권/스냅샷/권한그룹만 갱신
-        syncFromSheet(
-          useTeamStore.getState().users,
-          orgUnits,
-          secondary,
-          assignments,
-          snapshots,
-          groups,
-        );
+        syncFromSheet(useTeamStore.getState().users, orgUnits, secondary, assignments, snapshots, groups);
       } else {
         if (orgResp.etag) orgEtagRef.current = orgResp.etag;
         const parsedUsers = parseSheetUsers(orgResp.rows ?? orgResp.users ?? []);
-        // 시트가 비어 있으면 로컬 데이터 보존
         if (parsedUsers.length === 0) return;
         syncFromSheet(parsedUsers, orgUnits, secondary, assignments, snapshots, groups);
       }
 
       setOrgLastSyncedAt(new Date().toISOString());
+      console.debug(`[OrgSync] fallback ${(performance.now() - t0).toFixed(0)}ms`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류';
       setOrgSyncError(msg);

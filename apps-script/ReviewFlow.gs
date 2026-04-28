@@ -253,6 +253,31 @@ function deleteRowByKey(sheet, keyHeader, keyValue) {
   if (rowNum > 0) sheet.deleteRow(rowNum);
 }
 
+/* ──────────────────────────────────────────────────────────────────
+   R7 Phase 4: bulkGetAll 응답 캐시 — ScriptCache 5분 TTL
+   - 잘 안 바뀌는 6개 시트 (users/orgUnits/secondaryOrgs/assignments/
+     snapshots/permissionGroups) 의 직렬화 응답을 캐시
+   - 크기 100KB 초과 시 캐시 미저장 (graceful degrade)
+   - 모든 쓰기 액션에서 _invalidateBulkCache_() 호출
+   ────────────────────────────────────────────────────────────────── */
+var BULK_CACHE_KEY_      = 'bulk_v1';
+var BULK_CACHE_TTL_SEC_  = 300;  // 5 min
+var BULK_CACHE_MAX_SIZE_ = 95 * 1024; // 100KB 한도 - 안전 마진
+
+function _getBulkCache_() {
+  try { return CacheService.getScriptCache().get(BULK_CACHE_KEY_); }
+  catch (e) { return null; }
+}
+function _setBulkCache_(serialized) {
+  if (!serialized || serialized.length > BULK_CACHE_MAX_SIZE_) return;
+  try { CacheService.getScriptCache().put(BULK_CACHE_KEY_, serialized, BULK_CACHE_TTL_SEC_); }
+  catch (e) { /* graceful */ }
+}
+function _invalidateBulkCache_() {
+  try { CacheService.getScriptCache().remove(BULK_CACHE_KEY_); }
+  catch (e) { /* graceful */ }
+}
+
 /* ETag (djb2) */
 function simpleHash(str) {
   var hash = 5381;
@@ -386,6 +411,69 @@ function doGet(e) {
       }
       return jsonResponse({ ok: true, rows: sheetToObjects(sheet), etag: serverEtag });
     }
+
+    /* R7 Phase 4: 단일 호출로 모든 조직/권한 시트 일괄 반환.
+       - 6개 fetch → 1개 fetch 로 HTTP 라운드트립 절감
+       - ScriptCache 5분 TTL — 캐시 적중 시 시트 read 0회
+       - 캐시 미스: 각 시트 데이터를 한 번만 읽어 ETag 와 rows 동시 산출
+       - 통합 ETag 변경 없으면 unchanged:true 로 즉시 반환 */
+    if (action === 'bulkGetAll') {
+      // 1) 캐시 적중 — 시트 read 0회
+      var cached = _getBulkCache_();
+      if (cached) {
+        try {
+          var c = JSON.parse(cached);
+          if (clientEtag && clientEtag === c.etag) {
+            return jsonResponse({ unchanged: true, etag: c.etag, cached: true });
+          }
+          var resp = { ok: true, etag: c.etag, cached: true };
+          for (var k in c.payload) resp[k] = c.payload[k];
+          return jsonResponse(resp);
+        } catch (e) { /* 캐시 손상 — fall through */ }
+      }
+      // 2) 캐시 미스 — 시트 read
+      var sheets = [
+        { key: 'users',            sheet: getSheet(SHEET_USERS,       USER_HEADERS) },
+        { key: 'orgUnits',         sheet: getSheet(SHEET_ORG,         ORG_HEADERS) },
+        { key: 'secondaryOrgs',    sheet: getSheet(SHEET_SECONDARY,   SECONDARY_HEADERS) },
+        { key: 'assignments',      sheet: getSheet(SHEET_ASSIGNMENTS, ASSIGNMENT_HEADERS) },
+        { key: 'snapshots',        sheet: getSheet(SHEET_SNAPSHOTS,   SNAPSHOT_HEADERS) },
+        { key: 'permissionGroups', sheet: getSheet(SHEET_PERMGROUPS,  PERMGROUP_HEADERS) },
+      ];
+      var payload = {};
+      var etagInputs = [];
+      for (var bi = 0; bi < sheets.length; bi++) {
+        var item = sheets[bi];
+        var values = item.sheet.getDataRange().getValues();
+        // ETag input: 행 수 + 마지막 행 + 첫 행(헤더 변경 검출).
+        var fingerprint = values.length + '|' + JSON.stringify(values[0] || []) + '|' +
+                          JSON.stringify(values[values.length - 1] || []);
+        etagInputs.push(item.key + ':' + fingerprint);
+
+        // values → 객체 배열 (중복 read 제거)
+        var rows = [];
+        if (values.length >= 2) {
+          var headers = values[0];
+          for (var rr = 1; rr < values.length; rr++) {
+            var obj = {};
+            for (var hh = 0; hh < headers.length; hh++) obj[headers[hh]] = values[rr][hh];
+            rows.push(obj);
+          }
+        }
+        payload[item.key] = rows;
+      }
+      var combinedEtag = simpleHash(etagInputs.join('||'));
+
+      // 캐시 저장 — 100KB 초과 시 graceful skip
+      _setBulkCache_(JSON.stringify({ etag: combinedEtag, payload: payload }));
+
+      if (clientEtag && clientEtag === combinedEtag) {
+        return jsonResponse({ unchanged: true, etag: combinedEtag });
+      }
+      var resp2 = { ok: true, etag: combinedEtag };
+      for (var k2 in payload) resp2[k2] = payload[k2];
+      return jsonResponse(resp2);
+    }
     if (action === 'getOrgStructure') {
       return jsonResponse({ ok: true, rows: sheetToObjects(getSheet(SHEET_ORG, ORG_HEADERS)) });
     }
@@ -431,12 +519,35 @@ function doGet(e) {
 /* ══════════════════════════════════════════════════════════════════
    doPost — 데이터 쓰기
    ══════════════════════════════════════════════════════════════════ */
+/* R7 Phase 4: bulkGetAll 캐시에 영향을 주는 쓰기 액션 — 처리 전 캐시 invalidate. */
+var BULK_AFFECTING_ACTIONS_ = {
+  // 구성원
+  createUser: 1, updateUser: 1, deleteUser: 1, batchUpsertUsers: 1,
+  // 조직
+  upsertOrgUnit: 1, deleteOrgUnit: 1,
+  // 겸임
+  upsertSecondaryOrg: 1, deleteSecondaryOrg: 1,
+  // 평가권
+  upsertAssignment: 1, endAssignment: 1,
+  // 인사 스냅샷
+  createSnapshot: 1,
+  // 권한 그룹
+  upsertPermissionGroup: 1, deletePermissionGroup: 1,
+  // R7 신규 회원 승인 — 구성원 + 권한그룹 변경
+  approveMember: 1,
+};
+
 function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action;
     var data    = payload.data || {};
     var rows    = payload.rows || [];
+
+    // R7 Phase 4: 쓰기 액션이면 bulk 캐시 invalidate
+    if (BULK_AFFECTING_ACTIONS_[action]) {
+      _invalidateBulkCache_();
+    }
 
     /* ── 인증 (Google SSO, 도메인 제한) ──
        사전 설정:

@@ -100,6 +100,29 @@ export function Login() {
     setError('Google 로그인에 실패했습니다.');
   };
 
+  // R7 dev-only: Google SSO 우회 admin 즉시 로그인 (테스트용)
+  // - vite dev 모드에서만 노출 (`import.meta.env.DEV`).
+  // - 시트에 admin role 사용자가 있으면 그 사용자로, 없으면 합성 admin 으로 진입.
+  const handleDevAdminLogin = () => {
+    const realAdmin = useTeamStore.getState().users.find(u => u.role === 'admin');
+    if (realAdmin) {
+      login({ ...realAdmin, status: 'active' });
+    } else {
+      const syntheticAdmin: User = {
+        id: 'dev_admin',
+        name: '테스트 관리자',
+        email: 'dev-admin@local',
+        role: 'admin',
+        position: '관리자',
+        department: '관리',
+        avatarColor: '#4f46e5',
+        status: 'active',
+      };
+      login(syntheticAdmin);
+    }
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gray-010 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-3">
@@ -187,6 +210,17 @@ export function Login() {
               )}
             </div>
           </div>
+        )}
+
+        {/* R7 dev-only: 테스트용 admin 즉시 로그인 — vite dev 빌드에서만 노출 */}
+        {import.meta.env.DEV && (
+          <button
+            onClick={handleDevAdminLogin}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-yellow-005 text-yellow-070 text-xs font-semibold border border-yellow-060/30 border-dashed hover:bg-yellow-060/10 transition-colors"
+            title="dev 모드 전용: Google SSO 우회 → admin 권한 즉시 진입"
+          >
+            🧪 [DEV] admin 즉시 로그인 (SSO 우회)
+          </button>
         )}
 
         <p className="text-center text-xs text-gray-040 pb-4">

@@ -254,21 +254,24 @@ function deleteRowByKey(sheet, keyHeader, keyValue) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   R7 Phase 4: bulkGetAll 응답 캐시 — ScriptCache 5분 TTL
-   - 잘 안 바뀌는 6개 시트 (users/orgUnits/secondaryOrgs/assignments/
-     snapshots/permissionGroups) 의 직렬화 응답을 캐시
-   - 크기 100KB 초과 시 캐시 미저장 (graceful degrade)
-   - 모든 쓰기 액션에서 _invalidateBulkCache_() 호출
+   R7 Phase 5: bulkGetAll 응답 캐시 — 비활성화 (시트 직접 편집 감지 불가)
+   - 운영자가 시트를 직접 편집해도 onEdit 트리거 없이는 ScriptCache 무효화
+     안 됨 → 최대 5분 staleness 발생
+   - 차후 Drive.Files.modifiedTime 기반 invalidation 으로 재활성화 검토.
+   - 헬퍼는 보존 (재활성화 시 활용).
    ────────────────────────────────────────────────────────────────── */
 var BULK_CACHE_KEY_      = 'bulk_v1';
-var BULK_CACHE_TTL_SEC_  = 300;  // 5 min
-var BULK_CACHE_MAX_SIZE_ = 95 * 1024; // 100KB 한도 - 안전 마진
+var BULK_CACHE_TTL_SEC_  = 300;
+var BULK_CACHE_MAX_SIZE_ = 95 * 1024;
+var BULK_CACHE_ENABLED_  = false; // R7 Phase 5: 안정성 우선 — 비활성화
 
 function _getBulkCache_() {
+  if (!BULK_CACHE_ENABLED_) return null;
   try { return CacheService.getScriptCache().get(BULK_CACHE_KEY_); }
   catch (e) { return null; }
 }
 function _setBulkCache_(serialized) {
+  if (!BULK_CACHE_ENABLED_) return;
   if (!serialized || serialized.length > BULK_CACHE_MAX_SIZE_) return;
   try { CacheService.getScriptCache().put(BULK_CACHE_KEY_, serialized, BULK_CACHE_TTL_SEC_); }
   catch (e) { /* graceful */ }
@@ -414,24 +417,10 @@ function doGet(e) {
 
     /* R7 Phase 4: 단일 호출로 모든 조직/권한 시트 일괄 반환.
        - 6개 fetch → 1개 fetch 로 HTTP 라운드트립 절감
-       - ScriptCache 5분 TTL — 캐시 적중 시 시트 read 0회
-       - 캐시 미스: 각 시트 데이터를 한 번만 읽어 ETag 와 rows 동시 산출
-       - 통합 ETag 변경 없으면 unchanged:true 로 즉시 반환 */
+       - ETag = 6개 시트 전체 데이터의 djb2 해시 — *모든 셀 변경* 정확히 감지
+       - ScriptCache 는 운영자 직접 편집 무효화 어려움으로 비활성화 (R7 Phase 5 수정).
+         차후 Drive.Files.modifiedTime 기반 invalidation 으로 재활성화 검토. */
     if (action === 'bulkGetAll') {
-      // 1) 캐시 적중 — 시트 read 0회
-      var cached = _getBulkCache_();
-      if (cached) {
-        try {
-          var c = JSON.parse(cached);
-          if (clientEtag && clientEtag === c.etag) {
-            return jsonResponse({ unchanged: true, etag: c.etag, cached: true });
-          }
-          var resp = { ok: true, etag: c.etag, cached: true };
-          for (var k in c.payload) resp[k] = c.payload[k];
-          return jsonResponse(resp);
-        } catch (e) { /* 캐시 손상 — fall through */ }
-      }
-      // 2) 캐시 미스 — 시트 read
       var sheets = [
         { key: 'users',            sheet: getSheet(SHEET_USERS,       USER_HEADERS) },
         { key: 'orgUnits',         sheet: getSheet(SHEET_ORG,         ORG_HEADERS) },
@@ -445,10 +434,10 @@ function doGet(e) {
       for (var bi = 0; bi < sheets.length; bi++) {
         var item = sheets[bi];
         var values = item.sheet.getDataRange().getValues();
-        // ETag input: 행 수 + 마지막 행 + 첫 행(헤더 변경 검출).
-        var fingerprint = values.length + '|' + JSON.stringify(values[0] || []) + '|' +
-                          JSON.stringify(values[values.length - 1] || []);
-        etagInputs.push(item.key + ':' + fingerprint);
+
+        // ETag = 시트 전체 직렬화 해시. 중간 행 변경도 정확히 감지.
+        // simpleHash(djb2) 는 60KB 문자열도 ~5-10ms 로 빠름.
+        etagInputs.push(item.key + ':' + simpleHash(JSON.stringify(values)));
 
         // values → 객체 배열 (중복 read 제거)
         var rows = [];
@@ -463,9 +452,6 @@ function doGet(e) {
         payload[item.key] = rows;
       }
       var combinedEtag = simpleHash(etagInputs.join('||'));
-
-      // 캐시 저장 — 100KB 초과 시 graceful skip
-      _setBulkCache_(JSON.stringify({ etag: combinedEtag, payload: payload }));
 
       if (clientEtag && clientEtag === combinedEtag) {
         return jsonResponse({ unchanged: true, etag: combinedEtag });

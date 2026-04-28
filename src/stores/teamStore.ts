@@ -522,7 +522,9 @@ export const useTeamStore = create<TeamStore>()(
   setLoading: (isLoading) => set({ isLoading }),
     }),
     {
-      name: 'team-data-v1',
+      // R7 Phase 5: v1 → v2 — Phase 4 의 buggy fingerprint 로 인해 일부 클라이언트
+      // localStorage 가 stale 상태일 수 있어 강제 fresh fetch 유도.
+      name: 'team-data-v2',
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => ({
         users:               s.users,

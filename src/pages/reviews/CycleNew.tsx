@@ -94,11 +94,14 @@ export function CycleNew() {
 
   useSetPageHeader('리뷰 사이클 생성');
 
+  // R7: 부서 목록을 orgUnits 의 mainOrg 에서 직접 — 시트 사용자가 0~1명이거나
+  // legacy 'department' 필드가 비어있어도 조직 트리는 표시되도록.
   const departments = useMemo(
-    () => Array.from(new Set(
-      users.filter(u => u.role !== 'admin').map(u => u.department)
-    )).sort(),
-    [users],
+    () => orgUnits
+      .filter(o => o.type === 'mainOrg')
+      .map(o => o.name)
+      .sort(),
+    [orgUnits],
   );
 
   const fromTemplateId = searchParams.get('templateId') ?? '';
@@ -356,6 +359,28 @@ export function CycleNew() {
     return map;
   }, [orgUnits]);
 
+  // R7: 선택된 mainOrg 들의 자손 OrgUnit ID 집합 — orgUnitId 트리 기반 매칭용
+  const selectedOrgSubtreeIds = useMemo(() => {
+    const set = new Set<string>();
+    const selectedMains = orgUnits.filter(o =>
+      o.type === 'mainOrg' && form.targetDepartments.includes(o.name)
+    );
+    for (const main of selectedMains) {
+      set.add(main.id);
+      const stack = [main.id];
+      while (stack.length) {
+        const cur = stack.pop()!;
+        for (const o of orgUnits) {
+          if (o.parentId === cur && !set.has(o.id)) {
+            set.add(o.id);
+            stack.push(o.id);
+          }
+        }
+      }
+    }
+    return set;
+  }, [orgUnits, form.targetDepartments]);
+
   const targetMembers = useMemo(() => {
     if (form.targetMode === 'manager') {
       if (!form.targetManagerId) return [];
@@ -365,8 +390,14 @@ export function CycleNew() {
       const set = new Set(form.targetUserIds ?? []);
       return users.filter(u => set.has(u.id) && u.role !== 'admin');
     }
+    // org mode — R7: orgUnitId 트리 매칭 우선, legacy 4단계 이름 매칭 폴백
     return users.filter(u => {
       if (u.role === 'admin') return false;
+
+      // 1) R7: orgUnitId 가 선택된 mainOrg 의 자손이면 포함
+      if (u.orgUnitId && selectedOrgSubtreeIds.has(u.orgUnitId)) return true;
+
+      // 2) Legacy: 4단계 이름 매칭 (R1 마이그 전 데이터 호환)
       if (!form.targetDepartments.includes(u.department)) return false;
       const subOrgsForDept = deptSubOrgsMap[u.department] ?? [];
       if (subOrgsForDept.length > 0 && !form.targetSubOrgs.includes(u.subOrg ?? '')) return false;
@@ -376,7 +407,7 @@ export function CycleNew() {
       if (squadsForTeam.length > 0 && !form.targetSquads.includes(u.squad ?? '')) return false;
       return true;
     });
-  }, [users, form.targetMode, form.targetManagerId, form.targetUserIds, form.targetDepartments, form.targetSubOrgs, form.targetTeams, form.targetSquads, deptSubOrgsMap, subOrgTeamsMap, teamSquadsMap]);
+  }, [users, form.targetMode, form.targetManagerId, form.targetUserIds, form.targetDepartments, form.targetSubOrgs, form.targetTeams, form.targetSquads, deptSubOrgsMap, subOrgTeamsMap, teamSquadsMap, selectedOrgSubtreeIds]);
 
   const managerCandidates = useMemo(
     () => users

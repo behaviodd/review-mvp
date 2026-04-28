@@ -28,7 +28,9 @@ export function BulkMove() {
   const mostSpecificId = orgSel.squadId || orgSel.teamId || orgSel.subOrgId || orgSel.mainOrgId;
   const mostSpecificUnit = orgUnits.find(u => u.id === mostSpecificId);
 
+  // 조직 선택 변경 시 매니저 자동 채움 — 의도된 derived sync.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setManagerId(mostSpecificUnit?.headId ?? '__keep__');
   }, [mostSpecificId]); // eslint-disable-line react-hooks/exhaustive-deps
 

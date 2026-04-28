@@ -33,8 +33,11 @@ export function ConfirmDialog({
 }: Props) {
   const [reason, setReason] = useState('');
 
+  // 닫힘 시 사유 reset + ESC 핸들러 등록. setReason 은 의도된 외부 prop sync.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!open) { setReason(''); return; }
+    /* eslint-enable react-hooks/set-state-in-effect */
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !loading) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

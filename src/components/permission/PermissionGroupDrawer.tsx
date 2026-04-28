@@ -44,13 +44,16 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
   const [memberQuery, setMemberQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // group 변경 시 폼 초기화
+  // group 변경 시 폼 초기화 — 다른 그룹 편집으로 전환되거나 다이얼로그가 다시 열릴 때 reset.
+  // 의도된 prop sync 패턴. parent-controlled mount 로 대체 가능하나 현 구조 유지.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(group?.name ?? '');
     setDescription(group?.description ?? '');
     setPermissions(group?.permissions ?? []);
     setMemberIds(group?.memberIds ?? []);
     setMemberQuery('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [group?.id, open]);
 
   const isSystem = group?.isSystem ?? false;

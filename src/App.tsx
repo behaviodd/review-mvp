@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useTeamStore } from './stores/teamStore';
 import { hasPermission } from './utils/permissions';
@@ -35,10 +35,7 @@ import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
 import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
-import { MemberProfile } from './pages/MemberProfile';
-import { MemberNew } from './pages/team/MemberNew';
 import { PendingApprovals } from './pages/team/PendingApprovals';
-import { MemberEdit } from './pages/team/MemberEdit';
 import { BulkMove } from './pages/team/BulkMove';
 import { AuditLog } from './pages/AuditLog';
 import { PendingApproval } from './pages/PendingApproval';
@@ -47,6 +44,18 @@ import { PendingApproval } from './pages/PendingApproval';
 function OrgSyncProvider() {
   useOrgSync();
   return null;
+}
+
+/**
+ * /team/:id 또는 /team/:id/edit 으로 진입하면 /team?member=:id&action=... 으로 리다이렉트.
+ * 기존 deep-link / 외부 링크 호환을 유지하면서 dialog/drawer UX 로 통일한다.
+ */
+function RedirectToTeamMember({ action }: { action?: 'edit' }) {
+  const { id } = useParams<{ id: string }>();
+  const params = new URLSearchParams();
+  if (id) params.set('member', id);
+  if (action) params.set('action', action);
+  return <Navigate to={`/team?${params.toString()}`} replace />;
 }
 
 function ReviewSyncProvider() {
@@ -342,14 +351,11 @@ export default function App() {
                 </RequirePermission>
               }
             />
-            <Route
-              path="team/new"
-              element={
-                <RequirePermission permissions={['org.manage']}>
-                  <RouteBoundary><MemberNew /></RouteBoundary>
-                </RequirePermission>
-              }
-            />
+            {/* 구성원 추가/조회/수정은 Team 페이지의 dialog/drawer 로 일원화.
+                기존 deep-link 들은 query 파라미터로 변환해 Team 으로 리다이렉트. */}
+            <Route path="team/new" element={<Navigate to="/team?action=add" replace />} />
+            <Route path="team/:id" element={<RedirectToTeamMember />} />
+            <Route path="team/:id/edit" element={<RedirectToTeamMember action="edit" />} />
             <Route
               path="team/pending-approvals"
               element={
@@ -363,15 +369,6 @@ export default function App() {
               element={
                 <RequirePermission permissions={['org.manage']}>
                   <RouteBoundary><BulkMove /></RouteBoundary>
-                </RequirePermission>
-              }
-            />
-            <Route path="team/:id" element={<RouteBoundary><MemberProfile /></RouteBoundary>} />
-            <Route
-              path="team/:id/edit"
-              element={
-                <RequirePermission permissions={['org.manage']}>
-                  <RouteBoundary><MemberEdit /></RouteBoundary>
                 </RequirePermission>
               }
             />

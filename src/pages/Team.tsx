@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { usePermission } from '../hooks/usePermission';
@@ -400,6 +400,33 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   // 구성원 정보 수정 팝업
   const [editUserId, setEditUserId] = useState<string | null>(null);
+
+  /* ── deep-link 자동 진입 ──────────────────────────────────────────
+   * /team?action=add → 추가 다이얼로그 자동 open
+   * /team?member=:id → 프로필 드로어 자동 open
+   * /team?member=:id&action=edit → 수정 다이얼로그 자동 open
+   * 한 번 열고 query 정리 — 닫기 후 새로고침 시 다시 열리지 않도록.
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const memberId = searchParams.get('member');
+    if (!action && !memberId) return;
+    if (action === 'add' && !memberId) {
+      setAddDrawer({});
+    } else if (memberId && action === 'edit') {
+      setEditUserId(memberId);
+    } else if (memberId) {
+      setProfileUserId(memberId);
+    }
+    // query 제거 — 다이얼로그 상태가 진실의 출처가 됨
+    const next = new URLSearchParams(searchParams);
+    next.delete('action');
+    next.delete('member');
+    setSearchParams(next, { replace: true });
+    // searchParams 변경에 의한 무한 루프 방지 — 마운트 시 1회만 처리
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ── 복수 선택 ──────────────────────────────────────────────────── */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

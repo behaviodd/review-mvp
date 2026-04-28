@@ -35,11 +35,13 @@ export function OrgUnitDialog({
   const [name, setName] = useState(editing?.name ?? '');
   const [headId, setHeadId] = useState(editing?.headId ?? '');
 
-  // state 가 바뀌면 폼을 동기화 (다이얼로그가 다른 노드용으로 다시 열릴 때)
+  // state 가 바뀌면 폼을 동기화 (다이얼로그가 다른 노드용으로 다시 열릴 때) — 의도된 prop sync.
   useEffect(() => {
     if (!state) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(state.mode === 'edit' ? state.unit.name : '');
     setHeadId(state.mode === 'edit' ? (state.unit.headId ?? '') : '');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [state]);
 
   const eligibleHeads = useMemo(() => users.filter(u => isUserActive(u)), [users]);

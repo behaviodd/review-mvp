@@ -189,8 +189,12 @@ export function useOrgSync() {
       // SyncError 면 kind 직접 사용, 그 외(Apps Script body error 등)는 transient 기본
       const kind = e instanceof SyncError ? e.kind : 'transient';
       setOrgSyncError(msg, kind);
-      prevErrorRef.current = msg;
       console.error('[OrgSync]', `failed (#${failuresRef.current}) [${kind}]`, msg);
+      // 메시지가 바뀌었거나 첫 발생일 때만 토스트 — polling 반복 동안 동일 에러 스팸 방지
+      if (prevErrorRef.current !== msg) {
+        showToast('error', `조직 동기화 실패: ${msg}`);
+        prevErrorRef.current = msg;
+      }
     } finally {
       setLoading(false);
     }

@@ -37,3 +37,16 @@ export async function refetchAllSync(): Promise<void> {
     reviewRefetch?.({ force: true }),
   ].filter(Boolean) as Promise<void>[]);
 }
+
+/**
+ * 한쪽 동기화만 강제 재시도 — 등록된 인스턴스가 없으면 no-op.
+ * useOrgSync/useReviewSync 를 직접 mount 하지 않고 refetch 만 트리거하고 싶을 때 사용
+ * (예: Settings 페이지의 'Apps Script URL 저장' 버튼).
+ */
+export function refetchOrg(opts: { force?: boolean } = { force: true }): Promise<void> | void {
+  return orgRefetch?.(opts);
+}
+
+export function refetchReview(opts: { force?: boolean } = { force: true }): Promise<void> | void {
+  return reviewRefetch?.(opts);
+}

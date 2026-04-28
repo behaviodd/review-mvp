@@ -26,7 +26,14 @@ const IDEMPOTENT_ACTIONS = new Set<string>([
 /** 쓰기 요청 자체 timeout — 프록시 18s 보다 충분히 길게. */
 const WRITE_TIMEOUT_MS = 25_000;
 
-/** 모든 시트 쓰기 직전에 호출 — useOrgSync 의 stale poll 덮어쓰기 방지. */
+/**
+ * 시트 쓰기 직전·직후 모두 호출되는 grace 마커.
+ *  - **직전 호출**: 진행 중인 polling 이 stale 시트를 읽어 optimistic 상태를 덮어쓰는 race 차단
+ *  - **직후 호출**: Apps Script 의 시트 반영이 비동기일 수 있어, write 완료 후에도
+ *    WRITE_GRACE_MS(4s) 동안 다음 polling 을 미뤄 stale read 흡수
+ *  - write 가 길어지면(예: 25s timeout) 직후 호출이 grace 를 갱신해 정확성 유지
+ *  - 단순 시각 갱신이라 idempotent — 두 번 호출해도 안전
+ */
 function markPendingWrite() {
   try { useSheetsSyncStore.getState().markWrite(); } catch { /* SSR / 초기화 전 안전 */ }
 }
@@ -163,7 +170,7 @@ async function post(action: string, data: Record<string, string>): Promise<void>
 }
 
 async function postReturning(action: string, data: Record<string, string>): Promise<PostResult> {
-  markPendingWrite();
+  markPendingWrite();           // grace 시작 — 진행 중 polling 이 stale 시트를 덮어쓰지 않도록
   const retries = IDEMPOTENT_ACTIONS.has(action) ? 1 : 0;
   const res = await resilientFetch('/api/org-sync', {
     method:  'POST',
@@ -172,12 +179,12 @@ async function postReturning(action: string, data: Record<string, string>): Prom
     retries,
     timeoutMs: WRITE_TIMEOUT_MS,
   });
-  markPendingWrite();
+  markPendingWrite();           // write 완료 후 grace 재갱신 — Apps Script 시트 반영 race 흡수
   return res.json() as Promise<PostResult>;
 }
 
 async function postPayload(payload: PostPayload): Promise<void> {
-  markPendingWrite();
+  markPendingWrite();           // grace 시작 — 진행 중 polling 이 stale 시트를 덮어쓰지 않도록
   const retries = IDEMPOTENT_ACTIONS.has(payload.action) ? 1 : 0;
   const res = await resilientFetch('/api/org-sync', {
     method:  'POST',
@@ -186,7 +193,7 @@ async function postPayload(payload: PostPayload): Promise<void> {
     retries,
     timeoutMs: WRITE_TIMEOUT_MS,
   });
-  markPendingWrite();
+  markPendingWrite();           // write 완료 후 grace 재갱신 — Apps Script 시트 반영 race 흡수
   const json = await res.json() as PostResult;
   if (json.error) throw new Error(json.error);
 }

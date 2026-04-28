@@ -44,8 +44,11 @@ export function GlobalSearch() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // 닫힘 시 검색어/포커스 reset — 의도된 외부 prop sync.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!open) { setQuery(''); setActive(0); }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open]);
 
   const results = useMemo<Result[]>(() => {
@@ -77,7 +80,10 @@ export function GlobalSearch() {
     return hits;
   }, [query, cycles, templates, users, currentUser]);
 
+  // 검색어 변경 시 결과 첫 항목 포커스 — 의도된 derived reset.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setActive(0); }, [query]);
+  // (1줄 본문이라 next-line 으로 충분)
 
   const handleSelect = (r: Result) => {
     if (r.kind === 'cycle') navigate(`/cycles/${r.id}`);

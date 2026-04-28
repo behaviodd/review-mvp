@@ -3,8 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useTeamStore } from '../stores/teamStore';
-import { useOrgSync } from '../hooks/useOrgSync';
-import { useReviewSync } from '../hooks/useReviewSync';
+import { refetchOrg, refetchReview } from '../utils/syncControl';
 import { useReviewStore } from '../stores/reviewStore';
 import { useShowToast } from '../components/ui/Toast';
 import { UserAvatar } from '../components/ui/UserAvatar';
@@ -29,8 +28,6 @@ export function Settings() {
   } = useSheetsSyncStore();
   const { users, isLoading: orgLoading } = useTeamStore();
   const { cycles, templates, submissions, isLoading: reviewLoading } = useReviewStore();
-  const { refetch: refetchOrg } = useOrgSync();
-  const { refetch: refetchReview } = useReviewSync();
   const [urlDraft, setUrlDraft] = useState(scriptUrl);
   const [syncDrawerOpen, setSyncDrawerOpen] = useState(false);
 

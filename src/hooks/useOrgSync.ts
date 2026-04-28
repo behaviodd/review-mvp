@@ -83,13 +83,14 @@ export function useOrgSync() {
           if (bulk.unchanged) {
             // 변경 없음 — 파싱/렌더 스킵
             setOrgLastSyncedAt(new Date().toISOString());
-            console.debug(`[OrgSync] bulk unchanged ${(performance.now() - t0).toFixed(0)}ms${bulk.cached ? ' (cached)' : ''}`);
+            console.info(`[OrgSync] bulk unchanged ${(performance.now() - t0).toFixed(0)}ms${bulk.cached ? ' (cached)' : ''}`);
             return;
           }
           if (bulk.etag) bulkEtagRef.current = bulk.etag;
           const parsedUsers = parseSheetUsers(bulk.users ?? []);
           if (parsedUsers.length === 0) {
             // 시트가 비어 있으면 로컬 데이터 보존
+            console.warn(`[OrgSync] bulk: 시트의 구성원이 비어있습니다. 응답 row=${(bulk.users ?? []).length}, 파싱 후=0`);
             setOrgLastSyncedAt(new Date().toISOString());
             return;
           }
@@ -102,7 +103,7 @@ export function useOrgSync() {
             parsePermissionGroups(bulk.permissionGroups ?? []),
           );
           setOrgLastSyncedAt(new Date().toISOString());
-          console.debug(`[OrgSync] bulk fresh ${(performance.now() - t0).toFixed(0)}ms${bulk.cached ? ' (cached)' : ''}`);
+          console.info(`[OrgSync] bulk fresh ${(performance.now() - t0).toFixed(0)}ms — users=${parsedUsers.length} orgs=${(bulk.orgUnits ?? []).length} permGroups=${(bulk.permissionGroups ?? []).length}`);
           return;
         } catch (e) {
           // bulkGetAll 미지원 — 폴백 모드로 전환 (1회만 로깅)
@@ -142,7 +143,7 @@ export function useOrgSync() {
       }
 
       setOrgLastSyncedAt(new Date().toISOString());
-      console.debug(`[OrgSync] fallback ${(performance.now() - t0).toFixed(0)}ms`);
+      console.info(`[OrgSync] fallback ${(performance.now() - t0).toFixed(0)}ms — users=${useTeamStore.getState().users.length} orgs=${orgUnits.length}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류';
       setOrgSyncError(msg);

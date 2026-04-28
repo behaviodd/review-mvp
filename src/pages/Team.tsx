@@ -623,12 +623,20 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const totalLeaders  = activeUsers.filter(u => headIdsAll.has(u.id)).length;
 
-  /* 소속 없는 구성원: 어떤 mainOrg 이름과도 department가 일치하지 않는 활성 비관리자 */
-  const mainOrgNames = useMemo(() => new Set(orgUnits.filter(u => u.type === 'mainOrg').map(u => u.name)), [orgUnits]);
+  /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 비관리자.
+     R7: orgUnitId 우선 + legacy 폴백 — 마이그레이션 전후 모두 정확히 분류. */
+  const allOrgIds   = useMemo(() => new Set(orgUnits.map(u => u.id)), [orgUnits]);
+  const allOrgNames = useMemo(() => new Set(orgUnits.map(u => u.name)), [orgUnits]);
+  const isUserAssigned = (u: User) => {
+    if (u.orgUnitId && allOrgIds.has(u.orgUnitId)) return true;
+    // legacy 폴백: 4단계 이름 중 하나라도 등록된 OrgUnit 이름과 일치
+    return [u.department, u.subOrg, u.team, u.squad].some(n => n && allOrgNames.has(n));
+  };
   const unassignedUsers = useMemo(() =>
-    activeUsers.filter(u => u.role !== 'admin' && !mainOrgNames.has(u.department))
+    activeUsers.filter(u => u.role !== 'admin' && !isUserAssigned(u))
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    [activeUsers, mainOrgNames]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeUsers, allOrgIds, allOrgNames]
   );
 
   /* 선택된 조직의 구성원 */
@@ -639,12 +647,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     if (showUnassigned) return unassignedUsers;
     if (!selectedUnit) return activeUsers.filter(u => u.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-    const key: Record<OrgUnitType, keyof User> = {
+    // R7: orgUnitId 트리 기반 우선 + legacy 4단계 이름 매칭 폴백.
+    const treeIds = getMembersInOrgTree(selectedUnit.id, activeUsers, orgUnits).map(u => u.id);
+    const legacyKey: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
-    const primaryIds = new Set(
-      activeUsers.filter(u => u[key[selectedUnit.type]] === selectedUnit.name).map(u => u.id)
-    );
+    const legacyIds = activeUsers
+      .filter(u => u[legacyKey[selectedUnit.type]] === selectedUnit.name)
+      .map(u => u.id);
+    const primaryIds = new Set([...treeIds, ...legacyIds]);
     // 겸임으로 이 조직에 소속된 구성원 추가
     const secondaryIds = new Set(
       secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => a.userId)
@@ -656,7 +667,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       if (b.id === selectedUnit.headId) return 1;
       return a.name.localeCompare(b.name, 'ko');
     });
-  }, [selectedUnit, activeUsers, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
+  }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
   const searchResults = useMemo(() =>
     search.trim()

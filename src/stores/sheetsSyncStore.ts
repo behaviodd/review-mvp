@@ -8,6 +8,9 @@ export type SyncOpKind =
   | 'submission.upsert' | 'submission.delete'
   | 'audit.append';
 
+/** 동기화 오류 유형 — 배너 색상/메시지/회복 안내를 가르는 핵심 신호. */
+export type SyncErrorKind = 'transient' | 'permanent' | 'timeout';
+
 export interface PendingSyncOp {
   id: string;                       // 'submission.upsert:sub-123'
   kind: SyncOpKind;
@@ -29,10 +32,12 @@ interface SheetsSyncState {
   orgSyncEnabled: boolean;
   orgLastSyncedAt: string | null;
   orgSyncError: string | null;
+  orgSyncErrorKind: SyncErrorKind | null;
   // 시트 ↔ 리뷰 운영 데이터 동기화 (경로 A)
   reviewSyncEnabled: boolean;
   reviewLastSyncedAt: string | null;
   reviewSyncError: string | null;
+  reviewSyncErrorKind: SyncErrorKind | null;
   // 경로 A 실패 큐 + 최근 성공
   pendingOps: PendingSyncOp[];
   lastSuccessAt: string | null;
@@ -44,10 +49,10 @@ interface SheetsSyncState {
   markSynced: (cycleId: string) => void;
   setOrgSyncEnabled:     (v: boolean) => void;
   setOrgLastSyncedAt:    (at: string) => void;
-  setOrgSyncError:       (msg: string | null) => void;
+  setOrgSyncError:       (msg: string | null, kind?: SyncErrorKind | null) => void;
   setReviewSyncEnabled:  (v: boolean) => void;
   setReviewLastSyncedAt: (at: string) => void;
-  setReviewSyncError:    (msg: string | null) => void;
+  setReviewSyncError:    (msg: string | null, kind?: SyncErrorKind | null) => void;
   /** 쓰기 직전 호출 — useOrgSync 가 일정 시간 동안 poll 을 건너뛰어 stale 덮어쓰기 방지. */
   markWrite: () => void;
 
@@ -68,9 +73,11 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       orgSyncEnabled: true,
       orgLastSyncedAt: null,
       orgSyncError: null,
+      orgSyncErrorKind: null,
       reviewSyncEnabled: true,
       reviewLastSyncedAt: null,
       reviewSyncError: null,
+      reviewSyncErrorKind: null,
       pendingOps: [],
       lastSuccessAt: null,
       lastWriteAt: 0,
@@ -81,10 +88,10 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
         set(s => ({ lastSyncAt: { ...s.lastSyncAt, [cycleId]: new Date().toISOString() } })),
       setOrgSyncEnabled:     (orgSyncEnabled)     => set({ orgSyncEnabled }),
       setOrgLastSyncedAt:    (orgLastSyncedAt)    => set({ orgLastSyncedAt }),
-      setOrgSyncError:       (orgSyncError)       => set({ orgSyncError }),
+      setOrgSyncError:       (orgSyncError, kind = null) => set({ orgSyncError, orgSyncErrorKind: orgSyncError ? kind : null }),
       setReviewSyncEnabled:  (reviewSyncEnabled)  => set({ reviewSyncEnabled }),
       setReviewLastSyncedAt: (reviewLastSyncedAt) => set({ reviewLastSyncedAt }),
-      setReviewSyncError:    (reviewSyncError)    => set({ reviewSyncError }),
+      setReviewSyncError:    (reviewSyncError, kind = null) => set({ reviewSyncError, reviewSyncErrorKind: reviewSyncError ? kind : null }),
       markWrite: () => set({ lastWriteAt: Date.now() }),
 
       enqueueOp: (op) => set(s => {
@@ -105,6 +112,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
         pendingOps: s.pendingOps.filter(p => p.id !== opId),
         lastSuccessAt: new Date().toISOString(),
         reviewSyncError: null,
+        reviewSyncErrorKind: null,
       })),
       markOpFailure: (opId, error) => set(s => ({
         pendingOps: s.pendingOps.map(p =>
@@ -113,6 +121,8 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
             : p
         ),
         reviewSyncError: error,
+        // 큐 retry 실패는 보통 일시적 — 사용자가 재시도하거나 자동 polling 으로 회복 가능
+        reviewSyncErrorKind: 'transient',
       })),
       removeOp: (opId) => set(s => ({ pendingOps: s.pendingOps.filter(p => p.id !== opId) })),
       clearOps: () => set({ pendingOps: [] }),

@@ -1,10 +1,23 @@
 /**
  * 앱 → Google Sheets 리뷰 데이터 쓰기 (경로 A)
  * /api/review-sync 프록시 경유 + 실패 큐 적재
+ *
+ * 멱등 액션 (upsert/delete) 은 transient 오류 시 1회 자동 재시도.
+ * appendAudit 는 매 호출이 새 행을 만들므로 재시도 안 함 — 큐에서 사용자가 직접 재시도.
  */
 import type { ReviewCycle, ReviewTemplate, ReviewSubmission, AuditLogEntry } from '../types';
 import { getScriptHeaders } from './scriptHeaders';
 import { useSheetsSyncStore, type SyncOpKind } from '../stores/sheetsSyncStore';
+import { resilientFetch } from './resilientFetch';
+
+/** 같은 (action, key) 를 두 번 보내도 시트 상태가 동일한 액션. */
+const IDEMPOTENT_ACTIONS = new Set<string>([
+  'upsertCycle', 'deleteCycle',
+  'upsertTemplate', 'deleteTemplate',
+  'upsertSubmission', 'deleteSubmission',
+]);
+
+const WRITE_TIMEOUT_MS = 25_000;
 
 const ACTION_BY_KIND: Record<SyncOpKind, string> = {
   'cycle.upsert':       'upsertCycle',
@@ -21,12 +34,14 @@ export function opId(kind: SyncOpKind, targetId: string): string {
 }
 
 async function rawPost(action: string, data: Record<string, unknown>): Promise<void> {
-  const res = await fetch('/api/review-sync', {
+  const retries = IDEMPOTENT_ACTIONS.has(action) ? 1 : 0;
+  const res = await resilientFetch('/api/review-sync', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify({ action, data }),
+    retries,
+    timeoutMs: WRITE_TIMEOUT_MS,
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json() as { ok?: boolean; error?: string };
   if (json.error) throw new Error(json.error);
 }

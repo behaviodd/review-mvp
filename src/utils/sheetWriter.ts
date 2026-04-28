@@ -1,6 +1,9 @@
 /**
  * 앱 → Google Sheets 쓰기 유틸리티
  * /api/org-sync 프록시를 통해 Apps Script doPost() 를 호출함.
+ *
+ * 멱등 액션 (upsert/delete/end 류) 은 transient 오류 시 1회 자동 재시도.
+ * 비-멱등 액션 (createUser without id, createSnapshot, logImpersonationStart) 은 재시도 안 함.
  */
 import type {
   User, OrgUnit, SecondaryOrgAssignment,
@@ -8,6 +11,20 @@ import type {
 } from '../types';
 import { getScriptHeaders } from './scriptHeaders';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
+import { resilientFetch } from './resilientFetch';
+
+/** 같은 (action, key) 를 두 번 보내도 시트 상태가 동일한 액션. transient 오류 시 자동 재시도 안전. */
+const IDEMPOTENT_ACTIONS = new Set<string>([
+  'upsertOrgUnit', 'deleteOrgUnit', 'batchUpsertOrgUnits',
+  'upsertSecondaryOrg', 'deleteSecondaryOrg',
+  'updateUser', 'deleteUser', 'batchUpsertUsers',
+  'upsertAssignment', 'endAssignment',
+  'upsertPermissionGroup', 'deletePermissionGroup',
+  'logImpersonationEnd',
+]);
+
+/** 쓰기 요청 자체 timeout — 프록시 18s 보다 충분히 길게. */
+const WRITE_TIMEOUT_MS = 25_000;
 
 /** 모든 시트 쓰기 직전에 호출 — useOrgSync 의 stale poll 덮어쓰기 방지. */
 function markPendingWrite() {
@@ -147,25 +164,29 @@ async function post(action: string, data: Record<string, string>): Promise<void>
 
 async function postReturning(action: string, data: Record<string, string>): Promise<PostResult> {
   markPendingWrite();
-  const res = await fetch('/api/org-sync', {
+  const retries = IDEMPOTENT_ACTIONS.has(action) ? 1 : 0;
+  const res = await resilientFetch('/api/org-sync', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify({ action, data }),
+    retries,
+    timeoutMs: WRITE_TIMEOUT_MS,
   });
   markPendingWrite();
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<PostResult>;
 }
 
 async function postPayload(payload: PostPayload): Promise<void> {
   markPendingWrite();
-  const res = await fetch('/api/org-sync', {
+  const retries = IDEMPOTENT_ACTIONS.has(payload.action) ? 1 : 0;
+  const res = await resilientFetch('/api/org-sync', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify(payload),
+    retries,
+    timeoutMs: WRITE_TIMEOUT_MS,
   });
   markPendingWrite();
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json() as PostResult;
   if (json.error) throw new Error(json.error);
 }

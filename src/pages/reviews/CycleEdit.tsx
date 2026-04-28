@@ -8,13 +8,15 @@ import { MsButton } from '../../components/ui/MsButton';
 import { MsInput } from '../../components/ui/MsControl';
 import { MsCheckIcon } from '../../components/ui/MsIcons';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { getDescendantOrgUnitIds } from '../../utils/userCompat';
+import { isSystemOperator } from '../../utils/permissions';
 
 export function CycleEdit() {
   const { cycleId } = useParams<{ cycleId: string }>();
   const navigate = useNavigate();
   const showToast = useShowToast();
   const { cycles, templates, updateCycle } = useReviewStore();
-  const { users } = useTeamStore();
+  const { users, orgUnits } = useTeamStore();
 
   const cycle = cycles.find(c => c.id === cycleId);
 
@@ -64,12 +66,27 @@ export function CycleEdit() {
 
   if (!form) return null;
 
-  const departments = Array.from(
-    new Set(users.filter(u => u.role !== 'admin').map(u => u.department)),
-  ).sort();
-  const targetMembers = users.filter(
-    u => form.targetDepartments.includes(u.department) && u.role !== 'admin',
-  );
+  // R7: 부서 목록을 orgUnits.mainOrg 에서 직접 — legacy department 가 비어있어도 표시.
+  const departments = orgUnits
+    .filter(o => o.type === 'mainOrg')
+    .map(o => o.name)
+    .sort();
+
+  // R7: 대상 인원 카운트 — orgUnitId 트리 매칭 우선, legacy 이름 매칭 폴백.
+  const selectedSubtreeIds = new Set<string>();
+  for (const dept of form.targetDepartments) {
+    const main = orgUnits.find(o => o.type === 'mainOrg' && o.name === dept);
+    if (main) {
+      for (const id of getDescendantOrgUnitIds(main.id, orgUnits)) {
+        selectedSubtreeIds.add(id);
+      }
+    }
+  }
+  const targetMembers = users.filter(u => {
+    if (isSystemOperator(u)) return false;
+    if (u.orgUnitId && selectedSubtreeIds.has(u.orgUnitId)) return true;
+    return form.targetDepartments.includes(u.department);
+  });
 
   const isValid = !!form.title.trim() && form.targetDepartments.length > 0;
 
@@ -169,7 +186,13 @@ export function CycleEdit() {
             <div className="flex flex-wrap gap-2">
               {departments.map(dept => {
                 const selected = form.targetDepartments.includes(dept);
-                const count = users.filter(u => u.department === dept && u.role !== 'admin').length;
+                const main = orgUnits.find(o => o.type === 'mainOrg' && o.name === dept);
+                const subtree = main ? getDescendantOrgUnitIds(main.id, orgUnits) : new Set<string>();
+                const count = users.filter(u => {
+                  if (isSystemOperator(u)) return false;
+                  if (u.orgUnitId && subtree.has(u.orgUnitId)) return true;
+                  return u.department === dept;
+                }).length;
                 return (
                   <button
                     key={dept}

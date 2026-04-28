@@ -16,6 +16,7 @@ import {
 } from '../../utils/authApi';
 import { generateEmployeeId } from '../../utils/sheetWriter';
 import { timeAgo } from '../../utils/dateUtils';
+import { getOrgDepth, getOrgLevelLabel } from '../../utils/teamUtils';
 
 type DecisionState =
   | { type: 'idle' }
@@ -224,7 +225,9 @@ function ApproveDialog({
           >
             <option value="">선택하지 않음</option>
             {orgUnits.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
+              <option key={u.id} value={u.id}>
+                {u.name} · {getOrgLevelLabel(getOrgDepth(u, orgUnits))}
+              </option>
             ))}
           </select>
         </div>

@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { usePendingApprovalsStore } from '../../stores/pendingApprovalsStore';
+import { getMembersInOrgTree } from '../../utils/userCompat';
 import { Pill } from '../ui/Pill';
 import { cn } from '../ui/cn';
 import { useMemo } from 'react';
@@ -68,15 +69,30 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // leader 자격으로 평가/승인 권한을 갖는 leadee 집합
-  // - 직속 매니저(users.managerId)로 지정 + 조직장(orgUnits.headId) 으로 지정된 조직 소속
+  // - 직속 매니저(users.managerId)로 지정 + 조직장(orgUnits.headId) 으로 지정된 조직 소속(자손 포함)
+  // R7: orgUnitId 트리 매칭 우선, legacy 4단계 이름 매칭 폴백 — Team.tsx panelUsers 와 동일 정책.
   const leadeeIds = useMemo(() => {
     if (!currentUser) return new Set<string>();
     const byMgr = new Set(users.filter(u => u.managerId === currentUser.id).map(u => u.id));
-    const headOrgs = new Set(orgUnits.filter(o => o.headId === currentUser.id).map(o => o.name));
-    const orgMembers = new Set(users.filter(u =>
-      headOrgs.has(u.department) || headOrgs.has(u.subOrg ?? '__') ||
-      headOrgs.has(u.team ?? '__') || headOrgs.has(u.squad ?? '__')
-    ).map(u => u.id));
+    const headedOrgs = orgUnits.filter(o => o.headId === currentUser.id);
+    const orgMembers = new Set<string>();
+    for (const org of headedOrgs) {
+      for (const m of getMembersInOrgTree(org.id, users, orgUnits)) {
+        orgMembers.add(m.id);
+      }
+    }
+    // legacy 폴백 — R1 마이그 전 데이터 호환
+    const headOrgNames = new Set(headedOrgs.map(o => o.name));
+    for (const u of users) {
+      if (
+        headOrgNames.has(u.department) ||
+        headOrgNames.has(u.subOrg ?? '__') ||
+        headOrgNames.has(u.team ?? '__') ||
+        headOrgNames.has(u.squad ?? '__')
+      ) {
+        orgMembers.add(u.id);
+      }
+    }
     return new Set([...byMgr, ...orgMembers]);
   }, [currentUser, users, orgUnits]);
 

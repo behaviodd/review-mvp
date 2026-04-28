@@ -20,6 +20,10 @@ import {
 import { getScriptHeaders } from '../utils/scriptHeaders';
 
 const POLL_MS = 60_000;
+/** 최근 쓰기 후 이 시간(ms) 안에는 자동 poll 을 건너뛴다 — Apps Script 의 비동기 쓰기와 다음 GET 의 race 방지. */
+const WRITE_GRACE_MS = 4_000;
+/** 쓰기 직후 자동으로 한 번 fetch 를 예약하는 지연 — 시트에 반영된 최신값으로 fingerprint 갱신. */
+const WRITE_REFRESH_MS = 2_000;
 
 interface SheetResponse {
   rows?: Record<string, unknown>[];
@@ -70,8 +74,25 @@ export function useOrgSync() {
   const orgEtagRef = useRef<string | undefined>(undefined);
   // bulkGetAll 미지원 감지 후 폴백 모드 고정 — 매 호출마다 재시도하지 않음
   const fallbackModeRef = useRef(false);
+  // 쓰기 직후 한 번만 발화하는 refresh timer — 중복 예약 방지
+  const writeRefreshTimerRef = useRef<number | null>(null);
 
-  const fetchAndSync = useCallback(async () => {
+  const fetchAndSync = useCallback(async (opts?: { force?: boolean }) => {
+    // 최근에 쓴 직후라면 stale 시트 데이터로 로컬 optimistic 상태가 덮이지 않도록 skip.
+    if (!opts?.force) {
+      const lastWriteAt = useSheetsSyncStore.getState().lastWriteAt;
+      if (lastWriteAt && Date.now() - lastWriteAt < WRITE_GRACE_MS) {
+        // 후속 refresh 보장 — 쓰기 종료 후 한 번 더 시도
+        if (writeRefreshTimerRef.current == null) {
+          writeRefreshTimerRef.current = window.setTimeout(() => {
+            writeRefreshTimerRef.current = null;
+            void fetchAndSync({ force: true });
+          }, WRITE_REFRESH_MS);
+        }
+        return;
+      }
+    }
+
     setLoading(true);
     setOrgSyncError(null);
     const t0 = performance.now();

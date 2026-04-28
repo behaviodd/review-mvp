@@ -54,7 +54,7 @@ export function Settings() {
     setScriptUrl(urlDraft.trim());
     showToast('success', 'Apps Script URL이 저장되었습니다. 동기화를 시작합니다...');
     setTestState('idle');
-    setTimeout(() => { refetchOrg(); refetchReview(); }, 100);
+    setTimeout(() => { void refetchOrg({ force: true }); void refetchReview({ force: true }); }, 100);
   };
 
   const handleTest = async () => {
@@ -188,7 +188,7 @@ export function Settings() {
                     <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
-                <button onClick={refetchOrg} disabled={orgLoading} title="지금 동기화"
+                <button onClick={() => refetchOrg({ force: true })} disabled={orgLoading} title="지금 동기화"
                   className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${orgLoading ? 'animate-spin' : ''}`} />
                 </button>
@@ -220,7 +220,7 @@ export function Settings() {
                     <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
-                <button onClick={refetchReview} disabled={reviewLoading} title="지금 동기화"
+                <button onClick={() => refetchReview({ force: true })} disabled={reviewLoading} title="지금 동기화"
                   className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${reviewLoading ? 'animate-spin' : ''}`} />
                 </button>

@@ -36,6 +36,8 @@ interface SheetsSyncState {
   // 경로 A 실패 큐 + 최근 성공
   pendingOps: PendingSyncOp[];
   lastSuccessAt: string | null;
+  // 최근 쓰기 타임스탬프 — OrgSync poll 의 stale-overwrite 방지용 (in-memory).
+  lastWriteAt: number;
 
   setScriptUrl: (url: string) => void;
   setEnabled: (v: boolean) => void;
@@ -46,6 +48,8 @@ interface SheetsSyncState {
   setReviewSyncEnabled:  (v: boolean) => void;
   setReviewLastSyncedAt: (at: string) => void;
   setReviewSyncError:    (msg: string | null) => void;
+  /** 쓰기 직전 호출 — useOrgSync 가 일정 시간 동안 poll 을 건너뛰어 stale 덮어쓰기 방지. */
+  markWrite: () => void;
 
   // 큐 액션
   enqueueOp:    (op: Omit<PendingSyncOp, 'queuedAt' | 'tryCount'>) => void;
@@ -69,6 +73,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       reviewSyncError: null,
       pendingOps: [],
       lastSuccessAt: null,
+      lastWriteAt: 0,
 
       setScriptUrl: (scriptUrl) => set({ scriptUrl }),
       setEnabled:   (enabled)  => set({ enabled }),
@@ -80,6 +85,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       setReviewSyncEnabled:  (reviewSyncEnabled)  => set({ reviewSyncEnabled }),
       setReviewLastSyncedAt: (reviewLastSyncedAt) => set({ reviewLastSyncedAt }),
       setReviewSyncError:    (reviewSyncError)    => set({ reviewSyncError }),
+      markWrite: () => set({ lastWriteAt: Date.now() }),
 
       enqueueOp: (op) => set(s => {
         const queuedAt = new Date().toISOString();

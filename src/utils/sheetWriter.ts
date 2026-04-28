@@ -7,6 +7,12 @@ import type {
   ReviewerAssignment, OrgSnapshot, ImpersonationLog, PermissionGroup,
 } from '../types';
 import { getScriptHeaders } from './scriptHeaders';
+import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
+
+/** 모든 시트 쓰기 직전에 호출 — useOrgSync 의 stale poll 덮어쓰기 방지. */
+function markPendingWrite() {
+  try { useSheetsSyncStore.getState().markWrite(); } catch { /* SSR / 초기화 전 안전 */ }
+}
 
 /* ── 사번 자동 생성 ────────────────────────────────────────────────── */
 export function generateEmployeeId(users: User[]): string {
@@ -140,21 +146,25 @@ async function post(action: string, data: Record<string, string>): Promise<void>
 }
 
 async function postReturning(action: string, data: Record<string, string>): Promise<PostResult> {
+  markPendingWrite();
   const res = await fetch('/api/org-sync', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify({ action, data }),
   });
+  markPendingWrite();
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<PostResult>;
 }
 
 async function postPayload(payload: PostPayload): Promise<void> {
+  markPendingWrite();
   const res = await fetch('/api/org-sync', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
     body:    JSON.stringify(payload),
   });
+  markPendingWrite();
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json() as PostResult;
   if (json.error) throw new Error(json.error);
@@ -166,6 +176,27 @@ export const orgUnitWriter = {
     post('upsertOrgUnit', orgUnitToRow(unit)).catch(e => console.error('[Sheet] orgUnit upsert:', e)),
   delete: (id: string) =>
     post('deleteOrgUnit', { '조직ID': id }).catch(e => console.error('[Sheet] orgUnit delete:', e)),
+  /**
+   * N개 OrgUnit 을 1 HTTP 로 일괄 upsert.
+   * Apps Script 에 `batchUpsertOrgUnits` 액션이 미배포면 N개 병렬 fallback.
+   */
+  batchUpsert: async (units: OrgUnit[]) => {
+    if (units.length === 0) return;
+    if (units.length === 1) {
+      return orgUnitWriter.upsert(units[0]);
+    }
+    try {
+      await postPayload({ action: 'batchUpsertOrgUnits', rows: units.map(orgUnitToRow) });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/알 수 없는 action|Unknown action|action.*batchUpsertOrgUnits/i.test(msg)) {
+        // Apps Script 미배포 — 병렬 fallback
+        await Promise.allSettled(units.map(u => post('upsertOrgUnit', orgUnitToRow(u))));
+      } else {
+        console.error('[Sheet] orgUnit batchUpsert:', msg);
+      }
+    }
+  },
 };
 
 export const secondaryOrgWriter = {

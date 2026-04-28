@@ -373,7 +373,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
-  const { users, orgUnits, teams, deleteOrgUnit, updateOrgUnit, updateMember, isLoading, terminateMember } = useTeamStore();
+  const { users, orgUnits, teams, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
   const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
   const { can } = usePermission();
   const navigate = useNavigate();
@@ -484,6 +484,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   };
 
   // 조직 변경 목록을 받아 ① 소속 구성원 org 필드 업데이트 ② 조직 단위 업데이트
+  // R7: 모든 변경을 1회 setState + 1 batch HTTP 로 묶어 N개 PostMessage / 렌더 race 제거.
   const applyWithMemberSync = (orgChanges: OrgChange[]) => {
     // 변경 후 org 단위 스냅샷 (가상)
     const newSnap = orgUnits.map(u => {
@@ -492,6 +493,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
 
     // 각 구성원이 변경된 조직 중 가장 하위 조직에 속하는지 확인 후 경로 재계산
+    const memberPatches: { id: string; patch: Partial<Omit<User, 'id'>> }[] = [];
     for (const user of users.filter(u => isUserActive(u) && u.role !== 'admin')) {
       let bestId: string | null = null;
       let bestDepth = -1;
@@ -509,18 +511,23 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       if (!bestId) continue;
 
       const p = getOrgPath(bestId, newSnap);
-      updateMember(user.id, {
-        department: p.department ?? user.department,
-        subOrg:     p.subOrg,
-        team:       p.team,
-        squad:      p.squad,
+      memberPatches.push({
+        id: user.id,
+        patch: {
+          department: p.department ?? user.department,
+          subOrg:     p.subOrg,
+          team:       p.team,
+          squad:      p.squad,
+        },
       });
     }
+    bulkUpdateMembers(memberPatches);
 
-    // 조직 단위 업데이트
-    orgChanges.forEach(({ id, parentId, type, order }) =>
-      updateOrgUnit(id, { parentId, type, order })
-    );
+    // 조직 단위 업데이트 — 1 batch
+    bulkUpdateOrgUnits(orgChanges.map(c => ({
+      id: c.id,
+      patch: { parentId: c.parentId, type: c.type, order: c.order },
+    })));
   };
 
   // 드래그된 유닛의 모든 하위 유닛을 OrgChange 형태로 수집 (parent/type 변경 없음 — 경로 재계산용)
@@ -602,8 +609,10 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         const desc = descendantChanges(draggingId).filter(d => !reorderChanges.some(r => r.id === d.id));
         applyWithMemberSync([...reorderChanges, ...desc]);
       } else {
-        // 순수 순서 변경: 구성원 업데이트 불필요
-        ordered.forEach((u, i) => updateOrgUnit(u.id, { order: i + 1, parentId: newParentId }));
+        // 순수 순서 변경: 구성원 업데이트 불필요 — 1 batch HTTP 로 적용.
+        bulkUpdateOrgUnits(
+          ordered.map((u, i) => ({ id: u.id, patch: { order: i + 1, parentId: newParentId } })),
+        );
       }
     }
   };

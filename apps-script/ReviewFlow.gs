@@ -510,7 +510,7 @@ var BULK_AFFECTING_ACTIONS_ = {
   // 구성원
   createUser: 1, updateUser: 1, deleteUser: 1, batchUpsertUsers: 1,
   // 조직
-  upsertOrgUnit: 1, deleteOrgUnit: 1,
+  upsertOrgUnit: 1, deleteOrgUnit: 1, batchUpsertOrgUnits: 1,
   // 겸임
   upsertSecondaryOrg: 1, deleteSecondaryOrg: 1,
   // 평가권
@@ -808,6 +808,11 @@ function doPost(e) {
     if (action === 'deleteOrgUnit') {
       deleteRowByKey(getSheet(SHEET_ORG, ORG_HEADERS), '조직ID', data['조직ID']);
       return jsonResponse({ ok: true });
+    }
+    if (action === 'batchUpsertOrgUnits') {
+      var orgSheet = getSheet(SHEET_ORG, ORG_HEADERS);
+      rows.forEach(function(row) { upsertRow(orgSheet, ORG_HEADERS, '조직ID', row); });
+      return jsonResponse({ ok: true, count: rows.length });
     }
 
     /* ── 겸임 ── */

@@ -145,6 +145,10 @@ interface TeamStore {
   // 조직 단위 CRUD
   addOrgUnit: (unit: Omit<OrgUnit, 'id'>) => void;
   updateOrgUnit: (id: string, patch: Partial<Omit<OrgUnit, 'id'>>) => void;
+  /** 여러 OrgUnit 의 patch 를 1회 setState + 1회 batch HTTP 로 적용. DnD 순서 변경/이동에 사용. */
+  bulkUpdateOrgUnits: (patches: { id: string; patch: Partial<Omit<OrgUnit, 'id'>> }[]) => void;
+  /** 여러 User 의 patch 를 1회 setState + 1회 batch HTTP 로 적용. DnD 후 소속 정합성 갱신에 사용. */
+  bulkUpdateMembers: (patches: { id: string; patch: Partial<Omit<User, 'id'>> }[]) => void;
   deleteOrgUnit: (id: string) => void;
   reorderOrgUnit: (id: string, direction: 'up' | 'down') => void;
 
@@ -310,6 +314,36 @@ export const useTeamStore = create<TeamStore>()(
 
       return { orgUnits: state.orgUnits.map(u => u.id === id ? updated : u), users };
     }),
+
+  bulkUpdateOrgUnits: (patches) => {
+    if (patches.length === 0) return;
+    set(state => {
+      const byId = new Map(patches.map(p => [p.id, p.patch] as const));
+      const nextUnits = state.orgUnits.map(u => {
+        const patch = byId.get(u.id);
+        return patch ? { ...u, ...patch } : u;
+      });
+      const changedUnits = nextUnits.filter(u => byId.has(u.id));
+      // 1 HTTP 로 일괄 시트 반영 (Apps Script 미배포면 자동 fallback).
+      void orgUnitWriter.batchUpsert(changedUnits);
+      return { orgUnits: nextUnits };
+    });
+  },
+
+  bulkUpdateMembers: (patches) => {
+    if (patches.length === 0) return;
+    set(state => {
+      const byId = new Map(patches.map(p => [p.id, p.patch] as const));
+      const nextUsers = state.users.map(u => {
+        const patch = byId.get(u.id);
+        return patch ? { ...u, ...patch } : u;
+      });
+      const changedUsers = nextUsers.filter(u => byId.has(u.id));
+      // 1 HTTP 로 일괄 시트 반영.
+      void sheetWriter.batchUpsert(changedUsers);
+      return { users: nextUsers };
+    });
+  },
 
   deleteOrgUnit: (id) => {
     // 하위 조직도 함께 삭제

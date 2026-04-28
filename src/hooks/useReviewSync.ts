@@ -16,6 +16,9 @@ import { useShowToast } from '../components/ui/Toast';
 import type { ReviewCycle, ReviewSubmission, ReviewTemplate } from '../types';
 
 const POLL_MS = 5 * 60_000; // 5분
+/** 최근 쓰기 후 이 시간(ms) 안에는 자동 poll 을 건너뛴다. */
+const WRITE_GRACE_MS = 4_000;
+const WRITE_REFRESH_MS = 2_000;
 
 interface SheetResponse {
   rows?: Record<string, unknown>[];
@@ -40,9 +43,22 @@ export function useReviewSync() {
   enabledRef.current = reviewSyncEnabled;
   // 직전 에러 상태 기억 — 최초 발생 시 1회만 토스트 알림 (폴링 반복 에러 스팸 방지)
   const prevErrorRef = useRef<string | null>(null);
+  const writeRefreshTimerRef = useRef<number | null>(null);
 
-  const fetchAndSync = useCallback(async () => {
+  const fetchAndSync = useCallback(async (opts?: { force?: boolean }) => {
     if (!enabledRef.current) return;
+    if (!opts?.force) {
+      const lastWriteAt = useSheetsSyncStore.getState().lastWriteAt;
+      if (lastWriteAt && Date.now() - lastWriteAt < WRITE_GRACE_MS) {
+        if (writeRefreshTimerRef.current == null) {
+          writeRefreshTimerRef.current = window.setTimeout(() => {
+            writeRefreshTimerRef.current = null;
+            void fetchAndSync({ force: true });
+          }, WRITE_REFRESH_MS);
+        }
+        return;
+      }
+    }
     setLoading(true);
     setReviewSyncError(null);
     try {

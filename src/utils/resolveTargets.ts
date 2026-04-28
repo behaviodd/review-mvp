@@ -1,4 +1,5 @@
 import type { ReviewCycle, User } from '../types';
+import { isSystemOperator } from './permissions';
 
 export type TargetCriteria = Pick<
   ReviewCycle,
@@ -10,7 +11,7 @@ export type TargetCriteria = Pick<
  *  - 'org'    : 기존 targetDepartments 기반 (기본, 하위호환)
  *  - 'manager': 특정 매니저(targetManagerId)의 부하 직원
  *  - 'custom' : 명시적 사용자 id 배열
- * admin 역할은 항상 제외한다.
+ * 시스템 운영자(role='admin') 는 항상 제외한다.
  */
 export function resolveTargetMembers(
   cycle: TargetCriteria,
@@ -20,17 +21,17 @@ export function resolveTargetMembers(
 
   if (mode === 'manager' && cycle.targetManagerId) {
     return users.filter(u =>
-      u.managerId === cycle.targetManagerId && u.role !== 'admin'
+      u.managerId === cycle.targetManagerId && !isSystemOperator(u)
     );
   }
 
   if (mode === 'custom' && cycle.targetUserIds?.length) {
     const set = new Set(cycle.targetUserIds);
-    return users.filter(u => set.has(u.id) && u.role !== 'admin');
+    return users.filter(u => set.has(u.id) && !isSystemOperator(u));
   }
 
   return users.filter(u =>
-    cycle.targetDepartments.includes(u.department ?? '') && u.role !== 'admin'
+    cycle.targetDepartments.includes(u.department ?? '') && !isSystemOperator(u)
   );
 }
 

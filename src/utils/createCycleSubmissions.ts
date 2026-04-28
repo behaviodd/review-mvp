@@ -1,4 +1,5 @@
 import type { OrgUnit, ReviewCycle, ReviewKind, ReviewSubmission, ReviewerAssignment, User } from '../types';
+import { isSystemOperator } from './permissions';
 
 function makeId() {
   return `sub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -28,7 +29,7 @@ function resolveReviewerByRank(
     );
     if (ra) {
       const reviewer = allUsers.find(u => u.id === ra.reviewerId);
-      if (reviewer && reviewer.role !== 'admin') return reviewer;
+      if (reviewer && !isSystemOperator(reviewer)) return reviewer;
     }
   }
 
@@ -39,12 +40,12 @@ function resolveReviewerByRank(
   let manager = allUsers.find(u => u.id === member.managerId);
 
   // orgUnitId 트리에서 headId 탐색
-  if (!manager || manager.role === 'admin') {
+  if (!manager || isSystemOperator(manager)) {
     let cursor = orgUnits.find(o => o.id === member.orgUnitId);
     while (cursor) {
       if (cursor.headId && cursor.headId !== member.id) {
         const head = allUsers.find(u => u.id === cursor!.headId);
-        if (head && head.role !== 'admin') {
+        if (head && !isSystemOperator(head)) {
           manager = head;
           break;
         }
@@ -54,7 +55,7 @@ function resolveReviewerByRank(
   }
 
   // legacy: dept/subOrg/team/squad 이름 매칭 (마이그 전 데이터 호환)
-  if (!manager || manager.role === 'admin') {
+  if (!manager || isSystemOperator(manager)) {
     const memberOrg = orgUnits.find(o =>
       o.headId &&
       o.headId !== member.id &&
@@ -66,7 +67,7 @@ function resolveReviewerByRank(
     if (memberOrg?.headId) manager = allUsers.find(u => u.id === memberOrg.headId);
   }
 
-  if (!manager || manager.role === 'admin') return undefined;
+  if (!manager || isSystemOperator(manager)) return undefined;
   return manager;
 }
 
@@ -103,7 +104,7 @@ export function createCycleSubmissions(
     : [1];
 
   for (const member of targetMembers) {
-    if (member.role === 'admin') continue;
+    if (isSystemOperator(member)) continue;
 
     if (include('self')) {
       submissions.push({

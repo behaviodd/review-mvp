@@ -28,6 +28,19 @@ function isAdmin(actor: User | null | undefined): boolean {
 }
 
 /**
+ * R7: 시스템 운영자 여부.
+ *
+ * `User.role === 'admin'` 의 의미를 *권한* 이 아닌 *평가 참여 분류* 로 명확화한 헬퍼.
+ * 사이클 자동 제외 / 리뷰어 후보 필터 등 비즈니스 로직에서 사용.
+ *
+ * 권한 판단(메뉴/액션 가시성)은 `hasPermission(actor, code, groups)` 또는
+ * `usePermission()` 을 사용하세요. 이 함수는 권한과 무관합니다.
+ */
+export function isSystemOperator(user: User | null | undefined): boolean {
+  return !!user && user.role === 'admin';
+}
+
+/**
  * R6: actor 가 권한 코드를 보유하는지.
  * - admin role: 자동으로 모든 권한
  * - 외: 그룹 멤버십 기반 합집합

@@ -28,8 +28,10 @@ var R7_SHEET_PENDING  = '대기승인';
 var R7_SHEET_CYCLES   = '사이클_v2';
 
 /* ── 헤더 (db-schema.md §2 와 일치) ─────────────────────────────── */
+// R7-corrected: '역할' 컬럼 보존 — 권한이 아닌 평가 참여 분류 ('admin'|'member').
+// admin 은 사이클 자동 제외 (시스템 운영자). 권한은 _권한그룹 시트 단일 진실.
 var R7_USER_HEADERS = [
-  '사번', '이메일', '이름', '직책', '소속조직ID', '보조조직IDs',
+  '사번', '이메일', '이름', '직책', '역할', '소속조직ID', '보조조직IDs',
   '입사일', '퇴사일', '비고'
 ];
 
@@ -338,11 +340,16 @@ function _r7_migrateUsers(ss, orgRowsByLegacyId) {
 
     var secondaryIds = (secByUserId[userId] || []).join(',');
 
+    // 역할: 'admin' 만 시스템 운영자로 보존, 그 외 ('leader'/'member'/빈값) → 'member' 로 정규화.
+    var roleRaw = String(u['역할'] || '').trim().toLowerCase();
+    var role = (roleRaw === 'admin') ? 'admin' : 'member';
+
     return {
       '사번':         userId,
       '이메일':       _r7_lower(u['이메일']),
       '이름':         _r7_str(u['성명']) || _r7_str(u['이름']),
       '직책':         _r7_str(u['직책']) || _r7_str(u['직무']) || '',
+      '역할':         role,
       '소속조직ID':   orgUnitId,
       '보조조직IDs':  secondaryIds,
       '입사일':       _r7_str(u['입사일']),

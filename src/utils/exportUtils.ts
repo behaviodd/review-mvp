@@ -1,4 +1,5 @@
 import type { ReviewCycle, ReviewTemplate, ReviewSubmission, User } from '../types';
+import { isSystemOperator } from './permissions';
 
 // ─── CSV helpers ─────────────────────────────────────────────────────────────
 
@@ -144,7 +145,7 @@ export function exportCycleToCSV(
   allUsers: User[],
 ): void {
   const targetMembers = allUsers.filter(
-    u => cycle.targetDepartments.includes(u.department ?? '') && u.role !== 'admin',
+    u => cycle.targetDepartments.includes(u.department ?? '') && !isSystemOperator(u),
   );
 
   const questions = [...template.questions].sort((a, b) => a.order - b.order);

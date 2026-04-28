@@ -55,7 +55,7 @@ R7 의 목표:
 
 ## 2. 시트 헤더 정의
 
-### 2.1 `구성원_v2` (9컬럼)
+### 2.1 `구성원_v2` (10컬럼)
 
 | 컬럼 | 타입 | 필수 | 비고 |
 |---|---|---|---|
@@ -63,14 +63,16 @@ R7 의 목표:
 | `이메일` | string | ✅ | makestar.com 도메인. lowercase 정규화 |
 | `이름` | string | ✅ |  |
 | `직책` | string |  | 예: "데이터팀장", "선임 엔지니어" — 권한과 무관 |
+| `역할` | enum | ✅ | `admin` \| `member`. **권한이 아님** — 평가 참여 분류용. `admin` 은 사이클 자동 제외 (시스템 운영자) |
 | `소속조직ID` | string |  | `조직_v2.조직ID` 참조. 비어있으면 무소속 |
 | `보조조직IDs` | string |  | 콤마 구분. 예: `org_data,org_review` |
 | `입사일` | date(YYYY-MM-DD) |  |  |
 | `퇴사일` | date(YYYY-MM-DD) |  | 비어있으면 재직 중 |
 | `비고` | string |  | 운영 메모 자유 입력 |
 
+> **R7-corrected**: Phase 0 합의에서 `역할` 컬럼 제거를 권장했으나, Phase 5 검토 중 코드베이스 86 군데에서 `role !== 'admin'` 으로 *사이클 참여 대상에서 시스템 운영자 제외* 의미로 사용 중인 것을 발견. 권한(`pg_owner`/`pg_review_admin` 등) 과 평가 참여 분류(`admin`/`member`) 는 분리된 개념이므로 컬럼 보존. `leader` 값은 사용되더라도 `member` 와 동일하게 처리.
+
 **제거된 컬럼** (구버전 `_구성원`):
-- `역할` → 권한그룹으로 이동
 - `주조직 / 부조직 / 팀 / 스쿼드` → `소속조직ID` 단일 컬럼으로
 - `직무` → `직책` 통합
 - `재직 여부 / 보고대상(사번)` → 별도 테이블(평가권) 또는 퇴사일로 표현
@@ -363,40 +365,86 @@ R7 본 단계에서 적용할 항목:
 
 ## 9. Phase 별 작업 분해 (R7 전체)
 
-### Phase 1 — 마이그레이션 기반 (오늘)
-1. `apps-script/Migrate.gs` 신규 — `migrateR7()` 함수
-2. `src/types/index.ts` 갱신 — `User.role` / `OrgUnitType` / `OrgUnit.type` 제거, `User.status` / `PendingApproval` 추가
-3. 타입 컴파일 오류 일괄 수정 (`usePermission`, `RequireRole`, `userCompat` 등)
-4. `apps-script/ReviewFlow.gs` 의 SHEET 상수 / HEADERS 갱신 (`구성원_v2`, `조직_v2`, `사이클_v2`, `대기승인`)
+### Phase 1 — 마이그레이션 기반 ✅ (2026-04-28 완료)
+1. ✅ `apps-script/Migrate_R7.gs` 신규 — `migrateR7_run/cleanupDeadSheets/archiveOldSheets/rollback`
+2. ✅ `src/types/index.ts` — `User.status` / `secondaryOrgIds` / `PendingApproval` 추가. `User.role` / `OrgUnit.type` 은 deprecated 표시만(호환 보존)
+3. ✅ `apps-script/ReviewFlow.gs` SHEET 상수 추가 (`SHEET_USERS_V2` 등)
+4. ✅ 사용 중단 Apps Script 파일 6개 삭제 (`Code.gs` / `Code_v2.gs` / `OrgSync.gs` / `ReviewSync.gs` / 구 마이그레이션 2종)
 
-### Phase 2 — 신규 회원 승인 흐름 (D+1)
-1. `verifyGoogleLogin` Apps Script 동작 변경 (대기승인 upsert 로직)
-2. `approveMember` / `rejectMember` Apps Script 액션 추가
-3. `RequireApproval` 가드 + `/pending-approval` 페이지
-4. `/team` 에 "승인 대기" 탭 + 다이얼로그 + 사이드바 배지
+### Phase 2 — 신규 회원 승인 흐름 ✅ (완료)
+1. ✅ `verifyGoogleLogin` 동작 변경 — 미등록 이메일이면 `_대기승인` upsert + `status: 'pending'` 응답
+2. ✅ `approveMember` / `rejectMember` / `getPendingApprovals` 액션 + 감사 로그
+3. ✅ `RequireAuth` 가 pending 사용자를 `/pending-approval` 로 강제. `RequirePending` 신규
+4. ✅ `/team/pending-approvals` 페이지 + 사이드바 배지(5분 폴링) + Team 상단 배너
 
-### Phase 3 — 조직 균일 5단계 (D+2)
-1. `OrgTreeNode` UI: depth 균일 처리, `Lv.N` 배지 통일
-2. 조직 추가/이동 시 5단계 제한 검증
-3. `userCompat.ts` 의 `legacyDepartment/legacySubOrg/legacyTeam/legacySquad` 정리
-4. 4단계 컬럼 표시하는 화면들 → 부모 체인 단일 표시로 변경
+### Phase 3 — 조직 균일 5단계 ✅ (완료)
+1. ✅ `getOrgLevelLabel/getOrgLevelPlaceholder/getOrgDepth/validateOrgDepth/inferTypeByDepth` 헬퍼
+2. ✅ `OrgUnitDialog`/`QuickAddMemberDialog`/`SecondaryOrgSection`/`Team.tsx` 라벨 일원화
+3. ✅ `OrgTreeNode '+' 버튼` / `OrgUnitDialog 저장` / `DnD into 드롭` 모두 5단계 제한
+4. ✅ `ORG_TYPE_LABEL/PLACEHOLDER/NEXT` 는 `@deprecated` 마킹만 (호환 보존)
 
-### Phase 4 — 성능 (D+3)
-1. SWR 패턴: 부팅 시 캐시 즉시 표시 + 백그라운드 fetch
-2. Apps Script `CacheService` 적용 (구성원/조직/권한그룹)
-3. 효과 측정 (페이지 진입 시간 before/after)
+### Phase 4 — 성능 ✅ (완료)
+1. ✅ Apps Script `bulkGetAll` 단일 액션 — 6 시트 한 번에. HTTP 라운드트립 6→1
+2. ✅ Apps Script `ScriptCache` 5분 TTL — 100KB 한도, graceful skip. 14개 쓰기 액션 진입 시 자동 invalidate
+3. ✅ `useOrgSync` 가 `bulkGetAll` 우선 + 미지원 시 6개 병렬 폴백
 
-### Phase 5 — 정리 (D+7)
-1. 1주일 안정 운영 확인
-2. 구버전 시트 archive
-3. `userCompat.ts` 등 deprecated 코드 일괄 제거
-4. `docs/permissions.md` 업데이트 (R7 변경 이력)
+### Phase 5 — 정리 ✅ (이번 단계, 일부 완료)
+1. ✅ `docs/db-schema.md` 보정 — `구성원_v2` 에 `역할` 컬럼 보존 (사이클 참여 분류용)
+2. ✅ `Migrate_R7.gs` — `역할` 컬럼 매핑 추가 (admin/member 정규화)
+3. ✅ `isSystemOperator(user)` 헬퍼 + 비즈니스 로직 4개 파일 정리 (resolveTargets/exportUtils/createCycleSubmissions/cyclePreflight)
+4. ✅ `docs/permissions.md` 에 R7 변경 이력 추가
+5. ⏳ 1주일 안정 운영 검증 — 운영자 진행
+6. ⏳ `migrateR7_archiveOldSheets()` 실행 — 검증 후 운영자 진행
+
+### Phase 6 — 잔여 정리 (후속, 우선순위 낮음)
+- `User.role` 나머지 ~80 군데 참조 정리 (Dashboard / Settings / MemberProfile 등 표시 로직, RequireRole 라우트 가드)
+- `OrgUnit.type` 데이터 필드 제거 + `userCompat.legacyDepartment/SubOrg/Team/Squad` 정리
+- `OrgSel` 데이터 구조를 4-tier 에서 N-level 부모 체인으로 리팩토링 (MemberNew/MemberEdit/OrgSelector)
+- 4단계 컬럼(`주조직/부조직/팀/스쿼드`) 마이그 후 시트에서 완전 제거
 
 ---
 
-## 10. 변경 이력
+## 10. 운영자 검증 + Archive 가이드 (Phase 5 후반)
 
-- **R7** (작업 중, 2026-04-28~): 시트 단순화 + 신규 회원 승인 흐름 + 조직 균일 5단계
+### 10.1 사전 점검 (배포 직후)
+- [ ] Apps Script 편집기에서 `ReviewFlow.gs` + `Migrate_R7.gs` 새 버전 배포
+- [ ] Script Properties 확인: `GOOGLE_CLIENT_ID` 설정됨
+- [ ] 기존 admin 계정으로 로그인 — 정상 진입 확인
+- [ ] 미등록 이메일로 시도 — `/pending-approval` 페이지 노출 + `_대기승인` row 생성 확인
+- [ ] admin 이 `/team/pending-approvals` 진입 — 승인 다이얼로그 동작 확인
+- [ ] 사이드바 "구성원" 배지 카운트 일치 확인
+
+### 10.2 마이그레이션 (한 번만)
+- [ ] 시트 백업: 파일 → 사본 만들기 → `백업_R7_YYYYMMDD`
+- [ ] Apps Script 함수 드롭다운 → `migrateR7_run` 선택 → ▶ 실행
+- [ ] `구성원_v2` / `조직_v2` / `대기승인` / `사이클_v2` 4개 시트 생성 확인
+- [ ] `_권한그룹.pg_owner.멤버사번JSON` 에 admin 사번 자동 병합 확인
+- [ ] (즉시 가능) `migrateR7_cleanupDeadSheets()` 실행 → `_계정` 삭제
+
+### 10.3 1주일 검증 (D ~ D+7)
+- [ ] 매일 `_대기승인` 시트 확인 — 비정상 row 누적 없는지
+- [ ] 구성원 추가/편집/조직 이동/사이클 발행 등 일상 운영 정상
+- [ ] Apps Script 로그(`보기 → 실행`) 에서 에러 없는지
+- [ ] 클라이언트 console 에 `[OrgSync] bulk fresh/unchanged Xms (cached)` 로그 — 캐시 적중 확인
+- [ ] 1주 누적 에러 없으면 다음 단계로
+
+### 10.4 Archive (D+7 이후)
+- [ ] Apps Script → `migrateR7_archiveOldSheets()` 실행
+- [ ] `_구성원` → `_구성원_archived_YYYYMMDD` 등 3개 archive 확인
+- [ ] 클라이언트 동작 영향 없음 확인 (구버전 시트 archive 후에도 v2 만 사용)
+- [ ] 추가 1주일 운영 후 archived 시트들도 삭제(선택)
+
+### 10.5 롤백 절차 (문제 발생 시)
+- Apps Script: 이전 버전으로 되돌리기 + 새 버전 재배포
+- `migrateR7_rollback()` 실행 → `_v2` 시트들이 `_rollback_*` 로 옮겨짐
+- 클라이언트 `localStorage.removeItem('team-data-v1')` + 새로고침
+- archive 된 시트는 이름만 복구하면 즉시 운영 복귀
+
+---
+
+## 11. 변경 이력
+
+- **R7** (2026-04-28~, Phase 1~5 완료): Google SSO + 신규 회원 승인 + 조직 균일 5단계 + bulkGetAll/ScriptCache 성능 + isSystemOperator 헬퍼 도입
 - R6: 권한 그룹 + 마스터 로그인 권한 분리
 - R5-b: 마스터 로그인 (impersonation) UI
 - R5-a: 자유 재귀 조직 트리 (squad 자기재귀)

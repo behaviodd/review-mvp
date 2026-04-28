@@ -212,16 +212,14 @@ export function Login() {
           </div>
         )}
 
-        {/* R7 dev-only: 테스트용 admin 즉시 로그인 — vite dev 빌드에서만 노출 */}
-        {import.meta.env.DEV && (
-          <button
-            onClick={handleDevAdminLogin}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-yellow-005 text-yellow-070 text-xs font-semibold border border-yellow-060/30 border-dashed hover:bg-yellow-060/10 transition-colors"
-            title="dev 모드 전용: Google SSO 우회 → admin 권한 즉시 진입"
-          >
-            🧪 [DEV] admin 즉시 로그인 (SSO 우회)
-          </button>
-        )}
+        {/* TEMP: production 테스트용 admin 즉시 로그인 — QA 끝나면 import.meta.env.DEV 가드 복구 필요 */}
+        <button
+          onClick={handleDevAdminLogin}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-yellow-005 text-yellow-070 text-xs font-semibold border border-yellow-060/30 border-dashed hover:bg-yellow-060/10 transition-colors"
+          title="QA 전용: Google SSO 우회 → admin 권한 즉시 진입"
+        >
+          🧪 [TEST] admin 즉시 로그인 (SSO 우회)
+        </button>
 
         <p className="text-center text-xs text-gray-040 pb-4">
           @{ALLOWED_DOMAIN} 도메인의 구성원만 로그인할 수 있습니다.

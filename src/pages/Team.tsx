@@ -27,6 +27,9 @@ import { MsCheckbox, MsInput } from '../components/ui/MsControl';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { QuickAddMemberDialog } from '../components/team/QuickAddMemberDialog';
 import { OrgUnitDialog, type OrgUnitDialogState } from '../components/team/OrgUnitDialog';
+import { MemberAddDialog } from '../components/team/MemberAddDialog';
+import { MemberEditDialog } from '../components/team/MemberEditDialog';
+import { MemberProfileDrawer } from '../components/team/MemberProfileDrawer';
 import { impersonationLogWriter } from '../utils/sheetWriter';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
@@ -271,11 +274,12 @@ function OrgTreeNode({
 
 /* ── Member Row ─────────────────────────────────────────────────────── */
 function MemberRow({
-  user, onEdit, onTerminate, onImpersonate, secondaryOrgs,
+  user, onView, onEdit, onTerminate, onImpersonate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
   secondaryAssignmentHere, isOrgHeadHere = false, isAnyOrgHead = false,
 }: {
   user: User;
+  onView: (u: User) => void;
   onEdit: ((u: User) => void) | null;
   onTerminate?: (u: User) => void;
   onImpersonate?: (u: User) => void;
@@ -287,10 +291,9 @@ function MemberRow({
   isOrgHeadHere?: boolean;  // 현재 선택된 조직의 조직장
   isAnyOrgHead?: boolean;   // 어느 조직이든 조직장 여부
 }) {
-  const navigate = useNavigate();
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   const canSelect = onToggle && user.role !== 'admin';
-  const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); navigate(`/team/${user.id}`); };
+  const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
   return (
     <div
@@ -391,18 +394,21 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [quickAddOrg, setQuickAddOrg] = useState<OrgUnit | null>(null);
   // 조직 추가·편집 다이얼로그
   const [orgDialog, setOrgDialog] = useState<OrgUnitDialogState>(null);
+  // 구성원 추가 팝업 (initial 조직/매니저 컨텍스트 포함)
+  const [addDrawer, setAddDrawer] = useState<{ orgId?: string; managerId?: string } | null>(null);
+  // 구성원 프로필 사이드바
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  // 구성원 정보 수정 팝업
+  const [editUserId, setEditUserId] = useState<string | null>(null);
 
   /* ── 복수 선택 ──────────────────────────────────────────────────── */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  /* ── Navigation helpers (모달 → 페이지 전환) ──────────────────── */
-  const goAddMember = (unitId?: string, managerId?: string) => {
-    const qs = new URLSearchParams();
-    if (unitId) qs.set('orgId', unitId);
-    if (managerId) qs.set('managerId', managerId);
-    navigate(`/team/new${qs.toString() ? `?${qs}` : ''}`);
-  };
-  const goEditMember = (m: User) => navigate(`/team/${m.id}/edit`);
+  /* ── Navigation helpers ────────────────────────────────────────── */
+  const goAddMember = (unitId?: string, managerId?: string) =>
+    setAddDrawer({ orgId: unitId, managerId });
+  const goViewMember = (m: User) => setProfileUserId(m.id);
+  const goEditMember = (m: User) => setEditUserId(m.id);
   const openAddOrg = (type: OrgUnitType, parentId?: string) => setOrgDialog({ mode: 'add', type, parentId });
   const openEditOrg = (unit: OrgUnit) => setOrgDialog({ mode: 'edit', unit });
   const goBulkMove = () => {
@@ -813,6 +819,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             <div className="divide-y divide-gray-005">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
+                  onView={goViewMember}
                   onEdit={canEdit ? goEditMember : null}
                   onTerminate={canEdit ? handleTerminate : undefined}
                   onImpersonate={can.impersonate ? handleImpersonate : undefined}
@@ -980,6 +987,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               <div className="flex-1 overflow-y-auto">
                 {panelUsers.map(u => (
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
+                    onView={goViewMember}
                     onEdit={canEdit ? goEditMember : null}
                     onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
                     onImpersonate={can.impersonate && !showTerminated ? handleImpersonate : undefined}
@@ -1017,6 +1025,25 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         open={quickAddOrg !== null}
         onClose={() => setQuickAddOrg(null)}
         orgUnit={quickAddOrg}
+      />
+
+      {/* 구성원 추가 (풀 폼 팝업) */}
+      <MemberAddDialog
+        context={addDrawer}
+        onClose={() => setAddDrawer(null)}
+      />
+
+      {/* 구성원 프로필 (사이드바) */}
+      <MemberProfileDrawer
+        userId={profileUserId}
+        onClose={() => setProfileUserId(null)}
+        onEdit={(id) => { setProfileUserId(null); setEditUserId(id); }}
+      />
+
+      {/* 구성원 정보 수정 (팝업) */}
+      <MemberEditDialog
+        userId={editUserId}
+        onClose={() => setEditUserId(null)}
       />
 
       {/* 조직 추가·편집 */}

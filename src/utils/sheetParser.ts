@@ -262,24 +262,11 @@ export function parseImpersonationLogs(rows: SheetRow[]): ImpersonationLog[] {
 
 /* ── 배열 파싱 ───────────────────────────────────────────────────────── */
 export function parseSheetUsers(rows: SheetRow[]): User[] {
-  const users = rows
+  // R7: 자동 admin 승격 로직 제거.
+  // 시트의 '역할' 컬럼(또는 '권한') 을 단일 진실로 신뢰. 운영자가 명시한 admin
+  // 만 admin 으로 처리. 1인 시트에서 유일한 멤버를 admin 으로 강제 승격하던
+  // 옛 휴리스틱은 '전체 구성원 0명' 등 회귀 야기 → R7 에서 제거.
+  return rows
     .map(parseSheetUser)
     .filter((u): u is User => u !== null);
-
-  if (users.length === 0) return users;
-
-  // 시트에 admin 키워드(대표이사, CEO 등)가 없는 경우,
-  // 보고 대상이 비어 있는 최상위 구성원을 admin으로 자동 지정
-  const hasAdmin = users.some(u => u.role === 'admin');
-  if (!hasAdmin) {
-    const allManagerIds = new Set(users.map(u => u.managerId).filter(Boolean));
-    // 다른 사람이 보고하는 대상이면서 본인은 보고 대상이 없는 사람 = 최상위
-    const top =
-      users.find(u => !u.managerId && allManagerIds.has(u.id)) ??
-      users.find(u => !u.managerId) ??
-      users[0];
-    top.role = 'admin';
-  }
-
-  return users;
 }

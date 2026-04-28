@@ -619,11 +619,12 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const activeUsers     = useMemo(() => users.filter(u => isUserActive(u)), [users]);
   const terminatedUsers = useMemo(() => users.filter(u => !isUserActive(u)), [users]);
 
-  const totalNonAdmin = activeUsers.filter(u => u.role !== 'admin').length;
+  // R7: 관리자도 구성원에 포함. 사이클 참여 분류(isSystemOperator)는 별도 의미로 유지.
+  const totalActive   = activeUsers.length;
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const totalLeaders  = activeUsers.filter(u => headIdsAll.has(u.id)).length;
 
-  /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 비관리자.
+  /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 사용자.
      R7: orgUnitId 우선 + legacy 폴백 — 마이그레이션 전후 모두 정확히 분류. */
   const allOrgIds   = useMemo(() => new Set(orgUnits.map(u => u.id)), [orgUnits]);
   const allOrgNames = useMemo(() => new Set(orgUnits.map(u => u.name)), [orgUnits]);
@@ -633,7 +634,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     return [u.department, u.subOrg, u.team, u.squad].some(n => n && allOrgNames.has(n));
   };
   const unassignedUsers = useMemo(() =>
-    activeUsers.filter(u => u.role !== 'admin' && !isUserAssigned(u))
+    activeUsers.filter(u => !isUserAssigned(u))
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeUsers, allOrgIds, allOrgNames]
@@ -645,7 +646,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const panelUsers = useMemo(() => {
     if (showTerminated) return terminatedUsers;
     if (showUnassigned) return unassignedUsers;
-    if (!selectedUnit) return activeUsers.filter(u => u.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    if (!selectedUnit) return [...activeUsers].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     // R7: orgUnitId 트리 기반 우선 + legacy 4단계 이름 매칭 폴백.
     const treeIds = getMembersInOrgTree(selectedUnit.id, activeUsers, orgUnits).map(u => u.id);
@@ -757,7 +758,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { icon: MsGroupIcon, label: '전체 구성원', value: `${totalNonAdmin}명`,  sub: '재직 중' },
+          { icon: MsGroupIcon, label: '전체 구성원', value: `${totalActive}명`,  sub: '재직 중' },
           { icon: MsGroupIcon, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
           { icon: MsProfileIcon, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
         ].map(({ icon: Icon, label, value, sub }) => (
@@ -842,7 +843,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               >
                 <MsGroupIcon size={14} className="flex-shrink-0" />
                 <span className="flex-1 text-left">전체 구성원</span>
-                <span className="text-xs text-gray-040">{totalNonAdmin}</span>
+                <span className="text-xs text-gray-040">{totalActive}</span>
               </button>
 
               {/* 소속 없음 */}

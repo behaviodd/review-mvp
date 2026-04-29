@@ -197,6 +197,27 @@ useSetPageHeader('구성원 관리', actions, {
 - ❌ 콘텐츠 영역 안에 직접 `border-b` 탭 그리기 — 헤더 탭 사용
 - ❌ ListToolbar `tabs` 슬롯 사용 (deprecated) — 헤더 탭 또는 segments 마이그레이션
 
+### 7.6 시트형 리스트 패턴 — Phase D-2.4b
+
+Figma `Parts/List` 정합. 카드 컨테이너 (bg + border + shadow) 없이 페이지 배경 위에 평면으로 그리는 리스트.
+
+**Row 컨테이너** (예: 멤버 리스트, 사이클 리스트)
+- `flex items-center gap-3 min-h-[52px] px-2 py-1.5 rounded-lg group transition-colors`
+- 활성/선택: `bg-bg-token-brand1-subtlest`
+- 비활성 hover: `hover:bg-interaction-hovered`
+- 행 사이 구분선 없음 — 시트 위 평면
+
+**Row 내부 구성**
+- 좌측 LeftItem: Avatar 40px (`size-10`), gap-3 으로 다음 영역 분리
+- 중앙 Contents: `flex-col flex-1 min-w-0 gap-0.5`
+  - 이름/제목: `text-base font-semibold text-fg-default tracking-[-0.3px] leading-6`
+  - 부가 정보: `text-sm font-normal text-fg-subtle tracking-[-0.3px] leading-5 truncate`
+- 우측 액션: `opacity-0 group-hover:opacity-100` — hover 시 보임. 작은 IconButton (p-1.5 rounded-md, 14px icon)
+
+**금지**
+- ❌ 시트형 리스트에 카드 컨테이너 (bg-white + border + shadow) 추가 — 페이지 배경 위 평면 의도
+- ❌ 행 사이 명시 border-b — 시트형은 hover 효과만으로 구분
+
 ### 7.1 ListToolbar 사용 규칙
 
 리스트 페이지(MyReviewList, TeamReviewList, PeerApprovalPage, CycleList, ReceivedReviewList, CycleArchive 등)는 **반드시** `ListToolbar` 를 사용해 필터/검색을 구성합니다.

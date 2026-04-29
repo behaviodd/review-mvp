@@ -6,6 +6,8 @@ interface Props {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showName?: boolean;
   anonymous?: boolean;
+  /** 사이즈 클래스 override — Figma list row (size-10) 같은 비표준 크기에 사용 */
+  className?: string;
 }
 
 const SIZES = {
@@ -15,7 +17,7 @@ const SIZES = {
   xl: 'size-14',
 };
 
-export function UserAvatar({ user, size = 'md', showName, anonymous }: Props) {
+export function UserAvatar({ user, size = 'md', showName, anonymous, className }: Props) {
   const name = anonymous ? '익명' : user.name;
   const initials = anonymous ? '?' : user.name.slice(0, 2);
   return (
@@ -24,7 +26,7 @@ export function UserAvatar({ user, size = 'md', showName, anonymous }: Props) {
         initials={initials}
         color={anonymous ? '#8a99a8' : user.avatarColor}
         alt={`${name} 아바타`}
-        className={SIZES[size]}
+        className={className ?? SIZES[size]}
       />
       {showName && (
         <div>

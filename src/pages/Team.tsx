@@ -273,6 +273,13 @@ function OrgTreeNode({
 }
 
 /* ── Member Row ─────────────────────────────────────────────────────── */
+/**
+ * Phase D-2.4b: 시트형 MemberRow (Figma `Parts/List` 정합).
+ *  - 카드 컨테이너 / 행간 border 제거 — 평면 시트 위에 hover 효과만
+ *  - Avatar 40px (size-10), name 16 SemiBold, sub 14 Regular subtle
+ *  - sub 텍스트: `{직무 또는 겸임role} · {마지막 하위조직}` (Figma 정합)
+ *  - 색상 raw → semantic 토큰 (fg-default/subtle, brand1, interaction)
+ */
 function MemberRow({
   user, onView, onEdit, onTerminate, onImpersonate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
@@ -288,21 +295,26 @@ function MemberRow({
   onToggle?: (id: string) => void;
   selectionActive?: boolean;
   secondaryAssignmentHere?: SecondaryOrgAssignment;
-  isOrgHeadHere?: boolean;  // 현재 선택된 조직의 조직장
-  isAnyOrgHead?: boolean;   // 어느 조직이든 조직장 여부
+  isOrgHeadHere?: boolean;
+  isAnyOrgHead?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   const canSelect = onToggle && user.role !== 'admin';
   const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
+  // sub 텍스트: 직무/겸임role + 마지막 하위 조직 (Figma `{직무}•{마지막 하위조직}`)
+  const roleText = secondaryAssignmentHere?.role || user.position || '';
+  const lastOrg = user.squad || user.team || user.subOrg || user.department || '';
+  const subText = [roleText, lastOrg].filter(Boolean).join(' · ');
+
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 transition-colors group border-b border-gray-005 last:border-0 ${
-        selected ? 'bg-pink-005/60' : 'hover:bg-gray-005'
+      className={`flex items-center gap-3 min-h-[52px] px-2 py-1.5 rounded-lg group transition-colors ${
+        selected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered'
       } ${canSelect ? 'cursor-pointer' : ''}`}
       onClick={canSelect ? () => onToggle!(user.id) : undefined}
     >
-      {/* 체크박스 */}
+      {/* 체크박스 (선택 모드 시 보임) */}
       {canSelect && (
         <div
           className={`flex items-center flex-shrink-0 transition-opacity ${selectionActive || selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
@@ -312,13 +324,16 @@ function MemberRow({
         </div>
       )}
 
-      <UserAvatar user={user} size="sm" />
-      <div className="flex-1 min-w-0">
+      {/* Avatar 40px (LeftItem) */}
+      <UserAvatar user={user} className="size-10 rounded-full" />
+
+      {/* Contents — name 16 SemiBold + sub 14 Regular subtle */}
+      <div className="flex flex-col flex-1 min-w-0 justify-center gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={goToProfile}
-            className="text-sm font-medium text-gray-099 hover:text-pink-050 hover:underline transition-colors"
+            className="text-base font-semibold text-fg-default hover:text-fg-brand1 transition-colors tracking-[-0.3px] leading-6"
           >
             {user.name}
           </button>
@@ -337,36 +352,38 @@ function MemberRow({
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-040 mt-0.5 truncate">
-          {secondaryAssignmentHere ? secondaryAssignmentHere.role ?? '' : user.position}
-          {user.email && <span className="ml-2 text-gray-030">·</span>}
-          {user.email && <span className="ml-1">{user.email}</span>}
-        </p>
+        {subText && (
+          <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
+            {subText}
+          </p>
+        )}
       </div>
+
+      {/* Action buttons (hover 시 보임) */}
       <div
-        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
         onClick={e => e.stopPropagation()}
       >
         <button onClick={goToProfile} title="프로필 보기"
-          className="p-1.5 rounded-md text-gray-040 hover:text-blue-060 hover:bg-blue-005 transition-colors">
-          <MsProfileIcon size={12} className="size-3.5" />
+          className="p-1.5 rounded-md text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered transition-colors">
+          <MsProfileIcon size={14} />
         </button>
         {onEdit && (
           <button onClick={() => onEdit(user)} title="정보 수정"
-            className="p-1.5 rounded-md text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
-            <MsEditIcon size={12} className="size-3.5" />
+            className="p-1.5 rounded-md text-fg-subtlest hover:text-fg-brand1 hover:bg-bg-token-brand1-subtlest transition-colors">
+            <MsEditIcon size={14} />
           </button>
         )}
         {onImpersonate && user.role !== 'admin' && isUserActive(user) && (
           <button onClick={() => onImpersonate(user)} title="마스터 로그인 (조회 전용)"
-            className="p-1.5 rounded-md text-gray-040 hover:text-orange-070 hover:bg-orange-005 transition-colors">
-            <MsLogoutIcon size={12} className="size-3.5" />
+            className="p-1.5 rounded-md text-fg-subtlest hover:text-orange-070 hover:bg-orange-005 transition-colors">
+            <MsLogoutIcon size={14} />
           </button>
         )}
         {onTerminate && user.role !== 'admin' && (
           <button onClick={() => onTerminate(user)} title="퇴사 처리"
-            className="p-1.5 rounded-md text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
-            <MsCancelIcon size={12} className="size-3.5" />
+            className="p-1.5 rounded-md text-fg-subtlest hover:text-red-050 hover:bg-red-005 transition-colors">
+            <MsCancelIcon size={14} />
           </button>
         )}
       </div>
@@ -822,17 +839,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           - 검색 바: 헤더 actions 의 작은 검색으로 이동 (사용자 결정 2.b) */}
 
       {search ? (
-        /* ── 검색 결과 ── */
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-010">
-            <p className="text-xs text-gray-050">
-              <span className="font-medium text-gray-080">'{search}'</span> 검색 결과 {searchResults.length}명
-            </p>
-          </div>
+        /* ── 검색 결과 — 시트형 (Phase D-2.4b) ── */
+        <div>
+          <p className="text-sm text-fg-subtle mb-3 px-2">
+            <span className="font-semibold text-fg-default">'{search}'</span> 검색 결과 {searchResults.length}명
+          </p>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-gray-040 text-center py-12">검색 결과가 없습니다.</p>
+            <p className="text-sm text-fg-subtle text-center py-12">검색 결과가 없습니다.</p>
           ) : (
-            <div className="divide-y divide-gray-005">
+            <div className="space-y-1">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                   onView={goViewMember}
@@ -845,59 +860,158 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           )}
         </div>
       ) : (
-        /* ── 조직 트리 + 구성원 패널 ── */
-        <div className="flex gap-0 bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden"
-          style={{ minHeight: '480px' }}>
+        /* ── 좌: 멤버 (시트형) / 우: 조직도 패널 (Phase D-2.4b) ──
+           * 카드 컨테이너 (bg-white + border + shadow) 제거 — 페이지 배경 위 평면 시트
+           * 좌우 역전: 좌측 멤버 (flex-1) / 우측 조직도 (w-366, border-l)
+           * 우측 조직도 디자인은 D-2.4c 에서 본격 재설계 — 본 commit 은 위치만 옮김 */
+        <div className="flex gap-6">
 
-          {/* Left: Org tree */}
-          <div className="w-64 flex-shrink-0 border-r border-gray-010 flex flex-col">
-            <div className="flex items-center justify-between px-3 py-3 border-b border-gray-010">
+          {/* Left: Member panel (시트형) */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* 소속 없음 inline 토글 (Phase D-2.4b — 사용자 결정 5.a) */}
+            {unassignedUsers.length > 0 && (
+              <button
+                onClick={selectUnassigned}
+                className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                  showUnassigned
+                    ? 'bg-bg-token-brand1-subtlest border-bd-primary text-fg-brand1'
+                    : 'bg-bg-token-default border-bd-primary text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default'
+                }`}
+              >
+                <MsWarningIcon size={16} className="text-yellow-050 flex-shrink-0" />
+                <span className="flex-1 text-left tracking-[-0.3px]">소속 없음</span>
+                <span className="text-xs font-bold text-yellow-050">{unassignedUsers.length}</span>
+              </button>
+            )}
+
+            {/* Panel header (간소화 — 추가 버튼은 헤더로 옮겨짐) */}
+            <div className="flex items-center justify-between mb-2 px-2">
+              <div>
+                {showTerminated ? (
+                  <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">퇴사자 목록</h2>
+                ) : showUnassigned ? (
+                  <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">소속 없음</h2>
+                ) : selectedUnit ? (
+                  <div className="flex items-center gap-2">
+                    <span className={`size-2 rounded-full ${ORG_TYPE_COLOR[selectedUnit.type]}`} />
+                    <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">{selectedUnit.name}</h2>
+                    <span className="text-xs text-fg-subtlest">{getOrgLevelLabel(getOrgDepth(selectedUnit, orgUnits))}</span>
+                  </div>
+                ) : (
+                  <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">전체 구성원</h2>
+                )}
+                <p className="text-sm text-fg-subtle mt-0.5">{panelUsers.length}명</p>
+              </div>
+              {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
+                <MsCheckbox
+                  title="전체 선택"
+                  checked={panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
+                  indeterminate={panelUsers.filter(u => u.role !== 'admin').some(u => selectedIds.has(u.id)) && !panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
+                  onChange={() => toggleSelectAll(panelUsers)}
+                />
+              )}
+            </div>
+
+            {/* Member list */}
+            {isLoading && panelUsers.length === 0 ? (
+              <div className="space-y-2 animate-pulse p-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2">
+                    <div className="size-10 rounded-full bg-bg-token-subtle flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-4 bg-bg-token-subtle rounded w-24" />
+                      <div className="h-3 bg-bg-token-subtle rounded w-40" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : panelUsers.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 text-center py-12">
+                <Users className="size-8 text-fg-subtlest" />
+                <p className="text-sm text-fg-subtle">
+                  {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
+                </p>
+                {canEdit && !showTerminated && (
+                  <button
+                    onClick={() => goAddMember(selectedOrgId ?? undefined)}
+                    className="text-sm font-semibold text-fg-brand1 hover:text-fg-brand1-bolder transition-colors">
+                    + 구성원 추가
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {panelUsers.map(u => (
+                  <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
+                    onView={goViewMember}
+                    onEdit={canEdit ? goEditMember : null}
+                    onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
+                    onImpersonate={can.impersonate && !showTerminated ? handleImpersonate : undefined}
+                    selected={selectedIds.has(u.id)}
+                    onToggle={canEdit && !showTerminated ? toggleMember : undefined}
+                    selectionActive={selectedIds.size > 0}
+                    secondaryAssignmentHere={secondaryMapHere.get(u.id)}
+                    isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
+                    isAnyOrgHead={headIdsAll.has(u.id)} />
+                ))}
+              </div>
+            )}
+
+            {/* 선택된 N명 액션 바 */}
+            {canEdit && selectedIds.size > 0 && !showTerminated && (
+              <div className="mt-3 px-3 py-2 rounded-lg bg-bg-token-brand1-subtlest flex items-center justify-between">
+                <span className="text-sm font-semibold text-fg-brand1">{selectedIds.size}명 선택됨</span>
+                <div className="flex items-center gap-2">
+                  <MsButton variant="ghost" size="sm" onClick={clearSelection}>선택 해제</MsButton>
+                  <MsButton
+                    size="sm"
+                    leftIcon={<MsChevronRightLineIcon size={12} />}
+                    onClick={goBulkMove}
+                  >
+                    조직 이동
+                  </MsButton>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: 조직도 패널 (Phase D-2.4b — 임시 위치만 옮김. 디자인은 D-2.4c 에서) */}
+          <div className="w-[366px] flex-shrink-0 border-l border-bd-default pl-6 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
-                <Layers className="size-3.5 text-gray-040" />
-                <span className="text-xs font-semibold text-gray-060">조직 구조</span>
+                <Layers className="size-3.5 text-fg-subtlest" />
+                <span className="text-sm font-bold text-fg-default tracking-[-0.3px]">조직도</span>
               </div>
               {canEdit && (
                 <button onClick={() => openAddOrg('mainOrg')}
                   title="주조직 추가"
-                  className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
-                  <MsPlusIcon size={12} className="size-3.5" />
+                  className="p-1 rounded text-fg-subtle hover:text-fg-default hover:bg-interaction-hovered transition-colors">
+                  <MsPlusIcon size={14} />
                 </button>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto">
               {/* 전체 보기 */}
               <button
                 onClick={selectAll}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                  !selectedOrgId && !showTerminated && !showUnassigned ? 'bg-pink-005 text-pink-060 font-medium' : 'text-gray-060 hover:bg-gray-005'
+                className={`w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
+                  !selectedOrgId && !showTerminated && !showUnassigned
+                    ? 'bg-bg-token-brand1-subtlest text-fg-brand1 font-bold'
+                    : 'text-fg-subtle hover:bg-interaction-hovered font-semibold'
                 }`}
               >
                 <MsGroupIcon size={14} className="flex-shrink-0" />
-                <span className="flex-1 text-left">전체 구성원</span>
-                <span className="text-xs text-gray-040">{totalActive}</span>
+                <span className="flex-1 text-left tracking-[-0.3px]">전체 구성원</span>
+                <span className="text-xs text-fg-subtlest">{totalActive}</span>
               </button>
-
-              {/* 소속 없음 */}
-              {unassignedUsers.length > 0 && (
-                <button
-                  onClick={selectUnassigned}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                    showUnassigned ? 'bg-pink-005 text-pink-060 font-medium' : 'text-gray-060 hover:bg-gray-005'
-                  }`}
-                >
-                  <MsWarningIcon size={14} className="flex-shrink-0 text-yellow-050" />
-                  <span className="flex-1 text-left">소속 없음</span>
-                  <span className="text-xs text-yellow-050 font-semibold">{unassignedUsers.length}</span>
-                </button>
-              )}
 
               {orgUnits.length === 0 ? (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-xs text-gray-040 mb-2">조직 구조가 없습니다.</p>
+                  <p className="text-xs text-fg-subtle mb-2">조직 구조가 없습니다.</p>
                   {canEdit && (
                     <button onClick={() => openAddOrg('mainOrg')}
-                      className="text-xs text-pink-050 hover:text-pink-060 font-medium">
+                      className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder font-semibold transition-colors">
                       + 주조직 추가
                     </button>
                   )}
@@ -926,112 +1040,6 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Right: Member panel */}
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-010">
-              <div>
-                {showTerminated ? (
-                  <p className="text-sm font-semibold text-gray-080">퇴사자 목록</p>
-                ) : showUnassigned ? (
-                  <p className="text-sm font-semibold text-gray-080">소속 없음</p>
-                ) : selectedUnit ? (
-                  <div className="flex items-center gap-2">
-                    <span className={`size-2 rounded-full ${ORG_TYPE_COLOR[selectedUnit.type]}`} />
-                    <p className="text-sm font-semibold text-gray-080">{selectedUnit.name}</p>
-                    <span className="text-xs text-gray-040">{getOrgLevelLabel(getOrgDepth(selectedUnit, orgUnits))}</span>
-                  </div>
-                ) : (
-                  <p className="text-sm font-semibold text-gray-080">전체 구성원</p>
-                )}
-                <p className="text-xs text-gray-040 mt-0.5">{panelUsers.length}명</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
-                  <MsCheckbox
-                    title="전체 선택"
-                    checked={panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
-                    indeterminate={panelUsers.filter(u => u.role !== 'admin').some(u => selectedIds.has(u.id)) && !panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
-                    onChange={() => toggleSelectAll(panelUsers)}
-                  />
-                )}
-                {canEdit && !showTerminated && (
-                  <MsButton
-                    onClick={() => {
-                      const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
-                      goAddMember(selectedOrgId ?? undefined, unit?.headId);
-                    }}
-                    size="sm"
-                    leftIcon={<MsFriendAddIcon size={12} />}
-                  >
-                    구성원 추가
-                  </MsButton>
-                )}
-              </div>
-            </div>
-
-            {/* Member list */}
-            {isLoading && panelUsers.length === 0 ? (
-              <div className="flex-1 space-y-0 animate-pulse p-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-3">
-                    <div className="size-8 rounded-full bg-gray-020 flex-shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 bg-gray-020 rounded w-24" />
-                      <div className="h-2.5 bg-gray-010 rounded w-40" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : panelUsers.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
-                <Users className="size-8 text-gray-020" />
-                <p className="text-sm text-gray-040">
-                  {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
-                </p>
-                {canEdit && !showTerminated && (
-                  <button
-                    onClick={() => goAddMember(selectedOrgId ?? undefined)}
-                    className="text-xs font-medium text-pink-050 hover:text-pink-060">
-                    + 구성원 추가
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto">
-                {panelUsers.map(u => (
-                  <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
-                    onView={goViewMember}
-                    onEdit={canEdit ? goEditMember : null}
-                    onTerminate={canEdit && !showTerminated ? handleTerminate : undefined}
-                    onImpersonate={can.impersonate && !showTerminated ? handleImpersonate : undefined}
-                    selected={selectedIds.has(u.id)}
-                    onToggle={canEdit && !showTerminated ? toggleMember : undefined}
-                    selectionActive={selectedIds.size > 0}
-                    secondaryAssignmentHere={secondaryMapHere.get(u.id)}
-                    isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
-                    isAnyOrgHead={headIdsAll.has(u.id)} />
-                ))}
-              </div>
-            )}
-            {canEdit && selectedIds.size > 0 && !showTerminated && (
-              <div className="border-t border-gray-010 px-4 py-3 bg-blue-005 flex items-center justify-between flex-shrink-0">
-                <span className="text-sm font-medium text-blue-070">{selectedIds.size}명 선택됨</span>
-                <div className="flex items-center gap-2">
-                  <MsButton variant="ghost" size="sm" onClick={clearSelection}>선택 해제</MsButton>
-                  <MsButton
-                    size="sm"
-                    leftIcon={<MsChevronRightLineIcon size={12} />}
-                    onClick={goBulkMove}
-                    className="bg-blue-060 text-white hover:bg-blue-070"
-                  >
-                    조직 이동
-                  </MsButton>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}

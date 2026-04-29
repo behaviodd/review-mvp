@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDate } from '../../utils/dateUtils';
-import { MsArticleIcon, MsPlusIcon, MsStarIcon, MsDeleteIcon } from '../../components/ui/MsIcons';
+import { MsArticleIcon, MsPlusIcon, MsStarIcon, MsDeleteIcon, MsSearchIcon, MsCancelIcon } from '../../components/ui/MsIcons';
 import { useShowToast } from '../../components/ui/Toast';
 import { MsButton } from '../../components/ui/MsButton';
+import { MsInput } from '../../components/ui/MsControl';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 
@@ -14,13 +15,60 @@ export function TemplateList() {
   const navigate = useNavigate();
   const showToast = useShowToast();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState('');
+
+  /* 정렬: 최신 생성 먼저 (사용자 명시 — 새 템플릿이 위에) */
+  const sorted = useMemo(
+    () => [...templates].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ),
+    [templates],
+  );
+
+  /* 검색 필터 — name + description */
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return sorted;
+    return sorted.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      (t.description ?? '').toLowerCase().includes(q)
+    );
+  }, [sorted, search]);
+
+  /* 페이지네이션 — 15개 (사용자 명시) */
+  const PAGE_SIZE = 15;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+  const visiblePage = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
 
   const headerActions = useMemo(() => (
-    <MsButton onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>
-      새 템플릿
-    </MsButton>
-  ), [navigate]);
-  // Phase D-3.E: subtitle 제거 (다른 페이지 패턴 일관)
+    <>
+      {/* 검색 input + 새 템플릿 버튼 (Team / Cycle 헤더 패턴 재사용) */}
+      <MsInput
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="이름·설명 검색"
+        leftSlot={<MsSearchIcon size={14} />}
+        rightSlot={search ? (
+          <button onClick={() => setSearch('')} className="text-fg-subtle hover:text-fg-default" aria-label="검색 지우기">
+            <MsCancelIcon size={14} />
+          </button>
+        ) : undefined}
+        className="w-56 h-10"
+      />
+      <MsButton size="lg" onClick={() => navigate('/templates/new')} leftIcon={<MsPlusIcon size={16} />}>
+        새 템플릿
+      </MsButton>
+    </>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [navigate, search]);
   useSetPageHeader('리뷰 템플릿', headerActions);
 
   const handleDelete = (id: string, name: string) => setDeleteTarget({ id, name });
@@ -47,10 +95,17 @@ export function TemplateList() {
      "이전 컴포넌트 재사용" — 시트형 row 패턴 (§ 7.6) 정합 */
   return (
     <div>
-      {/* Phase D-3.E-fix: 질문 미리보기 캡슐 제거 + 메타정보 인라인으로 더 컴팩트
-         (사용자 명시 — 질문 캡슐 삭제 + 컴팩트) */}
+      {/* 검색 결과 0건 처리 */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={MsArticleIcon}
+          title={`'${search}' 검색 결과가 없습니다.`}
+          description="이름 또는 설명에 키워드가 일치하는 템플릿을 찾지 못했습니다."
+          variant="inline"
+        />
+      ) : (
       <div className="border-y border-bd-default divide-y divide-bd-default">
-        {templates.map(tmpl => (
+        {visiblePage.map(tmpl => (
           <div key={tmpl.id} className="flex items-start justify-between gap-3 px-2 py-3 hover:bg-interaction-hovered transition-colors">
             <div className="flex items-start gap-2 flex-1 min-w-0">
               <div className="size-8 bg-bg-token-brand1-subtlest rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -93,6 +148,37 @@ export function TemplateList() {
           </div>
         ))}
       </div>
+      )}
+
+      {/* 페이지네이션 (filtered.length > PAGE_SIZE 시만, CycleList 패턴 재사용) */}
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-fg-subtle tracking-[-0.3px]">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} / 총 {filtered.length}개
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="h-8 px-3 text-xs font-semibold rounded-md border border-bd-default text-fg-default hover:bg-interaction-hovered disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              이전
+            </button>
+            <span className="px-3 text-xs text-fg-default tabular-nums">
+              <strong className="font-bold">{page}</strong> <span className="text-fg-subtlest">/ {totalPages}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="h-8 px-3 text-xs font-semibold rounded-md border border-bd-default text-fg-default hover:bg-interaction-hovered disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              다음
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={deleteTarget !== null}

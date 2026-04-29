@@ -40,7 +40,9 @@ export function AppLayout() {
 
   return (
     <PageHeaderProvider>
-    <div className="flex h-screen overflow-hidden bg-gray-005">
+    {/* Phase D-1.1: raw bg-gray-005 제거 — body 가 이미 var(--token-bg-subtle = #f8f9fa) 깔고 있어 중복.
+        토큰 단일 출처로 통일 + 페이지 배경 톤이 Figma Color/Bg/Primary 와 정합 */}
+    <div className="flex h-screen overflow-hidden">
       {/* 모바일 백드롭 */}
       {mobileOpen && (
         <div

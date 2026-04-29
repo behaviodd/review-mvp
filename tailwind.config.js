@@ -170,8 +170,14 @@ export default {
         sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'card':       '0 1px 3px 0 rgba(17,20,23,0.07), 0 1px 2px -1px rgba(17,20,23,0.07)',
-        'card-hover': '0 4px 6px -1px rgba(17,20,23,0.08), 0 2px 4px -2px rgba(17,20,23,0.08)',
+        // Phase D-1.4: shadow → 면 (Figma 정합)
+        // 카드 류는 border 만으로 영역 분리. 모든 shadow-card / shadow-card-hover
+        // 사용처가 자동으로 none 처리됨 (36+ 파일). 기존 클래스 명명은 유지 —
+        // 이후 점진 마이그레이션 시 직접 제거 예정.
+        // overlay 류 (raised, modal, overlay) 는 유지 — modal/drawer/popover 는
+        // 평면 위의 띄움 단계가 의미상 필요.
+        'card':       'none',
+        'card-hover': 'none',
         'raised':     '0 10px 15px -3px rgba(17,20,23,0.07), 0 4px 6px -4px rgba(17,20,23,0.07)',
         'modal':      '0 20px 25px -5px rgba(17,20,23,0.10), 0 8px 10px -6px rgba(17,20,23,0.10)',
         'overlay':    '0 1px 3px rgba(17,20,23,0.18)',

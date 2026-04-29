@@ -223,6 +223,8 @@ body {
   background: var(--token-bg-subtle);
   color: var(--token-fg-default);
   line-height: 1.5;
+  /* Phase D-1.3: Figma 글로벌 letter-spacing -0.3px 정합 — 모든 사이즈에 일관 적용 */
+  letter-spacing: -0.3px;
   overflow-x: hidden;
 }
 
@@ -233,8 +235,9 @@ a, button, [role="button"], select, input, textarea {
 
 /* ─── Component Utilities ─────────────────────────────────────── */
 @layer components {
+  /* Phase D-1.4: shadow 제거 — 카드는 border 만으로 영역 구분 (Figma 정합) */
   .card {
-    @apply bg-white rounded-xl shadow-card;
+    @apply bg-white rounded-xl;
     border: 1px solid var(--token-border-default);
   }
   .btn-primary {

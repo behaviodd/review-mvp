@@ -112,8 +112,10 @@ export function AdminCycleWidget() {
     </button>
   );
 
+  /* Phase D-3.A-fix: 카드 사이 line 구분 — divide-y/x 추가
+     mobile (col-1): 가로 line, md+ (col-3): 세로 line */
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-bd-default border-y border-bd-default">
       <Card
         title="D-7 이내 마감"
         hint="자기평가 마감이 임박한 사이클"

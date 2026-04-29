@@ -227,7 +227,9 @@ html { font-size: 16px; }
 body {
   font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: var(--token-bg-subtle);
+  /* Phase D-2.4b-fix: 페이지 배경을 Header / Sidebar 와 동일한 토큰 (#ffffff) 으로 통일.
+     모든 영역 single white surface — 영역 구분은 border 만으로 (카드형 UI deprecate). */
+  background: var(--token-bg-default);
   color: var(--token-fg-default);
   line-height: 1.5;
   /* Phase D-1.3: Figma 글로벌 letter-spacing -0.3px 정합 — 모든 사이즈에 일관 적용 */
@@ -242,7 +244,16 @@ a, button, [role="button"], select, input, textarea {
 
 /* ─── Component Utilities ─────────────────────────────────────── */
 @layer components {
-  /* Phase D-1.4: shadow 제거 — 카드는 border 만으로 영역 구분 (Figma 정합) */
+  /**
+   * @deprecated Phase D-2.4b-fix — 카드형 UI 사용 중지.
+   * 모든 페이지가 단일 white surface (body bg = bg-bg-token-default) 위에
+   * 평면 시트로 구성됨. 영역 구분은 border (border-r/b/l/t) 만으로.
+   * 기존 사용처는 점진 마이그레이션 — 새 작업에서 .card 사용 금지.
+   *
+   * 대체 패턴:
+   *  - 영역 패널 → `border-{side} border-bd-default` + 평면
+   *  - 시트 리스트 → § 7.6 패턴 (rounded-lg row + hover 효과)
+   */
   .card {
     @apply bg-white rounded-xl;
     border: 1px solid var(--token-border-default);

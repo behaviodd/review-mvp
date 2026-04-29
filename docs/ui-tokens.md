@@ -39,10 +39,33 @@
 
 ## 4. Elevation
 
-- ~~`shadow-card`~~ · ~~`shadow-card-hover`~~ — **deprecated (Phase D-1.4)**. 값 `none` 으로 무효화됨. 카드 류는 border 만으로 영역 구분 (Figma 정합)
+- ~~`shadow-card`~~ · ~~`shadow-card-hover`~~ — **deprecated (Phase D-1.4)**. 값 `none` 으로 무효화됨
+- ~~`.card`~~ 클래스 — **deprecated (Phase D-2.4b-fix)**. 카드형 UI 자체 사용 금지 (§ 4-3 참조)
 - `shadow-raised` — 팝오버
 - `shadow-modal` — 모달 · 드로어
 - `shadow-overlay` — 토스트 · LNB 드롭다운
+
+## 4-3. 페이지 표면 정책 (Phase D-2.4b-fix) ⭐
+
+사용자 명시 결정 (2026-04-29):
+- **모든 페이지의 배경 = `bg-bg-token-default` (#ffffff)** — Header / Sidebar / 본문 모두 동일 토큰
+- **카드형 UI 사용 금지** — `bg-white rounded-xl border` 로 콘텐츠를 카드처럼 띄우는 패턴 deprecated
+- **영역 구분은 border (1-side) + 평면 시트 만으로**
+
+**대체 패턴**
+
+| 이전 (카드형) | 이후 |
+|---|---|
+| `bg-white rounded-xl border shadow-card p-4` | 평면 + 적당한 padding (영역이 필요하면 한쪽 border) |
+| 페이지 안 박스 컨테이너 | rounded-lg row + hover 효과 (§ 7.6 시트형 리스트) |
+| 좌우 패널을 큰 카드로 묶기 | 좌측 평면 + 우측 `border-l border-bd-default pl-6` |
+
+**예외 (카드 아님)**
+- Modal / Drawer / Popover — overlay 류는 elevation 가치 있음 (`shadow-modal/raised/overlay` 유지)
+- 작은 inline 박스 (예: User ID 박스, badge, Pill) — input/badge 류는 카드와 다름
+- `<input>` 등 폼 컨트롤 — border 는 컨트롤 경계로 유지
+
+**기존 .card 사용처** — 36+ 파일. 점진 마이그레이션. 새 작업에서는 `.card` 클래스 금지.
 
 ## 4-1. Interaction (Phase D-2.1)
 
@@ -217,6 +240,7 @@ Figma `Parts/List` 정합. 카드 컨테이너 (bg + border + shadow) 없이 페
 **금지**
 - ❌ 시트형 리스트에 카드 컨테이너 (bg-white + border + shadow) 추가 — 페이지 배경 위 평면 의도
 - ❌ 행 사이 명시 border-b — 시트형은 hover 효과만으로 구분
+- ❌ 시트형 외 영역에서도 `.card` 클래스 사용 — § 4-3 정책 (카드형 UI deprecate)
 
 ### 7.1 ListToolbar 사용 규칙
 

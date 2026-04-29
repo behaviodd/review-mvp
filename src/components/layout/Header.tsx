@@ -24,7 +24,10 @@ export function Header() {
 
   return (
     <header className={cn(
-      'h-[92px] bg-bg-token-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10 flex-shrink-0',
+      // Phase D-2.4d: Figma 정합 — Header 는 elevated/surface/default (#ffffff).
+      // bg-bg-token-default (페이지 본문) 와 hex 동일하지만 토큰 의미 분리:
+      // Header 는 페이지 위 가장 평평한 elevated surface.
+      'h-[92px] bg-surface-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10 flex-shrink-0',
       !hasTabBar && 'border-b border-bd-default',
     )}>
       {onBack && (

@@ -45,12 +45,26 @@
 - `shadow-modal` — 모달 · 드로어
 - `shadow-overlay` — 토스트 · LNB 드롭다운
 
-## 4-3. 페이지 표면 정책 (Phase D-2.4b-fix) ⭐
+## 4-3. 페이지 표면 정책 (Phase D-2.4b-fix → D-2.4d 정밀화) ⭐
 
 사용자 명시 결정 (2026-04-29):
-- **모든 페이지의 배경 = `bg-bg-token-default` (#ffffff)** — Header / Sidebar / 본문 모두 동일 토큰
+- **페이지 본문 배경 = `bg-bg-token-default` (#ffffff)** — body / 콘텐츠 영역
+- **Header / Tab strip = `bg-surface-default` (#ffffff)** — 의미 분리 (elevated 의 평평)
+- **Sidebar (LNB) = `bg-surface-raised` (#fcfdfd)** — 페이지 위 살짝 띄운 surface (Figma 정합)
 - **카드형 UI 사용 금지** — `bg-white rounded-xl border` 로 콘텐츠를 카드처럼 띄우는 패턴 deprecated
 - **영역 구분은 border (1-side) + 평면 시트 만으로**
+
+### 표면 토큰 매핑 (Phase D-2.4d)
+
+| 토큰 | hex | Figma | 사용 |
+|---|---|---|---|
+| `bg-bg-token-default` | `#ffffff` | Color/Bg/Default | 페이지 본문 (body 배경) |
+| `bg-surface-default` | `#ffffff` | Elevated/Surface/Default | Header / Tab strip — 페이지 위 평평 |
+| `bg-surface-raised` | `#fcfdfd` | Elevated/Surface/Raised | Sidebar (LNB) — 살짝 띄움 |
+| `bg-surface-overlay` | `#fcfdfd` | (정의 시) | Popover / Dropdown |
+| `bg-surface-sunken` | `#e1e6ea` | Elevated/Surface/Sunken | 패널 안 가라앉은 표면 |
+
+같은 hex 라도 토큰 의미는 다름. 신규 컴포넌트 작성 시 의미에 맞는 토큰 선택.
 
 **대체 패턴**
 
@@ -133,6 +147,10 @@ Figma `Color/Text/*` 가 `Color/Fg/*` 와 별도 그룹으로 정의됨. 사용 
 
 Figma `ADM / LNB / *` 컴포넌트와 1:1 정합.
 
+**Sidebar 컨테이너 (Phase D-2.4d)**
+- `bg-surface-raised border-r border-bd-default` (Figma `elevated/surface/raised` #fcfdfd)
+- 페이지 본문 (#ffffff) 위 살짝 띄운 surface 의도 — 단순 white 와 다름
+
 **상단 Header 박스 (로고 + User ID)**
 - 컨테이너: `flex flex-col gap-2 px-3.5 py-4 items-start justify-center`
 - 로고: `BrandIcon size-[34px] rounded-md` + 앱 이름 `text-sm font-bold text-fg-default leading-5`
@@ -162,7 +180,8 @@ Figma `ADM / LNB / *` 컴포넌트와 1:1 정합.
 Figma `1143:13782` 정합. `usePageHeader()` Context 의 title/subtitle/actions/onBack 슬롯을 받아 렌더.
 
 **컨테이너**
-- 기본: `h-[92px] bg-bg-token-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10`
+- 기본: `h-[92px] bg-surface-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10`
+- 배경: `bg-surface-default` (Phase D-2.4d, Figma `elevated/surface/default` #ffffff) — 페이지 본문 hex 동일하지만 의미 분리
 - **Tab strip 동반 시 border-b 제거** (Phase D-2.4a-fix) — `tabs` 또는 `tabActions` 슬롯이 있으면 HeaderTabsBar 가 자체 border-b 를 그으므로 헤더+탭 조합에선 1px 만. Header 컴포넌트 내부에서 자동 처리됨 (`!hasTabBar && 'border-b border-bd-default'`)
 - 모바일은 별도 56px 바 (AppLayout.tsx) — 토큰 정합은 이후 Phase 에서
 

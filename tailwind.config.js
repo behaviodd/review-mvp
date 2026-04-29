@@ -160,6 +160,19 @@ export default {
           'primary':          'var(--token-text-primary)',
           'secondary':        'var(--token-text-secondary)',
         },
+        // Phase D-2.4d: Figma Elevated/Surface/* 정합 — 페이지 위에 띄워진 surface 톤.
+        // bg-bg-token-default (#ffffff) 와 hex 같지만 의미 다름:
+        //   - bg-bg-token-default: 페이지 본문 배경
+        //   - bg-surface-default: elevated 의 가장 평평 (Header 등)
+        //   - bg-surface-raised: 페이지 위 살짝 띄움 (Sidebar / LNB) — #fcfdfd
+        //   - bg-surface-overlay: popover/dropdown
+        //   - bg-surface-sunken: 패널 안의 가라앉은 표면
+        'surface': {
+          'default':          'var(--token-elevated-surface-default)',
+          'raised':           'var(--token-elevated-surface-raised)',
+          'overlay':          'var(--token-elevated-surface-overlay)',
+          'sunken':           'var(--token-elevated-surface-sunken)',
+        },
         'bd': {
           'default':          'var(--token-border-default)',
           // Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 정합 — bd.default 와 bd.subtle 사이 단계

@@ -178,7 +178,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   return (
     <aside className={cn(
       // Phase D-2.1: bg-white → bg-bg-token-default (토큰 정합), border-gray-020 → bd.default
-      'fixed left-0 top-0 h-screen bg-bg-token-default border-r border-bd-default flex flex-col z-30 transition-transform duration-200',
+      // Phase D-2.4d: Figma 정합 — LNB 는 elevated/surface/raised (#fcfdfd) 사용.
+      // 페이지 본문 (bg-bg-token-default = #ffffff) 위 살짝 띄운 surface 의도.
+      'fixed left-0 top-0 h-screen bg-surface-raised border-r border-bd-default flex flex-col z-30 transition-transform duration-200',
       mobileOpen ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0',
       'md:w-[220px] w-[220px]',

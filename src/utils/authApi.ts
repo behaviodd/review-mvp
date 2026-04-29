@@ -85,8 +85,10 @@ export interface ApproveMemberInput {
   email: string;
   userId: string;
   name: string;
-  position?: string;
+  position?: string;     // 직책 (예: 팀장)
+  jobFunction?: string;  // 직무 (예: 엔지니어) — 신규
   orgUnitId?: string;
+  managerId?: string;    // 보고대상 사번 — 신규
   permissionGroupIds: string[];
   approverId: string;
 }
@@ -97,7 +99,9 @@ export async function approveMember(input: ApproveMemberInput): Promise<{ ok: bo
     userId:             input.userId,
     name:               input.name,
     position:           input.position ?? '',
+    jobFunction:        input.jobFunction ?? '',
     orgUnitId:          input.orgUnitId ?? '',
+    managerId:          input.managerId ?? '',
     permissionGroupIds: input.permissionGroupIds,
     approverId:         input.approverId,
   });

@@ -661,12 +661,14 @@ function doPostInner_(e) {
     }
 
     if (action === 'approveMember') {
-      // 입력: { email, userId, name, position, orgUnitId, permissionGroupIds[], approverId }
+      // 입력: { email, userId, name, position, jobFunction, orgUnitId, managerId, permissionGroupIds[], approverId }
       var emailA       = String(data['email'] || '').toLowerCase().trim();
       var userIdA      = String(data['userId'] || '').trim();
       var nameA        = String(data['name'] || '').trim();
       var positionA    = String(data['position'] || '').trim();
+      var jobFunctionA = String(data['jobFunction'] || '').trim();
       var orgUnitIdA   = String(data['orgUnitId'] || '').trim();
+      var managerIdA   = String(data['managerId'] || '').trim();
       var groupIdsA    = Array.isArray(data['permissionGroupIds']) ? data['permissionGroupIds'] : [];
       var approverIdA  = String(data['approverId'] || '').trim();
 
@@ -693,15 +695,17 @@ function doPostInner_(e) {
         userExisted = true;
       } else {
         upsertRow(userSheet, USER_HEADERS, '사번', {
-          '사번':       userIdA,
-          '이메일':     emailA,
-          '성명':       nameA,
-          '직책':       positionA,
-          '주조직ID':   orgUnitIdA,
-          '역할':       'member',
-          '입사일':     new Date().toISOString().slice(0, 10),
-          '재직 여부':  'true',
-          '상태분류':   'active',
+          '사번':           userIdA,
+          '이메일':         emailA,
+          '성명':           nameA,
+          '직책':           positionA,
+          '직무':           jobFunctionA,    // 신규 — 직무 (예: 엔지니어)
+          '보고대상(사번)': managerIdA,      // 신규 — 보고대상 사번
+          '주조직ID':       orgUnitIdA,
+          '역할':           'member',
+          '입사일':         new Date().toISOString().slice(0, 10),
+          '재직 여부':      'true',
+          '상태분류':       'active',
         });
       }
 

@@ -156,7 +156,9 @@ function ApproveDialog({
   const [userId, setUserId] = useState(suggestedId);
   const [name, setName] = useState(record.name || record.email.split('@')[0]);
   const [position, setPosition] = useState('');
+  const [jobFunction, setJobFunction] = useState('');  // 직무 — 신규
   const [orgUnitId, setOrgUnitId] = useState('');
+  const [managerId, setManagerId] = useState('');      // 보고대상 — 신규
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -180,7 +182,9 @@ function ApproveDialog({
         userId:             userId.trim(),
         name:               name.trim(),
         position:           position.trim(),
+        jobFunction:        jobFunction.trim(),
         orgUnitId:          orgUnitId,
+        managerId:          managerId,
         permissionGroupIds: groupIds,
         approverId,
       });
@@ -210,12 +214,20 @@ function ApproveDialog({
             onChange={e => setName(e.target.value)}
           />
         </div>
-        <MsInput
-          label="직책 (선택)"
-          value={position}
-          onChange={e => setPosition(e.target.value)}
-          placeholder="예: 데이터팀장"
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <MsInput
+            label="직책 (선택)"
+            value={position}
+            onChange={e => setPosition(e.target.value)}
+            placeholder="예: 데이터팀장"
+          />
+          <MsInput
+            label="직무 (선택)"
+            value={jobFunction}
+            onChange={e => setJobFunction(e.target.value)}
+            placeholder="예: 데이터 엔지니어"
+          />
+        </div>
         <div>
           <label className="text-xs font-medium text-gray-080 block mb-1">소속 조직 (선택)</label>
           <select
@@ -229,6 +241,24 @@ function ApproveDialog({
                 {u.name} · {getOrgLevelLabel(getOrgDepth(u, orgUnits))}
               </option>
             ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-080 block mb-1">보고대상 (선택)</label>
+          <select
+            value={managerId}
+            onChange={e => setManagerId(e.target.value)}
+            className="w-full text-sm py-2 px-3 rounded-lg border border-gray-010 bg-white"
+          >
+            <option value="">선택하지 않음</option>
+            {users
+              .filter(u => u.role !== 'admin' && (u.isActive ?? true))
+              .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+              .map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.name}{u.position ? ` · ${u.position}` : ''}
+                </option>
+              ))}
           </select>
         </div>
         <div>

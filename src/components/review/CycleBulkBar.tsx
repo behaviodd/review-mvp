@@ -1,13 +1,13 @@
 import { cn } from '../../utils/cn';
 import { MsButton } from '../ui/MsButton';
-import { MsCancelIcon, MsArticleIcon, MsDeleteIcon, MsEditIcon } from '../ui/MsIcons';
+import { MsCancelIcon, MsDeleteIcon, MsEditIcon } from '../ui/MsIcons';
 
 interface Props {
   selectedCount: number;
   totalMembers: number;
   totalSubmissions: number;
   onClear: () => void;
-  onMoveFolder: () => void;
+  // Phase D-3.C-2: onMoveFolder 제거 (폴더 기능 폐기)
   onAddTag: () => void;
   onArchive: () => void;
   onClone: () => void;
@@ -16,7 +16,7 @@ interface Props {
 
 export function CycleBulkBar({
   selectedCount, totalMembers, totalSubmissions,
-  onClear, onMoveFolder, onAddTag, onArchive, onClone, onDelete,
+  onClear, onAddTag, onArchive, onClone, onDelete,
 }: Props) {
   if (selectedCount === 0) return null;
   return (
@@ -35,7 +35,6 @@ export function CycleBulkBar({
       </span>
       <div className="ml-auto flex items-center gap-2">
         <MsButton variant="ghost" size="sm" onClick={onClear} leftIcon={<MsCancelIcon />}>해제</MsButton>
-        <MsButton variant="outline-default" size="sm" onClick={onMoveFolder} leftIcon={<MsArticleIcon />}>폴더 이동</MsButton>
         <MsButton variant="outline-default" size="sm" onClick={onAddTag} leftIcon={<MsEditIcon />}>태그 추가</MsButton>
         <MsButton variant="outline-default" size="sm" onClick={onClone}>복제</MsButton>
         <MsButton variant="outline-default" size="sm" onClick={onArchive}>보관</MsButton>

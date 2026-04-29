@@ -15,14 +15,13 @@ import { MsCheckbox } from '../../components/ui/MsControl';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { useShowToast } from '../../components/ui/Toast';
 import { TagInput, tagColor } from '../../components/review/TagInput';
-import { FolderSidebar, CYCLE_DRAG_MIME } from '../../components/review/FolderSidebar';
 import { CycleBulkBar } from '../../components/review/CycleBulkBar';
-import { BulkMoveFolderModal } from '../../components/review/modals/BulkMoveFolderModal';
 import { BulkAddTagModal } from '../../components/review/modals/BulkAddTagModal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { HeaderTab } from '../../components/layout/HeaderTab';
 import {
   DEFAULT_CYCLE_FILTERS, applyCycleFilters, filtersToParams, paramsToFilters,
-  type CycleFilters, type CycleSort, type FolderSelection,
+  type CycleFilters, type CycleSort,
 } from '../../utils/cycleFilter';
 import type { ReviewStatus, ReviewType } from '../../types';
 import { cn } from '../../utils/cn';
@@ -100,21 +99,59 @@ export function CycleList() {
     [cycles, users, filters],
   );
 
+  /* Phase D-3.C-2: subtitle 제거 (사용자 명시 — 헤더 탭 count 와 중복).
+     좌측 빠른 필터 4개 (전체/지연/이번분기/폴더미지정) → 헤더 탭. */
   const headerActions = useMemo(() => (
     <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>
       새 리뷰
     </MsButton>
   ), [navigate]);
-  const headerSubtitle = useMemo(() => {
-    const all = cycles.filter(c => !c.archivedAt);
-    const inProgress = all.filter(c =>
-      c.status === 'self_review' || c.status === 'manager_review' ||
-      c.status === 'calibration' || c.status === 'active'
-    ).length;
-    const archived = cycles.filter(c => c.archivedAt).length;
-    return `진행 중 ${inProgress} · 보관 ${archived} · 총 ${all.length}개`;
+
+  // 빠른 필터 카운트 (FolderSidebar 의 countFor 와 동일 로직 인라인)
+  const quickCounts = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const allActive = cycles.filter(c => !c.archivedAt);
+    const overdue = allActive.filter(c => {
+      if (c.status === 'closed') return false;
+      if ((c.completionRate ?? 0) >= 100) return false;
+      return c.selfReviewDeadline.slice(0, 10) < today || c.managerReviewDeadline.slice(0, 10) < today;
+    }).length;
+    const thisQuarter = allActive.filter(c => {
+      const d = new Date();
+      const q = Math.floor(d.getMonth() / 3);
+      const qFrom = new Date(d.getFullYear(), q * 3, 1).toISOString().slice(0, 10);
+      const qTo = new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10);
+      const created = c.createdAt.slice(0, 10);
+      return created >= qFrom && created <= qTo;
+    }).length;
+    return { all: allActive.length, overdue, thisQuarter };
   }, [cycles]);
-  useSetPageHeader('리뷰 운영', headerActions, { subtitle: headerSubtitle });
+
+  const headerTabs = useMemo(() => (
+    <>
+      <HeaderTab
+        active={filters.folder.kind === 'all'}
+        onClick={() => update({ folder: { kind: 'all' } })}
+      >
+        전체 {quickCounts.all}
+      </HeaderTab>
+      <HeaderTab
+        active={filters.folder.kind === 'overdue'}
+        onClick={() => update({ folder: { kind: 'overdue' } })}
+      >
+        지연 {quickCounts.overdue}
+      </HeaderTab>
+      <HeaderTab
+        active={filters.folder.kind === 'this_quarter'}
+        onClick={() => update({ folder: { kind: 'this_quarter' } })}
+      >
+        이번 분기 {quickCounts.thisQuarter}
+      </HeaderTab>
+    </>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [filters.folder.kind, quickCounts]);
+
+  useSetPageHeader('리뷰 운영', headerActions, { tabs: headerTabs });
 
   /* ── 선택 상태 ─────────────────────────────────────── */
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -156,7 +193,7 @@ export function CycleList() {
   }, [selectedCycles, users, submissions]);
 
   /* ── 모달 상태 ─────────────────────────────────────── */
-  const [folderModal, setFolderModal] = useState(false);
+  // Phase D-3.C-2: folderModal 제거 (폴더 기능 삭제)
   const [tagModal, setTagModal] = useState(false);
   const [singleDelete, setSingleDelete] = useState<{ id: string; title: string } | null>(null);
   const [confirmBulkClone, setConfirmBulkClone] = useState(false);
@@ -185,19 +222,9 @@ export function CycleList() {
     navigate(`/cycles/new?from=${id}`);
   };
 
-  /* ── 폴더 이동 (드래그 & 일괄) ───────────────────────── */
-  const moveCyclesToFolder = (ids: string[], folderId: string | null) => {
-    for (const id of ids) {
-      updateCycle(id, { folderId: folderId ?? undefined });
-    }
-  };
-
-  const onBulkMoveFolder = (folderId: string | null) => {
-    moveCyclesToFolder(Array.from(selected), folderId);
-    setFolderModal(false);
-    showToast('success', `${selected.size}개 사이클을 이동했습니다.`);
-    clearSelection();
-  };
+  /* Phase D-3.C-2: 폴더 기능 삭제 — moveCyclesToFolder, onBulkMoveFolder 제거.
+     filters.folder.kind 는 빠른 필터 (all/overdue/this_quarter/none) 만 사용,
+     'folder' kind 옵션은 UI 에서 더 이상 노출되지 않음. */
 
   /* ── 태그 추가 ──────────────────────────────────────── */
   const onBulkAddTag = (newTags: string[]) => {
@@ -286,21 +313,14 @@ export function CycleList() {
   const allChecked = visible.length > 0 && visible.every(c => selected.has(c.id));
   const someChecked = visible.some(c => selected.has(c.id));
 
-  const handleFolderSelect = (sel: FolderSelection) => update({ folder: sel });
-
+  /* Phase D-3.C-2: FolderSidebar 제거. 빠른 필터는 헤더 탭으로 (위 useSetPageHeader).
+     ListToolbar 의 카드 컨테이너 (rounded-xl border bg-white shadow-card) 제거 — 평면.
+     리스트 컨테이너도 평면 + 시트형 row. */
   return (
-    <div className="flex flex-col md:flex-row gap-5">
-      <FolderSidebar
-        selected={filters.folder}
-        onSelect={handleFolderSelect}
-        cycles={cycles}
-        onMoveCycleToFolder={(cycleId, folderId) => moveCyclesToFolder([cycleId], folderId)}
-      />
-
-      <div className="flex-1 min-w-0 space-y-4">
-        {/* 필터 바 */}
-        <div className="rounded-xl border border-gray-010 bg-white shadow-card px-4 py-3 space-y-3">
-          <ListToolbar
+    <div className="space-y-4">
+      {/* 필터 바 — 컨테이너 카드 제거, 평면 */}
+      <div className="space-y-3">
+        <ListToolbar
             segments={[
               {
                 kind: 'pills',
@@ -384,8 +404,9 @@ export function CycleList() {
             />
           )
         ) : (
-          <div className="bg-white rounded-xl border border-gray-010 shadow-card overflow-hidden">
-            <div className="flex items-center gap-4 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
+          <div>
+            {/* 컬럼 헤더 — 카드 컨테이너 제거, 평면 + border-b */}
+            <div className="flex items-center gap-4 px-2 py-2 border-b border-bd-default">
               <div className="w-5 shrink-0">
                 <MsCheckbox
                   checked={allChecked}
@@ -394,30 +415,25 @@ export function CycleList() {
                   aria-label="보이는 전체 선택"
                 />
               </div>
-              <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
-              <div className="w-28 text-xs font-semibold text-gray-040 uppercase tracking-wide">단계</div>
-              <div className="w-28 text-xs font-semibold text-gray-040 uppercase tracking-wide">완료율</div>
-              <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감일</div>
+              <div className="flex-1 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">리뷰</div>
+              <div className="w-28 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">단계</div>
+              <div className="w-28 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">완료율</div>
+              <div className="w-24 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">마감일</div>
               <div className="w-4" />
             </div>
+            {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기) */}
             {visible.map(cycle => {
               const isSelected = selected.has(cycle.id);
               return (
                 <div
                   key={cycle.id}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData(CYCLE_DRAG_MIME, cycle.id);
-                    e.dataTransfer.setData('text/plain', cycle.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('[data-action]')) return;
                     navigate(`/cycles/${cycle.id}`);
                   }}
                   className={cn(
-                    'group flex items-center gap-4 px-5 py-3.5 border-b border-gray-010 last:border-0 cursor-pointer transition-colors',
-                    isSelected ? 'bg-pink-005/50' : 'hover:bg-gray-005/60',
+                    'group flex items-center gap-4 px-2 py-3 rounded-lg cursor-pointer transition-colors',
+                    isSelected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered',
                   )}
                 >
                   <div className="w-5 shrink-0" data-action>
@@ -525,25 +541,17 @@ export function CycleList() {
           </div>
         )}
 
-        <CycleBulkBar
-          selectedCount={selected.size}
-          totalMembers={selectedStats.members}
-          totalSubmissions={selectedStats.subs}
-          onClear={clearSelection}
-          onMoveFolder={() => setFolderModal(true)}
-          onAddTag={() => setTagModal(true)}
-          onArchive={onBulkArchive}
-          onClone={onBulkClone}
-          onDelete={onBulkDelete}
-        />
-      </div>
-
-      <BulkMoveFolderModal
-        open={folderModal}
-        onClose={() => setFolderModal(false)}
-        count={selected.size}
-        onConfirm={onBulkMoveFolder}
+      <CycleBulkBar
+        selectedCount={selected.size}
+        totalMembers={selectedStats.members}
+        totalSubmissions={selectedStats.subs}
+        onClear={clearSelection}
+        onAddTag={() => setTagModal(true)}
+        onArchive={onBulkArchive}
+        onClone={onBulkClone}
+        onDelete={onBulkDelete}
       />
+
       <BulkAddTagModal
         open={tagModal}
         onClose={() => setTagModal(false)}

@@ -49,8 +49,7 @@ export function Permissions() {
     return a.name.localeCompare(b.name, 'ko');
   });
 
-  /* Phase D-3.E: 카드 컨테이너 제거 — md:grid 평면 + divide-y/x line.
-     2 col grid 의 row 사이 horizontal line, col 사이 vertical line 으로 영역 분리. */
+  /* Phase D-3.E-fix: 1 col 시트 list (사용자 명시) — TemplateList 와 동일 패턴 */
   return (
     <div>
       {sorted.length === 0 ? (
@@ -60,13 +59,13 @@ export function Permissions() {
           description="시스템 그룹은 자동으로 시드되며, '새 그룹' 으로 사용자 정의 그룹을 만들 수 있습니다."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 border-y border-bd-default divide-y md:divide-y-0 divide-bd-default md:[&>*:nth-child(n+3)]:border-t md:[&>*:nth-child(2n)]:border-l md:[&>*]:border-bd-default">
+        <div className="border-y border-bd-default divide-y divide-bd-default">
           {sorted.map(group => (
             <button
               key={group.id}
               type="button"
               onClick={() => setDrawerGroup(group)}
-              className="flex flex-col gap-2 p-4 text-left hover:bg-interaction-hovered transition-colors"
+              className="flex flex-col gap-2 w-full px-2 py-4 text-left hover:bg-interaction-hovered transition-colors"
             >
               <header className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">

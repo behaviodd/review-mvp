@@ -52,7 +52,10 @@ export function Header() {
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-1.5 flex-wrap justify-end max-w-[60%] flex-shrink-0">{actions}</div>
+        // Phase D-3.A-fix: 헤더 actions 의 직속 button 자식 모두 h-10 강제 (사용자 명시 "일괄 40").
+        // 22+ 페이지의 헤더 MsButton 을 일괄 size="lg" 추가하는 대신 컨테이너 CSS 로 처리.
+        // 직속(>) 만 — 검색 input 의 rightSlot 안 작은 버튼은 영향 없음.
+        <div className="flex items-center gap-1.5 flex-wrap justify-end max-w-[60%] flex-shrink-0 [&>button]:h-10 [&>a]:h-10">{actions}</div>
       )}
     </header>
   );

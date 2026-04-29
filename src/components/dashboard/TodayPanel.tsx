@@ -146,7 +146,9 @@ export function TodayPanel({ variant }: Props) {
         <h2 className="text-xs font-bold uppercase tracking-wider text-fg-subtle">오늘 할 일</h2>
         <Pill tone="neutral" size="xs">{cards.length}</Pill>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-bd-default border-t border-b md:border-b-0 border-bd-default">
+      {/* Phase D-3.A-fix2: 단조화 — md+ divide-x 만, mobile 은 gap-3 spacing.
+          위·아래 border 제거 (큰 섹션 border-t 는 부모에서 처리). */}
+      <div className="grid grid-cols-1 gap-3 md:gap-0 md:grid-cols-2 lg:grid-cols-4 md:divide-x md:divide-bd-default">
         {cards.map(card => {
           const Icon = card.icon;
           const iconBg =

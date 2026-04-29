@@ -126,8 +126,9 @@ function AdminDashboard() {
     <div>
       <TodayPanel variant="admin" />
 
-      {/* Stats — divide-x 로 line 구분 (md+ row, mobile divide-y) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 mt-6 border-t border-bd-default pt-2 md:divide-x md:divide-bd-default">
+      {/* Phase D-3.A-fix2: 모든 큰 섹션 사이 단조로운 border-t 패턴으로 통일.
+          grid 안 카드 사이 line 은 md+ divide-x 만 (mobile gap 으로 단순). */}
+      <div className="border-t border-bd-default mt-6 pt-6 grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-bd-default">
         <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-pink-050" iconBg="bg-pink-005" />
         <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-green-060" iconBg="bg-green-005" />
         <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={MsUsersIcon as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
@@ -138,8 +139,8 @@ function AdminDashboard() {
         <AdminCycleWidget />
       </div>
 
-      {/* 차트 + 액션 — md:divide-x 로 가운데 line */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 mt-6 border-t border-bd-default pt-6 lg:divide-x lg:divide-bd-default">
+      {/* 차트 + 액션 — md+ divide-x 가운데 line */}
+      <div className="border-t border-bd-default mt-6 pt-6 grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-bd-default">
         <div className="lg:col-span-2 lg:pr-6 pb-6 lg:pb-0">
           <h2 className="text-sm font-semibold text-fg-default mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>

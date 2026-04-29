@@ -163,9 +163,12 @@ export function OpsCenter({ cycleId, onOpenMember, headerActions }: Props) {
     }
   };
 
+  /* Phase D-3.D-4: space-y-4 제거 — 본문 영역 (KpiStrip / FilterBar / Table) 사이
+     spacing 0 으로 vertical line 끝과 다음 horizontal line 이 직접 만남 (T 자 → + 자).
+     헤더와 ImpactBanner 만 자체 mb-4 로 spacing 처리. */
   return (
-    <section className="relative space-y-4" aria-label="운영 센터">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="relative" aria-label="운영 센터">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="text-base font-bold text-gray-080">운영 센터</h2>
           <p className="text-xs text-gray-040">제출 현황을 모니터링하고 미제출자에게 리마인드를 보낼 수 있어요.</p>

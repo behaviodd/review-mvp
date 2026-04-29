@@ -74,7 +74,8 @@ export function OpsImpactBanner({ cycle, onOpenReassign }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-red-020 bg-red-005 px-4 py-3">
+    /* Phase D-3.D-4: 자체 mb-4 — OpsCenter 의 space-y 제거 후 강조 배너만 spacing 유지 */
+    <div className="flex flex-col gap-2 rounded-xl border border-red-020 bg-red-005 px-4 py-3 mb-4">
       <div className="flex items-start gap-2">
         <MsWarningIcon size={16} className="mt-0.5 shrink-0 text-red-050" />
         <div className="text-xs text-red-070">

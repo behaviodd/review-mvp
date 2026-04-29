@@ -17,11 +17,14 @@ export function TemplateList() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
 
-  /* 정렬: 최신 생성 먼저 (사용자 명시 — 새 템플릿이 위에) */
+  /* 정렬: 기본 템플릿은 항상 최상단, 그 다음 최신 생성 순.
+     (사용자 명시 — 최신이 위에 + 기본 템플릿이 정렬에서 밀려 사라지는 문제 fix) */
   const sorted = useMemo(
-    () => [...templates].sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ),
+    () => [...templates].sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }),
     [templates],
   );
 

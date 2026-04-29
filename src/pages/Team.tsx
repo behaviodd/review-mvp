@@ -13,11 +13,11 @@ import {
 } from '../utils/teamUtils';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Layers, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import {
   MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
   MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon,
-  MsFriendAddIcon, MsGrabIcon, MsProfileIcon, MsChevronRightLineIcon, MsGroupIcon, MsWarningIcon,
+  MsFriendAddIcon, MsGrabIcon, MsProfileIcon, MsChevronRightLineIcon, MsWarningIcon,
   MsLogoutIcon,
 } from '../components/ui/MsIcons';
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
@@ -152,9 +152,17 @@ function OrgTreeNode({
   return (
     <div className={isDragging ? 'opacity-40' : ''}>
       {dropPos === 'above' && (
-        <div className="h-0.5 bg-pink-040 rounded-full mx-2 my-px pointer-events-none" />
+        <div className="h-0.5 bg-fg-brand1 rounded-full mx-2 my-px pointer-events-none" />
       )}
 
+      {/* Phase D-2.4c: Figma `Parts/Tree` 정합
+          - h-7 (28px) 컴팩트
+          - 들여쓰기: depth * 20px (Figma pl-20 / pl-40 / pl-60 / pl-80 / pl-100)
+          - 활성 = bg-interaction-hovered (분홍 카드 X)
+          - 색 dot 제거 (Figma 정합)
+          - 라벨: depth 0 = Bold, depth >= 1 = SemiBold (Figma)
+          - 라벨 색: 모두 fg-default
+          - 카운트: text-xs fg-subtlest */}
       <div
         draggable={canEdit}
         onDragStart={canEdit ? e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); } : undefined}
@@ -165,86 +173,83 @@ function OrgTreeNode({
         } : undefined}
         onDrop={canEdit ? e => { e.preventDefault(); e.stopPropagation(); dnd.onDrop(unit.id); } : undefined}
         onDragEnd={canEdit ? () => dnd.onDragEnd() : undefined}
-        className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors ${
+        className={`group flex items-center gap-1 h-7 pr-2 rounded-md cursor-pointer select-none transition-colors ${
           dropPos === 'into'
-            ? 'ring-2 ring-pink-040 bg-pink-005'
+            ? 'ring-2 ring-fg-brand1 bg-bg-token-brand1-subtlest'
             : isSelected
-              ? 'bg-pink-005 text-pink-060'
-              : 'hover:bg-gray-005 text-gray-070'
+              ? 'bg-interaction-hovered'
+              : 'hover:bg-interaction-hovered'
         }`}
-        style={{ paddingLeft: `${8 + depth * 16}px` }}
+        style={{ paddingLeft: `${depth * 20}px` }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={() => onSelect(unit.id)}
       >
-        {/* Drag handle */}
+        {/* Drag handle (canEdit + hover 시) */}
         {canEdit && (
           <span
-            className={`flex-shrink-0 text-gray-040 cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
+            className={`flex-shrink-0 text-fg-subtlest cursor-grab active:cursor-grabbing transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}
             title="드래그로 순서·위치 변경"
           >
             <MsGrabIcon size={12} />
           </span>
         )}
 
-        {/* expand toggle */}
+        {/* expand toggle (chevron 16px, Figma 정합) */}
         <button
           onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-          className={`size-4 flex items-center justify-center flex-shrink-0 rounded transition-colors ${hasChildren ? 'text-gray-040 hover:text-gray-070' : 'opacity-0 pointer-events-none'}`}
+          className={`size-4 flex items-center justify-center flex-shrink-0 rounded transition-colors ${hasChildren ? 'text-fg-subtle hover:text-fg-default' : 'opacity-0 pointer-events-none'}`}
         >
-          {expanded ? <MsChevronDownMonoIcon size={12} /> : <MsChevronRightMonoIcon size={12} />}
+          {expanded ? <MsChevronDownMonoIcon size={16} /> : <MsChevronRightMonoIcon size={16} />}
         </button>
 
-        {/* type dot */}
-        <span className={`size-2 rounded-full flex-shrink-0 ${ORG_TYPE_COLOR[unit.type]}`} />
-
-        {/* name */}
-        <span className={`flex-1 text-sm truncate font-medium ${isSelected ? 'text-pink-060' : ''}`}>
+        {/* name — depth 0 Bold, depth >= 1 SemiBold (Figma 정합) */}
+        <span className={`flex-1 text-sm tracking-[-0.3px] leading-5 truncate text-fg-default ${depth === 0 ? 'font-bold' : 'font-semibold'}`}>
           {unit.name}
         </span>
 
         {/* R5-a: depth hint (4단계 이상에서 표시) */}
         {depth >= 4 && (
-          <span className="text-[10px] font-semibold text-gray-040 bg-gray-005 px-1.5 py-0.5 rounded-full flex-shrink-0" title={`트리 ${depth + 1}단계`}>
+          <span className="text-[10px] font-semibold text-fg-subtlest bg-bg-token-subtle px-1.5 py-0.5 rounded-full flex-shrink-0" title={`트리 ${depth + 1}단계`}>
             Lv.{depth + 1}
           </span>
         )}
 
         {/* member count */}
         {memberCount > 0 && (
-          <span className={`text-xs flex-shrink-0 ${isSelected ? 'text-pink-040' : 'text-gray-040'}`}>
+          <span className="text-xs text-fg-subtlest flex-shrink-0 tracking-[-0.3px] leading-4">
             {memberCount}
           </span>
         )}
 
-        {/* action buttons */}
+        {/* action buttons (hover 시 보임, 14px icon) */}
         {canEdit && hovered && (
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
-              className="p-1 rounded text-gray-040 hover:text-pink-050 hover:bg-pink-005 transition-colors">
-              <MsFriendAddIcon size={12} />
+              className="p-1 rounded text-fg-subtlest hover:text-fg-brand1 hover:bg-bg-token-brand1-subtlest transition-colors">
+              <MsFriendAddIcon size={14} />
             </button>
             {nextType && canAddChild && (
               <button title={childAddLabel}
                 onClick={() => onAddChild(nextType, unit.id)}
-                className="p-1 rounded text-gray-040 hover:text-green-060 hover:bg-green-005 transition-colors">
-                <MsPlusIcon size={12} />
+                className="p-1 rounded text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered transition-colors">
+                <MsPlusIcon size={14} />
               </button>
             )}
             <button title="편집" onClick={() => onEditUnit(unit)}
-              className="p-1 rounded text-gray-040 hover:text-gray-070 hover:bg-gray-010 transition-colors">
-              <MsEditIcon size={12} />
+              className="p-1 rounded text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered transition-colors">
+              <MsEditIcon size={14} />
             </button>
             <button title="삭제" onClick={() => onDeleteUnit(unit)}
-              className="p-1 rounded text-gray-040 hover:text-red-040 hover:bg-red-005 transition-colors">
-              <MsDeleteIcon size={12} />
+              className="p-1 rounded text-fg-subtlest hover:text-red-050 hover:bg-red-005 transition-colors">
+              <MsDeleteIcon size={14} />
             </button>
           </div>
         )}
       </div>
 
       {dropPos === 'below' && (
-        <div className="h-0.5 bg-pink-040 rounded-full mx-2 my-px pointer-events-none" />
+        <div className="h-0.5 bg-fg-brand1 rounded-full mx-2 my-px pointer-events-none" />
       )}
 
       {/* Children */}
@@ -828,8 +833,12 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   };
 
   return (
-    <div className="space-y-5">
-      {/* R7: 신규 회원 승인 대기 배너 — org.manage 보유자에게만 노출, count > 0 일 때만 */}
+    /* Phase D-2.4c: full-bleed 페이지 — AppLayout main 의 overflow-hidden 위에서
+       자체 height 관리. 좌·우 패널 각자 overflow-y-auto 로 개별 스크롤 (사용자 명시).
+       AppLayout.tsx FULL_BLEED_EXACT 에 '/team' 추가됨. */
+    <div className="flex flex-col h-full">
+      {/* R7: 신규 회원 승인 대기 배너 — org.manage 보유자에게만 노출, count > 0 일 때만.
+          내부에 padding wrapper 가 있어 자동으로 24px 위 padding 가짐. */}
       <PendingApprovalsBanner />
 
       {/* Phase D-2.4a: 동기화 상태 / 퇴사자 토글 / Stats grid / MsInput 검색바 모두 제거.
@@ -840,7 +849,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
       {search ? (
         /* ── 검색 결과 — 시트형 (Phase D-2.4b) ── */
-        <div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           <p className="text-sm text-fg-subtle mb-3 px-2">
             <span className="font-semibold text-fg-default">'{search}'</span> 검색 결과 {searchResults.length}명
           </p>
@@ -860,14 +869,14 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           )}
         </div>
       ) : (
-        /* ── 좌: 멤버 (시트형) / 우: 조직도 패널 (Phase D-2.4b) ──
-           * 카드 컨테이너 (bg-white + border + shadow) 제거 — 페이지 배경 위 평면 시트
-           * 좌우 역전: 좌측 멤버 (flex-1) / 우측 조직도 (w-366, border-l)
-           * 우측 조직도 디자인은 D-2.4c 에서 본격 재설계 — 본 commit 은 위치만 옮김 */
-        <div className="flex gap-6">
+        /* ── 좌: 멤버 (시트형) / 우: 조직도 (Figma 정합 + 개별 스크롤, Phase D-2.4c) ──
+           카드 컨테이너 없음 — 페이지 배경 위 평면 시트
+           좌우 패널 각자 overflow-y-auto — 사용자 명시 "개별 스크롤"
+           우측 헤더: "조직도" + "전체(N)명" Figma 정합 + selectAll 트리거 */
+        <div className="flex-1 min-h-0 flex">
 
-          {/* Left: Member panel (시트형) */}
-          <div className="flex-1 flex flex-col min-w-0">
+          {/* Left: Member panel (시트형) — 자체 스크롤 */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto px-6 py-4">
             {/* 소속 없음 inline 토글 (Phase D-2.4b — 사용자 결정 5.a) */}
             {unassignedUsers.length > 0 && (
               <button
@@ -975,37 +984,37 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             )}
           </div>
 
-          {/* Right: 조직도 패널 (Phase D-2.4b — 임시 위치만 옮김. 디자인은 D-2.4c 에서) */}
-          <div className="w-[366px] flex-shrink-0 border-l border-bd-default pl-6 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <Layers className="size-3.5 text-fg-subtlest" />
-                <span className="text-sm font-bold text-fg-default tracking-[-0.3px]">조직도</span>
-              </div>
+          {/* Right: 조직도 패널 (Figma 1143:13876 정합, Phase D-2.4c) — 자체 스크롤 */}
+          <div className="w-[366px] flex-shrink-0 border-l border-bd-default overflow-y-auto px-6 py-4 flex flex-col">
+            {/* 헤더 — "조직도" 16 Bold + "전체(N)명" 14 subtle (Figma 정합 — selectAll 트리거) */}
+            <div className="flex items-start justify-between mb-3 flex-shrink-0">
+              <button
+                onClick={selectAll}
+                className={`flex flex-col items-start gap-0.5 -mx-2 px-2 py-1 rounded-md transition-colors text-left ${
+                  !selectedOrgId && !showTerminated && !showUnassigned
+                    ? 'bg-bg-token-brand1-subtlest'
+                    : 'hover:bg-interaction-hovered'
+                }`}
+              >
+                <p className={`text-base font-bold tracking-[-0.3px] leading-6 ${
+                  !selectedOrgId && !showTerminated && !showUnassigned ? 'text-fg-brand1' : 'text-fg-default'
+                }`}>조직도</p>
+                <p className="text-sm text-fg-subtle tracking-[-0.3px] leading-5">
+                  전체({totalActive})명
+                </p>
+              </button>
               {canEdit && (
                 <button onClick={() => openAddOrg('mainOrg')}
                   title="주조직 추가"
-                  className="p-1 rounded text-fg-subtle hover:text-fg-default hover:bg-interaction-hovered transition-colors">
-                  <MsPlusIcon size={14} />
+                  className="p-1 rounded-md text-fg-subtle hover:text-fg-default hover:bg-interaction-hovered transition-colors flex-shrink-0 mt-1"
+                >
+                  <MsPlusIcon size={16} />
                 </button>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              {/* 전체 보기 */}
-              <button
-                onClick={selectAll}
-                className={`w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
-                  !selectedOrgId && !showTerminated && !showUnassigned
-                    ? 'bg-bg-token-brand1-subtlest text-fg-brand1 font-bold'
-                    : 'text-fg-subtle hover:bg-interaction-hovered font-semibold'
-                }`}
-              >
-                <MsGroupIcon size={14} className="flex-shrink-0" />
-                <span className="flex-1 text-left tracking-[-0.3px]">전체 구성원</span>
-                <span className="text-xs text-fg-subtlest">{totalActive}</span>
-              </button>
-
+            {/* 트리 본문 */}
+            <div className="flex-1">
               {orgUnits.length === 0 ? (
                 <div className="px-3 py-6 text-center">
                   <p className="text-xs text-fg-subtle mb-2">조직 구조가 없습니다.</p>
@@ -1017,7 +1026,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   )}
                 </div>
               ) : (
-                <div className="mt-1">
+                <div>
                   {mainOrgs.map(unit => (
                     <OrgTreeNode
                       key={unit.id}
@@ -1104,13 +1113,15 @@ export function Team() {
   return <AdminView canEdit={isAdmin} />;
 }
 
-/* ── R7: 신규 회원 승인 대기 배너 ───────────────────────────────────── */
+/* ── R7: 신규 회원 승인 대기 배너 ─────────────────────────────────────
+   Phase D-2.4c: full-bleed 페이지 (/team) 안의 padding wrapper 자체 처리 */
 function PendingApprovalsBanner() {
   const navigate = useNavigate();
   const { can } = usePermission();
   const count = usePendingApprovalsStore(s => s.count);
   if (!can.manageOrg || count <= 0) return null;
   return (
+    <div className="flex-shrink-0 px-6 pt-6">
     <button
       onClick={() => navigate('/team/pending-approvals')}
       className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-yellow-005 border border-yellow-060/20 hover:bg-yellow-060/10 transition-colors text-left"
@@ -1126,5 +1137,6 @@ function PendingApprovalsBanner() {
       </div>
       <MsChevronRightLineIcon size={14} className="text-gray-040" />
     </button>
+    </div>
   );
 }

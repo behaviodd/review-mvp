@@ -15,6 +15,9 @@ const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templ
 // FULL_BLEED 매칭이 prefix 기반이어서 의도치 않게 포함되는 라우트의 예외 목록.
 // 이 목록에 들어오는 경로는 일반 컨테이너(max-w-5xl + p-6)로 렌더된다.
 const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
+// Phase D-2.4c: 정확 매칭 full-bleed 경로 — 좌우 패널 개별 스크롤 등을 위해
+// 페이지가 자체 height 관리하는 라우트. prefix 가 아닌 정확 매칭만.
+const FULL_BLEED_EXACT = ['/team'];
 
 export function AppLayout() {
   const { currentUser } = useAuthStore();
@@ -34,8 +37,9 @@ export function AppLayout() {
   if (!currentUser) return <Navigate to="/login" replace />;
 
   const isFullBleed =
-    FULL_BLEED_PATHS.some(p => location.pathname.startsWith(p)) &&
-    !FULL_BLEED_EXCLUDE.includes(location.pathname);
+    (FULL_BLEED_PATHS.some(p => location.pathname.startsWith(p)) &&
+     !FULL_BLEED_EXCLUDE.includes(location.pathname))
+    || FULL_BLEED_EXACT.includes(location.pathname);
   // R7 prep: Sidebar 접기 제거 — 데스크탑 고정 220px
   const sidebarWidth = 'md:ml-[220px]';
 

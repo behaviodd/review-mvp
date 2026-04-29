@@ -242,6 +242,66 @@ Figma `Parts/List` 정합. 카드 컨테이너 (bg + border + shadow) 없이 페
 - ❌ 행 사이 명시 border-b — 시트형은 hover 효과만으로 구분
 - ❌ 시트형 외 영역에서도 `.card` 클래스 사용 — § 4-3 정책 (카드형 UI deprecate)
 
+### 7.7 트리 (조직도) 패턴 — Phase D-2.4c
+
+Figma `Parts/Tree` (1143:13876) 정합. 우측 패널의 트리 구조.
+
+**Row** (`OrgTreeNode`)
+- `flex items-center gap-1 h-7 pr-2 rounded-md` (h-7 = 28px 컴팩트)
+- 들여쓰기: `paddingLeft: depth * 20px` (Figma pl-20 / 40 / 60 / 80 / 100)
+- 활성/hover: `bg-interaction-hovered` (semi-transparent, 분홍 X)
+- DnD drop 표시: `ring-2 ring-fg-brand1 bg-bg-token-brand1-subtlest` (into) / `h-0.5 bg-fg-brand1` (above/below)
+
+**Row 내부 구성**
+- Drag handle (canEdit + hover): `MsGrabIcon size={12} text-fg-subtlest`
+- Expand chevron: 16px (Figma 정합) — 자식 없으면 `opacity-0 pointer-events-none`
+- 라벨: `text-sm tracking-[-0.3px] leading-5 text-fg-default`
+  - depth 0 = `font-bold` (Figma 정합 — root 강조)
+  - depth >= 1 = `font-semibold`
+- 카운트: `text-xs text-fg-subtlest tracking-[-0.3px] leading-4`
+- Action 버튼 (canEdit + hover, 14px icon): 구성원추가 / 하위추가 / 편집 / 삭제
+
+**금지**
+- ❌ 색 dot (`size-2 rounded-full ${ORG_TYPE_COLOR}`) 사용 — Figma 정합으로 제거됨
+- ❌ 활성 시 분홍 카드 (bg-pink-005 ring-2) — semi-transparent 만 사용
+
+### 7.8 페이지 영역 개별 스크롤 패턴 — Phase D-2.4c
+
+좌우 패널이 각자 독립 스크롤 (예: /team 의 멤버 + 조직도) 되어야 하는 페이지는 **full-bleed 모드** 를 사용.
+
+**AppLayout 등록**
+- `FULL_BLEED_EXACT` 배열에 정확 매칭 경로 추가 (`AppLayout.tsx`)
+- main 이 `overflow-hidden` + Outlet 직접 렌더 — 페이지가 자체 height 관리
+
+**페이지 root 구조**
+```tsx
+<div className="flex flex-col h-full">
+  {/* sticky 영역 (선택, flex-shrink-0 으로 자체 높이) */}
+  <PendingApprovalsBanner />
+
+  {/* 본문 — flex-1 min-h-0 으로 남은 공간 차지 */}
+  <div className="flex-1 min-h-0 flex">
+    {/* 좌측 패널 — 자체 스크롤 */}
+    <div className="flex-1 flex flex-col min-w-0 overflow-y-auto px-6 py-4">
+      ...
+    </div>
+    {/* 우측 패널 — 자체 스크롤 */}
+    <div className="w-[366px] flex-shrink-0 border-l border-bd-default overflow-y-auto px-6 py-4 flex flex-col">
+      ...
+    </div>
+  </div>
+</div>
+```
+
+**핵심 원칙**
+- `min-h-0` 빠뜨리면 flex item 이 부모보다 커질 수 있음 — flex 안에 overflow-y-auto 컨테이너 필수 prop
+- 패널 자체에 `overflow-y-auto` + `px-6 py-4` 가 있어 padding 도 함께 스크롤
+- 영역 구분은 우측 패널의 `border-l border-bd-default` 만 (페이지 배경 위 평면)
+
+**금지**
+- ❌ 좌우 패널을 큰 카드 컨테이너로 묶기 (§ 4-3 카드형 UI deprecate)
+- ❌ `h-[calc(...)]` 같은 강제 높이 — flex 기반 height 분배가 안전
+
 ### 7.1 ListToolbar 사용 규칙
 
 리스트 페이지(MyReviewList, TeamReviewList, PeerApprovalPage, CycleList, ReceivedReviewList, CycleArchive 등)는 **반드시** `ListToolbar` 를 사용해 필터/검색을 구성합니다.

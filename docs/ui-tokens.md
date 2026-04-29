@@ -145,14 +145,59 @@ Figma `1143:13782` 정합. `usePageHeader()` Context 의 title/subtitle/actions/
 - ❌ 페이지 본문 상단의 커스텀 `<h1>` → `useSetPageHeader` 만
 - ❌ raw 팔레트 (`text-gray-099`, `border-gray-020`) — semantic 토큰 (`text-fg-*`, `border-bd-*`) 사용
 
+### 7.5 Tab strip (HeaderTabsBar) 패턴 — Phase D-2.3
+
+Figma `ADM / Header / Tab` 정합. Header (h-92) 바로 아래의 별도 44px 영역.
+
+**컨테이너** (`HeaderTabsBar` — 자동 렌더, slot 비어있으면 null)
+- `hidden md:flex h-[44px] bg-bg-token-default border-b border-bd-default items-center gap-6 px-6 flex-shrink-0`
+- 모바일은 일단 hidden — 모바일 디자인 별도 phase 에서 정의
+
+**사용 방법** (`useSetPageHeader` 의 옵션 슬롯)
+```tsx
+useSetPageHeader('구성원 관리', actions, {
+  tabs: (
+    <>
+      <HeaderTab active>전체</HeaderTab>
+      <HeaderTab onClick={() => navigate('?status=pending')}>대기 승인</HeaderTab>
+    </>
+  ),
+  tabActions: (
+    <button className="...">필터</button>
+  ),
+});
+```
+
+**HeaderTab 단일 아이템** (`src/components/layout/HeaderTab.tsx`)
+- 활성: `border-b-2 border-fg-default text-fg-default`
+- 비활성: `border-b-2 border-transparent text-fg-subtle hover:text-fg-default`
+- 텍스트: `text-base font-bold tracking-[-0.3px] leading-6` (Figma Title(Bd)/Medium)
+- `-mb-px` — 컨테이너 border-b 와 겹치게
+
+**tabActions (우측 작은 버튼 그룹)**
+- 자유 ReactNode — 보통 작은 액션 버튼 (h-6, 14px icon, border-bd-subtle, font 12 Bold)
+- gap-1.5
+
+**금지**
+- ❌ 콘텐츠 영역 안에 직접 `border-b` 탭 그리기 — 헤더 탭 사용
+- ❌ ListToolbar `tabs` 슬롯 사용 (deprecated) — 헤더 탭 또는 segments 마이그레이션
+
 ### 7.1 ListToolbar 사용 규칙
 
 리스트 페이지(MyReviewList, TeamReviewList, PeerApprovalPage, CycleList, ReceivedReviewList, CycleArchive 등)는 **반드시** `ListToolbar` 를 사용해 필터/검색을 구성합니다.
 
-**대원칙 (2026-04 개정)**
-- **콘텐츠 영역에 TAB 사용 금지.** 1차 분류는 LNB(Sidebar) 하위메뉴로 분리.
-- 콘텐츠 영역의 모든 필터는 segments(pills/select) 또는 search 로 통일.
-- `tabs` 슬롯은 deprecated. 신규 페이지는 사용 금지, 기존 페이지는 점진적 segments 로 마이그레이션.
+**대원칙 (2026-04-29 개정 — Phase D-2.3)**
+
+탭 사용 정책이 두 컴포넌트로 명확히 분리됩니다:
+
+| 종류 | 위치 | 컴포넌트 | 쓰임 |
+|---|---|---|---|
+| **헤더 탭** | Header 바로 아래 (h-44 별도 영역) | `HeaderTab` 안에 `tabs` 슬롯 | **페이지 1차 분류** 또는 **view toggle** (예: 구성원 / 조직도, 사이클 진행 / 종료) |
+| **세그먼트 탭** | 콘텐츠 영역 안 ListToolbar | `ListToolbar segments[pills]` | **세부 필터** (상태별, 유형별, 카운트 강조 등) |
+
+- ~~"콘텐츠 영역에 TAB 사용 금지"~~ 정책 폐기 — 헤더 탭은 콘텐츠 영역이 아니므로 충돌 없음
+- 단 **콘텐츠 영역 안의 자체 TAB UI** (border-b 강조 탭 직접 작성) 는 여전히 금지 — segments 또는 헤더 탭으로
+- ListToolbar 의 `tabs` 슬롯은 **deprecated** — 신규 페이지는 헤더 탭 또는 segments 사용
 
 | 슬롯       | 시각                                            | 쓰임                                      |
 |------------|-------------------------------------------------|-------------------------------------------|

@@ -5,6 +5,11 @@ interface PageHeader {
   subtitle?: ReactNode;
   actions?: ReactNode;
   onBack?: () => void;
+  // Phase D-2.3: 헤더에 붙은 Tab strip (Figma 정합) — 페이지 1차 분류용.
+  // 콘텐츠 영역 안의 세그먼테이션은 ListToolbar segments 사용 (역할 분리).
+  tabs?: ReactNode;
+  // Tab strip 우측 작은 액션 버튼 그룹 (예: 조직도/정렬/필터 토글)
+  tabActions?: ReactNode;
 }
 
 const PageHeaderContext = createContext<{
@@ -36,11 +41,13 @@ export function PageHeaderProvider({ children }: { children: ReactNode }) {
 export function useSetPageHeader(
   title: string,
   actions?: ReactNode,
-  options?: { subtitle?: ReactNode; onBack?: () => void },
+  options?: { subtitle?: ReactNode; onBack?: () => void; tabs?: ReactNode; tabActions?: ReactNode },
 ) {
   const { setHeader } = useContext(PageHeaderContext);
   const subtitle = options?.subtitle;
   const onBack = options?.onBack;
+  const tabs = options?.tabs;
+  const tabActions = options?.tabActions;
 
   // 최신 onBack 을 ref 에 보관 → stableOnBack 이 항상 최신 closure 를 호출.
   // 이 패턴이 없으면 매 렌더마다 onBack 이 새 함수라서 effect 가 무한 재발화한다.
@@ -54,8 +61,8 @@ export function useSetPageHeader(
   );
 
   useEffect(() => {
-    setHeader({ title, actions, subtitle, onBack: stableOnBack });
-  }, [setHeader, title, actions, subtitle, stableOnBack]);
+    setHeader({ title, actions, subtitle, onBack: stableOnBack, tabs, tabActions });
+  }, [setHeader, title, actions, subtitle, stableOnBack, tabs, tabActions]);
 
   // unmount-only — 페이지 이동 시 다음 페이지가 즉시 setHeader 를 호출하므로
   // 일반적으로 보이지 않음. NotFound 등 호출 누락 페이지 대비.

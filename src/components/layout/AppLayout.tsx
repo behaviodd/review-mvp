@@ -3,6 +3,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { MsMenuIcon } from '../ui/MsIcons';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { HeaderTabsBar } from './HeaderTabsBar';
 import { useAuthStore } from '../../stores/authStore';
 import { ToastContainer, useShowToast } from '../ui/Toast';
 import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
@@ -89,6 +90,10 @@ export function AppLayout() {
         <div className="hidden md:block">
           <Header />
         </div>
+
+        {/* Phase D-2.3: 헤더에 붙은 Tab strip — usePageHeader 의 tabs/tabActions 슬롯이
+            있을 때만 자동 렌더 (없으면 null). 페이지 1차 분류용. */}
+        <HeaderTabsBar />
 
         <ImpersonationBanner />
         <SyncStatusBanner />

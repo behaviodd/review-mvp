@@ -29,11 +29,8 @@ export function Permissions() {
     </MsButton>
   ) : undefined, [can.managePermissionGroups]);
 
-  const systemCount = permissionGroups.filter(g => g.isSystem).length;
-  const customCount = permissionGroups.length - systemCount;
-  useSetPageHeader('권한 관리', headerActions, {
-    subtitle: `시스템 그룹 ${systemCount}개 · 사용자 정의 ${customCount}개`,
-  });
+  // Phase D-3.E: subtitle 제거 (다른 페이지 패턴 일관)
+  useSetPageHeader('권한 관리', headerActions);
 
   if (!can.managePermissionGroups) {
     return (
@@ -52,8 +49,10 @@ export function Permissions() {
     return a.name.localeCompare(b.name, 'ko');
   });
 
+  /* Phase D-3.E: 카드 컨테이너 제거 — md:grid 평면 + divide-y/x line.
+     2 col grid 의 row 사이 horizontal line, col 사이 vertical line 으로 영역 분리. */
   return (
-    <div className="space-y-5">
+    <div>
       {sorted.length === 0 ? (
         <EmptyState
           icon={MsProfileIcon}
@@ -61,18 +60,18 @@ export function Permissions() {
           description="시스템 그룹은 자동으로 시드되며, '새 그룹' 으로 사용자 정의 그룹을 만들 수 있습니다."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 border-y border-bd-default divide-y md:divide-y-0 divide-bd-default md:[&>*:nth-child(n+3)]:border-t md:[&>*:nth-child(2n)]:border-l md:[&>*]:border-bd-default">
           {sorted.map(group => (
             <button
               key={group.id}
               type="button"
               onClick={() => setDrawerGroup(group)}
-              className="flex flex-col gap-2 rounded-xl border border-gray-010 bg-white p-4 text-left shadow-card hover:shadow-card-hover transition-shadow"
+              className="flex flex-col gap-2 p-4 text-left hover:bg-interaction-hovered transition-colors"
             >
               <header className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-sm font-semibold text-gray-099 truncate">{group.name}</h3>
+                    <h3 className="text-sm font-semibold text-fg-default truncate">{group.name}</h3>
                     {group.isSystem && (
                       <Pill tone="neutral" size="xs" leftIcon={<MsLockIcon size={10} />}>
                         시스템
@@ -80,18 +79,18 @@ export function Permissions() {
                     )}
                   </div>
                   {group.description && (
-                    <p className="text-xs text-gray-050 mt-0.5 line-clamp-2">{group.description}</p>
+                    <p className="text-xs text-fg-subtle mt-0.5 line-clamp-2">{group.description}</p>
                   )}
                 </div>
               </header>
 
               <div className="flex items-center gap-3 mt-1 text-xs">
-                <span className="text-gray-040">
-                  권한 <strong className="text-gray-080 tabular-nums">{group.permissions.length}</strong>개
+                <span className="text-fg-subtlest">
+                  권한 <strong className="text-fg-default tabular-nums">{group.permissions.length}</strong>개
                 </span>
-                <span className="text-gray-030">·</span>
-                <span className="text-gray-040">
-                  멤버 <strong className="text-gray-080 tabular-nums">{group.memberIds.length}</strong>명
+                <span className="text-fg-subtlest">·</span>
+                <span className="text-fg-subtlest">
+                  멤버 <strong className="text-fg-default tabular-nums">{group.memberIds.length}</strong>명
                 </span>
               </div>
 
@@ -100,13 +99,13 @@ export function Permissions() {
                   {group.permissions.slice(0, 4).map(code => (
                     <span
                       key={code}
-                      className="text-[10px] font-medium text-gray-070 bg-gray-005 border border-gray-010 px-1.5 py-0.5 rounded"
+                      className="text-[10px] font-medium text-fg-subtle bg-bg-token-subtle border border-bd-default px-1.5 py-0.5 rounded"
                     >
                       {getPermissionLabel(code)}
                     </span>
                   ))}
                   {group.permissions.length > 4 && (
-                    <span className="text-[10px] text-gray-040 bg-gray-005 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] text-fg-subtlest bg-bg-token-subtle px-1.5 py-0.5 rounded">
                       +{group.permissions.length - 4}
                     </span>
                   )}

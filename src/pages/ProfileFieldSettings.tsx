@@ -45,9 +45,8 @@ export function ProfileFieldSettings() {
     </MsButton>
   ) : undefined, [can.manageOrg, reset, showToast]);
 
-  useSetPageHeader('구성원 프로필 설정', headerActions, {
-    subtitle: '기본 정보 항목의 노출 순서와 열람 권한을 설정합니다.',
-  });
+  // Phase D-3.E: subtitle 제거 (다른 페이지 패턴 일관). 설명은 본문 § 위에 인라인.
+  useSetPageHeader('구성원 프로필 설정', headerActions);
 
   if (!can.manageOrg) {
     return (
@@ -61,33 +60,31 @@ export function ProfileFieldSettings() {
 
   const sorted = [...fields].sort((a, b) => a.order - b.order);
 
+  /* Phase D-3.E: 카드 컨테이너 제거 — 평면 + 행 사이 divide-y border-bd-default */
   return (
-    <div className="space-y-5">
-      <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5 space-y-5">
-        {/* 기본 정보 */}
-        <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
-          <p className="text-xs text-gray-050 mb-4 leading-relaxed">
-            이름·이메일은 모든 구성원에게 항상 노출되며 열람 권한을 변경할 수 없습니다.
-            그 외 항목은 본인·조직 리더·평가권자·모든 구성원 중 누구에게 보일지 선택하세요.
-            어드민은 모든 항목을 항상 열람할 수 있습니다.
-          </p>
+    <div>
+      <section>
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
+        <p className="text-xs text-fg-subtle mb-4 leading-relaxed">
+          이름·이메일은 모든 구성원에게 항상 노출되며 열람 권한을 변경할 수 없습니다.
+          그 외 항목은 본인·조직 리더·평가권자·모든 구성원 중 누구에게 보일지 선택하세요.
+          어드민은 모든 항목을 항상 열람할 수 있습니다.
+        </p>
 
-          <div className="rounded-lg border border-gray-010 divide-y divide-gray-005">
-            {sorted.map((field, idx) => (
-              <FieldRow
-                key={field.key}
-                field={field}
-                isFirst={idx === 0}
-                isLast={idx === sorted.length - 1}
-                onMoveUp={() => move(field.key, 'up')}
-                onMoveDown={() => move(field.key, 'down')}
-                onToggleViewer={(v) => toggleViewer(field.key, v)}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
+        <div className="border-y border-bd-default divide-y divide-bd-default">
+          {sorted.map((field, idx) => (
+            <FieldRow
+              key={field.key}
+              field={field}
+              isFirst={idx === 0}
+              isLast={idx === sorted.length - 1}
+              onMoveUp={() => move(field.key, 'up')}
+              onMoveDown={() => move(field.key, 'down')}
+              onToggleViewer={(v) => toggleViewer(field.key, v)}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -112,7 +109,7 @@ function FieldRow({
   const label = PROFILE_FIELD_LABEL[field.key];
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3">
+    <div className="flex items-center gap-4 px-2 py-3">
       {/* 순서 */}
       <div className="flex flex-col gap-0.5 shrink-0">
         <button
@@ -120,7 +117,7 @@ function FieldRow({
           onClick={onMoveUp}
           disabled={isFirst}
           aria-label={`${label} 위로`}
-          className="p-0.5 rounded text-gray-040 hover:text-gray-080 hover:bg-gray-010 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+          className="p-0.5 rounded text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
         >
           <MsChevronUpLineIcon size={14} />
         </button>
@@ -129,7 +126,7 @@ function FieldRow({
           onClick={onMoveDown}
           disabled={isLast}
           aria-label={`${label} 아래로`}
-          className="p-0.5 rounded text-gray-040 hover:text-gray-080 hover:bg-gray-010 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+          className="p-0.5 rounded text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
         >
           <MsChevronDownLineIcon size={14} />
         </button>
@@ -137,7 +134,7 @@ function FieldRow({
 
       {/* 필드명 */}
       <div className="w-28 shrink-0">
-        <p className="text-sm font-medium text-gray-080">{label}</p>
+        <p className="text-sm font-medium text-fg-default">{label}</p>
         <FieldKeyHint k={field.key} />
       </div>
 
@@ -174,5 +171,5 @@ function FieldKeyHint({ k }: { k: ProfileFieldKey }) {
     joinDate:    '선택',
     jobFunction: '선택',
   };
-  return <p className="text-[11px] text-gray-040 mt-0.5">{hint[k]}</p>;
+  return <p className="text-[11px] text-fg-subtlest mt-0.5">{hint[k]}</p>;
 }

@@ -31,7 +31,7 @@
 | **B7** | `markWrite` grace 4s 의 stale-overwrite 보호 | 자기 쓰기 직후 polling 이 stale 시트로 optimistic 상태를 덮어쓰지 않음 | ⚠️ **본인 grace 만 보호** — `lastWriteAt` 은 in-memory + 단일 탭 격리. 다른 탭/사용자의 쓰기는 grace 없음 | 다중 탭 시연 시: 탭 A 쓰기 → 탭 B 의 polling 은 grace 모름 → 탭 B 의 optimistic 상태 덮임 (현재 시연에선 빈도 낮음) | **P2** |
 | **B8** | 인사스냅샷 immutability | createSnapshot 이후 payloadJSON 변조 불가 (시점 일관성) | ✅ **append-only** — `upsertSnapshot` 액션 없음, `createSnapshot` 만 존재. 클라이언트는 변조 불가 | 단, **운영자가 시트 직접 편집 시** 변조 가능. 시트 권한/감사로그로만 보장 | **P2** |
 | **B9** | redirect:'manual' POST 처리 | 302 location 추출 + 실제 doPost 호출 보장 | ✅ **B-2.3 적용됨** — 첫·둘째 fetch 별도 AbortController + 전체 budget 18s 동적 분배. `location` null 시 502 명시 에러. 잔여 budget < 1s 면 즉시 504 | (해소) | ~~P1~~ |
-| **B10** | `audit.append` 큐 중복 방지 | 같은 감사 이벤트는 한 번만 시트에 기록됨 | ❌ **op id = entry.id** 인데 entry.id 는 호출마다 새로 생성 → dedupe 안 됨. 사용자 재시도 시 중복 적재 가능 | 사용자가 "재시도" 버튼 빠르게 두 번 누르면 동일 이벤트가 큐에 2개 → 시트에 두 번 기록 (감사로그 변조 효과) | **P1** |
+| **B10** | `audit.append` 큐 중복 방지 | 같은 감사 이벤트는 한 번만 시트에 기록됨 | ✅ **B-2.4 적용됨** — `deriveAuditId` 가 (cycleId, actorId, action, targetIds, summary, 5초 버킷) djb2 hash 로 deterministic id 생성. in-memory store + 큐 op id + Apps Script 측 dedupe (defense in depth). 5초 윈도우는 재시도(~0.5~3s) 흡수 + 의도적 두 번째 액션 분리 | (해소) | ~~P1~~ |
 | **B11** | `_계정` 시트 deprecated 정책 | R7 이후 `_계정` 시트 동기화 중단 | ❌ **여전히 동기화 중** — `createUser`/`syncAccounts`/`initAccount` 가 `_계정` 시트에 upsert. cleanup 누락 | 운영자가 deprecated 시트 보고 권한 인덱스로 오해할 가능성. 정합성 위험은 낮으나 코드 부채 | **P2** |
 | **B12** | `_invalidateBulkCache_` 정합성 | 쓰기 액션 후 다음 GET 이 fresh 시트 데이터를 반환 | ✅ **사실상 자동 보장** — `BULK_CACHE_ENABLED_ = false` 라 모든 쓰기는 자동으로 fresh. `_invalidate*` 는 no-op | 캐시 재활성화 시 invalidate 누락된 액션 발견 가능성. 현재는 위험 없음 | **P2** |
 

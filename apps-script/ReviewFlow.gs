@@ -995,9 +995,18 @@ function doPostInner_(e) {
       return jsonResponse({ ok: true });
     }
 
-    /* ── 감사 로그 (append-only) ── */
+    /* ── 감사 로그 (append-only) ──
+       B-2.4 (audit-B 매트릭스 B10): client 측 deterministic id (auditLogStore
+       의 deriveAuditId) + 본 dedupe 로 defense in depth.
+       client retry 또는 동시 재시도 시 같은 로그ID 가 두 번 들어와도 시트엔
+       1번만 기록됨. */
     if (action === 'appendAudit') {
-      appendRowData(getSheet(SHEET_AUDIT, AUDIT_HEADERS), AUDIT_HEADERS, data);
+      var auditSheet = getSheet(SHEET_AUDIT, AUDIT_HEADERS);
+      var logIdA = String(data['로그ID'] || '');
+      if (logIdA && findRowByKey(auditSheet, '로그ID', logIdA) >= 0) {
+        return jsonResponse({ ok: true, deduped: true });
+      }
+      appendRowData(auditSheet, AUDIT_HEADERS, data);
       return jsonResponse({ ok: true });
     }
 

@@ -24,22 +24,26 @@ interface CardProps {
   row: (c: ReviewCycle) => React.ReactNode;
 }
 
+/**
+ * Phase D-3.A: 카드 컨테이너 제거 — 평면 + 좌측 tone bar 유지 (구분/강조).
+ * 부모 grid 의 divide-x 로 가운데 line 구분.
+ */
 function Card({ title, hint, tone, cycles, onClickAll, row }: CardProps) {
   const t = TONE_STYLE[tone];
   return (
-    <div className="relative rounded-xl border border-gray-010 bg-white shadow-card p-4">
+    <div className="relative p-4">
       <span className={cn('absolute left-0 top-4 h-6 w-1 rounded-r', t.bar)} />
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-080">{title}</h3>
-          <p className="text-[11px] text-gray-040">{hint}</p>
+          <h3 className="text-sm font-semibold text-fg-default">{title}</h3>
+          <p className="text-[11px] text-fg-subtlest">{hint}</p>
         </div>
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums', t.badge)}>
           {cycles.length}
         </span>
       </div>
       {cycles.length === 0 ? (
-        <p className="py-4 text-center text-xs text-gray-040">해당 없음</p>
+        <p className="py-4 text-center text-xs text-fg-subtlest">해당 없음</p>
       ) : (
         <ul className="space-y-1.5">
           {cycles.slice(0, 4).map(c => (
@@ -51,7 +55,7 @@ function Card({ title, hint, tone, cycles, onClickAll, row }: CardProps) {
         <button
           type="button"
           onClick={onClickAll}
-          className="mt-3 text-[11px] font-semibold text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
+          className="mt-3 text-[11px] font-semibold text-fg-subtle hover:text-fg-default underline-offset-2 hover:underline"
         >
           전체 {cycles.length}개 보기 →
         </button>

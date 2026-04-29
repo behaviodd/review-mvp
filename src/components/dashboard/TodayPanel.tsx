@@ -138,16 +138,17 @@ export function TodayPanel({ variant }: Props) {
 
   if (cards.length === 0) return null;
 
+  /* Phase D-3.A: 카드 컨테이너 제거 + grid divide-x/y 로 line 구분.
+     아이콘 박스의 색조 강조는 유지 (tone 별 시각 구분). */
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-2">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-050">오늘 할 일</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-fg-subtle">오늘 할 일</h2>
         <Pill tone="neutral" size="xs">{cards.length}</Pill>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-bd-default border-t border-b md:border-b-0 border-bd-default">
         {cards.map(card => {
           const Icon = card.icon;
-          // 아이콘 박스만 색조 액센트, 컨테이너는 통일된 white 카드
           const iconBg =
             card.tone === 'warning' ? 'bg-orange-005' :
             card.tone === 'danger'  ? 'bg-red-005'    :
@@ -163,16 +164,16 @@ export function TodayPanel({ variant }: Props) {
               key={card.key}
               type="button"
               onClick={card.onClick}
-              className="flex items-center gap-3 rounded-xl border border-gray-010 bg-white p-4 text-left shadow-card transition-shadow hover:shadow-card-hover"
+              className="flex items-center gap-3 p-4 text-left hover:bg-interaction-hovered transition-colors"
             >
               <div className={cn('size-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
                 <Icon size={20} className={accentText} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-070">{card.label}</p>
+                <p className="text-xs font-semibold text-fg-default">{card.label}</p>
                 <p className={cn('text-2xl font-bold mt-0.5 tabular-nums', accentText)}>{card.count}</p>
               </div>
-              <MsChevronRightLineIcon size={14} className="text-gray-030" />
+              <MsChevronRightLineIcon size={14} className="text-fg-subtlest" />
             </button>
           );
         })}

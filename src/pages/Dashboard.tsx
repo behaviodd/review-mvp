@@ -18,20 +18,24 @@ import { MsButton } from '../components/ui/MsButton';
 
 const tooltipStyle = { borderRadius: '8px', border: '1px solid #c4cdd4', fontSize: 12, color: '#111417' };
 
+/**
+ * Phase D-3.A: 카드 컨테이너 제거 — 평면 + 부모 grid 의 divide-x 로 line 구분
+ * (사용자 명시: "모든 카드 평면화 + line으로 구분")
+ */
 function StatCard({ label, value, sub, icon: Icon, color, iconBg }: {
   label: string; value: string | number; sub?: string;
   icon: typeof MsAlertIcon; color: string; iconBg: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-010 shadow-card p-4 md:p-5">
+    <div className="p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-050 uppercase tracking-wide">{label}</p>
+        <p className="text-xs font-medium text-fg-subtle uppercase tracking-wide">{label}</p>
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
           <Icon size={16} className={color} />
         </div>
       </div>
-      <p className="text-2xl font-bold leading-none text-gray-099">{value}</p>
-      {sub && <p className="text-xs text-gray-040 mt-1.5">{sub}</p>}
+      <p className="text-2xl font-bold leading-none text-fg-default">{value}</p>
+      {sub && <p className="text-xs text-fg-subtlest mt-1.5">{sub}</p>}
     </div>
   );
 }
@@ -113,22 +117,31 @@ function AdminDashboard() {
       .slice(0, 8);
   }, [submissions, users, cycles]);
 
+  /* Phase D-3.A: 모든 카드 컨테이너 제거 (bg-white rounded-xl border shadow-card)
+     - 큰 섹션 사이: border-t border-bd-default + pt-X
+     - Stats grid: divide-x divide-bd-default (가로 line)
+     - Chart + 액션 grid (3 col): md:divide-x divide-bd-default
+     - 단일 섹션 내부: 평면 + 항목 사이 spacing 만 */
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div>
       <TodayPanel variant="admin" />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      {/* Stats — divide-x 로 line 구분 (md+ row, mobile divide-y) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 mt-6 border-t border-bd-default pt-2 md:divide-x md:divide-bd-default">
         <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-pink-050" iconBg="bg-pink-005" />
         <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-green-060" iconBg="bg-green-005" />
         <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={MsUsersIcon as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
         <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-pink-050" iconBg="bg-pink-005" />
       </div>
 
-      <AdminCycleWidget />
+      <div className="border-t border-bd-default mt-6 pt-6">
+        <AdminCycleWidget />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-010 shadow-card p-5">
-          <h2 className="text-sm font-semibold text-gray-080 mb-4">부서별 완료율</h2>
+      {/* 차트 + 액션 — md:divide-x 로 가운데 line */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 mt-6 border-t border-bd-default pt-6 lg:divide-x lg:divide-bd-default">
+        <div className="lg:col-span-2 lg:pr-6 pb-6 lg:pb-0">
+          <h2 className="text-sm font-semibold text-fg-default mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={deptStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -144,18 +157,18 @@ function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
-          <h2 className="text-sm font-semibold text-gray-080 mb-4">액션 필요</h2>
+        <div className="lg:pl-6">
+          <h2 className="text-sm font-semibold text-fg-default mb-4">액션 필요</h2>
           <div className="space-y-3">
             {activeCycles.map(c => (
-              <div key={c.id} className="p-3 bg-gray-005 rounded-lg border border-gray-010">
+              <div key={c.id} className="p-3 rounded-lg border border-bd-default">
                 <button
                   onClick={() => navigate(`/cycles/${c.id}`)}
-                  className="text-xs font-medium text-gray-080 mb-1 line-clamp-1 hover:text-pink-050 hover:underline text-left w-full"
+                  className="text-xs font-medium text-fg-default mb-1 line-clamp-1 hover:text-fg-brand1 hover:underline text-left w-full"
                 >
                   {c.title}
                 </button>
-                <p className="text-xs text-gray-050 mb-2">완료율 {c.completionRate}% · {deadlineLabel(c.selfReviewDeadline)}</p>
+                <p className="text-xs text-fg-subtle mb-2">완료율 {c.completionRate}% · {deadlineLabel(c.selfReviewDeadline)}</p>
                 <ProgressBar value={c.completionRate} size="sm" />
               </div>
             ))}
@@ -163,25 +176,25 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+      <div className="border-t border-bd-default mt-6 pt-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-080">최근 활동</h2>
-          <button onClick={() => navigate('/cycles')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
+          <h2 className="text-sm font-semibold text-fg-default">최근 활동</h2>
+          <button onClick={() => navigate('/cycles')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
             전체 보기
           </button>
         </div>
         {activityFeed.length === 0 ? (
-          <p className="text-sm text-gray-040 py-2">아직 활동 이력이 없습니다.</p>
+          <p className="text-sm text-fg-subtlest py-2">아직 활동 이력이 없습니다.</p>
         ) : (
           <div className="space-y-1">
             {activityFeed.map(item => (
               <div
                 key={item.key}
-                className="flex items-center gap-3 py-2 border-b border-gray-005 last:border-0 px-1"
+                className="flex items-center gap-3 py-2 border-b border-bd-default last:border-0 px-1"
               >
-                <div className="w-1.5 h-1.5 bg-gray-030 rounded-full flex-shrink-0" />
-                <p className="text-sm text-gray-070 flex-1">{item.text}</p>
-                <span className="text-xs text-gray-040 flex-shrink-0 whitespace-nowrap">{item.time}</span>
+                <div className="w-1.5 h-1.5 bg-fg-subtlest rounded-full flex-shrink-0" />
+                <p className="text-sm text-fg-default flex-1">{item.text}</p>
+                <span className="text-xs text-fg-subtlest flex-shrink-0 whitespace-nowrap">{item.time}</span>
               </div>
             ))}
           </div>
@@ -235,23 +248,26 @@ function ManagerDashboard() {
     { name: '미작성',   value: myDownwards.filter(s => s.status === 'not_started').length, color: '#c4cdd4' },
   ];
 
+  /* Phase D-3.A: 카드 컨테이너 제거 + 큰 섹션 사이 border-t */
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div>
       <TodayPanel variant="leader" />
-      <PeerPickReminder />
-      <div>
-        <p className="text-xs font-semibold text-gray-050 uppercase tracking-wide mb-3">할 일</p>
+      <div className="border-t border-bd-default mt-6 pt-6">
+        <PeerPickReminder />
+      </div>
+      <div className="border-t border-bd-default mt-6 pt-6">
+        <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">할 일</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {mySelfs.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/me')}
-              className="bg-white rounded-xl border border-gray-010 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="p-4 rounded-lg border border-bd-default text-left hover:bg-interaction-hovered transition-colors group"
             >
               <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
                 자기평가
               </span>
-              <p className="text-sm font-semibold text-gray-099 group-hover:text-pink-060 line-clamp-1">{activeCycle?.title}</p>
-              {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-pink-050 font-medium' : 'text-gray-050'}`}>
+              <p className="text-sm font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
+              {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-fg-brand1 font-medium' : 'text-fg-subtle'}`}>
                 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
               </p>}
             </button>
@@ -259,22 +275,22 @@ function ManagerDashboard() {
           {myDownwards.some(s => s.status !== 'submitted') && (
             <button
               onClick={() => navigate('/reviews/team')}
-              className="bg-white rounded-xl border border-gray-010 shadow-card p-4 text-left hover:shadow-card-hover transition-all group"
+              className="p-4 rounded-lg border border-bd-default text-left hover:bg-interaction-hovered transition-colors group"
             >
               <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
-              <p className="text-sm font-semibold text-gray-099 group-hover:text-pink-060">
+              <p className="text-sm font-semibold text-fg-default group-hover:text-fg-brand1">
                 {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
               </p>
-              {activeCycle && <p className="text-xs mt-1 text-gray-050">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
+              {activeCycle && <p className="text-xs mt-1 text-fg-subtle">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+      <div className="border-t border-bd-default mt-6 pt-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-080">팀원 리뷰 현황</h2>
-          <button onClick={() => navigate('/reports')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
+          <h2 className="text-sm font-semibold text-fg-default">팀원 리뷰 현황</h2>
+          <button onClick={() => navigate('/reports')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
             리포트 보기
           </button>
         </div>
@@ -285,11 +301,11 @@ function ManagerDashboard() {
               <button
                 key={m.id}
                 onClick={() => activeCycle && navigate(`/reviews/team/${activeCycle.id}/${m.id}`)}
-                className="flex flex-col items-center p-3.5 bg-gray-005 rounded-lg hover:bg-pink-005 border border-transparent hover:border-pink-010 transition-all group"
+                className="flex flex-col items-center p-3.5 rounded-lg border border-bd-default hover:bg-interaction-hovered transition-colors group"
               >
                 <UserAvatar user={m} size="lg" />
-                <p className="text-sm font-semibold text-gray-099 mt-2">{m.name}</p>
-                <p className="text-xs text-gray-040 mb-2">{m.position}</p>
+                <p className="text-sm font-semibold text-fg-default mt-2">{m.name}</p>
+                <p className="text-xs text-fg-subtle mb-2">{m.position}</p>
                 <StatusBadge type="submission" value={status} />
               </button>
             );
@@ -297,8 +313,8 @@ function ManagerDashboard() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-gray-080 mb-4">팀 리뷰 완료율</h2>
+      <div className="border-t border-bd-default mt-6 pt-6">
+        <h2 className="text-sm font-semibold text-fg-default mb-4">팀 리뷰 완료율</h2>
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
             <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
@@ -311,7 +327,7 @@ function ManagerDashboard() {
           {pieData.map(d => (
             <div key={d.name} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="text-xs text-gray-050">{d.name} {d.value}명</span>
+              <span className="text-xs text-fg-subtle">{d.name} {d.value}명</span>
             </div>
           ))}
         </div>
@@ -332,34 +348,36 @@ function EmployeeDashboard() {
 
   useSetPageHeader(`안녕하세요, ${currentUser?.name}님 👋`);
 
+  /* Phase D-3.A: 카드 컨테이너 제거. "지금 진행 중" 은 좌측 brand1 accent line 으로 강조 */
   return (
-    <div className="space-y-5 md:space-y-6">
-
+    <div>
       <PeerPickReminder />
 
       {activeCycle && mySelf && mySelf.status !== 'submitted' && (
-        <div className="bg-white rounded-xl border border-pink-020 shadow-card p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-pink-050 mb-1">지금 진행 중</p>
-              <h2 className="text-lg font-semibold text-gray-099 mb-3 truncate">{activeCycle.title}</h2>
-              <div className="w-full sm:w-52">
-                <ProgressBar value={mySelf.answers.length} max={6} showPercent />
-                <p className="text-xs text-gray-040 mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
+        <div className="border-t border-bd-default mt-6 pt-6">
+          <div className="border-l-4 border-fg-brand1 pl-5 py-1">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-fg-brand1 mb-1">지금 진행 중</p>
+                <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeCycle.title}</h2>
+                <div className="w-full sm:w-52">
+                  <ProgressBar value={mySelf.answers.length} max={6} showPercent />
+                  <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
+                </div>
               </div>
+              <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
+                {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
+              </MsButton>
             </div>
-            <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
-              {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
-            </MsButton>
           </div>
         </div>
       )}
 
       {pastSubmissions.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+        <div className="border-t border-bd-default mt-6 pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-080">리뷰 이력</h2>
-            <button onClick={() => navigate('/reviews/me')} className="text-xs text-pink-050 hover:text-pink-060 hover:underline">
+            <h2 className="text-sm font-semibold text-fg-default">리뷰 이력</h2>
+            <button onClick={() => navigate('/reviews/me')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
               전체 보기
             </button>
           </div>
@@ -371,12 +389,12 @@ function EmployeeDashboard() {
                 <button
                   key={s.id}
                   onClick={() => navigate(`/reviews/me/${s.id}`)}
-                  className="w-full flex items-center gap-4 py-2 border-b border-gray-005 last:border-0 hover:bg-gray-005 rounded-lg px-1 transition-colors"
+                  className="w-full flex items-center gap-4 py-2 border-b border-bd-default last:border-0 hover:bg-interaction-hovered rounded-lg px-1 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-pink-005 flex items-center justify-center font-bold text-pink-060 flex-shrink-0 text-sm">{grade}</div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-gray-080">{cycle?.title}</p>
-                    <p className="text-xs text-gray-040">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
+                    <p className="text-sm font-medium text-fg-default">{cycle?.title}</p>
+                    <p className="text-xs text-fg-subtlest">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
                   </div>
                   <StatusBadge type="submission" value={s.status} />
                 </button>

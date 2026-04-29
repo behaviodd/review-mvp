@@ -4,7 +4,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { usePermission } from '../hooks/usePermission';
 import { useTeamStore } from '../stores/teamStore';
-import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
 import { useShowToast } from '../components/ui/Toast';
 import { usePendingApprovalsStore } from '../stores/pendingApprovalsStore';
 import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
@@ -17,7 +16,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Layers, Users } from 'lucide-react';
 import {
   MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
-  MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon, MsRefreshIcon,
+  MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon,
   MsFriendAddIcon, MsGrabIcon, MsProfileIcon, MsChevronRightLineIcon, MsGroupIcon, MsWarningIcon,
   MsLogoutIcon,
 } from '../components/ui/MsIcons';
@@ -31,6 +30,7 @@ import { MemberAddDialog } from '../components/team/MemberAddDialog';
 import { MemberEditDialog } from '../components/team/MemberEditDialog';
 import { MemberProfileDrawer } from '../components/team/MemberProfileDrawer';
 import { impersonationLogWriter } from '../utils/sheetWriter';
+import { HeaderTab } from '../components/layout/HeaderTab';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
 function matchesSearch(u: User, q: string) {
@@ -376,8 +376,13 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
-  const { users, orgUnits, teams, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
-  const { orgSyncEnabled, orgLastSyncedAt, orgSyncError } = useSheetsSyncStore();
+  const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
+  // Phase D-2.4a: useSheetsSyncStore destructure 제거 — 동기화 배지를 헤더에서
+  // 빼고 글로벌 SyncStatusBanner 가 처리 (사용자 결정 3.a)
+  // Phase D-2.4a: terminatedUsers 정의를 위로 — headerTabActions useMemo 의
+  // dependency 라 use-before-declaration 회피
+  const activeUsers     = useMemo(() => users.filter(u => isUserActive(u)), [users]);
+  const terminatedUsers = useMemo(() => users.filter(u => !isUserActive(u)), [users]);
   const { can } = usePermission();
   const navigate = useNavigate();
   const startImpersonation = useAuthStore(s => s.startImpersonation);
@@ -449,20 +454,62 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const selectUnassigned = () => { setSelectedOrgId(null); setShowUnassigned(true); setShowTerminated(false); clearSelection(); };
   const selectOrg = (id: string) => { setSelectedOrgId(id); setShowUnassigned(false); setShowTerminated(false); clearSelection(); };
 
-  const headerActions = useMemo(() => canEdit ? (
-    <MsButton
-      onClick={() => {
-        const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
-        goAddMember(selectedOrgId ?? undefined, unit?.headId);
-      }}
-      leftIcon={<MsFriendAddIcon size={16} />}
-    >
-      구성원 추가
-    </MsButton>
-  ) : undefined, [canEdit, selectedOrgId, orgUnits]);
-  const activeUserCount = users.filter(u => isUserActive(u)).length;
+  // Phase D-2.4a: PageHeader 슬롯 활용
+  // - actions: 검색 input + "구성원 추가" 버튼 (사용자 결정 2.b)
+  // - tabs: "전체" 헤더 탭 (Figma 정합)
+  // - tabActions: 퇴사자 토글 (사용자 결정 4.a). 조직도/정렬/필터는 D-2.4c 에서
+  // - subtitle 제거 (Stats 카드 삭제 결정 1 의 일관 처리, Figma 정합)
+  const headerActions = useMemo(() => (
+    <>
+      <MsInput
+        type="text"
+        value={search}
+        onChange={e => { setSearch(e.target.value); clearSelection(); }}
+        placeholder="이름, 직책으로 검색"
+        leftSlot={<MsSearchIcon size={14} />}
+        rightSlot={search ? (
+          <button onClick={() => setSearch('')} className="text-fg-subtle hover:text-fg-default" aria-label="검색 지우기">
+            <MsCancelIcon size={14} />
+          </button>
+        ) : undefined}
+        className="w-56 h-9"
+      />
+      {canEdit && (
+        <MsButton
+          onClick={() => {
+            const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+            goAddMember(selectedOrgId ?? undefined, unit?.headId);
+          }}
+          leftIcon={<MsFriendAddIcon size={16} />}
+        >
+          구성원 추가
+        </MsButton>
+      )}
+    </>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [canEdit, selectedOrgId, orgUnits, search]);
+
+  const headerTabs = useMemo(() => (
+    <HeaderTab active>전체</HeaderTab>
+  ), []);
+
+  const headerTabActions = useMemo(() => (
+    terminatedUsers.length > 0 ? (
+      <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
+        className={`inline-flex items-center gap-1 h-6 min-w-6 px-2 text-xs font-bold rounded-md border transition-colors ${
+          showTerminated
+            ? 'bg-interaction-pressed border-bd-primary text-fg-default'
+            : 'border-bd-primary text-fg-default hover:bg-interaction-hovered'
+        }`}>
+        <MsCancelIcon size={14} /> 퇴사자 {terminatedUsers.length}명
+      </button>
+    ) : null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [terminatedUsers.length, showTerminated]);
+
   useSetPageHeader('구성원', headerActions, {
-    subtitle: `구성원 ${activeUserCount}명 · 조직 ${orgUnits.length}개`,
+    tabs: headerTabs,
+    tabActions: headerTabActions,
   });
 
   const toggleMember = (id: string) =>
@@ -658,13 +705,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     onDrop: handleDrop,
   };
 
-  const activeUsers     = useMemo(() => users.filter(u => isUserActive(u)), [users]);
-  const terminatedUsers = useMemo(() => users.filter(u => !isUserActive(u)), [users]);
-
+  // Phase D-2.4a: activeUsers / terminatedUsers 정의는 위로 이동됨 (use-before-declaration 회피).
   // R7: 관리자도 구성원에 포함. 사이클 참여 분류(isSystemOperator)는 별도 의미로 유지.
+  // totalLeaders 는 Stats 카드 삭제로 unused — 제거.
   const totalActive   = activeUsers.length;
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
-  const totalLeaders  = activeUsers.filter(u => headIdsAll.has(u.id)).length;
 
   /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 사용자.
      R7: orgUnitId 우선 + legacy 폴백 — 마이그레이션 전후 모두 정확히 분류. */
@@ -767,70 +812,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       {/* R7: 신규 회원 승인 대기 배너 — org.manage 보유자에게만 노출, count > 0 일 때만 */}
       <PendingApprovalsBanner />
 
-      {/* 동기화 상태 + 퇴사자 토글 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {orgSyncEnabled && (
-          isLoading ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-010 text-xs text-gray-050">
-              <MsRefreshIcon size={12} className="animate-spin" /> 동기화 중
-            </span>
-          ) : orgSyncError ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-005 text-xs text-red-040">
-              시트 연결 오류
-            </span>
-          ) : orgLastSyncedAt ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-005 text-xs text-green-060">
-              <MsRefreshIcon size={12} className="size-3" />
-              {new Date(orgLastSyncedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화됨
-            </span>
-          ) : null
-        )}
-        {terminatedUsers.length > 0 && (
-          <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-              showTerminated
-                ? 'bg-red-005 text-red-050 border-red-020'
-                : 'bg-white text-gray-050 border-gray-020 hover:border-gray-030'
-            }`}>
-            <MsCancelIcon size={12} className="size-3.5" /> 퇴사자 {terminatedUsers.length}명
-          </button>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { icon: MsGroupIcon, label: '전체 구성원', value: `${totalActive}명`,  sub: '재직 중' },
-          { icon: MsGroupIcon, label: '조직',        value: `${teams.length}개`,   sub: '등록된 조직' },
-          { icon: MsProfileIcon, label: '조직장',         value: `${totalLeaders}명`,   sub: '조직장' },
-        ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-020 shadow-card p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="size-7 rounded-lg bg-gray-010 flex items-center justify-center">
-                <Icon className="size-3.5 text-gray-050" />
-              </div>
-              <span className="text-xs text-gray-050">{label}</span>
-            </div>
-            <p className="text-2xl font-semibold text-gray-099">{value}</p>
-            <p className="text-xs text-gray-040 mt-0.5">{sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Search bar */}
-      <MsInput
-        type="text"
-        value={search}
-        onChange={e => { setSearch(e.target.value); clearSelection(); }}
-        placeholder="이름, 직책, 팀으로 검색..."
-        leftSlot={<MsSearchIcon size={16} />}
-        rightSlot={search ? (
-          <button onClick={() => setSearch('')} className="text-gray-040 hover:text-gray-060">
-            <MsCancelIcon size={16} />
-          </button>
-        ) : undefined}
-        className="rounded-xl"
-      />
+      {/* Phase D-2.4a: 동기화 상태 / 퇴사자 토글 / Stats grid / MsInput 검색바 모두 제거.
+          - 동기화 배지: 글로벌 SyncStatusBanner 가 처리 (사용자 결정 3.a)
+          - 퇴사자 토글: 헤더 tabActions 로 이동 (사용자 결정 4.a)
+          - Stats: 사용자 결정 1 — Figma 정합으로 삭제
+          - 검색 바: 헤더 actions 의 작은 검색으로 이동 (사용자 결정 2.b) */}
 
       {search ? (
         /* ── 검색 결과 ── */

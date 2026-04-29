@@ -41,10 +41,11 @@ function Segment<T extends string>({
   ariaLabel: string;
 }) {
   return (
+    /* Phase D-3.D-2: SegmentedControl Figma 정합 (D-3.C-1 SegmentPills 와 동일 패턴) */
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5"
+      className="inline-flex rounded-xl bg-surface-sunken p-1 gap-1"
     >
       {options.map(opt => {
         const active = opt.value === value;
@@ -56,10 +57,10 @@ function Segment<T extends string>({
             title={opt.hint}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap',
+              'h-7 px-2.5 text-sm rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
               active
-                ? 'bg-white text-gray-080 shadow-card'
-                : 'text-gray-050 hover:text-gray-070',
+                ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
+                : 'text-fg-subtle font-semibold hover:text-fg-default',
             )}
           >
             {opt.label}
@@ -86,7 +87,8 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
     filters.query.trim().length > 0;
 
   return (
-    <div className={cn('flex flex-col gap-3 rounded-xl border border-gray-010 bg-white px-4 py-3 shadow-card', disabled && 'opacity-60 pointer-events-none')}>
+    /* Phase D-3.D-2: 카드 컨테이너 제거 — 평면 (border-y 만으로 영역 분리) */
+    <div className={cn('flex flex-col gap-3 border-y border-bd-default px-2 py-3', disabled && 'opacity-60 pointer-events-none')}>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-medium text-gray-050">관점</span>

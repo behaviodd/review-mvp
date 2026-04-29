@@ -89,10 +89,11 @@ export function OpsTable({
     );
   }
 
+  /* Phase D-3.D-2: 카드 컨테이너 제거 — 평면 + 컬럼 헤더 border-b + 위·아래 border-y */
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-010 bg-white shadow-card">
+    <div className="border-y border-bd-default">
       <div
-        className="hidden md:grid items-center gap-3 border-b border-gray-010 bg-gray-001 px-4 py-2.5"
+        className="hidden md:grid items-center gap-3 border-b border-bd-default px-2 py-2"
         style={gridStyle}
       >
         <MsCheckbox
@@ -101,17 +102,17 @@ export function OpsTable({
           onChange={onToggleAll}
           aria-label="전체 선택"
         />
-        <span className="text-[11px] font-semibold text-gray-050">{perspectiveLabel}</span>
-        <span className="text-[11px] font-semibold text-gray-050">조직</span>
-        <span className="text-[11px] font-semibold text-gray-050">자기평가</span>
-        <span className="text-[11px] font-semibold text-gray-050">조직장 리뷰</span>
-        {showPeer && <span className="text-[11px] font-semibold text-gray-050">동료 리뷰</span>}
-        {showUpward && <span className="text-[11px] font-semibold text-gray-050">상향 리뷰</span>}
-        <span className="text-[11px] font-semibold text-gray-050">마감</span>
-        <span className="text-[11px] font-semibold text-gray-050">마지막 저장</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">{perspectiveLabel}</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">조직</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">자기평가</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">조직장 리뷰</span>
+        {showPeer && <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">동료 리뷰</span>}
+        {showUpward && <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">상향 리뷰</span>}
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">마감</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">마지막 저장</span>
       </div>
 
-      <ul className="divide-y divide-gray-005">
+      <ul className="divide-y divide-bd-default">
         {rows.map(row => {
           const isSelected = selected.has(row.key);
           const activeDeadline = row.manager ? deadlines.manager : deadlines.self;

@@ -18,14 +18,17 @@ const TONE: Record<Tone, { value: string; bar: string }> = {
   danger:  { value: 'text-red-050', bar: 'bg-red-020' },
 };
 
+/**
+ * Phase D-3.D-2: 카드 컨테이너 제거 — 평면 + 좌측 tone bar accent + 부모 grid 의 divide line.
+ */
 function Card({ label, value, sub, tone = 'neutral' }: KpiCard) {
   const t = TONE[tone];
   return (
-    <div className="relative flex flex-col gap-1 rounded-xl border border-gray-010 bg-white px-4 py-3 shadow-card">
+    <div className="relative flex flex-col gap-1 px-4 py-3">
       <span className={cn('absolute left-0 top-3 h-5 w-1 rounded-r', t.bar)} />
-      <span className="text-[11px] font-medium text-gray-050">{label}</span>
+      <span className="text-[11px] font-medium text-fg-subtle">{label}</span>
       <span className={cn('text-xl font-bold tabular-nums tracking-tight', t.value)}>{value}</span>
-      {sub && <span className="text-[11px] text-gray-040">{sub}</span>}
+      {sub && <span className="text-[11px] text-fg-subtlest">{sub}</span>}
     </div>
   );
 }
@@ -54,8 +57,9 @@ export function OpsKpiStrip({ kpis }: Props) {
 
   const cols = cards.length <= 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-8';
 
+  /* Phase D-3.D-2: grid 안 카드 사이 divide-x (md+) 로 line 구분, 위·아래 border-y */
   return (
-    <div className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${cols}`}>
+    <div className={`grid grid-cols-2 md:grid-cols-3 ${cols} border-y border-bd-default md:divide-x md:divide-bd-default`}>
       {cards.map(card => <Card key={card.label} {...card} />)}
     </div>
   );

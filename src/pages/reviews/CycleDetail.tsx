@@ -713,17 +713,17 @@ export function CycleDetail() {
         ))}
       </div>
 
-      {/* Phase D-3.D-1: Timeline — 평면 + 항목 사이 border-b */}
+      {/* Phase D-3.D-2: Timeline — 항목 사이 구분선 제거 (사용자 명시 "더 심플하게") */}
       <div className="border-t border-bd-default p-5">
         <h2 className="text-sm font-semibold text-fg-default mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
         <div>
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
             { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
-          ].map(({ label, date, highlight }, i) => (
+          ].map(({ label, date, highlight }) => (
             <div
               key={label}
-              className={`flex items-center justify-between py-3 px-2 ${i === 0 ? '' : 'border-t border-bd-default'} ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
+              className={`flex items-center justify-between py-2 px-2 ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
             >
               <span className={`text-sm ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
               <span className={`text-sm font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>

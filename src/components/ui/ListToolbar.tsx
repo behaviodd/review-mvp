@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { MsInput } from './MsControl';
+import { MsChevronDownMonoIcon } from './MsIcons';
 
 /**
  * 리스트 페이지 공통 필터/툴바.
@@ -214,25 +215,31 @@ interface SegmentSelectProps {
   ariaLabel?: string;
   className?: string;
 }
+/**
+ * Phase D-3.C-3: chevron 안 보이던 문제 해결.
+ * 이전: bg-[url('data:image/svg+xml...')] arbitrary class — Tailwind JIT 가
+ * escape 처리 실패로 background-image 누락.
+ * 변경: wrapper div + absolute MsChevronDownMonoIcon — 토큰 색상 + 안정.
+ */
 function SegmentSelect({ options, value, onChange, ariaLabel, className }: SegmentSelectProps) {
   return (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className={cn(
-        'h-8 px-3 pr-8 text-xs font-medium rounded-lg border border-gray-010 bg-white text-gray-080 ' +
-          'focus:outline-none focus:ring-2 focus:ring-gray-010 transition-colors appearance-none ' +
-          "bg-[url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'12\\' height=\\'12\\' viewBox=\\'0 0 12 12\\' fill=\\'none\\'><path d=\\'M3 4.5L6 7.5L9 4.5\\' stroke=\\'%23788396\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/></svg>')] " +
-          'bg-no-repeat bg-[right_8px_center]',
-        className,
-      )}
-    >
-      {options.map(o => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <div className={cn('relative inline-block', className)}>
+      <select
+        aria-label={ariaLabel}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="h-8 pl-3 pr-7 text-xs font-medium rounded-lg border border-bd-default bg-bg-token-default text-fg-default focus:outline-none focus:ring-2 focus:ring-bd-default transition-colors appearance-none cursor-pointer"
+      >
+        {options.map(o => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <MsChevronDownMonoIcon
+        size={12}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none"
+      />
+    </div>
   );
 }

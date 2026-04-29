@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -153,6 +153,19 @@ export function CycleList() {
 
   useSetPageHeader('리뷰 운영', headerActions, { tabs: headerTabs });
 
+  /* Phase D-3.C-3: 페이지네이션 — 15개씩 (사용자 명시) */
+  const PAGE_SIZE = 15;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  // 필터/검색 변경 시 page 1 로 reset (visible 길이 변화 감지)
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+  const visiblePage = useMemo(
+    () => visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visible, page],
+  );
+
   /* ── 선택 상태 ─────────────────────────────────────── */
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggleOne = (id: string) => {
@@ -162,14 +175,15 @@ export function CycleList() {
       return next;
     });
   };
+  // Phase D-3.C-3: 현재 페이지(visiblePage) 만 토글 — 다른 페이지 영향 없음
   const toggleAllVisible = () => {
-    const allSelected = visible.every(c => selected.has(c.id));
+    const allSelected = visiblePage.every(c => selected.has(c.id));
     setSelected(prev => {
       const next = new Set(prev);
       if (allSelected) {
-        for (const c of visible) next.delete(c.id);
+        for (const c of visiblePage) next.delete(c.id);
       } else {
-        for (const c of visible) next.add(c.id);
+        for (const c of visiblePage) next.add(c.id);
       }
       return next;
     });
@@ -310,8 +324,9 @@ export function CycleList() {
     !!filters.dateFrom || !!filters.dateTo ||
     filters.folder.kind !== 'all';
 
-  const allChecked = visible.length > 0 && visible.every(c => selected.has(c.id));
-  const someChecked = visible.some(c => selected.has(c.id));
+  // Phase D-3.C-3: 페이지네이션 후 — "보이는 전체 선택" 은 현재 페이지(visiblePage) 기준
+  const allChecked = visiblePage.length > 0 && visiblePage.every(c => selected.has(c.id));
+  const someChecked = visiblePage.some(c => selected.has(c.id));
 
   /* Phase D-3.C-2: FolderSidebar 제거. 빠른 필터는 헤더 탭으로 (위 useSetPageHeader).
      ListToolbar 의 카드 컨테이너 (rounded-xl border bg-white shadow-card) 제거 — 평면.
@@ -404,7 +419,8 @@ export function CycleList() {
             />
           )
         ) : (
-          <div>
+          /* Phase D-3.C-3: wrapper 에 border-b 추가 — 리스트 하단 라인 (사용자 명시) */
+          <div className="border-b border-bd-default">
             {/* 컬럼 헤더 — 카드 컨테이너 제거, 평면 + border-b */}
             <div className="flex items-center gap-4 px-2 py-2 border-b border-bd-default">
               <div className="w-5 shrink-0">
@@ -421,8 +437,9 @@ export function CycleList() {
               <div className="w-24 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">마감일</div>
               <div className="w-4" />
             </div>
-            {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기) */}
-            {visible.map(cycle => {
+            {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기)
+               Phase D-3.C-3: visiblePage 만 렌더 (15개씩 페이지네이션) */}
+            {visiblePage.map(cycle => {
               const isSelected = selected.has(cycle.id);
               return (
                 <div
@@ -540,6 +557,36 @@ export function CycleList() {
             })}
           </div>
         )}
+
+      {/* Phase D-3.C-3: 페이지네이션 UI (visible.length > PAGE_SIZE 시만 노출) */}
+      {visible.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-fg-subtle tracking-[-0.3px]">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, visible.length)} / 총 {visible.length}건
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="h-8 px-3 text-xs font-semibold rounded-md border border-bd-default text-fg-default hover:bg-interaction-hovered disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              이전
+            </button>
+            <span className="px-3 text-xs text-fg-default tabular-nums">
+              <strong className="font-bold">{page}</strong> <span className="text-fg-subtlest">/ {totalPages}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="h-8 px-3 text-xs font-semibold rounded-md border border-bd-default text-fg-default hover:bg-interaction-hovered disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              다음
+            </button>
+          </div>
+        </div>
+      )}
 
       <CycleBulkBar
         selectedCount={selected.size}

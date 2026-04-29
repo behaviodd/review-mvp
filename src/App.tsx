@@ -39,6 +39,9 @@ import { PendingApprovals } from './pages/team/PendingApprovals';
 import { BulkMove } from './pages/team/BulkMove';
 import { AuditLog } from './pages/AuditLog';
 import { PendingApproval } from './pages/PendingApproval';
+import { GuideLayout } from './pages/guide/GuideLayout';
+import { GuideIndex } from './pages/guide/GuideIndex';
+import { GuidePage } from './pages/guide/GuidePage';
 
 // 로그인 상태일 때만 시트 동기화 실행
 function OrgSyncProvider() {
@@ -373,6 +376,12 @@ export default function App() {
               }
             />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
+
+            {/* 가이드 — 모든 인증 사용자 접근. /guide 인덱스 + /guide/:cat/:slug 페이지 */}
+            <Route path="guide" element={<RouteBoundary><GuideLayout /></RouteBoundary>}>
+              <Route index element={<GuideIndex />} />
+              <Route path=":category/:slug" element={<GuidePage />} />
+            </Route>
             <Route
               path="permissions"
               element={

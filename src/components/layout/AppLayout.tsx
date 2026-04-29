@@ -11,7 +11,7 @@ import { SyncStatusBanner } from '../system/SyncStatusBanner';
 import { ImpersonationBanner } from '../system/ImpersonationBanner';
 import { QUOTA_EVENT } from '../../utils/safeStorage';
 
-const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/'];
+const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templates/', '/guide'];
 // FULL_BLEED 매칭이 prefix 기반이어서 의도치 않게 포함되는 라우트의 예외 목록.
 // 이 목록에 들어오는 경로는 일반 컨테이너(max-w-5xl + p-6)로 렌더된다.
 const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];

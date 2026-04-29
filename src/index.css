@@ -285,6 +285,57 @@ a, button, [role="button"], select, input, textarea {
   }
 }
 
+/* ─── Guide page typography ───────────────────────────────────── */
+/**
+ * `/guide/*` 페이지 본문 — react-markdown 으로 렌더되는 마크다운에 prose 스타일 부여.
+ * Tailwind typography 플러그인 없이 직접 정의 (의존성 추가 회피).
+ */
+.guide-prose {
+  color: var(--token-fg-default);
+  font-size: 14px;
+  line-height: 1.7;
+  letter-spacing: -0.3px;
+}
+.guide-prose h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 32px 0 12px;
+  letter-spacing: -0.3px;
+  color: var(--token-fg-default);
+}
+.guide-prose h2:first-child { margin-top: 0; }
+.guide-prose h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 24px 0 8px;
+  letter-spacing: -0.3px;
+  color: var(--token-fg-default);
+}
+.guide-prose p { margin: 8px 0; color: var(--token-fg-subtle); }
+.guide-prose ul, .guide-prose ol { margin: 8px 0 8px 24px; color: var(--token-fg-subtle); }
+.guide-prose li { margin: 4px 0; }
+.guide-prose strong { color: var(--token-fg-default); font-weight: 700; }
+.guide-prose code {
+  background: var(--token-bg-subtle);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--token-fg-default);
+}
+.guide-prose img {
+  display: block;
+  max-width: 100%;
+  margin: 16px 0;
+  border-radius: 8px;
+  border: 1px solid var(--token-border-default);
+}
+.guide-prose a {
+  color: var(--token-fg-accent-brand1-default);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.guide-prose a:hover { color: var(--token-fg-accent-brand1-hovered); }
+
 /* ─── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: transparent; }

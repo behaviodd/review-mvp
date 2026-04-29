@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   MsHomeIcon, MsSettingIcon,
   MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsGroupIcon,
-  MsArticleIcon, MsDeleteIcon, MsLockIcon, MsIdcardIcon,
+  MsArticleIcon, MsDeleteIcon, MsLockIcon, MsIdcardIcon, MsHelpIcon,
 } from '../ui/MsIcons';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuthStore } from '../../stores/authStore';
@@ -167,6 +167,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
     /* 어드민 — 보안 관리 */
     { kind: 'section', label: '보안 관리', show: showSecuritySection },
     { kind: 'item', to: '/security/audit', icon: MsArticleIcon, label: '감사 로그',  show: showAudit, indent: true },
+
+    /* 가이드 — 모든 사용자 */
+    { kind: 'section', label: '도움말', show: true },
+    { kind: 'item', to: '/guide', icon: MsHelpIcon, label: '가이드', show: true, indent: true },
   ] satisfies NavNode[]).filter(i => i.show);
 
   const handleLogout = () => {

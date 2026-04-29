@@ -329,9 +329,10 @@ function sha256Hex(text) {
  * @returns {{ email: string, name: string, sub: string } | { error: string }}
  */
 var ALLOWED_HD_DEFAULT_ = 'makestar.com';
+var GOOGLE_CLIENT_ID_DEFAULT_ = '326779806162-9nla547k58bsvpha2mp5ibcsgq41ri4e.apps.googleusercontent.com';
 function verifyGoogleIdToken_(idToken) {
   var props = PropertiesService.getScriptProperties();
-  var clientId = props.getProperty('GOOGLE_CLIENT_ID');
+  var clientId = props.getProperty('GOOGLE_CLIENT_ID') || GOOGLE_CLIENT_ID_DEFAULT_;
   if (!clientId) return { error: '서버 설정 오류: GOOGLE_CLIENT_ID 가 Script Properties 에 없습니다.' };
   var allowedHd = props.getProperty('ALLOWED_HD') || ALLOWED_HD_DEFAULT_;
 

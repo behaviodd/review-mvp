@@ -990,12 +990,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             <div className="flex items-start justify-between mb-3 flex-shrink-0">
               <button
                 onClick={selectAll}
-                className={`flex flex-col items-start gap-0.5 -mx-2 px-2 py-1 rounded-md transition-colors text-left ${
-                  !selectedOrgId && !showTerminated && !showUnassigned
-                    ? 'bg-bg-token-brand1-subtlest'
-                    : 'hover:bg-interaction-hovered'
-                }`}
+                className="flex flex-col items-start gap-0.5 -mx-2 px-2 py-1 rounded-md hover:bg-interaction-hovered transition-colors text-left"
               >
+                {/* 활성 표시는 분홍 bg 제거 (사용자 명시) — 텍스트 색만 brand1 으로 */}
                 <p className={`text-base font-bold tracking-[-0.3px] leading-6 ${
                   !selectedOrgId && !showTerminated && !showUnassigned ? 'text-fg-brand1' : 'text-fg-default'
                 }`}>조직도</p>

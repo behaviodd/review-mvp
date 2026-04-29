@@ -17,7 +17,8 @@ const FULL_BLEED_PATHS = ['/reviews/team/', '/reviews/me/', '/feedback', '/templ
 const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 // Phase D-2.4c: 정확 매칭 full-bleed 경로 — 좌우 패널 개별 스크롤 등을 위해
 // 페이지가 자체 height 관리하는 라우트. prefix 가 아닌 정확 매칭만.
-const FULL_BLEED_EXACT = ['/team'];
+// Phase D-3.A-fix3: '/' 추가 — Dashboard 의 첫 영역이 헤더 line 과 직접 닿게
+const FULL_BLEED_EXACT = ['/team', '/'];
 
 export function AppLayout() {
   const { currentUser } = useAuthStore();

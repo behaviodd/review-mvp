@@ -117,18 +117,15 @@ function AdminDashboard() {
       .slice(0, 8);
   }, [submissions, users, cycles]);
 
-  /* Phase D-3.A: 모든 카드 컨테이너 제거 (bg-white rounded-xl border shadow-card)
-     - 큰 섹션 사이: border-t border-bd-default + pt-X
-     - Stats grid: divide-x divide-bd-default (가로 line)
-     - Chart + 액션 grid (3 col): md:divide-x divide-bd-default
-     - 단일 섹션 내부: 평면 + 항목 사이 spacing 만 */
+  /* Phase D-3.A-fix3: full-bleed (FULL_BLEED_EXACT '/') 모드.
+     페이지 자체 overflow-y-auto + px-6. 위 padding 없이 헤더 line 바로 아래
+     TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
-    <div>
+    <div className="flex flex-col h-full overflow-y-auto px-6">
       <TodayPanel variant="admin" />
 
-      {/* Phase D-3.A-fix2: 모든 큰 섹션 사이 단조로운 border-t 패턴으로 통일.
-          grid 안 카드 사이 line 은 md+ divide-x 만 (mobile gap 으로 단순). */}
-      <div className="border-t border-bd-default mt-6 pt-6 grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-bd-default">
+      {/* Stats — 첫 border-t 제거 (사용자 명시), mt-6 spacing 만. grid 안 md:divide-x 유지 */}
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-bd-default">
         <StatCard label="진행 중인 리뷰" value={activeCycles.length} icon={MsClockIcon} color="text-pink-050" iconBg="bg-pink-005" />
         <StatCard label="전사 평균 완료율" value={`${avgCompletion}%`} sub="진행 중 리뷰 기준" icon={TrendingUp as typeof MsAlertIcon} color="text-green-060" iconBg="bg-green-005" />
         <StatCard label="제출 대기 인원" value={pendingCount} sub="명" icon={MsUsersIcon as typeof MsAlertIcon} color="text-gray-060" iconBg="bg-gray-010" />
@@ -249,11 +246,11 @@ function ManagerDashboard() {
     { name: '미작성',   value: myDownwards.filter(s => s.status === 'not_started').length, color: '#c4cdd4' },
   ];
 
-  /* Phase D-3.A: 카드 컨테이너 제거 + 큰 섹션 사이 border-t */
+  /* Phase D-3.A-fix3: full-bleed + 첫 border-t 제거 */
   return (
-    <div>
+    <div className="flex flex-col h-full overflow-y-auto px-6">
       <TodayPanel variant="leader" />
-      <div className="border-t border-bd-default mt-6 pt-6">
+      <div className="mt-6">
         <PeerPickReminder />
       </div>
       <div className="border-t border-bd-default mt-6 pt-6">
@@ -349,13 +346,13 @@ function EmployeeDashboard() {
 
   useSetPageHeader(`안녕하세요, ${currentUser?.name}님 👋`);
 
-  /* Phase D-3.A: 카드 컨테이너 제거. "지금 진행 중" 은 좌측 brand1 accent line 으로 강조 */
+  /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음 */
   return (
-    <div>
+    <div className="flex flex-col h-full overflow-y-auto px-6">
       <PeerPickReminder />
 
       {activeCycle && mySelf && mySelf.status !== 'submitted' && (
-        <div className="border-t border-bd-default mt-6 pt-6">
+        <div className="mt-6">
           <div className="border-l-4 border-fg-brand1 pl-5 py-1">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">

@@ -57,9 +57,9 @@ export function OpsKpiStrip({ kpis }: Props) {
 
   const cols = cards.length <= 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-8';
 
-  /* Phase D-3.D-2: grid 안 카드 사이 divide-x (md+) 로 line 구분, 위·아래 border-y */
+  /* Phase D-3.D-3: border-y → border-t 만 (사용자 명시 — 가로 선 1줄만) */
   return (
-    <div className={`grid grid-cols-2 md:grid-cols-3 ${cols} border-y border-bd-default md:divide-x md:divide-bd-default`}>
+    <div className={`grid grid-cols-2 md:grid-cols-3 ${cols} border-t border-bd-default md:divide-x md:divide-bd-default`}>
       {cards.map(card => <Card key={card.label} {...card} />)}
     </div>
   );

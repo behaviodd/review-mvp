@@ -36,8 +36,8 @@ export function DistributionProgress({ policy, cycleId, reviewerId, submissions 
   }
 
   return (
-    /* Phase D-3.D-2: 카드 컨테이너 제거 — 평면 + border-y */
-    <div className="border-y border-bd-default px-2 py-4 space-y-3">
+    /* Phase D-3.D-3: border-y → border-t (가로 선 1줄, OpsCenter 내 일관 패턴) */
+    <div className="border-t border-bd-default px-2 py-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-080">등급 분포 {policy.method === 'hard' ? '(강제)' : '(가이드)'}</h3>

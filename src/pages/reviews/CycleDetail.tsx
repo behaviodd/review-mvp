@@ -695,40 +695,43 @@ export function CycleDetail() {
         );
       })()}
 
-      {/* Phase D-3.D-1: Stats — 평면 + divide-x line (Dashboard 패턴 재사용) */}
-      <div className="border-t border-bd-default grid grid-cols-3 md:divide-x md:divide-bd-default">
-        {[
-          { icon: MsUsersIcon, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
-          { icon: MsBarChart2Icon, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
-          { icon: MsBarChart2Icon, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
-        ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-fg-subtlest" />
-              <span className="text-xs text-fg-subtle">{label}</span>
-            </div>
-            <p className="text-xl font-semibold text-fg-default">{value}</p>
-            <p className="text-xs text-fg-subtlest mt-0.5 truncate">{sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Phase D-3.D-2: Timeline — 항목 사이 구분선 제거 (사용자 명시 "더 심플하게") */}
-      <div className="border-t border-bd-default p-5">
-        <h2 className="text-sm font-semibold text-fg-default mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
-        <div>
+      {/* Phase D-3.D-3: Stats + Timeline 한 덩어리 (사용자 명시) — wrapper 위 border-t 한 번만 */}
+      <div className="border-t border-bd-default">
+        {/* Stats — grid 3 cols + divide-x */}
+        <div className="grid grid-cols-3 md:divide-x md:divide-bd-default">
           {[
-            { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
-            { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
-          ].map(({ label, date, highlight }) => (
-            <div
-              key={label}
-              className={`flex items-center justify-between py-2 px-2 ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
-            >
-              <span className={`text-sm ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
-              <span className={`text-sm font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>
+            { icon: MsUsersIcon, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
+            { icon: MsBarChart2Icon, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
+            { icon: MsBarChart2Icon, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
+          ].map(({ icon: Icon, label, value, sub }) => (
+            <div key={label} className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className="w-4 h-4 text-fg-subtlest" />
+                <span className="text-xs text-fg-subtle">{label}</span>
+              </div>
+              <p className="text-xl font-semibold text-fg-default">{value}</p>
+              <p className="text-xs text-fg-subtlest mt-0.5 truncate">{sub}</p>
             </div>
           ))}
+        </div>
+
+        {/* Timeline — Stats 다음 평면 (사이 border 없음, 한 덩어리) */}
+        <div className="px-4 pb-5">
+          <h2 className="text-sm font-semibold text-fg-default mb-3 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
+          <div>
+            {[
+              { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
+              { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
+            ].map(({ label, date, highlight }) => (
+              <div
+                key={label}
+                className={`flex items-center justify-between py-2 px-2 ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
+              >
+                <span className={`text-sm ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
+                <span className={`text-sm font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

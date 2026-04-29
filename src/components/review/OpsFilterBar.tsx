@@ -87,8 +87,8 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
     filters.query.trim().length > 0;
 
   return (
-    /* Phase D-3.D-2: 카드 컨테이너 제거 — 평면 (border-y 만으로 영역 분리) */
-    <div className={cn('flex flex-col gap-3 border-y border-bd-default px-2 py-3', disabled && 'opacity-60 pointer-events-none')}>
+    /* Phase D-3.D-3: border-y → border-t (사용자 명시 — 가로 선 1줄만) */
+    <div className={cn('flex flex-col gap-3 border-t border-bd-default px-2 py-3', disabled && 'opacity-60 pointer-events-none')}>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-medium text-gray-050">관점</span>

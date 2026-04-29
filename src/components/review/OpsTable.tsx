@@ -89,9 +89,9 @@ export function OpsTable({
     );
   }
 
-  /* Phase D-3.D-2: 카드 컨테이너 제거 — 평면 + 컬럼 헤더 border-b + 위·아래 border-y */
+  /* Phase D-3.D-3: border-y → border-t border-b (위 1줄 + 페이지 끝 1줄, 사이 line 중복 제거) */
   return (
-    <div className="border-y border-bd-default">
+    <div className="border-t border-b border-bd-default">
       <div
         className="hidden md:grid items-center gap-3 border-b border-bd-default px-2 py-2"
         style={gridStyle}

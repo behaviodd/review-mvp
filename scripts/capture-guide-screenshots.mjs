@@ -38,17 +38,17 @@ fs.mkdirSync(OUT_DIR, { recursive: true });
 const adminUser = {
   id: 'A001', name: '김관리', email: 'kim.admin@makestar.com',
   role: 'admin', position: '인사팀장', department: '경영지원', jobFunction: 'HR',
-  avatarColor: '#FF558F', orgUnitId: 'ou_root', activityStatus: 'active',
+  avatarColor: '#FF558F', orgUnitId: 'ou_root', activityStatus: 'active', status: 'active',
 };
 
 const users = [
   adminUser,
-  { id: 'M001', name: '이리더', email: 'lee.leader@makestar.com', role: 'leader', position: '개발팀장', department: '제품개발', jobFunction: '개발', avatarColor: '#3B82F6', orgUnitId: 'ou_dev', activityStatus: 'active', managerId: 'A001' },
-  { id: 'M002', name: '박개발', email: 'park.dev@makestar.com',   role: 'member', position: '시니어 개발자', department: '제품개발', jobFunction: '개발', avatarColor: '#10B981', orgUnitId: 'ou_dev', activityStatus: 'active', managerId: 'M001' },
-  { id: 'M003', name: '최디자이너', email: 'choi.design@makestar.com', role: 'member', position: '프로덕트 디자이너', department: '디자인', jobFunction: '디자인', avatarColor: '#F59E0B', orgUnitId: 'ou_design', activityStatus: 'active', managerId: 'A001' },
-  { id: 'M004', name: '정마케터', email: 'jung.market@makestar.com', role: 'member', position: '마케팅 매니저', department: '마케팅', jobFunction: '마케팅', avatarColor: '#8B5CF6', orgUnitId: 'ou_marketing', activityStatus: 'active', managerId: 'A001' },
-  // 의도적으로 managerId 없음 — preflight 차단 시나리오용
-  { id: 'M005', name: '강신입', email: 'kang.new@makestar.com',    role: 'member', position: '주니어 개발자', department: '제품개발', jobFunction: '개발', avatarColor: '#EC4899', orgUnitId: 'ou_dev', activityStatus: 'active' },
+  { id: 'M001', name: '이리더', email: 'lee.leader@makestar.com', role: 'leader', position: '개발팀장', department: '제품개발', jobFunction: '개발', avatarColor: '#3B82F6', orgUnitId: 'ou_dev', activityStatus: 'active', status: 'active', managerId: 'A001' },
+  { id: 'M002', name: '박개발', email: 'park.dev@makestar.com',   role: 'member', position: '시니어 개발자', department: '제품개발', jobFunction: '개발', avatarColor: '#10B981', orgUnitId: 'ou_dev', activityStatus: 'active', status: 'active', managerId: 'M001' },
+  { id: 'M003', name: '최디자이너', email: 'choi.design@makestar.com', role: 'member', position: '프로덕트 디자이너', department: '디자인', jobFunction: '디자인', avatarColor: '#F59E0B', orgUnitId: 'ou_design', activityStatus: 'active', status: 'active', managerId: 'A001' },
+  { id: 'M004', name: '정마케터', email: 'jung.market@makestar.com', role: 'member', position: '마케팅 매니저', department: '마케팅', jobFunction: '마케팅', avatarColor: '#8B5CF6', orgUnitId: 'ou_marketing', activityStatus: 'active', status: 'active', managerId: 'A001' },
+  // 의도적으로 managerId 없음 + orgUnitId/department 도 fallback 매칭 회피용 → preflight 차단 시나리오
+  { id: 'M005', name: '강신입', email: 'kang.new@makestar.com',    role: 'member', position: '주니어 개발자', department: '미배정', jobFunction: '개발', avatarColor: '#EC4899', activityStatus: 'active', status: 'active' },
 ];
 
 const orgUnits = [
@@ -106,10 +106,27 @@ const cycle = {
   completionRate: 60,
   reviewKinds: ['self', 'downward'],
   downwardReviewerRanks: [1],
-  targetMode: 'users',
+  targetMode: 'custom',
   targetUserIds: ['M001', 'M002', 'M003', 'M004'],
   templateSnapshot: defaultTemplate,
   templateSnapshotAt: '2026-04-15T00:00:00.000Z',
+};
+
+// 12-preflight 캡처용 — draft 상태 + managerId 없는 M005 포함 + 주말 마감
+const draftCycle = {
+  id: 'cyc_draft_preflight',
+  title: '2026년 2분기 정기 리뷰 (초안)',
+  type: 'scheduled', status: 'draft', templateId: 'tpl_default',
+  targetDepartments: [], createdBy: 'A001', createdAt: '2026-04-29T00:00:00.000Z',
+  // 토요일 = 주말 경고 트리거
+  selfReviewDeadline: '2026-07-04',  // 토요일
+  managerReviewDeadline: '2026-07-18',
+  completionRate: 0,
+  reviewKinds: ['self', 'downward'],
+  downwardReviewerRanks: [1],
+  targetMode: 'custom',
+  targetUserIds: ['M001', 'M002', 'M005'],  // M005 는 managerId 없음 → 1차 평가권자 미배정 차단
+  templateSnapshot: defaultTemplate,
 };
 
 const archivedCycle = {
@@ -122,7 +139,7 @@ const archivedCycle = {
   completionRate: 100,
   archivedAt: '2026-02-10T00:00:00.000Z',
   reviewKinds: ['self', 'downward'],
-  targetMode: 'users',
+  targetMode: 'custom',
   targetUserIds: ['M001', 'M002', 'M003', 'M004'],
 };
 
@@ -145,11 +162,11 @@ const seedAuth = { state: { currentUser: adminUser, impersonatingFromId: null, o
 const seedTeam = { state: {
   users, orgUnits, secondaryOrgs: [], reviewerAssignments: [], orgSnapshots: [],
   permissionGroups: [],  // ensureSystemPermissionGroups 가 onRehydrate 에서 자동 시드
-  schemaVersion: 0,
+  schemaVersion: 'r1',   // R1 마이그레이션 스킵 — 안 그러면 M005 의 orgUnitId 가 ou_root 로 자동 채워짐
   teams: [],
 }, version: 0 };
 const seedReview = { state: {
-  cycles: [cycle, archivedCycle],
+  cycles: [cycle, draftCycle, archivedCycle],
   templates: [defaultTemplate, customTemplate],
   submissions,
 }, version: 0 };
@@ -246,8 +263,25 @@ async function gotoAndWait(page, url, waitFor) {
   await page.waitForTimeout(300);
   await capture(page, '11-cycle-targets.png');
 
-  // 12-preflight: 스킵 — 발행 시도 → 모달 인터랙션 필요. 빈 폼으로는 차단되거나 유효하지 않아 별도 스크립트 필요
-  console.log('▶ /cycles/new — 12-preflight (스킵: 모달 인터랙션 필요)');
+  // 12-preflight: draft 사이클 → transition 버튼 → preflight 모달 오픈 후 캡처
+  console.log('▶ /cycles/cyc_draft_preflight — 12-preflight (draft → transition 버튼 클릭)');
+  await gotoAndWait(page, '/cycles/cyc_draft_preflight', 'h1, h2');
+  // transition 버튼 (draft → 발행) 텍스트 후보: "리뷰 발행", "발행", "리뷰 시작"
+  const transitionBtn = await page.$('button:has-text("리뷰 발행"), button:has-text("발행"), button:has-text("리뷰 시작"), button:has-text("시작")');
+  if (transitionBtn) {
+    await transitionBtn.click();
+    await page.waitForTimeout(1000);
+    // 모달 selector — ModalShell 의 backdrop / dialog 확인
+    const modal = await page.$('[role="dialog"], [class*="ModalShell"], [class*="modal"]');
+    if (modal) {
+      await capture(page, '12-preflight.png');
+    } else {
+      console.log('  ✗ 모달이 열리지 않음 — full page 캡처');
+      await capture(page, '12-preflight.png');
+    }
+  } else {
+    console.log('  ✗ transition 버튼을 찾을 수 없음');
+  }
 
   console.log('▶ /cycles/cyc_2026_q1 — 20-cycle-detail');
   await gotoAndWait(page, '/cycles/cyc_2026_q1', 'h1, h2');

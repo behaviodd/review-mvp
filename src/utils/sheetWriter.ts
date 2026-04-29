@@ -163,7 +163,15 @@ type PostPayload =
   | { action: string; data: Record<string, string> }
   | { action: string; rows: Record<string, string>[] };
 
-type PostResult = { ok?: boolean; userId?: string; error?: string };
+type PostResult = {
+  ok?: boolean;
+  userId?: string;
+  error?: string;
+  // B-2.1: batch action partial result
+  count?: number;
+  total?: number;
+  failed?: Array<{ index: number; key: string; error: string }>;
+};
 
 async function post(action: string, data: Record<string, string>): Promise<void> {
   await postPayload({ action, data });
@@ -196,6 +204,13 @@ async function postPayload(payload: PostPayload): Promise<void> {
   markPendingWrite();           // write 완료 후 grace 재갱신 — Apps Script 시트 반영 race 흡수
   const json = await res.json() as PostResult;
   if (json.error) throw new Error(json.error);
+  // B-2.1: batch partial result — 일부 row 실패 시 명시적 에러로 사용자 가시화.
+  // 멱등 액션이라 resilientFetch 가 1회 자동 retry → 일시적 row 오류면 두 번째 시도에서 회복 가능.
+  if (json.failed && json.failed.length > 0) {
+    const total = json.total ?? json.count ?? 0;
+    const first = json.failed[0];
+    throw new Error(`batch 부분 실패: ${json.failed.length}/${total} 행 처리 실패 — 첫 실패 (key=${first.key}): ${first.error}`);
+  }
 }
 
 /* ── 공개 API ─────────────────────────────────────────────────────── */

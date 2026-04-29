@@ -856,9 +856,29 @@ function doPostInner_(e) {
       return jsonResponse({ ok: true });
     }
     if (action === 'batchUpsertUsers') {
+      // B-2.1 (audit-B 매트릭스 B5): partial result 가시화
+      //   - 이전: forEach 도중 throw → 1·2 시트 반영, 3·4·5 미반영, 응답 {error}.
+      //     client 는 어디까지 반영됐는지 모름.
+      //   - 변경: row 별 try-catch + failed 배열 누적. 응답에 processed/total/failed.
+      //     client (sheetWriter.postPayload) 가 failed 비어있지 않으면 throw → 사용자 가시화.
+      //     멱등 액션이므로 retry 시 idempotent 하게 모든 row 재시도됨.
       var sheet = getSheet(SHEET_USERS, USER_HEADERS);
-      rows.forEach(function(row) { upsertRow(sheet, USER_HEADERS, '사번', row); });
-      return jsonResponse({ ok: true, count: rows.length });
+      var processed = 0;
+      var failed = [];
+      for (var bi = 0; bi < rows.length; bi++) {
+        try {
+          upsertRow(sheet, USER_HEADERS, '사번', rows[bi]);
+          processed++;
+        } catch (eRow) {
+          failed.push({ index: bi, key: String(rows[bi]['사번'] || ''), error: String(eRow) });
+        }
+      }
+      return jsonResponse({
+        ok: failed.length === 0,
+        count: processed,
+        total: rows.length,
+        failed: failed,
+      });
     }
 
     /* ── 조직 ── */
@@ -871,9 +891,24 @@ function doPostInner_(e) {
       return jsonResponse({ ok: true });
     }
     if (action === 'batchUpsertOrgUnits') {
+      // B-2.1: batchUpsertUsers 와 동일 패턴 — partial result 가시화
       var orgSheet = getSheet(SHEET_ORG, ORG_HEADERS);
-      rows.forEach(function(row) { upsertRow(orgSheet, ORG_HEADERS, '조직ID', row); });
-      return jsonResponse({ ok: true, count: rows.length });
+      var processedO = 0;
+      var failedO = [];
+      for (var boi = 0; boi < rows.length; boi++) {
+        try {
+          upsertRow(orgSheet, ORG_HEADERS, '조직ID', rows[boi]);
+          processedO++;
+        } catch (eRowO) {
+          failedO.push({ index: boi, key: String(rows[boi]['조직ID'] || ''), error: String(eRowO) });
+        }
+      }
+      return jsonResponse({
+        ok: failedO.length === 0,
+        count: processedO,
+        total: rows.length,
+        failed: failedO,
+      });
     }
 
     /* ── 겸임 ── */
@@ -916,18 +951,28 @@ function doPostInner_(e) {
       return jsonResponse({ ok: true });
     }
     if (action === 'deleteCycle') {
+      // B-2.2 (audit-B 매트릭스 B6): cascade 안전화
+      //   - 이전: cycle 먼저 삭제 → submissions loop. submissions 삭제 도중
+      //     실패하면 cycle 만 사라지고 submissions orphan 잔재.
+      //   - 변경: submissions 먼저 삭제 → cycle 마지막. 부분 실패 시 cycle 이
+      //     살아있어 retry 시 idempotent 하게 나머지 처리 가능 (orphan 위험 제거).
       var cycleId  = data['사이클ID'];
-      deleteRowByKey(getSheet(SHEET_CYCLES, CYCLE_HEADERS), '사이클ID', cycleId);
       var subSheet = getSheet(SHEET_SUBMISSIONS, SUBMISSION_HEADERS);
       var subData  = subSheet.getDataRange().getValues();
+      var deletedSubmissions = 0;
       if (subData.length > 1) {
         var hdrs   = subData[0];
         var colIdx = hdrs.indexOf('사이클ID');
         for (var i = subData.length - 1; i >= 1; i--) {
-          if (String(subData[i][colIdx]) === String(cycleId)) subSheet.deleteRow(i + 1);
+          if (String(subData[i][colIdx]) === String(cycleId)) {
+            subSheet.deleteRow(i + 1);
+            deletedSubmissions++;
+          }
         }
       }
-      return jsonResponse({ ok: true });
+      // 모든 submissions 삭제 성공 후에만 cycle 삭제
+      deleteRowByKey(getSheet(SHEET_CYCLES, CYCLE_HEADERS), '사이클ID', cycleId);
+      return jsonResponse({ ok: true, deletedSubmissions: deletedSubmissions });
     }
 
     /* ── 템플릿 ── */

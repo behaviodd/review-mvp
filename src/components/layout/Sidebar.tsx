@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  MsHomeIcon, MsSettingIcon, MsChevronRightLineIcon,
+  MsHomeIcon, MsSettingIcon,
   MsRefreshIcon, MsLogoutIcon, MsProfileIcon, MsMoreIcon, MsGroupIcon,
   MsArticleIcon, MsDeleteIcon, MsLockIcon, MsIdcardIcon,
 } from '../ui/MsIcons';
@@ -42,7 +42,7 @@ function BrandIcon({ className }: { className?: string }) {
 
 export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   // R7 prep: collapsed/onToggle 제거 — 데스크탑은 220px 고정.
-  const collapsed = false;
+  // Phase D-2.1: collapsed 변수 자체도 제거 (Figma 정합 후 축소 모드 분기 사라짐)
   const { isAdmin, can } = usePermission();
   const { currentUser, logout } = useAuthStore();
   // R6 Phase D: 마스터 로그인 활성 중에는 어드민 메뉴 자동 숨김
@@ -177,104 +177,104 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
   return (
     <aside className={cn(
-      'fixed left-0 top-0 h-screen bg-white border-r border-gray-020 flex flex-col z-30 transition-transform duration-200',
+      // Phase D-2.1: bg-white → bg-bg-token-default (토큰 정합), border-gray-020 → bd.default
+      'fixed left-0 top-0 h-screen bg-bg-token-default border-r border-bd-default flex flex-col z-30 transition-transform duration-200',
       mobileOpen ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0',
       'md:w-[220px] w-[220px]',
     )}>
 
-      {/* ── 로고 ── */}
-      <div className={cn(
-        'flex items-center h-[72px] border-b border-gray-010 flex-shrink-0 px-4',
-        collapsed ? 'md:justify-center md:px-0' : 'gap-2.5',
-      )}>
-        <BrandIcon className="size-8 flex-shrink-0" />
-        <span className={cn(
-          'text-[13px] font-semibold text-gray-099 leading-tight flex-1',
-          collapsed && 'md:hidden',
-        )}>
-          메이크스타 리뷰시스템
-        </span>
-      </div>
+      {/* Phase D-2.1: ADM / LNB / Unit / Header — 로고 + User ID 통합 박스
+          Figma: px-[14px] py-[16px] gap-[8px] flex-col items-start justify-center */}
+      <div className="flex flex-col gap-2 items-start justify-center px-3.5 py-4 flex-shrink-0">
+        {/* Container/Subject — 로고 + 앱 이름 */}
+        <div className="flex gap-1 items-center w-[192px]">
+          <BrandIcon className="size-[34px] rounded-md flex-shrink-0" />
+          <div className="flex-1 min-w-0 p-1">
+            <p className="text-sm font-bold text-fg-default tracking-[-0.3px] leading-5 truncate">
+              메이크스타 리뷰시스템
+            </p>
+          </div>
+        </div>
 
-      {/* ── 유저 이메일 + 드롭다운 ── */}
-      {currentUser && (
-        <div className={cn(
-          'relative flex items-center justify-between px-4 py-2.5 border-b border-gray-010',
-          collapsed && 'md:hidden',
-        )} ref={menuRef}>
-          <span className="text-[11px] text-gray-040 truncate flex-1">{currentUser.email}</span>
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            className="ml-1 text-gray-030 hover:text-gray-050 transition-colors flex-shrink-0"
-            title="더보기"
-          >
-            <MsMoreIcon size={12} />
-          </button>
-
-          {menuOpen && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-020 rounded-lg shadow-lg z-50 overflow-hidden py-1">
+        {/* Container/Id — 이메일 + more 버튼 (박스 형태) */}
+        {currentUser && (
+          <div className="relative w-full" ref={menuRef}>
+            <div className="bg-bg-token-subtle border border-bd-primary rounded flex gap-1 items-center px-2 py-1 overflow-clip">
+              <p className="flex-1 min-w-0 text-xs text-fg-subtle tracking-[-0.3px] leading-4 truncate">
+                {currentUser.email}
+              </p>
               <button
-                onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-060 hover:bg-gray-005 hover:text-gray-099 transition-colors"
+                onClick={() => setMenuOpen(o => !o)}
+                className="flex items-center justify-center rounded-md size-[14px] text-fg-subtle hover:text-fg-default transition-colors flex-shrink-0"
+                title="더보기"
               >
-                <MsSettingIcon size={12} className="flex-shrink-0" />
-                설정
-              </button>
-              <button
-                onClick={() => { setMenuOpen(false); handleLogout(); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-gray-050 hover:bg-red-005 hover:text-red-050 transition-colors"
-              >
-                <MsLogoutIcon size={12} className="flex-shrink-0" />
-                로그아웃
+                <MsMoreIcon size={14} />
               </button>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* ── Nav ── */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+            {menuOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-bd-default rounded-lg shadow-overlay z-50 overflow-hidden py-1">
+                <button
+                  onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default transition-colors"
+                >
+                  <MsSettingIcon size={14} className="flex-shrink-0" />
+                  설정
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); handleLogout(); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-fg-subtlest hover:bg-red-005 hover:text-red-050 transition-colors"
+                >
+                  <MsLogoutIcon size={14} className="flex-shrink-0" />
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Phase D-2.1: Nav — Figma ADM / LNB / Unit / Menu 패턴
+          - SubTitle: pt-2 px-5, text-xs font-semibold subtlest, sentence case (uppercase 제거)
+          - 메뉴: outer (px-2 py-1) + inner (px-3 py-2 rounded-md), 활성/비활성 모두 font-bold
+          - 아이콘 20px, chevron 제거, indent 제거 */}
+      <nav className="flex-1 overflow-y-auto pb-2">
         {navItems.map((node, i) => {
           if (node.kind === 'section') {
             return (
-              <div
-                key={`section-${i}`}
-                className={cn(
-                  'px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-040',
-                  collapsed && 'md:hidden',
-                )}
-              >
-                {node.label}
+              <div key={`section-${i}`} className="flex items-center pt-2 px-5 w-full">
+                <p className="text-xs font-semibold text-fg-subtlest tracking-[-0.3px] leading-4 whitespace-nowrap">
+                  {node.label}
+                </p>
               </div>
             );
           }
           const Icon = node.icon;
           return (
-            <NavLink
-              key={node.to}
-              to={node.to}
-              end={node.to === '/' || node.to === '/cycles' || node.to === '/team'}
-              title={collapsed ? node.label : undefined}
-              onClick={onMobileClose}
-              className={({ isActive }) => cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
-                node.indent && !collapsed && 'md:ml-1.5',
-                collapsed && 'md:justify-center md:px-0 md:py-2.5',
-                isActive
-                  ? 'bg-pink-005 text-pink-040 font-semibold'
-                  : 'text-gray-060 hover:bg-gray-005 hover:text-gray-099 font-medium',
-              )}
-            >
-              <Icon size={16} className="flex-shrink-0" />
-              <span className={cn('flex-1', collapsed && 'md:hidden')}>{node.label}</span>
-              {node.badge != null && node.badge > 0 && (
-                <Pill tone="danger" size="xs" className={cn('shrink-0', collapsed && 'md:hidden')}>
-                  {node.badge}
-                </Pill>
-              )}
-              <MsChevronRightLineIcon size={14} className={cn('flex-shrink-0 text-gray-030', collapsed && 'md:hidden')} />
-            </NavLink>
+            <div key={node.to} className="flex items-center px-2 py-1 w-full">
+              <NavLink
+                to={node.to}
+                end={node.to === '/' || node.to === '/cycles' || node.to === '/team'}
+                onClick={onMobileClose}
+                className={({ isActive }) => cn(
+                  'flex flex-1 gap-2 items-center min-w-0 px-3 py-2 rounded-md transition-colors',
+                  isActive
+                    ? 'bg-bg-token-brand1-subtlest text-fg-brand1'
+                    : 'text-fg-subtle hover:bg-interaction-hovered',
+                )}
+              >
+                <Icon size={20} className="flex-shrink-0" />
+                <span className="flex-1 min-w-0 text-sm font-bold tracking-[-0.3px] leading-5 truncate">
+                  {node.label}
+                </span>
+                {node.badge != null && node.badge > 0 && (
+                  <Pill tone="danger" size="xs" className="shrink-0">
+                    {node.badge}
+                  </Pill>
+                )}
+              </NavLink>
+            </div>
           );
         })}
       </nav>

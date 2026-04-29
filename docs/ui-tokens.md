@@ -39,11 +39,19 @@
 
 ## 4. Elevation
 
-- `shadow-card` — 카드 · 목록 컨테이너
-- `shadow-card-hover` — 카드 hover
+- ~~`shadow-card`~~ · ~~`shadow-card-hover`~~ — **deprecated (Phase D-1.4)**. 값 `none` 으로 무효화됨. 카드 류는 border 만으로 영역 구분 (Figma 정합)
 - `shadow-raised` — 팝오버
 - `shadow-modal` — 모달 · 드로어
-- `shadow-overlay` — 토스트
+- `shadow-overlay` — 토스트 · LNB 드롭다운
+
+## 4-1. Interaction (Phase D-2.1)
+
+| 토큰 | hex | 쓰임 |
+|---|---|---|
+| `bg-interaction-hovered` | `rgba(76,90,102,0.08)` | hover 효과 — semi-transparent 가 의도 (raw 색상보다 자연스러운 카스케이드) |
+| `bg-interaction-pressed` | `rgba(76,90,102,0.20)` | active/pressed 효과 |
+
+raw 팔레트 (`bg-gray-005` 같은 불투명 클래스) 대신 hover 에는 `interaction` 토큰 사용. Figma `Color/Interaction/*` 정합.
 
 ## 5. 버튼 (MsButton)
 
@@ -82,6 +90,35 @@
 | `Field`        | 폼 필드 공통 쉘                        | required · hint · error 표시 표준    |
 | `StatusBadge`  | submission/review/role 상태            | Pill 기반                            |
 | `ListToolbar`  | 리스트 페이지 상단 필터/검색 툴바      | segments · search · rightSlot |
+| **`Sidebar` (LNB)** | 좌측 네비게이션 — Figma `ADM / LNB / *` 패턴 | § 7.3 참조 — 메뉴 outer/inner 중첩 + 활성 brand1-subtlest, chevron 없음 |
+
+### 7.3 LNB (Sidebar) 패턴 — Phase D-2.1
+
+Figma `ADM / LNB / *` 컴포넌트와 1:1 정합.
+
+**상단 Header 박스 (로고 + User ID)**
+- 컨테이너: `flex flex-col gap-2 px-3.5 py-4 items-start justify-center`
+- 로고: `BrandIcon size-[34px] rounded-md` + 앱 이름 `text-sm font-bold text-fg-default leading-5`
+- User ID 박스: `bg-bg-token-subtle border border-bd-primary rounded px-2 py-1` + 이메일 `text-xs text-fg-subtle` + more 버튼 `size-[14px]`
+
+**SubTitle (섹션 헤더)**
+- 컨테이너: `flex items-center pt-2 px-5 w-full`
+- 텍스트: `text-xs font-semibold text-fg-subtlest tracking-[-0.3px] leading-4`
+- ❌ uppercase 사용 금지 (sentence case 만)
+- ❌ tracking-wider 사용 금지
+
+**메뉴 항목 — 중첩 컨테이너 패턴**
+- outer (간격 보장): `flex items-center px-2 py-1 w-full`
+- inner (NavLink, 클릭 영역): `flex flex-1 gap-2 items-center min-w-0 px-3 py-2 rounded-md`
+- 활성: `bg-bg-token-brand1-subtlest text-fg-brand1`
+- 비활성: `text-fg-subtle hover:bg-interaction-hovered`
+- 텍스트 weight: 활성/비활성 모두 `font-bold` (Figma 정합)
+- 아이콘: `size={20}` 일관
+- ❌ chevron 우측 indicator 사용 금지 (Figma 에 없음)
+- ❌ admin 섹션 indent (`ml-1.5` 등) 금지 — SubTitle 만으로 그룹 분리
+
+**드롭다운 (사용자 메뉴 등)**
+- `absolute left-0 right-0 top-full mt-1 bg-white border border-bd-default rounded-lg shadow-overlay`
 
 ### 7.1 ListToolbar 사용 규칙
 

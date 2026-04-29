@@ -148,6 +148,12 @@ export default {
           'brand2-hover':     'var(--token-bg-accent-brand2-hovered)',
           'brand2-subtle':    'var(--token-bg-accent-brand2-subtle)',
         },
+        // Phase D-2.1: Figma Color/Interaction 정합 — semi-transparent hover/pressed
+        // 사용 예: hover:bg-interaction-hovered, active:bg-interaction-pressed
+        'interaction': {
+          'hovered':          'var(--token-interaction-hovered)',
+          'pressed':          'var(--token-interaction-pressed)',
+        },
         'bd': {
           'default':          'var(--token-border-default)',
           // Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 정합 — bd.default 와 bd.subtle 사이 단계

@@ -461,6 +461,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   // - subtitle 제거 (Stats 카드 삭제 결정 1 의 일관 처리, Figma 정합)
   const headerActions = useMemo(() => (
     <>
+      {/* Phase D-2.4a-fix2: 검색 input + "구성원 추가" 버튼 모두 h-10 (40px) 정합
+          MsButton size="lg" = h-10 (ui-tokens.md § 5), Figma "구성원 추가" h-40 와 동일 */}
       <MsInput
         type="text"
         value={search}
@@ -472,10 +474,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             <MsCancelIcon size={14} />
           </button>
         ) : undefined}
-        className="w-56 h-9"
+        className="w-56 h-10"
       />
       {canEdit && (
         <MsButton
+          size="lg"
           onClick={() => {
             const unit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
             goAddMember(selectedOrgId ?? undefined, unit?.headId);

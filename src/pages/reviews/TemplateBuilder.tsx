@@ -40,9 +40,11 @@ const newQuestion = (order: number, sectionId: string): TemplateQuestion => ({
   sectionId,
 });
 
-const newSection = (order: number): TemplateSection => ({
-  id: `sec_${Date.now()}_${order}`,
-  name: `섹션 ${order}`,
+/* 섹션 default 이름은 빈 문자열 — 사용자가 직접 입력 (자동 "섹션 N" 으로 임의 설정되지 않도록).
+   isInitial=true 시 첫 섹션은 default "섹션 1" 부여 (편의). */
+const newSection = (order: number, isInitial = false): TemplateSection => ({
+  id: `sec_${Date.now()}_${order}_${Math.random().toString(36).slice(2, 6)}`,
+  name: isInitial ? `섹션 ${order}` : '',
   order,
 });
 
@@ -75,12 +77,12 @@ export function TemplateBuilder() {
   // 섹션 편집 상태
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
-  // 초기 섹션 구성: 기존 템플릿 sections 사용, 없으면 default 1개 생성
+  // 초기 섹션 구성: 기존 템플릿 sections 사용, 없으면 default 1개 생성 (isInitial=true)
   const initSections = (): TemplateSection[] => {
     if (existing?.sections && existing.sections.length > 0) {
       return [...existing.sections].sort((a, b) => a.order - b.order);
     }
-    return [newSection(1)];
+    return [newSection(1, true)];
   };
 
   const initQuestions = (): TemplateQuestion[] => {
@@ -90,7 +92,7 @@ export function TemplateBuilder() {
       const firstSectionId = (existing.sections?.[0] ?? { id: '' }).id || `sec_${Date.now()}_1`;
       return qs.map(q => ({ ...q, sectionId: q.sectionId ?? firstSectionId }));
     }
-    const sec = newSection(1);
+    const sec = newSection(1, true);
     return [newQuestion(1, sec.id)];
   };
 
@@ -99,8 +101,12 @@ export function TemplateBuilder() {
 
   /* ── 섹션 조작 ──────────────────────────────────────────── */
   const addSection = () => {
-    const sec = newSection(sections.length + 1);
+    // order 중복 방지 — 기존 max(order) + 1 사용 (sections.length+1 은 삭제 후 추가 시 중복 위험)
+    const maxOrder = sections.reduce((m, s) => Math.max(m, s.order), 0);
+    const sec = newSection(maxOrder + 1);
     setSections(ss => [...ss, sec]);
+    // 추가 직후 자동 편집 모드 — 사용자가 즉시 이름 입력
+    setEditingSectionId(sec.id);
   };
 
   const renameSection = (id: string, name: string) =>
@@ -261,7 +267,7 @@ export function TemplateBuilder() {
                       className="flex items-center gap-2 text-sm font-semibold text-gray-080 hover:text-pink-050 transition-colors"
                     >
                       <span className="w-2 h-2 rounded-full bg-pink-040 flex-shrink-0" />
-                      {section.name}
+                      {section.name.trim() || <span className="text-gray-040 font-normal italic">섹션 이름 입력</span>}
                       <MsEditIcon size={12} className="opacity-0 group-hover:opacity-60 transition-opacity" />
                     </button>
                   )}

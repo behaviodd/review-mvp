@@ -1,6 +1,7 @@
 import { ModalShell } from './ModalShell';
 import { MsButton } from '../../ui/MsButton';
 import { MsCheckCircleIcon, MsWarningIcon, MsCancelIcon } from '../../ui/MsIcons';
+import { useTeamStore } from '../../../stores/teamStore';
 import type { PreflightResult, PreflightCheck } from '../../../utils/cyclePreflight';
 import { cn } from '../../../utils/cn';
 
@@ -19,9 +20,18 @@ const SEVERITY_STYLE: Record<PreflightCheck['severity'], { bg: string; fg: strin
 };
 
 export function PreflightModal({ open, onClose, onConfirm, result, cycleTitle, loading }: Props) {
+  const users = useTeamStore(s => s.users);
   if (!result) return null;
 
   const allPass = result.checks.length === 0;
+
+  // affectedIds 를 멤버 이름 list 로 변환 (최대 5명 + "외 N명")
+  const affectedNames = (ids?: string[]): string | null => {
+    if (!ids || ids.length === 0) return null;
+    const names = ids.map(id => users.find(u => u.id === id)?.name ?? id);
+    if (names.length <= 5) return names.join(', ');
+    return `${names.slice(0, 5).join(', ')} 외 ${names.length - 5}명`;
+  };
 
   return (
     <ModalShell
@@ -67,6 +77,12 @@ export function PreflightModal({ open, onClose, onConfirm, result, cycleTitle, l
                     [{c.severity === 'block' ? '차단' : '경고'}] {c.title}
                   </p>
                   <p className="mt-0.5">{c.detail}</p>
+                  {/* affectedIds 가 있으면 멤버 이름 list 추가 (어떤 멤버에 오류가 발생했는지 명확) */}
+                  {affectedNames(c.affectedIds) && (
+                    <p className="mt-1 text-[11px] opacity-90">
+                      <strong>대상:</strong> {affectedNames(c.affectedIds)}
+                    </p>
+                  )}
                 </div>
               </li>
             );

@@ -93,10 +93,15 @@ export default async function handler(request: Request): Promise<Response> {
     }
   }
 
-  /* ── POST (재시도 없음 — 멱등성 보호) ───────────────────────── */
+  /* ── POST (재시도 없음 — 멱등성 보호) ─────────────────────────
+     B-2.3 (audit-B 매트릭스 B9): redirect chain 의 두 fetch 가 같은 ctrl 을
+     공유하면 둘째 fetch 가 첫 fetch 의 잔여 시간만 가짐 (cold start 시 거의 0).
+     변경: 첫 fetch 와 둘째 fetch 에 별도 AbortController 부여 + 전체 budget
+     UPSTREAM_TIMEOUT_MS 안에서 동적 분배. location null 시 502 명시. */
   if (request.method === 'POST') {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), UPSTREAM_TIMEOUT_MS);
+    const startedAt = Date.now();
+    const ctrl1 = new AbortController();
+    const timer1 = setTimeout(() => ctrl1.abort(), UPSTREAM_TIMEOUT_MS);
     try {
       const payload = await request.text();
 
@@ -107,15 +112,33 @@ export default async function handler(request: Request): Promise<Response> {
         headers:  { 'Content-Type': 'application/json' },
         body:     payload,
         redirect: 'manual',
-        signal:   ctrl.signal,
+        signal:   ctrl1.signal,
       });
+      clearTimeout(timer1);
+
       if (res.status >= 300 && res.status < 400) {
         const location = res.headers.get('location') ?? res.headers.get('Location');
-        if (location) res = await fetch(location, { redirect: 'follow', signal: ctrl.signal });
+        if (!location) {
+          return json({
+            error: 'Apps Script 가 redirect 응답에 Location 헤더를 포함하지 않았습니다. 배포 설정 확인이 필요합니다.',
+          }, 502);
+        }
+        const remaining = UPSTREAM_TIMEOUT_MS - (Date.now() - startedAt);
+        if (remaining < 1_000) {
+          return json({
+            error: `Apps Script redirect 처리 직전 budget 소진 (${UPSTREAM_TIMEOUT_MS}ms) — 잠시 후 다시 시도해 주세요`,
+          }, 504);
+        }
+        const ctrl2 = new AbortController();
+        const timer2 = setTimeout(() => ctrl2.abort(), remaining);
+        try {
+          res = await fetch(location, { redirect: 'follow', signal: ctrl2.signal });
+        } finally {
+          clearTimeout(timer2);
+        }
       }
 
       const body = await res.text();
-      clearTimeout(timer);
 
       if (body.trimStart().startsWith('<')) {
         return json({
@@ -127,7 +150,7 @@ export default async function handler(request: Request): Promise<Response> {
         headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     } catch (e) {
-      clearTimeout(timer);
+      clearTimeout(timer1);
       if (e instanceof DOMException && e.name === 'AbortError') {
         return json({ error: `Apps Script 응답 시간 초과 (${UPSTREAM_TIMEOUT_MS}ms) — 잠시 후 다시 시도해 주세요` }, 504);
       }

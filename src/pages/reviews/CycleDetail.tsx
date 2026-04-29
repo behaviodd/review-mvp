@@ -615,8 +615,10 @@ export function CycleDetail() {
     showToast('success', added > 0 ? `${added}건의 제출이 추가되었습니다.` : '누락된 제출이 없습니다.');
   };
 
+  /* Phase D-3.D-1: 컴팩트화 — 카드 컨테이너 제거, 큰 섹션 사이 border-t 만 (mt/pt 없음).
+     Dashboard fix4 패턴 재사용. 강조 배너 (상태/삭제) 는 의도 유지. */
   return (
-    <div className="space-y-5">
+    <div>
 
       {/* 상태 전환 확인 배너 */}
       {showConfirm && transition && (
@@ -693,35 +695,38 @@ export function CycleDetail() {
         );
       })()}
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Phase D-3.D-1: Stats — 평면 + divide-x line (Dashboard 패턴 재사용) */}
+      <div className="border-t border-bd-default grid grid-cols-3 md:divide-x md:divide-bd-default">
         {[
           { icon: MsUsersIcon, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
           { icon: MsBarChart2Icon, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
           { icon: MsBarChart2Icon, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
         ].map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-020 shadow-card p-4">
+          <div key={label} className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-gray-040" />
-              <span className="text-xs text-gray-050">{label}</span>
+              <Icon className="w-4 h-4 text-fg-subtlest" />
+              <span className="text-xs text-fg-subtle">{label}</span>
             </div>
-            <p className="text-xl font-semibold text-gray-099">{value}</p>
-            <p className="text-xs text-gray-040 mt-0.5">{sub}</p>
+            <p className="text-xl font-semibold text-fg-default">{value}</p>
+            <p className="text-xs text-fg-subtlest mt-0.5 truncate">{sub}</p>
           </div>
         ))}
       </div>
 
-      {/* Timeline */}
-      <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5">
-        <h2 className="text-sm font-semibold text-gray-080 mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
-        <div className="space-y-3">
+      {/* Phase D-3.D-1: Timeline — 평면 + 항목 사이 border-b */}
+      <div className="border-t border-bd-default p-5">
+        <h2 className="text-sm font-semibold text-fg-default mb-4 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
+        <div>
           {[
             { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
             { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
-          ].map(({ label, date, highlight }) => (
-            <div key={label} className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-pink-005' : ''}`}>
-              <span className={`text-sm ${highlight ? 'font-semibold text-pink-060' : 'text-gray-060'}`}>{label}</span>
-              <span className={`text-sm font-medium ${highlight ? 'text-pink-050' : 'text-gray-050'}`}>{formatDate(date)}</span>
+          ].map(({ label, date, highlight }, i) => (
+            <div
+              key={label}
+              className={`flex items-center justify-between py-3 px-2 ${i === 0 ? '' : 'border-t border-bd-default'} ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
+            >
+              <span className={`text-sm ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
+              <span className={`text-sm font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>
             </div>
           ))}
         </div>
@@ -782,23 +787,25 @@ export function CycleDetail() {
         </div>
       )}
 
-      {/* Ops Center */}
-      <OpsCenter
-        cycleId={cycle.id}
-        onOpenMember={setViewingMemberId}
-        headerActions={
-          <MsButton
-            variant="outline-default"
-            size="sm"
-            onClick={handleRegenerateSubmissions}
-            disabled={regenerating}
-            title="구성원 제출 누락 시 재생성"
-            leftIcon={<MsRefreshIcon className={regenerating ? 'animate-spin' : ''} />}
-          >
-            제출 재생성
-          </MsButton>
-        }
-      />
+      {/* Ops Center — Phase D-3.D-1: 위에 border-t 추가로 영역 분리 */}
+      <div className="border-t border-bd-default pt-4">
+        <OpsCenter
+          cycleId={cycle.id}
+          onOpenMember={setViewingMemberId}
+          headerActions={
+            <MsButton
+              variant="outline-default"
+              size="sm"
+              onClick={handleRegenerateSubmissions}
+              disabled={regenerating}
+              title="구성원 제출 누락 시 재생성"
+              leftIcon={<MsRefreshIcon className={regenerating ? 'animate-spin' : ''} />}
+            >
+              제출 재생성
+            </MsButton>
+          }
+        />
+      </div>
     </div>
   );
 }

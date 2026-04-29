@@ -7,7 +7,7 @@ import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { Pill } from '../../components/ui/Pill';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { ListToolbar } from '../../components/ui/ListToolbar';
+import { HeaderTab } from '../../components/layout/HeaderTab';
 import { MsChevronRightLineIcon, MsProfileIcon } from '../../components/ui/MsIcons';
 import { formatDate } from '../../utils/dateUtils';
 import type { ReviewKind, ReviewSubmission } from '../../types';
@@ -68,34 +68,36 @@ export function ReceivedReviewList() {
     upward: visibleSubmissions.filter(s => s.type === 'upward').length,
   };
 
-  const kindFilters: { value: KindFilter; label: string; count: number }[] = [
-    { value: 'all',      label: '전체',    count: visibleSubmissions.length },
-    { value: 'downward', label: '조직장',  count: byKindCount.downward },
-    { value: 'peer',     label: '동료',    count: byKindCount.peer },
-    { value: 'upward',   label: '상향',    count: byKindCount.upward },
-  ];
+  /* Phase D-3.B: 4개 필터 → 헤더 탭 (사용자 결정 α "리뷰 종류 = 1차 분류").
+     Figma "공통사항만 1개씩 예시" 정책에 따라 HeaderTab 자체에 count prop 추가 안 함.
+     count 는 라벨 뒤 inline 으로 표기 (label 텍스트의 일부). */
+  const headerTabs = useMemo(() => (
+    <>
+      <HeaderTab active={filter === 'all'} onClick={() => setFilter('all')}>
+        전체 {visibleSubmissions.length}
+      </HeaderTab>
+      <HeaderTab active={filter === 'downward'} onClick={() => setFilter('downward')}>
+        조직장 {byKindCount.downward}
+      </HeaderTab>
+      <HeaderTab active={filter === 'peer'} onClick={() => setFilter('peer')}>
+        동료 {byKindCount.peer}
+      </HeaderTab>
+      <HeaderTab active={filter === 'upward'} onClick={() => setFilter('upward')}>
+        상향 {byKindCount.upward}
+      </HeaderTab>
+    </>
+  ), [filter, visibleSubmissions.length, byKindCount.downward, byKindCount.peer, byKindCount.upward]);
 
   useSetPageHeader('내가 받은 리뷰', undefined, {
-    subtitle: `받은 리뷰 총 ${visibleSubmissions.length}건`,
+    tabs: headerTabs,
   });
 
   if (!currentUser) return <EmptyState illustration="empty-list" title="로그인이 필요합니다." action={{ label: '로그인으로', onClick: () => navigate('/login') }} />;
 
   return (
-    <div className="space-y-5">
-      <ListToolbar
-        segments={[
-          {
-            kind: 'pills',
-            key: 'kind',
-            ariaLabel: '리뷰 유형 필터',
-            value: filter,
-            onChange: v => setFilter(v as KindFilter),
-            options: kindFilters.map(k => ({ value: k.value, label: k.label, count: k.count })),
-          },
-        ]}
-      />
-
+    /* Phase D-3.B: 카드 컨테이너 제거 + 시트형 row (§ 7.6 정합).
+       Avatar 40, name 16 SemiBold, sub 14 Regular subtle. */
+    <div>
       {filtered.length === 0 ? (
         <EmptyState
           icon={MsProfileIcon}
@@ -104,7 +106,7 @@ export function ReceivedReviewList() {
           variant="inline"
         />
       ) : (
-        <div className="rounded-xl border border-gray-010 bg-white shadow-card divide-y divide-gray-005">
+        <div className="space-y-1">
           {filtered.map(sub => {
             const cycle = cycles.find(c => c.id === sub.cycleId);
             const reviewer = users.find(u => u.id === sub.reviewerId);
@@ -112,32 +114,35 @@ export function ReceivedReviewList() {
               (sub.type === 'downward' && cycle?.anonymity?.downward) ||
               (sub.type === 'peer' && cycle?.anonymity?.peer) ||
               (sub.type === 'upward' && cycle?.anonymity?.upward);
+            const subParts = [
+              sub.submittedAt ? `제출 ${formatDate(sub.submittedAt)}` : null,
+              sub.overallRating != null ? `평점 ${sub.overallRating.toFixed(1)}` : null,
+              reviewer ? (isAnonymous ? '익명' : reviewer.name) : null,
+            ].filter(Boolean);
             return (
               <button
                 key={sub.id}
                 type="button"
                 onClick={() => navigate(`/reviews/me/${sub.id}`)}
-                className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-gray-005/60"
+                className="flex w-full items-center gap-3 min-h-[52px] px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-interaction-hovered group"
               >
-                <Pill tone={KIND_TONE[sub.type]} size="sm">{KIND_LABEL[sub.type]}</Pill>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-080 truncate">{cycle?.title ?? '–'}</p>
-                  <p className="text-[11px] text-gray-040 mt-0.5">
-                    제출 {sub.submittedAt ? formatDate(sub.submittedAt) : '-'}
-                    {sub.overallRating != null && (
-                      <> · 종합 평점 <strong className="text-pink-060">{sub.overallRating.toFixed(1)}</strong></>
-                    )}
-                  </p>
-                </div>
                 {reviewer && (
-                  <div className="hidden md:flex items-center gap-2 shrink-0">
-                    <UserAvatar user={reviewer} size="sm" anonymous={!!isAnonymous} />
-                    <span className="text-xs text-gray-060 truncate">
-                      {isAnonymous ? '익명' : reviewer.name}
-                    </span>
-                  </div>
+                  <UserAvatar user={reviewer} className="size-10 rounded-full" anonymous={!!isAnonymous} />
                 )}
-                <MsChevronRightLineIcon size={16} className="text-gray-030 shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0 justify-center gap-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-base font-semibold text-fg-default tracking-[-0.3px] leading-6 truncate">
+                      {cycle?.title ?? '–'}
+                    </p>
+                    <Pill tone={KIND_TONE[sub.type]} size="sm">{KIND_LABEL[sub.type]}</Pill>
+                  </div>
+                  {subParts.length > 0 && (
+                    <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
+                      {subParts.join(' · ')}
+                    </p>
+                  )}
+                </div>
+                <MsChevronRightLineIcon size={14} className="text-fg-subtlest shrink-0" />
               </button>
             );
           })}

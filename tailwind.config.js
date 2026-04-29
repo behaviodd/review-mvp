@@ -150,6 +150,8 @@ export default {
         },
         'bd': {
           'default':          'var(--token-border-default)',
+          // Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 정합 — bd.default 와 bd.subtle 사이 단계
+          'primary':          'var(--token-border-primary)',
           'subtle':           'var(--token-border-subtle)',
           'subtlest':         'var(--token-border-subtlest)',
           'disabled':         'var(--token-border-disabled)',

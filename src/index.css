@@ -67,8 +67,9 @@
   --token-fg-accent-yellow-disabled:   #fdf9e8;
 
   /* Background */
+  /* Phase D-1.2: Figma Color/Bg/Primary (#f8f9fa) 정합 — body 배경 톤 미세 정돈 */
   --token-bg-default:                  #fcfdfd;
-  --token-bg-subtle:                   #f0f3f4;
+  --token-bg-subtle:                   #f8f9fa;
   --token-bg-subtlest:                 #e1e6ea;
   --token-bg-disabled:                 rgba(109, 127, 146, 0.08);
   --token-bg-selected:                 #f5a3be;
@@ -94,7 +95,8 @@
   --token-bg-accent-brand1-pressed:    #b7154b;
   --token-bg-accent-brand1-disabled:   #fad1df;
   --token-bg-accent-brand1-subtle:     #f5a3be;
-  --token-bg-accent-brand1-subtlest:   #fce8ef;
+  /* Phase D-1.2: Figma Color/Bg/Accent/Brand1/Subtlest (#fbe9f1) 정합 */
+  --token-bg-accent-brand1-subtlest:   #fbe9f1;
   --token-bg-accent-brand2-default:    #863dff;
   --token-bg-accent-brand2-hovered:    #6204fb;
   --token-bg-accent-brand2-pressed:    #5207cf;
@@ -143,7 +145,10 @@
   --token-bg-accent-yellow-subtlest:   #fdf9e8;
 
   /* Border */
-  --token-border-default:              #e1e6ea;
+  /* Phase D-1.2: Figma Color/Border/Default (#dfe7e9) 정합 — 카드/필드 보더 톤 일치 */
+  --token-border-default:              #dfe7e9;
+  /* Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 신규 — 보더 두 단계 분리 */
+  --token-border-primary:              #dee2e6;
   --token-border-subtle:               #f0f3f4;
   --token-border-subtlest:             rgba(59, 69, 79, 0.20);
   --token-border-disabled:             rgba(59, 69, 79, 0.20);
@@ -196,8 +201,10 @@
   --token-border-accent-yellow-subtlest:  #f3e28c;
 
   /* Interaction & Elevation */
-  --token-interaction-hovered:         rgba(109, 127, 146, 0.08);
-  --token-interaction-pressed:         rgba(59, 69, 79, 0.20);
+  /* Phase D-1.2: Figma Color/Interaction/Hovered (#4c5a66 8%), Pressed (#4c5a66 20%) 정합
+     — base color 6d7f92/3b454f → 4c5a66 으로 통일. 모든 hover/pressed 톤이 살짝 더 무채색 */
+  --token-interaction-hovered:         rgba(76, 90, 102, 0.08);
+  --token-interaction-pressed:         rgba(76, 90, 102, 0.20);
   --token-blanket:                     rgba(0, 0, 0, 0.47);
   --token-elevated-shadow-overlay:     rgba(17, 20, 23, 0.44);
   --token-elevated-shadow-raised:      rgba(59, 69, 79, 0.20);

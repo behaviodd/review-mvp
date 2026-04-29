@@ -68,6 +68,8 @@ interface DnDCallbacks {
   onDragStart: (id: string) => void;
   onDragEnd:   () => void;
   onDragOver:  (id: string, pos: 'above' | 'below' | 'into') => void;
+  // Phase D-3.E-fix: 외부로 나갈 때 dropTarget clear (sticky indicator 방지)
+  onDragLeave: (id: string) => void;
   onDrop:      (targetId: string) => void;
 }
 
@@ -169,7 +171,10 @@ function OrgTreeNode({
         onDragOver={canEdit ? handleDragOver : undefined}
         onDragLeave={canEdit ? e => {
           const rel = e.relatedTarget as Node | null;
-          if (!e.currentTarget.contains(rel)) { /* no-op — parent handles clear */ }
+          // Phase D-3.E-fix: 마우스가 element 외부로 나가면 dropTarget clear
+          if (!e.currentTarget.contains(rel)) {
+            dnd.onDragLeave(unit.id);
+          }
         } : undefined}
         onDrop={canEdit ? e => { e.preventDefault(); e.stopPropagation(); dnd.onDrop(unit.id); } : undefined}
         onDragEnd={canEdit ? () => dnd.onDragEnd() : undefined}
@@ -726,7 +731,16 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     state: dndState,
     onDragStart: (id) => setDndState({ draggingId: id, dropTarget: null }),
     onDragEnd:   ()   => setDndState({ draggingId: null, dropTarget: null }),
-    onDragOver:  (id, pos) => setDndState(s => ({ ...s, dropTarget: { id, pos } })),
+    // Phase D-3.E-fix: 같은 (id, pos) 면 state 변경 안 함 (불필요한 rerender 방지 → 깜빡임 제거)
+    onDragOver:  (id, pos) => setDndState(s =>
+      s.dropTarget?.id === id && s.dropTarget.pos === pos
+        ? s
+        : { ...s, dropTarget: { id, pos } }
+    ),
+    // Phase D-3.E-fix: 떠난 unit 의 dropTarget 만 clear (다른 unit 으로 이동 시 영향 X)
+    onDragLeave: (id) => setDndState(s =>
+      s.dropTarget?.id === id ? { ...s, dropTarget: null } : s
+    ),
     onDrop: handleDrop,
   };
 

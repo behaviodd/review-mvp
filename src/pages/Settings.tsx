@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
@@ -14,6 +14,7 @@ import { MsButton } from '../components/ui/MsButton';
 import { SyncRetryDrawer } from '../components/review/SyncRetryDrawer';
 import { timeAgo } from '../utils/dateUtils';
 import { syncAccounts } from '../utils/authApi';
+import { getSetting, setSetting } from '../utils/settingsApi';
 
 export function Settings() {
   const { currentUser } = useAuthStore();
@@ -34,6 +35,34 @@ export function Settings() {
   useSetPageHeader('설정');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
   const [syncAccountsState, setSyncAccountsState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
+
+  // R8: 자동 승인 토글. null = 로딩 중 / 미연결, 'unknown' = 조회 실패 (UI 비활성)
+  const [autoApprove, setAutoApprove] = useState<boolean | null>(null);
+  const [autoApproveSaving, setAutoApproveSaving] = useState(false);
+  useEffect(() => {
+    if (!scriptUrl) { setAutoApprove(null); return; }
+    let cancelled = false;
+    void getSetting('auto_approve_domain')
+      .then(v => { if (!cancelled) setAutoApprove(v === 'true'); })
+      .catch(() => { if (!cancelled) setAutoApprove(false); /* 시트 없거나 통신 실패 — OFF 로 표시 */ });
+    return () => { cancelled = true; };
+  }, [scriptUrl]);
+
+  const handleToggleAutoApprove = async (next: boolean) => {
+    if (!currentUser || autoApprove === null) return;
+    setAutoApproveSaving(true);
+    const prev = autoApprove;
+    setAutoApprove(next);  // 낙관적 갱신
+    try {
+      await setSetting({ key: 'auto_approve_domain', value: String(next), modifierId: currentUser.id });
+      showToast('success', next ? '자동 승인 ON — 신규 로그인 즉시 활성화됩니다' : '자동 승인 OFF — 승인 대기 큐로 전환');
+    } catch (e) {
+      setAutoApprove(prev);
+      showToast('error', '저장 실패: ' + (e instanceof Error ? e.message : '알 수 없는 오류'));
+    } finally {
+      setAutoApproveSaving(false);
+    }
+  };
 
   const handleSyncAccounts = async () => {
     setSyncAccountsState('loading');
@@ -271,6 +300,40 @@ export function Settings() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* R8: 운영 토글 — 자동 승인 모드 (관리자 전용, scriptUrl 연결된 경우만) */}
+      {currentUser.role === 'admin' && scriptUrl && (
+        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <MsInfoIcon size={16} className="text-gray-040" />
+            <h2 className="text-sm font-semibold text-gray-080">운영 토글</h2>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-080">신규 사용자 자동 승인</p>
+              <p className="text-xs text-gray-040 mt-1 leading-5">
+                @makestar.com 도메인 첫 로그인 시 승인 대기 큐를 거치지 않고 즉시 활성 멤버로 등록합니다.
+                임시 사번(<code className="text-[11px] bg-gray-010 px-1 rounded">auto_*</code>) 으로 들어오며, 직책·소속 조직·보고대상은 비어 있는 채로 진입합니다 — 운영자 보강 필요.
+              </p>
+              <p className="text-[11px] text-orange-070 mt-2 leading-4">
+                ⚠️ 배포 직후 일괄 로그인용. 안정화되면 OFF 로 전환해 정상 승인 큐로 복귀하세요.
+              </p>
+            </div>
+            <div className="flex-shrink-0 pt-1">
+              {autoApprove === null ? (
+                <span className="text-xs text-gray-040">불러오는 중…</span>
+              ) : (
+                <MsSwitch
+                  checked={autoApprove}
+                  onChange={next => void handleToggleAutoApprove(next)}
+                  disabled={autoApproveSaving}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <p className="text-center text-xs text-gray-030 pb-4">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>

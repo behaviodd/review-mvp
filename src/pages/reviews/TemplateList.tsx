@@ -47,62 +47,48 @@ export function TemplateList() {
      "이전 컴포넌트 재사용" — 시트형 row 패턴 (§ 7.6) 정합 */
   return (
     <div>
+      {/* Phase D-3.E-fix: 질문 미리보기 캡슐 제거 + 메타정보 인라인으로 더 컴팩트
+         (사용자 명시 — 질문 캡슐 삭제 + 컴팩트) */}
       <div className="border-y border-bd-default divide-y divide-bd-default">
         {templates.map(tmpl => (
-          <div key={tmpl.id} className="px-2 py-4 hover:bg-interaction-hovered transition-colors">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-start gap-2 flex-1 min-w-0">
-                <div className="w-8 h-8 bg-bg-token-brand1-subtlest rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <MsArticleIcon size={16} className="text-fg-brand1" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-semibold text-fg-default">{tmpl.name}</h3>
-                    {tmpl.isDefault && (
-                      <span className="flex items-center gap-1 text-xs font-medium text-fg-brand1 bg-bg-token-brand1-subtlest px-2 py-0.5 rounded">
-                        <MsStarIcon size={12} /> 기본
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-fg-subtle mt-0.5">{tmpl.description}</p>
-                </div>
+          <div key={tmpl.id} className="flex items-start justify-between gap-3 px-2 py-3 hover:bg-interaction-hovered transition-colors">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <div className="size-8 bg-bg-token-brand1-subtlest rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MsArticleIcon size={16} className="text-fg-brand1" />
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                <MsButton
-                  size="sm"
-                  variant="outline-default"
-                  onClick={() => navigate(`/templates/${tmpl.id}`)}
-                >
-                  편집
-                </MsButton>
-                {!tmpl.isDefault && (
-                  <button
-                    onClick={() => handleDelete(tmpl.id, tmpl.name)}
-                    className="p-1.5 text-fg-subtlest hover:text-red-050 hover:bg-red-005 rounded-md transition-colors"
-                  >
-                    <MsDeleteIcon size={14} />
-                  </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-semibold text-fg-default">{tmpl.name}</h3>
+                  {tmpl.isDefault && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-fg-brand1 bg-bg-token-brand1-subtlest px-2 py-0.5 rounded">
+                      <MsStarIcon size={12} /> 기본
+                    </span>
+                  )}
+                </div>
+                {tmpl.description && (
+                  <p className="text-xs text-fg-subtle mt-0.5 truncate">{tmpl.description}</p>
                 )}
+                <p className="text-[11px] text-fg-subtlest mt-0.5">
+                  {tmpl.questions.length}개 문항 · 생성 {formatDate(tmpl.createdAt)}
+                </p>
               </div>
             </div>
-
-            <div className="mt-2">
-              <div className="flex items-center gap-4 text-xs text-fg-subtlest mb-2">
-                <span>{tmpl.questions.length}개 문항</span>
-                <span>생성 {formatDate(tmpl.createdAt)}</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {tmpl.questions.slice(0, 4).map(q => (
-                  <span key={q.id} className={`text-xs px-2 py-0.5 rounded ${
-                    q.isPrivate ? 'bg-bg-token-subtle text-fg-subtle' : 'bg-bg-token-brand1-subtlest text-fg-brand1'
-                  }`}>
-                    {q.type === 'text' ? '주관식' : q.type === 'rating' ? '평점' : '역량'} · {q.text.slice(0, 14)}…
-                  </span>
-                ))}
-                {tmpl.questions.length > 4 && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-bg-token-subtle text-fg-subtlest">+{tmpl.questions.length - 4}개</span>
-                )}
-              </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <MsButton
+                size="sm"
+                variant="outline-default"
+                onClick={() => navigate(`/templates/${tmpl.id}`)}
+              >
+                편집
+              </MsButton>
+              {!tmpl.isDefault && (
+                <button
+                  onClick={() => handleDelete(tmpl.id, tmpl.name)}
+                  className="p-1.5 text-fg-subtlest hover:text-red-050 hover:bg-red-005 rounded-md transition-colors"
+                >
+                  <MsDeleteIcon size={14} />
+                </button>
+              )}
             </div>
           </div>
         ))}

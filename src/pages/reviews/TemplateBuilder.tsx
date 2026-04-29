@@ -163,7 +163,9 @@ export function TemplateBuilder() {
         updateTemplate(existing.id, { name, description, questions, sections });
         showToast('success', '템플릿이 저장되었습니다.');
       }
-      navigate('/cycles');
+      // 사용자 명시 (D-3.E flow): 템플릿 생성·수정 후 템플릿 목록으로 복귀.
+      // cycle-wizard 분기는 위에서 별도 처리.
+      navigate('/templates');
     } finally {
       setSaving(false);
     }
@@ -177,7 +179,7 @@ export function TemplateBuilder() {
       {/* ── Top toolbar ───────────────────────────────────── */}
       <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-gray-020 flex-shrink-0 shadow-sm sticky top-0 z-20">
         <button
-          onClick={() => navigate('/cycles')}
+          onClick={() => navigate(returnTo === 'cycle-wizard' ? '/cycles/new' : '/templates')}
           className="p-1.5 hover:bg-gray-010 rounded-lg transition-colors text-gray-060"
         >
           <MsChevronLeftLineIcon size={20} />

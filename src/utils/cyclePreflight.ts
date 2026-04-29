@@ -1,7 +1,7 @@
 import type { OrgUnit, ReviewCycle, ReviewTemplate, ReviewerAssignment, User } from '../types';
 import { resolveTargetMembers, resolveTargetIds } from './resolveTargets';
 import { isUserActive, shouldAutoExcludeFromCycle } from './userCompat';
-import { isSystemOperator } from './permissions';
+// Phase: isSystemOperator 거부 룰 제거 — admin 도 조직장 가능 (사용자 명시)
 
 export type PreflightSeverity = 'block' | 'warn';
 
@@ -44,7 +44,7 @@ function resolveReviewerByRankForPreflight(
     );
     if (ra) {
       const reviewer = allUsers.find(u => u.id === ra.reviewerId);
-      if (reviewer && !isSystemOperator(reviewer) && isUserActive(reviewer)) return reviewer;
+      if (reviewer && isUserActive(reviewer)) return reviewer;
     }
   }
 
@@ -52,14 +52,14 @@ function resolveReviewerByRankForPreflight(
 
   // 2) legacy: managerId
   let mgr = allUsers.find(u => u.id === member.managerId);
-  if (mgr && !isSystemOperator(mgr) && isUserActive(mgr)) return mgr;
+  if (mgr && isUserActive(mgr)) return mgr;
 
   // 3) orgUnitId 트리에서 headId
   let cursor = orgUnits.find(o => o.id === member.orgUnitId);
   while (cursor) {
     if (cursor.headId && cursor.headId !== member.id) {
       const head = allUsers.find(u => u.id === cursor!.headId);
-      if (head && !isSystemOperator(head) && isUserActive(head)) return head;
+      if (head && isUserActive(head)) return head;
     }
     cursor = cursor.parentId ? orgUnits.find(o => o.id === cursor!.parentId) : undefined;
   }
@@ -75,7 +75,7 @@ function resolveReviewerByRankForPreflight(
   );
   if (memberOrg?.headId) {
     mgr = allUsers.find(u => u.id === memberOrg.headId);
-    if (mgr && !isSystemOperator(mgr) && isUserActive(mgr)) return mgr;
+    if (mgr && isUserActive(mgr)) return mgr;
   }
   return undefined;
 }

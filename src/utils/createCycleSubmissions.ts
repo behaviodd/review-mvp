@@ -22,6 +22,7 @@ function resolveReviewerByRank(
   orgUnits: OrgUnit[],
   assignments: ReviewerAssignment[] | undefined,
 ): User | undefined {
+  // Phase: admin 도 조직장 가능 (사용자 명시) — 평가자 측 isSystemOperator 거부 룰 제거.
   // 1) 명시적 ReviewerAssignment
   if (assignments) {
     const ra = assignments.find(a =>
@@ -29,7 +30,7 @@ function resolveReviewerByRank(
     );
     if (ra) {
       const reviewer = allUsers.find(u => u.id === ra.reviewerId);
-      if (reviewer && !isSystemOperator(reviewer)) return reviewer;
+      if (reviewer) return reviewer;
     }
   }
 
@@ -40,12 +41,12 @@ function resolveReviewerByRank(
   let manager = allUsers.find(u => u.id === member.managerId);
 
   // orgUnitId 트리에서 headId 탐색
-  if (!manager || isSystemOperator(manager)) {
+  if (!manager) {
     let cursor = orgUnits.find(o => o.id === member.orgUnitId);
     while (cursor) {
       if (cursor.headId && cursor.headId !== member.id) {
         const head = allUsers.find(u => u.id === cursor!.headId);
-        if (head && !isSystemOperator(head)) {
+        if (head) {
           manager = head;
           break;
         }
@@ -55,7 +56,7 @@ function resolveReviewerByRank(
   }
 
   // legacy: dept/subOrg/team/squad 이름 매칭 (마이그 전 데이터 호환)
-  if (!manager || isSystemOperator(manager)) {
+  if (!manager) {
     const memberOrg = orgUnits.find(o =>
       o.headId &&
       o.headId !== member.id &&
@@ -67,7 +68,7 @@ function resolveReviewerByRank(
     if (memberOrg?.headId) manager = allUsers.find(u => u.id === memberOrg.headId);
   }
 
-  if (!manager || isSystemOperator(manager)) return undefined;
+  if (!manager) return undefined;
   return manager;
 }
 

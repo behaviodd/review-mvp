@@ -170,9 +170,17 @@ interface SegmentPillsProps {
   onChange: (v: string) => void;
   ariaLabel?: string;
 }
+/**
+ * Phase D-3.C-1: Figma SegmentedControl (1143:13490) 정합
+ *  - Track: bg-surface-sunken rounded-xl p-1 gap-1
+ *  - Indicator (활성): bg-surface-default rounded-lg + drop-shadow inline +
+ *    h-7 px-2.5 text-sm font-bold text-fg-default
+ *  - SegmentItem (비활성): rounded-lg h-7 px-2.5 text-sm font-semibold text-fg-subtle
+ *  - drop-shadow 는 Figma 의 0 2px 4px rgba(76,90,102,0.16) 직접 inline (alias 추가 X)
+ */
 function SegmentPills({ options, value, onChange, ariaLabel }: SegmentPillsProps) {
   return (
-    <div role="group" aria-label={ariaLabel} className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5">
+    <div role="group" aria-label={ariaLabel} className="inline-flex rounded-xl bg-surface-sunken p-1 gap-1">
       {options.map(opt => {
         const active = value === opt.value;
         return (
@@ -182,15 +190,15 @@ function SegmentPills({ options, value, onChange, ariaLabel }: SegmentPillsProps
             aria-pressed={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap',
+              'flex items-center gap-1 h-7 px-2.5 text-sm rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
               active
-                ? 'bg-white text-gray-080 shadow-card'
-                : 'text-gray-050 hover:text-gray-070',
+                ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
+                : 'text-fg-subtle font-semibold hover:text-fg-default',
             )}
           >
             {opt.label}
             {typeof opt.count === 'number' && (
-              <span className="ml-1 text-[11px] tabular-nums opacity-70">{opt.count}</span>
+              <span className="text-xs tabular-nums opacity-70">{opt.count}</span>
             )}
           </button>
         );

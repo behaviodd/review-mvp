@@ -9,15 +9,24 @@ import { cn } from '../ui/cn';
  * - 타이틀 text-xl/leading-7 → text-2xl Bold leading-10 (Display/Small 토큰)
  * - 색상 raw 팔레트 → semantic 토큰 (fg/bd)
  * - subtitle 있을 때 title leading 축소 (subtitle 과 함께 92px 안에 수용)
+ *
+ * Phase D-2.4a-fix: Tab strip 동반 시 border 중복 제거.
+ *   tabs/tabActions slot 이 있으면 HeaderTabsBar 에 border-b 가 그어지므로
+ *   Header 자체의 border 는 생략 (Figma 정합 — 헤더+탭 조합 시 1px 만).
  */
 export function Header() {
   const { currentUser } = useAuthStore();
-  const { title, subtitle, actions, onBack } = usePageHeader();
+  const { title, subtitle, actions, onBack, tabs, tabActions } = usePageHeader();
 
   if (!currentUser) return null;
 
+  const hasTabBar = !!(tabs || tabActions);
+
   return (
-    <header className="h-[92px] bg-bg-token-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10 flex-shrink-0">
+    <header className={cn(
+      'h-[92px] bg-bg-token-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10 flex-shrink-0',
+      !hasTabBar && 'border-b border-bd-default',
+    )}>
       {onBack && (
         <button
           type="button"

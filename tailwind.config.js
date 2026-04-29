@@ -154,6 +154,12 @@ export default {
           'hovered':          'var(--token-interaction-hovered)',
           'pressed':          'var(--token-interaction-pressed)',
         },
+        // Phase D-2.4a-fix: Figma Color/Text/* 정합 — Fg/* 와 살짝 다른 hex.
+        // 사용 예: text-text-primary, text-text-secondary
+        'text': {
+          'primary':          'var(--token-text-primary)',
+          'secondary':        'var(--token-text-secondary)',
+        },
         'bd': {
           'default':          'var(--token-border-default)',
           // Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 정합 — bd.default 와 bd.subtle 사이 단계

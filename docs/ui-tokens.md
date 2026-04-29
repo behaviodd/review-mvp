@@ -53,6 +53,20 @@
 
 raw 팔레트 (`bg-gray-005` 같은 불투명 클래스) 대신 hover 에는 `interaction` 토큰 사용. Figma `Color/Interaction/*` 정합.
 
+## 4-2. Text 토큰 (Phase D-2.4a-fix)
+
+Figma `Color/Text/*` 가 `Color/Fg/*` 와 별도 그룹으로 정의됨. 사용 의도가 다름.
+
+| 토큰 | hex | Figma 매핑 | 쓰임 |
+|---|---|---|---|
+| `text-text-primary` | `#212529` | Color/Text/Primary | 본문 강조 텍스트 (Fg/Default `#111417` 보다 약간 옅음) |
+| `text-text-secondary` | `#868e96` | Color/Text/Secondary | 본문 보조 텍스트 |
+| `text-fg-default` | `#111417` | Color/Fg/Default | 페이지 타이틀 등 가장 어두운 텍스트 |
+| `text-fg-subtle` | `#6d7f92` | Color/Fg/Subtle | 메뉴 아이템, label, sub-info |
+| `text-fg-subtlest` | `#8a99a8` | Color/Fg/Subtlest | placeholder, count badge, 캡션 |
+
+**규칙**: 페이지 타이틀/임팩트 큰 헤딩 = `fg-default`, 일반 본문 강조 = `text-primary`, 보조 = `text-secondary` 또는 `fg-subtle/subtlest`. 마이그레이션은 점진 (raw `text-gray-099 → fg-default` 우선).
+
 ## 5. 버튼 (MsButton)
 
 | Size | h      | padding     | font size   | gap       |
@@ -125,7 +139,8 @@ Figma `ADM / LNB / *` 컴포넌트와 1:1 정합.
 Figma `1143:13782` 정합. `usePageHeader()` Context 의 title/subtitle/actions/onBack 슬롯을 받아 렌더.
 
 **컨테이너**
-- `h-[92px] bg-bg-token-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10`
+- 기본: `h-[92px] bg-bg-token-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10`
+- **Tab strip 동반 시 border-b 제거** (Phase D-2.4a-fix) — `tabs` 또는 `tabActions` 슬롯이 있으면 HeaderTabsBar 가 자체 border-b 를 그으므로 헤더+탭 조합에선 1px 만. Header 컴포넌트 내부에서 자동 처리됨 (`!hasTabBar && 'border-b border-bd-default'`)
 - 모바일은 별도 56px 바 (AppLayout.tsx) — 토큰 정합은 이후 Phase 에서
 
 **타이틀 (Display/Small)**

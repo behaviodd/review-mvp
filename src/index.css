@@ -67,10 +67,15 @@
   --token-fg-accent-yellow-disabled:   #fdf9e8;
 
   /* Background */
-  /* Phase D-1.2: Figma Color/Bg/Primary (#f8f9fa) 정합 — body 배경 톤 미세 정돈 */
-  --token-bg-default:                  #fcfdfd;
+  /* Phase D-1.2: Figma Color/Bg/Primary (#f8f9fa) 정합 — body 배경 톤 미세 정돈
+     Phase D-2.4a-fix: Color/Bg/Default 가 #fcfdfd → #ffffff 로 갱신됨 (Figma 토큰 변경) */
+  --token-bg-default:                  #ffffff;
   --token-bg-subtle:                   #f8f9fa;
   --token-bg-subtlest:                 #e1e6ea;
+  /* Phase D-2.4a-fix: Figma Color/Text/* 토큰 신규 — Fg/* 와는 살짝 다른 hex.
+     본문/헤더 텍스트 일부에서 사용 (사용 마이그레이션은 별도 phase) */
+  --token-text-primary:                #212529;
+  --token-text-secondary:              #868e96;
   --token-bg-disabled:                 rgba(109, 127, 146, 0.08);
   --token-bg-selected:                 #f5a3be;
   --token-bg-focused:                  #99b7f5;
@@ -150,7 +155,9 @@
   /* Phase D-1.2: Figma Color/Border/Primary (#dee2e6) 신규 — 보더 두 단계 분리 */
   --token-border-primary:              #dee2e6;
   --token-border-subtle:               #f0f3f4;
-  --token-border-subtlest:             rgba(59, 69, 79, 0.20);
+  /* Phase D-2.4a-fix: Figma Color/Border/Subtlest (#4c5a6633) 정합 —
+     base color 3b454f → 4c5a66 (interaction 토큰들과 동일 base 로 통일) */
+  --token-border-subtlest:             rgba(76, 90, 102, 0.20);
   --token-border-disabled:             rgba(59, 69, 79, 0.20);
   --token-border-selected:             #19a1e6;
   --token-border-focused:              #a3daf5;

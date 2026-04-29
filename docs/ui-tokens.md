@@ -120,6 +120,31 @@ Figma `ADM / LNB / *` 컴포넌트와 1:1 정합.
 **드롭다운 (사용자 메뉴 등)**
 - `absolute left-0 right-0 top-full mt-1 bg-white border border-bd-default rounded-lg shadow-overlay`
 
+### 7.4 Header (PageHeader) 패턴 — Phase D-2.2
+
+Figma `1143:13782` 정합. `usePageHeader()` Context 의 title/subtitle/actions/onBack 슬롯을 받아 렌더.
+
+**컨테이너**
+- `h-[92px] bg-bg-token-default border-b border-bd-default flex items-center gap-4 px-6 py-3 sticky top-0 z-10`
+- 모바일은 별도 56px 바 (AppLayout.tsx) — 토큰 정합은 이후 Phase 에서
+
+**타이틀 (Display/Small)**
+- title 만: `text-2xl font-bold text-fg-default tracking-[-0.3px] leading-10` (24/40)
+- title + subtitle: title 의 leading 을 `leading-7` 로 축소 (둘이 함께 92px 안에 수용)
+- subtitle: `text-xs text-fg-subtlest mt-0.5 truncate`
+
+**onBack 버튼**
+- `size-9 rounded-lg text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default`
+- 좌측 chevron 20px
+
+**actions 슬롯**
+- 우측 정렬 `flex items-center gap-1.5 flex-wrap justify-end max-w-[60%]`
+- primary 버튼은 brand1 채움 (h-10, gap-1.5, px-2.5, rounded-lg) — Figma 정합은 `MsButton size="lg"` 로 자동 충족
+
+**금지**
+- ❌ 페이지 본문 상단의 커스텀 `<h1>` → `useSetPageHeader` 만
+- ❌ raw 팔레트 (`text-gray-099`, `border-gray-020`) — semantic 토큰 (`text-fg-*`, `border-bd-*`) 사용
+
 ### 7.1 ListToolbar 사용 규칙
 
 리스트 페이지(MyReviewList, TeamReviewList, PeerApprovalPage, CycleList, ReceivedReviewList, CycleArchive 등)는 **반드시** `ListToolbar` 를 사용해 필터/검색을 구성합니다.

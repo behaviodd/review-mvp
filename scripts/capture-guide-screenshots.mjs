@@ -24,14 +24,15 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
-const OUT_DIR = path.join(ROOT, 'public/guide-images/review-cycle');
+const OUT_BASE = path.join(ROOT, 'public/guide-images');
 
 const BASE = 'http://localhost:5174';
 const NOW = new Date('2026-04-29T09:00:00').toISOString();
 const FUTURE = new Date('2026-05-30T18:00:00').toISOString().slice(0, 10);
 const FUTURE_LATER = new Date('2026-06-15T18:00:00').toISOString().slice(0, 10);
 
-fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.mkdirSync(path.join(OUT_BASE, 'review-cycle'), { recursive: true });
+fs.mkdirSync(path.join(OUT_BASE, 'team'),          { recursive: true });
 
 // ─── DEMO SEED ─────────────────────────────────────────────────────────
 
@@ -51,11 +52,12 @@ const users = [
   { id: 'M005', name: '강신입', email: 'kang.new@makestar.com',    role: 'member', position: '주니어 개발자', department: '미배정', jobFunction: '개발', avatarColor: '#EC4899', activityStatus: 'active', status: 'active' },
 ];
 
+// type: OrgUnitType ('mainOrg' | 'subOrg' | 'team' | 'squad') — Team.tsx mainOrgs 가 type==='mainOrg' 만 root 로 인정
 const orgUnits = [
-  { id: 'ou_root',      name: '메이크스타',  type: 'company',    parentId: undefined, headId: 'A001', order: 0 },
-  { id: 'ou_dev',       name: '제품개발',    type: 'department', parentId: 'ou_root', headId: 'M001', order: 1 },
-  { id: 'ou_design',    name: '디자인',      type: 'department', parentId: 'ou_root', headId: 'A001', order: 2 },
-  { id: 'ou_marketing', name: '마케팅',      type: 'department', parentId: 'ou_root', headId: 'A001', order: 3 },
+  { id: 'ou_root',      name: '메이크스타',  type: 'mainOrg', parentId: undefined, headId: 'A001', order: 0 },
+  { id: 'ou_dev',       name: '제품개발',    type: 'subOrg',  parentId: 'ou_root', headId: 'M001', order: 1 },
+  { id: 'ou_design',    name: '디자인',      type: 'subOrg',  parentId: 'ou_root', headId: 'A001', order: 2 },
+  { id: 'ou_marketing', name: '마케팅',      type: 'subOrg',  parentId: 'ou_root', headId: 'A001', order: 3 },
 ];
 
 const defaultTemplate = {
@@ -176,8 +178,10 @@ const seedSheets = { state: { scriptUrl: '', sheetId: '', clientId: '', loading:
 
 // ─── CAPTURE SCRIPT ────────────────────────────────────────────────────
 
-async function capture(page, name, options = {}) {
-  const out = path.join(OUT_DIR, name);
+async function capture(page, relPath, options = {}) {
+  // relPath 예: 'review-cycle/01-...png' 또는 'team/50-...png'
+  const out = path.join(OUT_BASE, relPath);
+  const name = relPath.split('/').pop();
   await page.waitForTimeout(500);  // 애니메이션 안정화
   if (options.selector) {
     const el = await page.$(options.selector);
@@ -220,14 +224,32 @@ async function gotoAndWait(page, url, waitFor) {
 
   // .env 의 VITE_APPS_SCRIPT_URL 이 디폴트로 fetch 를 트리거 → 시드를 덮어씀.
   // 외부 API + dev 서버 자체의 /api/* 프록시 (Vercel Edge 함수) 까지 차단.
-  await ctx.route('**/script.google.com/**',     route => route.abort());
-  await ctx.route('**/oauth2.googleapis.com/**', route => route.abort());
-  await ctx.route('**/accounts.google.com/**',   route => route.abort());
-  await ctx.route('**/api/**',                   route => route.abort());
-  await ctx.route('**/org-sync*',                route => route.abort());
-  await ctx.route('**/review-sync*',             route => route.abort());
+  await ctx.route(/script\.google\.com/,      route => route.abort());
+  await ctx.route(/oauth2\.googleapis\.com/,  route => route.abort());
+  await ctx.route(/accounts\.google\.com/,    route => route.abort());
+
+  // /api/** — 단일 핸들러로 라우트 우선순위 충돌 회피.
+  // action 분기 후 일부는 mock 응답, 나머지는 abort. 정규식으로 매칭 (glob `**/api/**` 가 안 잡힘).
+  await ctx.route(/\/api\//, async route => {
+    const url = route.request().url();
+    if (url.includes('/api/org-sync') && route.request().method() === 'POST') {
+      let body = {};
+      try { body = JSON.parse(route.request().postData() || '{}'); } catch {}
+      if (body.action === 'getPendingApprovals') {
+        return route.fulfill({
+          status: 200, contentType: 'application/json',
+          body: JSON.stringify({ ok: true, items: [
+            { email: 'newbie1@makestar.com', name: '신규입사자1', googleSub: 'g_001', firstLoginAt: '2026-04-28T09:00:00.000Z', status: 'pending' },
+            { email: 'newbie2@makestar.com', name: '신규입사자2', googleSub: 'g_002', firstLoginAt: '2026-04-29T08:30:00.000Z', status: 'pending' },
+          ] }),
+        });
+      }
+    }
+    return route.abort();
+  });
 
   const page = await ctx.newPage();
+
 
   // 첫 페이지 진입 → localStorage 직접 set → 새로고침 (Zustand persist 가 그 값으로 hydrate)
   console.log('▶ seeding localStorage...');
@@ -244,24 +266,24 @@ async function gotoAndWait(page, url, waitFor) {
 
   console.log('▶ /templates — 01-template-list');
   await gotoAndWait(page, '/templates', 'h1, h2, [class*="text-2xl"]');
-  await capture(page, '01-template-list.png');
+  await capture(page, 'review-cycle/01-template-list.png');
 
   console.log('▶ /templates/tpl_engineering — 02-template-builder-empty (custom template 빌더 진입)');
   await gotoAndWait(page, '/templates/tpl_engineering', 'h1, h2');
-  await capture(page, '02-template-builder-empty.png');
+  await capture(page, 'review-cycle/02-template-builder-empty.png');
 
   console.log('▶ /templates/tpl_default — 03-template-sections (3 섹션 + 6 질문)');
   await gotoAndWait(page, '/templates/tpl_default', 'h1, h2');
-  await capture(page, '03-template-sections.png');
+  await capture(page, 'review-cycle/03-template-sections.png');
 
   console.log('▶ /cycles/new — 10-cycle-new');
   await gotoAndWait(page, '/cycles/new', 'h1, h2');
-  await capture(page, '10-cycle-new.png');
+  await capture(page, 'review-cycle/10-cycle-new.png');
 
   console.log('▶ /cycles/new — 11-cycle-targets (스크롤 down)');
   await page.evaluate(() => window.scrollTo(0, 600));
   await page.waitForTimeout(300);
-  await capture(page, '11-cycle-targets.png');
+  await capture(page, 'review-cycle/11-cycle-targets.png');
 
   // 12-preflight: draft 사이클 → transition 버튼 → preflight 모달 오픈 후 캡처
   console.log('▶ /cycles/cyc_draft_preflight — 12-preflight (draft → transition 버튼 클릭)');
@@ -274,10 +296,10 @@ async function gotoAndWait(page, url, waitFor) {
     // 모달 selector — ModalShell 의 backdrop / dialog 확인
     const modal = await page.$('[role="dialog"], [class*="ModalShell"], [class*="modal"]');
     if (modal) {
-      await capture(page, '12-preflight.png');
+      await capture(page, 'review-cycle/12-preflight.png');
     } else {
       console.log('  ✗ 모달이 열리지 않음 — full page 캡처');
-      await capture(page, '12-preflight.png');
+      await capture(page, 'review-cycle/12-preflight.png');
     }
   } else {
     console.log('  ✗ transition 버튼을 찾을 수 없음');
@@ -285,31 +307,159 @@ async function gotoAndWait(page, url, waitFor) {
 
   console.log('▶ /cycles/cyc_2026_q1 — 20-cycle-detail');
   await gotoAndWait(page, '/cycles/cyc_2026_q1', 'h1, h2');
-  await capture(page, '20-cycle-detail.png');
+  await capture(page, 'review-cycle/20-cycle-detail.png');
 
   console.log('▶ /cycles/cyc_2026_q1 — 21-cycle-kpi (첫 섹션 영역만)');
   await page.evaluate(() => window.scrollTo(0, 0));
-  await capture(page, '21-cycle-kpi.png');
+  await capture(page, 'review-cycle/21-cycle-kpi.png');
 
   console.log('▶ /cycles/cyc_2026_q1 — 22-ops-center (스크롤 down)');
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForTimeout(300);
-  await capture(page, '22-ops-center.png');
+  await capture(page, 'review-cycle/22-ops-center.png');
 
   console.log('▶ /cycles/cyc_2026_q1 — 30-cycle-close (우상단 액션 영역)');
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
-  await capture(page, '30-cycle-close.png');
+  await capture(page, 'review-cycle/30-cycle-close.png');
 
   console.log('▶ /reviews/received — 31-received');
   await gotoAndWait(page, '/reviews/received', 'h1, h2');
-  await capture(page, '31-received.png');
+  await capture(page, 'review-cycle/31-received.png');
 
   console.log('▶ /cycles/archive — 32-archive');
   await gotoAndWait(page, '/cycles/archive', 'h1, h2');
-  await capture(page, '32-archive.png');
+  await capture(page, 'review-cycle/32-archive.png');
+
+  // ─── team 카테고리 ─────────────────────────────────────────────────
+  console.log('\n▶ team 카테고리 시작');
+
+  console.log('▶ /team/pending-approvals — 50-pending-approvals-list');
+  await gotoAndWait(page, '/team/pending-approvals', 'h1, h2');
+  await capture(page, 'team/50-pending-approvals-list.png');
+
+  console.log('▶ /team — 60-team-page');
+  await gotoAndWait(page, '/team', 'h1, h2');
+  await capture(page, 'team/60-team-page.png');
+
+  console.log('▶ /team?member=M002 — 61-member-drawer');
+  await gotoAndWait(page, '/team?member=M002', 'h1, h2');
+  await capture(page, 'team/61-member-drawer.png');
+
+  console.log('▶ /team?member=M002&action=edit — 62-member-edit');
+  await gotoAndWait(page, '/team?member=M002&action=edit', 'h1, h2');
+  await capture(page, 'team/62-member-edit.png');
+
+  // 63 (활성상태 select), 80 (평가권자 섹션) — UI 미구현. 캡처 안 함.
+
+  // ─── 인터랙션 화면 (51, 70, 71, 72, 73) — 다이얼로그/모달/DnD ─────
+
+  // 51-approve-form: pending-approvals 의 "승인" 버튼 → ApproveDialog
+  console.log('▶ /team/pending-approvals — 51-approve-form (ApproveDialog)');
+  await gotoAndWait(page, '/team/pending-approvals', 'h1, h2');
+  const approveBtn = await page.$('button:has-text("승인")');
+  if (approveBtn) {
+    await approveBtn.click();
+    await page.waitForSelector('[role="dialog"]', { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await capture(page, 'team/51-approve-form.png');
+    const cancelBtn = await page.$('[role="dialog"] button:has-text("취소")');
+    if (cancelBtn) { await cancelBtn.click(); await page.waitForTimeout(300); }
+  } else {
+    console.log('  ✗ 승인 버튼을 찾을 수 없음 — pending 목록이 비어있을 가능성');
+  }
+
+  // 70-org-panel: /team 우측 조직도 패널 영역만 — Team.tsx line 1002: <div className="w-[366px] ... border-l ...">
+  console.log('▶ /team — 70-org-panel (우측 조직도 패널)');
+  await gotoAndWait(page, '/team', 'h1, h2');
+  const panelLocator = page.locator('div.w-\\[366px\\].border-l').first();
+  if (await panelLocator.count() > 0) {
+    await panelLocator.screenshot({ path: path.join(OUT_BASE, 'team/70-org-panel.png') });
+    console.log('  ✓ 70-org-panel.png');
+  } else {
+    console.log('  ✗ 조직도 패널 미탐지 — full page 캡처');
+    await capture(page, 'team/70-org-panel.png');
+  }
+
+  // 71-org-add: 주조직 추가 버튼 → OrgUnitDialog
+  console.log('▶ /team — 71-org-add (OrgUnitDialog 신규)');
+  const addBtn = await page.$('button[title="주조직 추가"]');
+  if (addBtn) {
+    await addBtn.click();
+    await page.waitForSelector('[role="dialog"]', { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await capture(page, 'team/71-org-add.png');
+    const cancelBtn = await page.$('[role="dialog"] button:has-text("취소")');
+    if (cancelBtn) { await cancelBtn.click(); await page.waitForTimeout(300); }
+  } else {
+    console.log('  ✗ "주조직 추가" 버튼 미탐지');
+  }
+
+  // 72-org-dnd: 트리 노드 DnD 인디케이터 강제 트리거 (HTML5 native dispatchEvent)
+  console.log('▶ /team — 72-org-dnd (DnD 인디케이터)');
+  await gotoAndWait(page, '/team', 'h1, h2');
+  // 트리는 default 로 expanded=true — 진입 직후 4개 노드 mount 됨.
+  // src = ou_dev (subOrg), dst = ou_root (mainOrg). ALLOWED_CHILD[mainOrg]=subOrg → "into" 인디케이터 (ring-2)
+  const dragStartOk = await page.evaluate(() => {
+    const nodes = Array.from(document.querySelectorAll('div[draggable="true"]'));
+    if (nodes.length < 2) return false;
+    const src = nodes[1];  // ou_dev
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    window.__dt = dt;
+    return true;
+  });
+  if (dragStartOk) {
+    await page.waitForTimeout(200);  // React state setDndState({draggingId, dropTarget:null}) 적용 대기
+    await page.evaluate(() => {
+      const nodes = Array.from(document.querySelectorAll('div[draggable="true"]'));
+      const dst = nodes[0];  // ou_root
+      const rect = dst.getBoundingClientRect();
+      dst.dispatchEvent(new DragEvent('dragover', {
+        bubbles: true, cancelable: true, dataTransfer: window.__dt,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,  // 중앙 → into
+      }));
+    });
+    await page.waitForTimeout(300);  // dropTarget state 적용 + ring-2 render
+    await capture(page, 'team/72-org-dnd.png');
+    await page.evaluate(() => {
+      const nodes = Array.from(document.querySelectorAll('div[draggable="true"]'));
+      nodes[1]?.dispatchEvent(new DragEvent('dragend', { bubbles: true }));
+    });
+    await page.waitForTimeout(300);
+  } else {
+    console.log('  ✗ draggable 트리 노드 < 2개');
+  }
+
+  // 73-org-head: 트리 노드 hover → 편집 버튼 → OrgUnitDialog (편집 모드, 조직장 드롭다운 노출)
+  console.log('▶ /team — 73-org-head (OrgUnitDialog 편집 모드 — 조직장 드롭다운)');
+  await gotoAndWait(page, '/team', 'h1, h2');
+  const treeNode = await page.$('div[draggable="true"]');
+  if (treeNode) {
+    await treeNode.hover();
+    await page.waitForTimeout(300);
+    const editBtn = await page.$('button[title="편집"]');
+    if (editBtn) {
+      await editBtn.click();
+      await page.waitForSelector('[role="dialog"]', { timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await capture(page, 'team/73-org-head.png');
+      const cancelBtn = await page.$('[role="dialog"] button:has-text("취소")');
+      if (cancelBtn) { await cancelBtn.click(); await page.waitForTimeout(300); }
+    } else {
+      console.log('  ✗ 편집 버튼 미탐지');
+    }
+  } else {
+    console.log('  ✗ 트리 노드 미탐지');
+  }
+
+  // 미구현 화면 — 영구 스킵 (가이드에서도 "예정 기능"으로 표기됨)
+  console.log('▶ 미구현 영구 스킵: 63 (활성상태 select) / 80 (평가권자 섹션) / 81 (평가권자 모달) / 82 (1차+2차)');
 
   await browser.close();
-  console.log('\n✓ DONE — 11/12 captured (12-preflight 은 별도 인터랙션 필요)');
-  console.log(`  결과: ${OUT_DIR}`);
+  console.log('\n✓ DONE');
+  console.log(`  review-cycle: 12/12`);
+  console.log(`  team: 9/9 (구현된 화면만 — 미구현 4건은 가이드에서 "예정" 처리)`);
+  console.log(`  결과: ${OUT_BASE}`);
 })();

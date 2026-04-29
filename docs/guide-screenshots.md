@@ -78,9 +78,42 @@
 
 ---
 
+## 5b. team/invite-approve.md
+
+| # | 파일명 | URL | 상태 / 영역 | 강조 |
+|---|---|---|---|---|
+| 50 | `50-pending-approvals-list.png` | `/team/pending-approvals` | 대기승인 큐 목록 1~3건 | 사번 미발번 / status=pending 행들 |
+| 51 | `51-approve-form.png` | `/team/pending-approvals` → 행 클릭 | 승인 폼 모달 (`role="dialog"`, `ApproveDialog`) | 사번/직무/보고대상/권한그룹 입력 영역 |
+
+## 5c. team/profile.md
+
+| # | 파일명 | URL | 상태 / 영역 | 강조 |
+|---|---|---|---|---|
+| 60 | `60-team-page.png` | `/team` | 좌 멤버 + 우 조직도 페이지 | 좌우 패널 분할 |
+| 61 | `61-member-drawer.png` | `/team?member=<id>` | 멤버 drawer 진입 직후 | 기본 정보 |
+| 62 | `62-member-edit.png` | `/team?member=<id>&action=edit` | drawer 편집 모드 | 입력 필드들 |
+| ~~63~~ | ~~`63-member-status.png`~~ | — | **(미구현)** `MemberEditDialog` 에 `activityStatus` 드롭다운 미추가 | UI 추가 후 재정의 |
+
+## 5d. team/org-tree.md
+
+| # | 파일명 | URL | 상태 / 영역 | 강조 |
+|---|---|---|---|---|
+| 70 | `70-org-panel.png` | `/team` | 우측 조직도 패널만 (366px 고정폭) | 트리 구조 (회사 → 부서) |
+| 71 | `71-org-add.png` | `/team` → "+" 버튼 클릭 | 조직 추가 다이얼로그 (OrgUnitDialog) | 이름/조직장 입력 영역 |
+| 72 | `72-org-dnd.png` | `/team` (`dispatchEvent('dragover')` 강제) | DnD 드롭 인디케이터 표시 | 위/아래(`h-0.5 bg-fg-brand1`) / 안(`ring-2 ring-fg-brand1`) |
+| 73 | `73-org-head.png` | `/team` → 조직 노드 메뉴 → 편집 | OrgUnitDialog 의 조직장 드롭다운 | "조직장" select |
+
+## 5e. team/reviewer.md
+
+| # | 파일명 | URL | 상태 / 영역 | 강조 |
+|---|---|---|---|---|
+| ~~80~~ | ~~`80-reviewer-section.png`~~ | — | **(미구현)** drawer 안 시각적 평가권자 섹션 미존재 (권한 계산용으로만 사용) | UI 추가 후 재정의 |
+| ~~81~~ | ~~`81-reviewer-modal.png`~~ | — | **(미구현)** team 영역에 reviewer 배정 모달 자체 없음 | UI 추가 후 재정의 |
+| ~~82~~ | ~~`82-reviewer-ranks.png`~~ | — | **(미구현)** 81 결과 화면 — 81 없이 불가 | UI 추가 후 재정의 |
+
 ## 6. 작업 체크리스트
 
-리뷰 사이클 카테고리 캡처는 총 **12장**:
+리뷰 사이클 카테고리 캡처는 총 **12장**, 구성원 관리 카테고리는 **13장**:
 
 ### template.md
 - [ ] `01-template-list.png`
@@ -101,6 +134,27 @@
 - [ ] `30-cycle-close.png`
 - [ ] `31-received.png`
 - [ ] `32-archive.png`
+
+### invite-approve.md
+- [x] `50-pending-approvals-list.png`
+- [x] `51-approve-form.png`
+
+### profile.md
+- [x] `60-team-page.png`
+- [x] `61-member-drawer.png`
+- [x] `62-member-edit.png`
+- [ ] ~~`63-member-status.png`~~ — 🚧 미구현 (`MemberEditDialog` 에 활성상태 드롭다운 미추가). UI 추가 후 캡처
+
+### org-tree.md
+- [x] `70-org-panel.png`
+- [x] `71-org-add.png`
+- [x] `72-org-dnd.png` — Playwright `dispatchEvent('dragover')` 로 캡처
+- [x] `73-org-head.png` — OrgUnitDialog 편집 모드의 조직장 드롭다운으로 의미 재정의
+
+### reviewer.md
+- [ ] ~~`80-reviewer-section.png`~~ — 🚧 미구현 (drawer 시각 섹션 부재). UI 추가 후 캡처
+- [ ] ~~`81-reviewer-modal.png`~~ — 🚧 미구현 (team 영역에 평가권자 배정 모달 자체 없음). UI 추가 후 캡처
+- [ ] ~~`82-reviewer-ranks.png`~~ — 🚧 미구현 (81 결과 화면). UI 추가 후 캡처
 
 ---
 

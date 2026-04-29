@@ -77,6 +77,32 @@ export const CATEGORIES: GuideCategory[] = [
  * 카테고리가 다른 인접 페이지로도 자동 연결됨 (책처럼 순차 reading 가능).
  */
 export const PAGES: GuidePage[] = [
+  // 구성원 관리 (4개)
+  {
+    category: 'team',
+    slug: 'invite-approve',
+    title: '구성원 초대와 승인',
+    summary: '신규 회원이 SSO 로 로그인하면 대기승인 큐에 들어옵니다. 직무·보고대상을 입력해 활성화합니다.',
+  },
+  {
+    category: 'team',
+    slug: 'profile',
+    title: '구성원 정보 수정',
+    summary: '이름·직무·보고대상·활성 상태 등 구성원 정보를 수정합니다.',
+  },
+  {
+    category: 'team',
+    slug: 'org-tree',
+    title: '조직 편성',
+    summary: '조직을 추가·이름 변경·삭제하고 드래그로 순서/계층을 조정합니다.',
+  },
+  {
+    category: 'team',
+    slug: 'reviewer',
+    title: '평가권자 배정',
+    summary: '구성원별로 1차(직속)·2차 평가권자를 명시적으로 지정합니다.',
+  },
+
   // 리뷰 사이클 (MVP — 4개)
   {
     category: 'review-cycle',

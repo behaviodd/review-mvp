@@ -78,7 +78,7 @@ export function TemplateList() {
     </>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [navigate, search]);
-  useSetPageHeader('리뷰 템플릿', headerActions);
+  useSetPageHeader('템플릿', headerActions);
 
   const handleDelete = (id: string, name: string) => setDeleteTarget({ id, name });
   const confirmDelete = () => {

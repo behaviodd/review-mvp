@@ -88,7 +88,7 @@ export function ReceivedReviewList() {
     </>
   ), [filter, visibleSubmissions.length, byKindCount.downward, byKindCount.peer, byKindCount.upward]);
 
-  useSetPageHeader('내가 받은 리뷰', undefined, {
+  useSetPageHeader('받은 리뷰', undefined, {
     tabs: headerTabs,
   });
 

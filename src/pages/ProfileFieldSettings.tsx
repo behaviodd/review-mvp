@@ -46,7 +46,7 @@ export function ProfileFieldSettings() {
   ) : undefined, [can.manageOrg, reset, showToast]);
 
   // Phase D-3.E: subtitle 제거 (다른 페이지 패턴 일관). 설명은 본문 § 위에 인라인.
-  useSetPageHeader('구성원 프로필 설정', headerActions);
+  useSetPageHeader('프로필 설정', headerActions);
 
   if (!can.manageOrg) {
     return (

@@ -85,7 +85,7 @@ export function MyReviewList() {
   const closedReceived = filteredReceived.filter(s => closedCycleIds.has(s.cycleId));
   const doneAll = [...done, ...filteredReceived.filter(s => !closedCycleIds.has(s.cycleId))];
 
-  useSetPageHeader('내 리뷰', undefined, {
+  useSetPageHeader('내 작성', undefined, {
     subtitle: `진행 중 ${active.length} · 완료 ${doneAll.length} · 종료됨 ${closedSelf.length + closedReceived.length}`,
   });
 

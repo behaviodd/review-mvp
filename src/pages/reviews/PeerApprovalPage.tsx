@@ -60,7 +60,7 @@ export function PeerApprovalPage() {
       .sort((a, b) => (b.peerProposal?.decidedAt ?? '').localeCompare(a.peerProposal?.decidedAt ?? ''));
   }, [submissions, leadeeIds]);
 
-  useSetPageHeader('동료 리뷰 승인 요청', undefined, {
+  useSetPageHeader('승인 대기', undefined, {
     subtitle: `승인 대기 ${pending.length} · 처리 완료 ${history.length}`,
   });
 

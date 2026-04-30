@@ -148,7 +148,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
     { kind: 'item', to: '/',                            icon: MsHomeIcon,    label: '홈',           show: true },
     { kind: 'item', to: '/reviews/me',                  icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin || isImpersonating },
     { kind: 'item', to: '/reviews/received',            icon: MsProfileIcon, label: '받은 리뷰',    show: true },
-    { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin && !isImpersonating && leadeeIds.size > 0 },
+    { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin && leadeeIds.size > 0 },
     { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin) && peerApprovalsHasData, badge: pendingApprovals },
     { kind: 'item', to: '/team',                        icon: MsGroupIcon,   label: '구성원',       show: showMemberItemForUser },
 

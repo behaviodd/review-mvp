@@ -529,9 +529,8 @@ export function MyReviewWrite() {
     isSelf && !isProxyMode && submission.status !== 'submitted' &&
     (cycle?.status === 'manager_review' || cycle?.status === 'closed');
 
-  // R5-b: 마스터 로그인 중이면 모든 작성/제출 차단 (조회 전용)
-  const isImpersonating = useAuthStore.getState().impersonatingFromId !== null;
-  const isReadOnly = submission.status === 'submitted' || isDownwardViewingByReviewee || cyclePastSelfReview || isImpersonating;
+  // 빙의 상태에서도 리뷰 작성 허용 (사용자 결정) — 빙의 대상 명의로 작성/제출 가능.
+  const isReadOnly = submission.status === 'submitted' || isDownwardViewingByReviewee || cyclePastSelfReview;
 
   const downwardVisibility = cycle?.visibility?.downwardToReviewee ?? 'cycle_close';
   const visibleToReviewee = downwardVisibility === 'submission' || cycle?.status === 'closed';

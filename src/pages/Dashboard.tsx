@@ -73,7 +73,7 @@ function AdminDashboard() {
   const handleImpersonateTest = (target: User) => {
     const log = startImpersonation(target);
     if (!log) { showToast('error', '마스터 로그인을 시작할 수 없습니다.'); return; }
-    showToast('success', `${target.name}(으)로 접속했습니다. 작성/수정은 차단됩니다.`);
+    showToast('success', `${target.name}(으)로 접속했습니다. 리뷰 작성은 빙의 대상 명의로 기록됩니다.`);
     navigate('/');
   };
 
@@ -234,7 +234,7 @@ function AdminDashboard() {
             <h2 className="text-sm font-semibold text-fg-default">테스트 계정으로 접속</h2>
           </div>
           <p className="text-xs text-fg-subtle mb-3">
-            디자인 센터 하위 조직 멤버 — 빙의 후 작성/수정은 차단됩니다 (조회 전용). 우상단 헤더에서 "원래 계정으로 복귀" 가능.
+            디자인 센터 하위 조직 멤버 — 빙의 후 그 사용자로서 리뷰 작성·제출이 가능합니다 (관리자 전용 라우트는 차단). 우상단 헤더에서 "원래 계정으로 복귀" 가능.
           </p>
           <select
             defaultValue=""

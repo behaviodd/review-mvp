@@ -428,9 +428,9 @@ export function TeamReviewWrite() {
 
   // 어드민이라도 해당 팀원의 직속 매니저(reviewerId === currentUser.id)인 경우 작성 허용
   const isAdminObserver = isAdmin && reviewerId !== currentUser?.id;
-  // R5-b: 마스터 로그인 중이면 모든 작성/제출 차단 (조회 전용)
-  const isImpersonating = useAuthStore.getState().impersonatingFromId !== null;
-  const isReadOnly = isAdminObserver || mySubmission?.status === 'submitted' || isImpersonating;
+  // 빙의 상태에서도 리뷰 작성 허용 (사용자 결정) — admin 라우트만 차단 유지.
+  // 리뷰 작성/제출은 빙의 대상 명의로 가능.
+  const isReadOnly = isAdminObserver || mySubmission?.status === 'submitted';
 
   // 조직장 리뷰 단계(manager_review, active)에서만 제출 가능
   const isManagerReviewPhase = cycle?.status === 'manager_review' || cycle?.status === 'active';

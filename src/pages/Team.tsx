@@ -852,7 +852,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     }
     // 시트로 비동기 push (실패해도 세션 진행)
     impersonationLogWriter.start(log);
-    showToast('success', `${impersonateTarget.name}(으)로 접속했습니다. 작성/수정은 차단됩니다.`);
+    showToast('success', `${impersonateTarget.name}(으)로 접속했습니다. 리뷰 작성은 빙의 대상 명의로 기록됩니다.`);
     setImpersonateTarget(null);
     navigate('/'); // 대상자 대시보드로 이동
   };
@@ -1117,7 +1117,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           <>
             <strong>{impersonateTarget.name}</strong>({impersonateTarget.email})으로 접속합니다.
             <br />
-            화면 조회만 가능하며 작성·수정·제출은 차단됩니다.
+            그 사용자로서 리뷰 작성·제출이 가능하며, 관리자 전용 라우트는 차단됩니다.
             <br />
             모든 동작은 감사 로그에 기록됩니다.
           </>

@@ -29,7 +29,7 @@ export function ImpersonationBanner() {
     <div className="flex items-center gap-2 bg-red-040 text-white px-4 py-2 text-xs font-semibold">
       <MsWarningIcon size={14} className="shrink-0" />
       <span className="flex-1 truncate">
-        마스터 로그인 — 현재 <strong className="font-bold">{currentUser.name}</strong>({currentUser.email})으로 보기 중. 작성·수정·제출은 차단됩니다.
+        마스터 로그인 — 현재 <strong className="font-bold">{currentUser.name}</strong>({currentUser.email})으로 접속 중. 리뷰 작성·제출은 빙의 대상 명의로 기록됩니다.
       </span>
       <button
         type="button"

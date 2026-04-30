@@ -45,7 +45,7 @@ export const PERMISSION_META: Record<PermissionCode, PermissionMeta> = {
   'auth.impersonate': {
     code: 'auth.impersonate',
     label: '마스터 로그인',
-    description: '다른 구성원의 화면을 조회 전용으로 접속. 작성·수정·제출 차단.',
+    description: '다른 구성원으로 접속하여 그 사용자 명의로 리뷰 작성·제출 가능. 관리자 전용 라우트는 차단.',
     category: '보안',
   },
   'audit.view': {

@@ -148,7 +148,7 @@ function AdminDashboard() {
      페이지 자체 overflow-y-auto + px-6. 위 padding 없이 헤더 line 바로 아래
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
-    <div className="flex flex-col h-full overflow-y-auto px-6">
+    <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
       <TodayPanel variant="admin" />
 
       {/* Stats — 첫 border-t 제거 (사용자 명시), mt-6 spacing 만. grid 안 md:divide-x 유지 */}
@@ -306,7 +306,7 @@ function ManagerDashboard() {
 
   /* Phase D-3.A-fix3: full-bleed + 첫 border-t 제거 */
   return (
-    <div className="flex flex-col h-full overflow-y-auto px-6">
+    <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
       <TodayPanel variant="leader" />
       <div className="mt-6">
         <PeerPickReminder />
@@ -406,7 +406,7 @@ function EmployeeDashboard() {
 
   /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음 */
   return (
-    <div className="flex flex-col h-full overflow-y-auto px-6">
+    <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
       <PeerPickReminder />
 
       {activeCycle && mySelf && mySelf.status !== 'submitted' && (

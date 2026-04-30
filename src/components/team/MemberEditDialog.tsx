@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTeamStore } from '../../stores/teamStore';
+import type { User } from '../../types';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
 import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
@@ -68,15 +69,17 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
   }, [mostSpecificOrgId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [form, setForm] = useState(() => ({
-    name:        member?.name        ?? '',
-    nameEn:      member?.nameEn      ?? '',
-    email:       member?.email       ?? '',
-    phone:       member?.phone       ?? '',
-    joinDate:    member?.joinDate    ?? '',
-    position:    member?.position    ?? '',
-    jobFunction: member?.jobFunction ?? '',
-    department:  member?.department  ?? '',
-    managerId:   member?.managerId   ?? '',
+    name:           member?.name           ?? '',
+    nameEn:         member?.nameEn         ?? '',
+    email:          member?.email          ?? '',
+    phone:          member?.phone          ?? '',
+    joinDate:       member?.joinDate       ?? '',
+    position:       member?.position       ?? '',
+    jobFunction:    member?.jobFunction    ?? '',
+    department:     member?.department     ?? '',
+    managerId:      member?.managerId      ?? '',
+    activityStatus: member?.activityStatus ?? 'active',
+    statusReason:   member?.statusReason   ?? '',
   }));
 
   const f = (k: keyof typeof form) =>
@@ -103,16 +106,20 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
       department = names.department ?? department;
       subOrg = names.subOrg; team = names.team; squad = names.squad;
     }
+    const activityStatusChanged = form.activityStatus !== (member.activityStatus ?? 'active');
     updateMember(member.id, {
-      name:        form.name.trim()        || member.name,
-      nameEn:      form.nameEn.trim()      || undefined,
-      email:       form.email.trim()       || member.email,
-      phone:       form.phone.trim()       || undefined,
-      joinDate:    form.joinDate.trim()    || undefined,
-      position:    form.position.trim(),
-      jobFunction: form.jobFunction.trim() || undefined,
+      name:           form.name.trim()        || member.name,
+      nameEn:         form.nameEn.trim()      || undefined,
+      email:          form.email.trim()       || member.email,
+      phone:          form.phone.trim()       || undefined,
+      joinDate:       form.joinDate.trim()    || undefined,
+      position:       form.position.trim(),
+      jobFunction:    form.jobFunction.trim() || undefined,
       department, subOrg, team, squad,
-      managerId: form.managerId || undefined,
+      managerId:      form.managerId || undefined,
+      activityStatus: form.activityStatus as User['activityStatus'],
+      statusReason:   form.statusReason.trim() || undefined,
+      ...(activityStatusChanged ? { statusChangedAt: new Date().toISOString() } : {}),
     });
 
     if (mostSpecificOrgId) {
@@ -213,6 +220,39 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
               <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
             )}
           </div>
+        </section>
+
+        {/* 근무 상태 */}
+        <section className="border-t border-gray-010 pt-4">
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">근무 상태</p>
+          <div className="grid grid-cols-2 gap-3">
+            <MsSelect
+              label="활성상태"
+              value={form.activityStatus}
+              onChange={f('activityStatus')}
+            >
+              <option value="active">정상 근무</option>
+              <option value="leave_short">단기 휴직</option>
+              <option value="leave_long">장기 휴직</option>
+              <option value="terminated">퇴사</option>
+              <option value="other">기타</option>
+            </MsSelect>
+            {form.activityStatus !== 'active' && (
+              <MsInput
+                label="사유 (선택)"
+                type="text"
+                value={form.statusReason}
+                onChange={f('statusReason')}
+                placeholder="예) 출산휴직, 병가 등"
+              />
+            )}
+          </div>
+          {form.activityStatus === 'leave_long' && (
+            <p className="mt-2 text-xs text-fg-subtle">장기 휴직은 사이클 자동 제외 권장입니다.</p>
+          )}
+          {form.activityStatus === 'terminated' && (
+            <p className="mt-2 text-xs text-fg-subtle">퇴사 처리는 사이클 자동 제외됩니다. 보고관계 정리는 아래 "퇴사 처리" 버튼을 함께 사용하세요.</p>
+          )}
         </section>
 
         {/* 겸임 */}

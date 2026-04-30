@@ -1,16 +1,18 @@
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
 import { useAuthStore } from '../../stores/authStore';
-import { AlignLeft, List, BarChart2, Brain } from 'lucide-react';
+import { useSetPageHeader } from '../../contexts/PageHeaderContext';
+import { AlignLeft, List, BarChart2, Brain, Eye } from 'lucide-react';
 import {
-  MsChevronLeftLineIcon, MsPlusIcon, MsDeleteIcon, MsGrabIcon,
+  MsPlusIcon, MsDeleteIcon, MsGrabIcon,
   MsLockIcon, MsCancelIcon, MsCheckIcon, MsEditIcon,
 } from '../../components/ui/MsIcons';
 import type { TemplateQuestion, TemplateSection } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
 import { MsCheckbox, MsInput } from '../../components/ui/MsControl';
+import { TemplatePreviewModal } from '../../components/template/TemplatePreviewModal';
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -106,6 +108,7 @@ export function TemplateBuilder() {
 
   const [sections,  setSections]  = useState<TemplateSection[]>(initSections);
   const [questions, setQuestions] = useState<TemplateQuestion[]>(initQuestions);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   /* ── 섹션 조작 ──────────────────────────────────────────── */
   const addSection = () => {
@@ -205,65 +208,65 @@ export function TemplateBuilder() {
 
   const totalQuestions = questions.length;
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-
-      {/* ── Top toolbar ───────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-gray-020 flex-shrink-0 shadow-sm sticky top-0 z-20">
-        <button
-          onClick={() => navigate(returnTo === 'cycle-wizard' ? '/cycles/new' : '/templates')}
-          className="p-1.5 hover:bg-gray-010 rounded-lg transition-colors text-gray-060"
+  /* ── 헤더 ─────────────────────────────────────────────── */
+  const headerActions = useMemo(() => (
+    <>
+      {!isNew && (activeUsingCount > 0 || historicalCount > 0) && (
+        <span
+          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+            activeUsingCount > 0
+              ? 'bg-orange-005 text-orange-070 border-orange-020'
+              : 'bg-gray-005 text-gray-060 border-gray-010'
+          }`}
+          title={activeUsingCount > 0 ? '진행 중인 사이클이 있습니다. 변경 시 기존 사이클은 발행 시점 스냅샷을 그대로 사용하지만, 신규 발행 사이클부터 변경 내용이 반영됩니다.' : ''}
         >
-          <MsChevronLeftLineIcon size={20} />
-        </button>
+          사용 중 진행 {activeUsingCount} · 과거 {historicalCount}
+        </span>
+      )}
+      <span className="text-xs text-fg-subtlest">{totalQuestions}개 문항</span>
+      <MsButton variant="outline-default" onClick={() => setPreviewOpen(true)} leftIcon={<Eye size={16} />}>
+        미리보기
+      </MsButton>
+      <MsButton onClick={handleSave} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
+        {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
+      </MsButton>
+    </>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [isNew, activeUsingCount, historicalCount, totalQuestions, saving, returnTo]);
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={name}
-              onChange={e => { setName(e.target.value); if (e.target.value.trim()) setNameError(''); }}
-              onBlur={() => { if (!name.trim()) setNameError('템플릿 이름을 입력해주세요.'); }}
-              placeholder="템플릿 이름을 입력하세요"
-              className={`text-base font-semibold bg-transparent border-0 border-b-2 focus:outline-none px-0 py-0.5 w-64 transition-colors ${
-                nameError
-                  ? 'border-red-040 text-red-060 placeholder:text-red-020'
-                  : 'border-transparent hover:border-gray-030 focus:border-pink-040 text-fg-default placeholder:text-fg-subtlest'
-              }`}
-            />
-            <input
-              type="text"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="설명 (선택)"
-              className="text-base bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-gray-020 focus:border-pink-040 text-fg-subtle placeholder:text-gray-030 transition-colors"
-            />
-          </div>
-          {nameError && <p className="text-xs text-red-050 mt-0.5">{nameError}</p>}
+  useSetPageHeader(name.trim() || (isNew ? '새 템플릿' : '템플릿 편집'), headerActions, {
+    onBack: () => navigate(returnTo === 'cycle-wizard' ? '/cycles/new' : '/templates'),
+    subtitle: description.trim() || undefined,
+  });
+
+  return (
+    <div className="space-y-8 max-w-3xl mx-auto w-full">
+
+      {/* ── 기본 정보 (이름·설명) ─────────────────────────── */}
+      <section>
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
+        <div className="grid grid-cols-1 gap-3">
+          <MsInput
+            label="템플릿 이름 *"
+            type="text"
+            value={name}
+            onChange={e => { setName(e.target.value); if (e.target.value.trim()) setNameError(''); }}
+            onBlur={() => { if (!name.trim()) setNameError('템플릿 이름을 입력해주세요.'); }}
+            placeholder="예) 분기 정기 리뷰"
+            error={nameError}
+          />
+          <MsInput
+            label="설명"
+            type="text"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="템플릿 용도 (선택)"
+          />
         </div>
+      </section>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {!isNew && (activeUsingCount > 0 || historicalCount > 0) && (
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                activeUsingCount > 0
-                  ? 'bg-orange-005 text-orange-070 border-orange-020'
-                  : 'bg-gray-005 text-gray-060 border-gray-010'
-              }`}
-              title={activeUsingCount > 0 ? '진행 중인 사이클이 있습니다. 변경 시 기존 사이클은 발행 시점 스냅샷을 그대로 사용하지만, 신규 발행 사이클부터 변경 내용이 반영됩니다.' : ''}
-            >
-              사용 중 진행 {activeUsingCount} · 과거 {historicalCount}
-            </span>
-          )}
-          <span className="text-xs text-fg-subtlest">{totalQuestions}개 문항</span>
-          <MsButton onClick={handleSave} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
-            {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
-          </MsButton>
-        </div>
-      </div>
-
-      {/* ── Body ─────────────────────────────────────────── */}
-      <div className="flex-1 px-6 py-6 max-w-3xl mx-auto w-full space-y-8">
+      {/* ── 섹션·질문 ─────────────────────────────────────── */}
+      <div className="space-y-8">
 
         {sections.map((section) => {
           const sectionQs = questions.filter(q => q.sectionId === section.id);
@@ -493,6 +496,16 @@ export function TemplateBuilder() {
 
         <div className="pb-10" />
       </div>
+
+      {/* ── 미리보기 모달 ─────────────────────────────────── */}
+      <TemplatePreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        name={name}
+        description={description}
+        sections={sections}
+        questions={questions}
+      />
     </div>
   );
 }

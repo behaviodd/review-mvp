@@ -20,13 +20,28 @@
 
 ## 2. 타이포그래피
 
-| Role       | Tailwind                                            |
-|------------|-----------------------------------------------------|
-| Page title | `text-xl font-bold text-gray-099 tracking-[-0.3px]` |
-| Section h3 | `text-sm font-semibold text-gray-080`               |
-| Body       | `text-sm text-gray-080`                             |
-| Small      | `text-xs text-gray-050`                             |
-| Caption    | `text-[11px] text-gray-040`                         |
+Phase D-3.J (2026-04-30): **40대 주 사용자층 가독성** 위해 본문 14 → 16px 으로 ↑.
+
+| Role       | Tailwind                                                | px | 비고 |
+|------------|---------------------------------------------------------|----|------|
+| Page title | `text-xl font-bold text-fg-default tracking-[-0.3px]`   | 20 | 그대로 |
+| Section h3 | `text-base font-semibold text-fg-default`               | 16 | sm → base |
+| Body       | `text-base text-fg-default leading-6`                   | 16 | sm → base + leading-6 (24) 권장 |
+| Small      | `text-xs text-fg-subtle`                                | 12 | 그대로 — 메타·label·badge |
+| Caption    | `text-[11px] text-fg-subtlest`                          | 11 | 그대로 — count·timestamp |
+
+**규칙**:
+- 본문 (사용자가 읽는 컨텐츠) 은 `text-base` (16px). 줄간격은 `leading-6` (24px) 권장.
+- `text-xs` (12) 는 본문 외 메타·label·badge 용. 본문에 사용 금지.
+- `text-[11px]` 는 caption — count badge / timestamp / hint 등 보조 정보.
+- 폼 label, hint, table cell 메타 등은 `text-xs` 또는 `text-[11px]`.
+
+**예외 (Phase D-3.J 시점 결정)**:
+- **LNB (Sidebar) 메뉴 텍스트**: `text-sm` (14px) 유지 — 사용자 명시 결정. 좌측 메뉴는
+  컴팩트한 nav 영역으로 본문 가독성 정책과 분리. 적용 위치: 브랜드 타이틀, 메뉴 항목,
+  드롭다운 (설정/로그아웃)
+- 단일 라인 truncate 텍스트 + 좁은 컨테이너 (h-7 / h-8 버튼·탭) 의 `leading-5` 유지 —
+  16px 본문에 leading-5 (20px) 가 비좁아 보이지만 단일 라인엔 무관
 
 ## 3. 간격
 

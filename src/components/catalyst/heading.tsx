@@ -14,7 +14,7 @@ export function Heading({ level = 1, className, children }: HeadingProps) {
 export function Subheading({ level = 2, className, children }: HeadingProps) {
   const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4'
   return (
-    <Tag className={cn('text-base/7 font-semibold text-fg-default sm:text-sm/6', className)}>
+    <Tag className={cn('text-base/7 font-semibold text-fg-default sm:text-base/6', className)}>
       {children}
     </Tag>
   )

@@ -107,7 +107,7 @@ export function Reports() {
 
           {/* Dept completion bar chart */}
           <div className="rounded-lg border border-bd-default p-5">
-            <h2 className="text-sm font-semibold text-gray-070 mb-4">부서별 제출률</h2>
+            <h2 className="text-base font-semibold text-gray-070 mb-4">부서별 제출률</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={deptData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -121,7 +121,7 @@ export function Reports() {
 
           {/* Rating distribution */}
           <div className="rounded-lg border border-bd-default p-5">
-            <h2 className="text-sm font-semibold text-gray-070 mb-4">등급 분포</h2>
+            <h2 className="text-base font-semibold text-gray-070 mb-4">등급 분포</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -142,7 +142,7 @@ export function Reports() {
           {/* Team completion pie */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="rounded-lg border border-bd-default p-5">
-              <h2 className="text-sm font-semibold text-gray-070 mb-3">자기평가 제출 현황</h2>
+              <h2 className="text-base font-semibold text-gray-070 mb-3">자기평가 제출 현황</h2>
               {teamMembers.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
@@ -160,7 +160,7 @@ export function Reports() {
 
             {/* Team member stats */}
             <div className="rounded-lg border border-bd-default p-5">
-              <h2 className="text-sm font-semibold text-gray-070 mb-3">팀원 현황</h2>
+              <h2 className="text-base font-semibold text-gray-070 mb-3">팀원 현황</h2>
               <div className="space-y-2">
                 {teamMembers.map(m => {
                   const sub = submissions.find(s => s.revieweeId === m.id && s.type === 'self');
@@ -194,7 +194,7 @@ export function Reports() {
           {/* Self vs Manager comparison */}
           {teamData.some(d => d.자기평가 > 0) && (
             <div className="rounded-lg border border-bd-default p-5">
-              <h2 className="text-sm font-semibold text-gray-070 mb-4">자기평가 vs 매니저평가 비교</h2>
+              <h2 className="text-base font-semibold text-gray-070 mb-4">자기평가 vs 매니저평가 비교</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={teamData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -240,7 +240,7 @@ export function Reports() {
 
             {myAvg && (
               <div className="rounded-lg border border-bd-default p-5">
-                <h2 className="text-sm font-semibold text-gray-070 mb-1">최근 자기평가 평균 점수</h2>
+                <h2 className="text-base font-semibold text-gray-070 mb-1">최근 자기평가 평균 점수</h2>
                 <p className="text-3xl font-bold text-pink-050">{myAvg} <span className="text-base font-normal text-fg-subtlest">/ 5.0</span></p>
                 <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-pink-050 hover:underline">
                   최근 리뷰 상세 보기 →

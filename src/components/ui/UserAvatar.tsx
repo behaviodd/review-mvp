@@ -30,7 +30,7 @@ export function UserAvatar({ user, size = 'md', showName, anonymous, className }
       />
       {showName && (
         <div>
-          <p className="text-sm/6 font-medium text-fg-default">{name}</p>
+          <p className="text-base/6 font-medium text-fg-default">{name}</p>
           {!anonymous && <p className="text-xs/5 text-fg-subtle">{user.position}</p>}
         </div>
       )}

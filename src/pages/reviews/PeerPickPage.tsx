@@ -178,7 +178,7 @@ export function PeerPickPage() {
                   <MsCheckbox checked={checked} disabled={disabled} onChange={() => toggle(u.id)} />
                   <UserAvatar user={u} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
+                    <p className="text-base font-medium text-gray-080 truncate">{u.name}</p>
                     <p className="text-[11px] text-fg-subtlest truncate">{u.position} · {getSmallestOrg(u)}</p>
                   </div>
                 </label>

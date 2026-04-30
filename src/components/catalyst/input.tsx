@@ -4,7 +4,7 @@ import { cn } from '../ui/cn'
 const inputBase = [
   'relative block w-full appearance-none rounded-lg',
   'px-3.5 py-2.5 sm:px-3 sm:py-1.5',
-  'text-base/6 text-fg-default placeholder:text-fg-subtle sm:text-sm/6',
+  'text-base/6 text-fg-default placeholder:text-fg-subtle sm:text-base/6',
   'border border-gray-020 bg-white',
   'transition-colors duration-150',
   'focus:outline-none focus:border-gray-030 focus:ring-4 focus:ring-gray-010',

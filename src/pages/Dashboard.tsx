@@ -166,7 +166,7 @@ function AdminDashboard() {
       {/* 차트 + 액션 — md+ divide-x 가운데 line */}
       <div className="border-t border-bd-default grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-bd-default">
         <div className="lg:col-span-2 lg:pr-6 pb-6 lg:pb-0">
-          <h2 className="text-sm font-semibold text-fg-default mb-4">부서별 완료율</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={deptStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -183,7 +183,7 @@ function AdminDashboard() {
         </div>
 
         <div className="lg:pl-6">
-          <h2 className="text-sm font-semibold text-fg-default mb-4">액션 필요</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-4">액션 필요</h2>
           <div className="space-y-3">
             {activeCycles.map(c => (
               <div key={c.id} className="p-3 rounded-lg border border-bd-default">
@@ -203,13 +203,13 @@ function AdminDashboard() {
 
       <div className="border-t border-bd-default">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-fg-default">최근 활동</h2>
+          <h2 className="text-base font-semibold text-fg-default">최근 활동</h2>
           <button onClick={() => navigate('/cycles')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
             전체 보기
           </button>
         </div>
         {activityFeed.length === 0 ? (
-          <p className="text-sm text-fg-subtlest py-2">아직 활동 이력이 없습니다.</p>
+          <p className="text-base text-fg-subtlest py-2">아직 활동 이력이 없습니다.</p>
         ) : (
           <div className="space-y-1">
             {activityFeed.map(item => (
@@ -218,7 +218,7 @@ function AdminDashboard() {
                 className="flex items-center gap-3 py-2 px-1 rounded-lg hover:bg-interaction-hovered transition-colors"
               >
                 <div className="w-1.5 h-1.5 bg-fg-subtlest rounded-full flex-shrink-0" />
-                <p className="text-sm text-fg-default flex-1">{item.text}</p>
+                <p className="text-base text-fg-default flex-1">{item.text}</p>
                 <span className="text-xs text-fg-subtlest flex-shrink-0 whitespace-nowrap">{item.time}</span>
               </div>
             ))}
@@ -231,7 +231,7 @@ function AdminDashboard() {
         <div className="border-t border-bd-default py-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] font-bold text-orange-070 bg-orange-005 px-1.5 py-0.5 rounded uppercase tracking-wide">DEV</span>
-            <h2 className="text-sm font-semibold text-fg-default">테스트 계정으로 접속</h2>
+            <h2 className="text-base font-semibold text-fg-default">테스트 계정으로 접속</h2>
           </div>
           <p className="text-xs text-fg-subtle mb-3">
             디자인 센터 하위 조직 멤버 — 빙의 후 그 사용자로서 리뷰 작성·제출이 가능합니다 (관리자 전용 라우트는 차단). 우상단 헤더에서 "원래 계정으로 복귀" 가능.
@@ -243,7 +243,7 @@ function AdminDashboard() {
               if (target) handleImpersonateTest(target);
               e.target.value = '';
             }}
-            className="w-full max-w-md h-10 px-3 text-sm rounded-md border border-bd-default bg-surface-default text-fg-default focus:border-bd-focused focus:outline-none"
+            className="w-full max-w-md h-10 px-3 text-base rounded-md border border-bd-default bg-surface-default text-fg-default focus:border-bd-focused focus:outline-none"
           >
             <option value="">선택…</option>
             {designCenterMembers.map(u => {
@@ -322,7 +322,7 @@ function ManagerDashboard() {
               <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
                 자기평가
               </span>
-              <p className="text-sm font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
+              <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
               {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-fg-brand1 font-medium' : 'text-fg-subtle'}`}>
                 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
               </p>}
@@ -334,7 +334,7 @@ function ManagerDashboard() {
               className="p-4 rounded-lg border border-bd-default text-left hover:bg-interaction-hovered transition-colors group"
             >
               <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
-              <p className="text-sm font-semibold text-fg-default group-hover:text-fg-brand1">
+              <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1">
                 {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
               </p>
               {activeCycle && <p className="text-xs mt-1 text-fg-subtle">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
@@ -345,7 +345,7 @@ function ManagerDashboard() {
 
       <div className="border-t border-bd-default">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-fg-default">팀원 리뷰 현황</h2>
+          <h2 className="text-base font-semibold text-fg-default">팀원 리뷰 현황</h2>
           <button onClick={() => navigate('/reports')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
             리포트 보기
           </button>
@@ -360,7 +360,7 @@ function ManagerDashboard() {
                 className="flex flex-col items-center p-3.5 rounded-lg border border-bd-default hover:bg-interaction-hovered transition-colors group"
               >
                 <UserAvatar user={m} size="lg" />
-                <p className="text-sm font-semibold text-fg-default mt-2">{m.name}</p>
+                <p className="text-base font-semibold text-fg-default mt-2">{m.name}</p>
                 <p className="text-xs text-fg-subtle mb-2">{m.position}</p>
                 <StatusBadge type="submission" value={status} />
               </button>
@@ -370,7 +370,7 @@ function ManagerDashboard() {
       </div>
 
       <div className="border-t border-bd-default">
-        <h2 className="text-sm font-semibold text-fg-default mb-4">팀 리뷰 완료율</h2>
+        <h2 className="text-base font-semibold text-fg-default mb-4">팀 리뷰 완료율</h2>
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
             <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
@@ -432,7 +432,7 @@ function EmployeeDashboard() {
       {pastSubmissions.length > 0 && (
         <div className="border-t border-bd-default">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-fg-default">리뷰 이력</h2>
+            <h2 className="text-base font-semibold text-fg-default">리뷰 이력</h2>
             <button onClick={() => navigate('/reviews/me')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
               전체 보기
             </button>
@@ -447,9 +447,9 @@ function EmployeeDashboard() {
                   onClick={() => navigate(`/reviews/me/${s.id}`)}
                   className="w-full flex items-center gap-4 py-2 hover:bg-interaction-hovered rounded-lg px-1 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-pink-005 flex items-center justify-center font-bold text-pink-060 flex-shrink-0 text-sm">{grade}</div>
+                  <div className="w-9 h-9 rounded-lg bg-pink-005 flex items-center justify-center font-bold text-pink-060 flex-shrink-0 text-base">{grade}</div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-fg-default">{cycle?.title}</p>
+                    <p className="text-base font-medium text-fg-default">{cycle?.title}</p>
                     <p className="text-xs text-fg-subtlest">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
                   </div>
                   <StatusBadge type="submission" value={s.status} />

@@ -38,29 +38,29 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       {/* ── 익명 ─────────────────────────────────────────────── */}
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-2">
         <header>
-          <h3 className="text-sm font-semibold text-gray-080">익명 설정</h3>
+          <h3 className="text-base font-semibold text-gray-080">익명 설정</h3>
           <p className="text-[11px] text-fg-subtlest">피평가자가 결과를 볼 때 작성자 이름이 가려집니다. 관리자 뷰·감사 로그에는 항상 실명이 남습니다.</p>
         </header>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <MsCheckbox
             checked={!!form.anonymity?.downward}
             onChange={e => updateAnonymity({ downward: e.target.checked })}
-            label={<span className="text-sm">조직장 리뷰 익명</span>}
+            label={<span className="text-base">조직장 리뷰 익명</span>}
           />
           <MsCheckbox
             checked={!!form.anonymity?.peer}
             onChange={e => updateAnonymity({ peer: e.target.checked })}
-            label={<span className="text-sm">동료 리뷰 익명</span>}
+            label={<span className="text-base">동료 리뷰 익명</span>}
           />
           <MsCheckbox
             checked={!!form.anonymity?.upward}
             onChange={e => updateAnonymity({ upward: e.target.checked })}
-            label={<span className="text-sm">상향 리뷰 익명</span>}
+            label={<span className="text-base">상향 리뷰 익명</span>}
           />
           <MsCheckbox
             checked={!!form.anonymity?.self}
             onChange={e => updateAnonymity({ self: e.target.checked })}
-            label={<span className="text-sm">자기평가 익명 <span className="text-[10px] text-fg-subtlest">(거의 사용 X)</span></span>}
+            label={<span className="text-base">자기평가 익명 <span className="text-[10px] text-fg-subtlest">(거의 사용 X)</span></span>}
           />
         </div>
       </section>
@@ -68,7 +68,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       {/* ── 공개 범위 ───────────────────────────────────────────── */}
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
         <header>
-          <h3 className="text-sm font-semibold text-gray-080">결과 공개 범위 (→ 피평가자)</h3>
+          <h3 className="text-base font-semibold text-gray-080">결과 공개 범위 (→ 피평가자)</h3>
           <p className="text-[11px] text-fg-subtlest">피평가자가 자신에 대한 리뷰를 언제 볼 수 있는지 유형별로 결정합니다.</p>
         </header>
         {([
@@ -98,7 +98,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
                           : 'border-gray-010 bg-white text-gray-070 hover:bg-gray-005',
                       )}
                     >
-                      <p className="text-sm font-semibold">{opt.label}</p>
+                      <p className="text-base font-semibold">{opt.label}</p>
                       <p className="text-[11px] text-fg-subtlest mt-0.5">{opt.hint}</p>
                     </button>
                   );
@@ -112,19 +112,19 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       {/* ── 참고 정보 ───────────────────────────────────────────── */}
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-2">
         <header>
-          <h3 className="text-sm font-semibold text-gray-080">작성 시 참고 정보</h3>
+          <h3 className="text-base font-semibold text-gray-080">작성 시 참고 정보</h3>
           <p className="text-[11px] text-fg-subtlest">리뷰 작성 화면 상단에 자동 첨부됩니다. 필요한 항목만 선택하세요.</p>
         </header>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <MsCheckbox
             checked={!!form.referenceInfo?.includeGoals}
             onChange={e => updateReference({ includeGoals: e.target.checked })}
-            label={<span className="text-sm">피평가자의 목표(Goals)</span>}
+            label={<span className="text-base">피평가자의 목표(Goals)</span>}
           />
           <MsCheckbox
             checked={!!form.referenceInfo?.includePreviousReview}
             onChange={e => updateReference({ includePreviousReview: e.target.checked })}
-            label={<span className="text-sm">직전 사이클 요약</span>}
+            label={<span className="text-base">직전 사이클 요약</span>}
           />
         </div>
       </section>

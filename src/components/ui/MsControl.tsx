@@ -67,7 +67,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
           )
         )}
       </span>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -107,7 +107,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
         />
         {checked && <span className={cn('rounded-full flex-shrink-0', dot, dotColor)} />}
       </span>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -159,7 +159,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
           thumbSize, thumbTranslate,
         )} />
       </button>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -182,7 +182,7 @@ const INPUT_BASE =
 
 const INPUT_SIZE = {
   sm: 'px-2.5 py-1.5 text-xs rounded-md',
-  md: 'px-3 py-2 text-sm rounded-lg',
+  md: 'px-3 py-2 text-base rounded-lg',
 } as const;
 
 export function MsInput({
@@ -249,7 +249,7 @@ const TEXTAREA_BASE =
 
 const TEXTAREA_SIZE = {
   sm: 'px-2.5 py-1.5 text-xs rounded-md',
-  md: 'px-3 py-2 text-sm rounded-lg',
+  md: 'px-3 py-2 text-base rounded-lg',
 } as const;
 
 export function MsTextarea({
@@ -309,7 +309,7 @@ interface MsSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 const SELECT_BASE =
-  'w-full appearance-none px-3 py-2 pr-8 text-sm rounded-lg border bg-gray-005 text-fg-default transition-colors ' +
+  'w-full appearance-none px-3 py-2 pr-8 text-base rounded-lg border bg-gray-005 text-fg-default transition-colors ' +
   'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
   'disabled:text-fg-subtlest disabled:cursor-not-allowed';
 

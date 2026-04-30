@@ -89,7 +89,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
   if (!member) {
     return (
       <ModalShell open={true} onClose={onClose} title="구성원 정보 수정" widthClass="max-w-md">
-        <div className="py-6 text-center text-sm text-fg-subtle">
+        <div className="py-6 text-center text-base text-fg-subtle">
           구성원을 찾을 수 없습니다. 잘못된 경로이거나 삭제된 구성원입니다.
         </div>
       </ModalShell>

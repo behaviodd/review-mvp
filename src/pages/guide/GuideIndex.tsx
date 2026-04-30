@@ -12,7 +12,7 @@ export function GuideIndex() {
       <h1 className="text-2xl font-bold text-fg-default tracking-[-0.3px] leading-9">
         가이드
       </h1>
-      <p className="mt-1 text-sm text-fg-subtle leading-6 tracking-[-0.3px]">
+      <p className="mt-1 text-base text-fg-subtle leading-6 tracking-[-0.3px]">
         리뷰시스템을 처음 쓰시는 분도, 익숙하신 분도 이곳에서 필요한 안내를 찾아보세요.
       </p>
 
@@ -30,7 +30,7 @@ export function GuideIndex() {
                   <Icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-fg-default tracking-[-0.3px] leading-5 truncate">
+                  <p className="text-base font-bold text-fg-default tracking-[-0.3px] leading-5 truncate">
                     {cat.title}
                   </p>
                   <p className="text-xs text-fg-subtlest tracking-[-0.3px] leading-4 mt-0.5">
@@ -38,7 +38,7 @@ export function GuideIndex() {
                   </p>
                 </div>
               </div>
-              <p className="mt-3 text-sm text-fg-subtle tracking-[-0.3px] leading-5">
+              <p className="mt-3 text-base text-fg-subtle tracking-[-0.3px] leading-5">
                 {cat.summary}
               </p>
             </>

@@ -34,7 +34,7 @@ const solidColors: Record<string, string> = {
 const base = [
   'relative isolate inline-flex items-center justify-center gap-x-2',
   'rounded-lg border font-semibold',
-  'text-base/6 sm:text-sm/6',
+  'text-base/6 sm:text-base/6',
   'px-3.5 py-2.5 sm:px-3 sm:py-1.5',
   'cursor-pointer select-none whitespace-nowrap',
   'transition-colors duration-150',

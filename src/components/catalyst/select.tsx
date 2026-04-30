@@ -5,7 +5,7 @@ import { cn } from '../ui/cn'
 const selectBase = [
   'relative block w-full appearance-none rounded-lg',
   'pl-3.5 pr-8 py-2.5 sm:pl-3 sm:pr-8 sm:py-1.5',
-  'text-base/6 text-fg-default sm:text-sm/6',
+  'text-base/6 text-fg-default sm:text-base/6',
   'border border-gray-020 bg-white',
   'transition-colors duration-150',
   'focus:outline-none focus:border-gray-030 focus:ring-4 focus:ring-gray-010',

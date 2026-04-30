@@ -50,7 +50,7 @@ export function GuideLayout() {
         <div className="md:hidden flex items-center px-4 py-3 border-b border-bd-default bg-bg-token-default sticky top-0 z-10">
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="flex items-center gap-2 text-sm font-semibold text-fg-subtle"
+            className="flex items-center gap-2 text-base font-semibold text-fg-subtle"
           >
             <MsMenuIcon size={16} />
             목차

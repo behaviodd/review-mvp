@@ -88,7 +88,7 @@ export function CycleArchive() {
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-medium text-gray-080 truncate">{cycle.title}</p>
+                  <p className="text-base font-medium text-gray-080 truncate">{cycle.title}</p>
                   {(cycle.tags ?? []).map(t => (
                     <span key={t} className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', tagColor(t))}>
                       #{t}

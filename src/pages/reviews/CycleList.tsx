@@ -472,7 +472,7 @@ export function CycleList() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-fg-default group-hover:text-pink-060 truncate leading-snug">
+                      <p className="text-base font-medium text-fg-default group-hover:text-pink-060 truncate leading-snug">
                         {cycle.title}
                       </p>
                       {(cycle.tags ?? []).slice(0, 3).map(t => (

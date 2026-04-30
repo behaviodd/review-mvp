@@ -59,7 +59,7 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
         className="flex w-full items-center justify-between px-4 py-2.5"
       >
         <div className="text-left">
-          <p className="text-sm font-semibold text-gray-080">
+          <p className="text-base font-semibold text-gray-080">
             작성 참고 정보
             {reviewee && variant === 'downward' && (
               <span className="ml-2 text-xs font-normal text-fg-subtlest">· {reviewee.name}</span>

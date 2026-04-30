@@ -15,7 +15,7 @@ interface MsButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const SIZE: Record<Size, { base: string; icon: number; spin: number }> = {
   sm:  { base: 'h-6  min-w-6  px-[8px]  gap-0.5 rounded-[6px] text-xs   leading-4', icon: 14, spin: 12 },
-  md:  { base: 'h-8  min-w-8  px-[8px]  gap-1   rounded-lg    text-sm   leading-5', icon: 18, spin: 14 },
+  md:  { base: 'h-8  min-w-8  px-[8px]  gap-1   rounded-lg    text-base   leading-5', icon: 18, spin: 14 },
   lg:  { base: 'h-10 min-w-10 px-[10px] gap-1.5 rounded-lg    text-base leading-6', icon: 20, spin: 16 },
   xl:  { base: 'h-12 min-w-12 px-3      gap-2   rounded-xl    text-base leading-6', icon: 24, spin: 20 },
   xxl: { base: 'h-14 min-w-14 px-4      gap-2   rounded-xl    text-lg   leading-7', icon: 24, spin: 20 },

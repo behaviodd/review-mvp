@@ -138,7 +138,7 @@ function SubmissionViewPanel({
   }) => (
     <div className={`px-5 py-3 ${accent}`}>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-080">{label}</span>
+        <span className="text-base font-semibold text-gray-080">{label}</span>
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
           sub?.status === 'submitted'
             ? 'bg-green-010 text-green-060'
@@ -239,7 +239,7 @@ function SubmissionViewPanel({
           {allQuestions.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-030">
               <Eye className="w-8 h-8" />
-              <p className="text-sm">템플릿 정보가 없습니다.</p>
+              <p className="text-base">템플릿 정보가 없습니다.</p>
             </div>
           ) : (
             allQuestions.map((q, idx) => {
@@ -273,7 +273,7 @@ function SubmissionViewPanel({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-semibold text-gray-080 leading-snug">{q.text}</p>
+                      <p className="text-base font-semibold text-gray-080 leading-snug">{q.text}</p>
                     </div>
                   </div>
 
@@ -629,7 +629,7 @@ export function CycleDetail() {
         }`}>
           <div className="flex items-center gap-2 min-w-0">
             <MsWarningIcon size={16} className={`shrink-0 ${transition.isDanger ? 'text-red-040' : 'text-yellow-060'}`} />
-            <p className={`text-sm ${transition.isDanger ? 'text-red-060' : 'text-yellow-070'}`}>
+            <p className={`text-base ${transition.isDanger ? 'text-red-060' : 'text-yellow-070'}`}>
               {transition.msg}
             </p>
           </div>
@@ -652,7 +652,7 @@ export function CycleDetail() {
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-red-005 border-red-020">
           <div className="flex items-center gap-2 min-w-0">
             <MsDeleteIcon size={16} className="shrink-0 text-red-040" />
-            <p className="text-sm text-red-060">
+            <p className="text-base text-red-060">
               <strong>"{cycle.title}"</strong> 리뷰와 모든 제출 데이터({submissions.filter(s => s.cycleId === cycle.id).length}건)가 영구 삭제됩니다. 되돌릴 수 없습니다.
             </p>
           </div>
@@ -717,7 +717,7 @@ export function CycleDetail() {
 
         {/* Timeline — Stats 다음 평면 (사이 border 없음, 한 덩어리) */}
         <div className="px-4 pb-5">
-          <h2 className="text-sm font-semibold text-fg-default mb-3 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-3 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
           <div>
             {[
               { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
@@ -727,8 +727,8 @@ export function CycleDetail() {
                 key={label}
                 className={`flex items-center justify-between py-2 px-2 ${highlight ? 'bg-bg-token-brand1-subtlest -mx-2 px-4 rounded-md' : ''}`}
               >
-                <span className={`text-sm ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
-                <span className={`text-sm font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>
+                <span className={`text-base ${highlight ? 'font-semibold text-fg-brand1' : 'text-fg-default'}`}>{label}</span>
+                <span className={`text-base font-medium ${highlight ? 'text-fg-brand1' : 'text-fg-subtle'}`}>{formatDate(date)}</span>
               </div>
             ))}
           </div>

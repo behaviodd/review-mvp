@@ -104,7 +104,7 @@ export function AuditLogDrawer({ cycleId, open, onClose }: Props) {
         <div>
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-semibold text-gray-070">기록이 없습니다.</p>
+              <p className="text-base font-semibold text-gray-070">기록이 없습니다.</p>
               <p className="mt-1 text-xs text-fg-subtlest">관리자 개입이 일어나면 여기에 남습니다.</p>
             </div>
           ) : (
@@ -124,7 +124,7 @@ export function AuditLogDrawer({ cycleId, open, onClose }: Props) {
                         {timeAgo(e.at)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-080">{e.summary}</p>
+                    <p className="text-base text-gray-080">{e.summary}</p>
                     {e.targetIds.length > 0 && (
                       <p className="text-[11px] text-fg-subtlest truncate" title={e.targetIds.join(', ')}>
                         대상 {e.targetIds.length}건

@@ -133,7 +133,7 @@ export function AuditLog() {
                       <MsLogoutIcon size={14} className="text-orange-070" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-fg-default">
+                      <p className="text-base text-fg-default">
                         <strong>{actorName}</strong> → <strong>{targetName}</strong>
                         {isActive && <Pill tone="danger" size="xs" className="ml-2">진행 중</Pill>}
                       </p>
@@ -176,7 +176,7 @@ export function AuditLog() {
                 return (
                   <div key={entry.id} className="flex items-center gap-3 px-2 py-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-fg-default">
+                      <p className="text-base text-fg-default">
                         <Pill tone="neutral" size="xs">{ACTION_LABEL[entry.action] ?? entry.action}</Pill>
                         <span className="ml-2 font-medium">{actorName}</span>
                         <span className="ml-1 text-fg-subtle">— {entry.summary}</span>

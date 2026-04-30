@@ -99,7 +99,7 @@ export function Goals() {
       {showForm && (
         <div className="rounded-lg border border-pink-020 p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-080">새 목표 추가</h2>
+            <h2 className="text-base font-semibold text-gray-080">새 목표 추가</h2>
             <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-010 rounded-lg">
               <MsCancelIcon size={16} className="text-fg-subtlest" />
             </button>
@@ -154,7 +154,7 @@ export function Goals() {
         <>
           {active.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-fg-subtle">진행 중 ({active.length})</h2>
+              <h2 className="text-base font-semibold text-fg-subtle">진행 중 ({active.length})</h2>
               {active.map(goal => {
                 const cfg = STATUS_CONFIG[goal.status];
                 const Icon = cfg.icon;
@@ -162,7 +162,7 @@ export function Goals() {
                   <div key={goal.id} className="rounded-lg border border-bd-default p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 pr-3">
-                        <h3 className="text-sm font-semibold text-fg-default">{goal.title}</h3>
+                        <h3 className="text-base font-semibold text-fg-default">{goal.title}</h3>
                         {goal.description && <p className="text-xs text-fg-subtlest mt-0.5">{goal.description}</p>}
                       </div>
                       <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
@@ -198,11 +198,11 @@ export function Goals() {
 
           {done.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-fg-subtle">완료 ({done.length})</h2>
+              <h2 className="text-base font-semibold text-fg-subtle">완료 ({done.length})</h2>
               {done.map(goal => (
                 <div key={goal.id} className="rounded-lg border border-bd-default p-5 opacity-60">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-sm font-semibold text-gray-060 line-through">{goal.title}</h3>
+                    <h3 className="text-base font-semibold text-gray-060 line-through">{goal.title}</h3>
                     <span className="flex items-center gap-1 text-xs font-medium text-pink-050 bg-pink-005 px-2 py-0.5 rounded">
                       <MsCheckIcon size={12} /> 완료
                     </span>

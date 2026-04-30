@@ -59,7 +59,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
             <UserAvatar user={toUser} size="sm" />
           ) : null}
           <div>
-            <p className="text-sm font-semibold text-gray-080">
+            <p className="text-base font-semibold text-gray-080">
               {mode === 'received'
                 ? (fb.isAnonymous ? '익명' : fromUser?.name)
                 : toUser?.name}
@@ -71,7 +71,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
           {cfg.emoji} {cfg.label}
         </span>
       </div>
-      <p className="text-sm text-gray-070 leading-relaxed">{fb.content}</p>
+      <p className="text-base text-gray-070 leading-relaxed">{fb.content}</p>
       {onQuickWrite && (
         <div className="mt-3 flex justify-end">
           <button
@@ -148,7 +148,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         <div className="px-4 py-4 border-b border-gray-010">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-fg-subtle hover:text-gray-080 transition-colors"
+            className="flex items-center gap-1.5 text-base text-fg-subtle hover:text-gray-080 transition-colors"
           >
             <MsChevronLeftLineIcon size={16} className="w-4 h-4" /> 피드백 목록
           </button>
@@ -192,7 +192,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
               >
                 <UserAvatar user={user} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${isSel ? 'text-pink-060' : 'text-gray-080'}`}>
+                  <p className={`text-base font-medium truncate ${isSel ? 'text-pink-060' : 'text-gray-080'}`}>
                     {user.name}
                   </p>
                   <p className="text-xs text-fg-subtlest truncate">{getSmallestOrg(user)} · {user.position}</p>
@@ -236,7 +236,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
           {selectedUser ? (
             <div className="flex items-center gap-2.5 px-3 py-2 bg-blue-005 rounded-lg border border-blue-020">
               <UserAvatar user={selectedUser} size="sm" />
-              <span className="flex-1 text-sm font-medium text-blue-060 truncate">{selectedUser.name}</span>
+              <span className="flex-1 text-base font-medium text-blue-060 truncate">{selectedUser.name}</span>
               <span className="text-xs text-blue-040 truncate hidden sm:block">{selectedUser.department}</span>
               <button
                 onClick={() => { setToUserId(''); setSearch(''); }}
@@ -266,7 +266,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                     >
                       <UserAvatar user={u} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
+                        <p className="text-base font-medium text-gray-080 truncate">{u.name}</p>
                         <p className="text-xs text-fg-subtlest truncate">{getSmallestOrg(u)} · {u.position}</p>
                       </div>
                     </button>
@@ -284,12 +284,12 @@ function WriteView({ initialToUserId, onBack, onSent }: {
               <UserAvatar user={selectedUser} size="xl" />
               <div>
                 <p className="text-base font-semibold text-fg-default">{selectedUser.name}</p>
-                <p className="text-sm text-fg-subtlest">{selectedUser.position} · {getSmallestOrg(selectedUser)}</p>
+                <p className="text-base text-fg-subtlest">{selectedUser.position} · {getSmallestOrg(selectedUser)}</p>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2 p-4 rounded-lg border border-dashed border-gray-030">
-              <p className="text-sm text-fg-subtlest">← 왼쪽에서 받는 사람을 선택하세요</p>
+              <p className="text-base text-fg-subtlest">← 왼쪽에서 받는 사람을 선택하세요</p>
             </div>
           )}
 
@@ -304,7 +304,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                     key={key}
                     type="button"
                     onClick={() => setType(key)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition-all ${
+                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-base font-medium transition-all ${
                       isActive ? cfg.activeClass : 'border-gray-020 text-fg-subtle hover:border-gray-030 bg-white'
                     }`}
                   >
@@ -463,7 +463,7 @@ export function Feedback() {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-base font-medium transition-colors ${
                 tab === key
                   ? 'bg-gray-099 text-white shadow-sm'
                   : 'text-fg-subtle hover:text-gray-080 hover:bg-gray-005'

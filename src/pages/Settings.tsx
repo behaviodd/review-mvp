@@ -117,20 +117,20 @@ export function Settings() {
       <section className="py-6 first:pt-0">
         <div className="flex items-center gap-2 mb-4">
           <MsProfileIcon size={16} className="text-fg-subtlest" />
-          <h2 className="text-sm font-semibold text-gray-080">프로필</h2>
+          <h2 className="text-base font-semibold text-gray-080">프로필</h2>
         </div>
         <div className="flex items-center gap-4">
           <UserAvatar user={currentUser} size="xl" />
           <div>
             <p className="text-lg font-semibold text-fg-default">{currentUser.name}</p>
-            <p className="text-sm text-fg-subtle">{currentUser.position}</p>
+            <p className="text-base text-fg-subtle">{currentUser.position}</p>
             <p className="text-xs text-fg-subtlest">{currentUser.department} · {currentUser.email}</p>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-gray-005 flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-gray-060">역할</p>
-            <p className="text-sm text-gray-080 mt-0.5">
+            <p className="text-base text-gray-080 mt-0.5">
               {currentUser.role === 'admin' ? '관리자' : currentUser.role === 'leader' ? '조직장' : '팀원'}
             </p>
           </div>
@@ -143,7 +143,7 @@ export function Settings() {
       <section className="py-6">
         <div className="flex items-center gap-2 mb-4">
           <Sheet className="w-4 h-4 text-fg-subtlest" />
-          <h2 className="text-sm font-semibold text-gray-080">Google Sheets 연동</h2>
+          <h2 className="text-base font-semibold text-gray-080">Google Sheets 연동</h2>
         </div>
 
         <div className="space-y-5">
@@ -192,7 +192,7 @@ export function Settings() {
             {/* ── 조직 데이터 동기화 ── */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-080">조직 데이터 자동 동기화</p>
+                <p className="text-base text-gray-080">조직 데이터 자동 동기화</p>
                 <p className="text-xs text-fg-subtlest mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
               </div>
               <MsSwitch checked={orgSyncEnabled} onChange={setOrgSyncEnabled} />
@@ -224,7 +224,7 @@ export function Settings() {
             {/* ── 리뷰 운영 데이터 동기화 ── */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-080">리뷰 운영 데이터 자동 동기화</p>
+                <p className="text-base text-gray-080">리뷰 운영 데이터 자동 동기화</p>
                 <p className="text-xs text-fg-subtlest mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
               </div>
               <MsSwitch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
@@ -256,7 +256,7 @@ export function Settings() {
             {/* ── 쓰기 큐 상태 (경로 A) ── */}
             <div className="flex items-start justify-between gap-3 pt-1">
               <div className="min-w-0">
-                <p className="text-sm text-gray-080">쓰기 큐 상태</p>
+                <p className="text-base text-gray-080">쓰기 큐 상태</p>
                 <p className="text-xs text-fg-subtlest mt-0.5">
                   리뷰 저장·리마인드 등 쓰기 실패가 생기면 여기에 쌓입니다.
                 </p>
@@ -307,12 +307,12 @@ export function Settings() {
         <section className="py-6">
           <div className="flex items-center gap-2 mb-4">
             <MsInfoIcon size={16} className="text-fg-subtlest" />
-            <h2 className="text-sm font-semibold text-gray-080">운영 토글</h2>
+            <h2 className="text-base font-semibold text-gray-080">운영 토글</h2>
           </div>
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-080">신규 사용자 자동 승인</p>
+              <p className="text-base font-semibold text-gray-080">신규 사용자 자동 승인</p>
               <p className="text-xs text-fg-subtlest mt-1 leading-5">
                 @makestar.com 도메인 첫 로그인 시 승인 대기 큐를 거치지 않고 즉시 활성 멤버로 등록합니다.
                 임시 사번(<code className="text-[11px] bg-gray-010 px-1 rounded">auto_*</code>) 으로 들어오며, 직책·소속 조직·보고대상은 비어 있는 채로 진입합니다 — 운영자 보강 필요.

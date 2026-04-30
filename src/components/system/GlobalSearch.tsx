@@ -117,7 +117,7 @@ export function GlobalSearch() {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onInputKey}
             placeholder="사이클·템플릿·구성원 검색"
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-fg-subtlest"
+            className="flex-1 bg-transparent outline-none text-base placeholder:text-fg-subtlest"
           />
           <button
             type="button"
@@ -153,7 +153,7 @@ export function GlobalSearch() {
                         <Icon size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-080 truncate">{r.title}</p>
+                        <p className="text-base font-medium text-gray-080 truncate">{r.title}</p>
                         <p className="text-[11px] text-fg-subtlest truncate">{meta.label} · {r.subtitle}</p>
                       </div>
                     </button>

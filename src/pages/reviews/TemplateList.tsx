@@ -134,7 +134,7 @@ export function TemplateList() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold text-fg-default group-hover:text-pink-060 truncate leading-snug">{tmpl.name}</h3>
+                    <h3 className="text-base font-semibold text-fg-default group-hover:text-pink-060 truncate leading-snug">{tmpl.name}</h3>
                     {tmpl.isDefault && (
                       <span className="flex items-center gap-1 text-xs font-medium text-fg-brand1 bg-bg-token-brand1-subtlest px-2 py-0.5 rounded">
                         <MsStarIcon size={12} /> 기본

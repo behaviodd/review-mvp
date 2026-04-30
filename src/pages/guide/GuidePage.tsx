@@ -40,7 +40,7 @@ export function GuidePage() {
       <h1 className="mt-2 text-2xl font-bold text-fg-default tracking-[-0.3px] leading-9">
         {page.title}
       </h1>
-      <p className="mt-2 text-sm text-fg-subtle leading-6 tracking-[-0.3px]">
+      <p className="mt-2 text-base text-fg-subtle leading-6 tracking-[-0.3px]">
         {page.summary}
       </p>
 
@@ -49,7 +49,7 @@ export function GuidePage() {
         {md ? (
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
         ) : (
-          <p className="text-sm text-fg-subtlest">본문이 아직 작성되지 않았습니다.</p>
+          <p className="text-base text-fg-subtlest">본문이 아직 작성되지 않았습니다.</p>
         )}
       </div>
 
@@ -61,7 +61,7 @@ export function GuidePage() {
             className="block rounded-lg border border-bd-default p-4 hover:bg-interaction-hovered transition-colors"
           >
             <p className="text-xs text-fg-subtlest tracking-[-0.3px] leading-4">← 이전</p>
-            <p className="mt-1 text-sm font-bold text-fg-default tracking-[-0.3px] leading-5">{prev.title}</p>
+            <p className="mt-1 text-base font-bold text-fg-default tracking-[-0.3px] leading-5">{prev.title}</p>
           </Link>
         ) : <div />}
         {next ? (
@@ -70,7 +70,7 @@ export function GuidePage() {
             className="block rounded-lg border border-bd-default p-4 hover:bg-interaction-hovered transition-colors text-right"
           >
             <p className="text-xs text-fg-subtlest tracking-[-0.3px] leading-4">다음 →</p>
-            <p className="mt-1 text-sm font-bold text-fg-default tracking-[-0.3px] leading-5">{next.title}</p>
+            <p className="mt-1 text-base font-bold text-fg-default tracking-[-0.3px] leading-5">{next.title}</p>
           </Link>
         ) : <div />}
       </div>

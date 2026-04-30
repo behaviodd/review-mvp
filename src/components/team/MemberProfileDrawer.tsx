@@ -115,7 +115,7 @@ function ProfileBody({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-semibold text-fg-default">{target.name}</h2>
-            {target.nameEn && <span className="text-sm text-fg-subtlest">({target.nameEn})</span>}
+            {target.nameEn && <span className="text-base text-fg-subtlest">({target.nameEn})</span>}
             <StatusBadge type="role" value={tier} />
             {target.activityStatus === 'terminated' && (
               <Pill tone="danger" size="sm">퇴사</Pill>
@@ -127,7 +127,7 @@ function ProfileBody({
               <Pill tone="warning" size="sm">장기 휴직</Pill>
             )}
           </div>
-          <p className="text-sm text-fg-subtle mt-1">
+          <p className="text-base text-fg-subtle mt-1">
             {target.department}
             {target.position && <> · {target.position}</>}
           </p>
@@ -139,7 +139,7 @@ function ProfileBody({
         <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-4">기본 정보</p>
 
         {visibleFields.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-fg-subtlest py-2">
+          <div className="flex items-center gap-2 text-base text-fg-subtlest py-2">
             <MsLockIcon size={14} />
             <span>표시할 수 있는 항목이 없습니다.</span>
           </div>
@@ -195,7 +195,7 @@ function ReviewerSection({
         )}
       </div>
       {activeAssignments.length === 0 ? (
-        <p className="text-sm text-fg-subtlest py-2">배정된 평가권자가 없습니다.</p>
+        <p className="text-base text-fg-subtlest py-2">배정된 평가권자가 없습니다.</p>
       ) : (
         <ul className="space-y-2">
           {activeAssignments.map(a => {
@@ -210,12 +210,12 @@ function ReviewerSection({
                   <>
                     <UserAvatar user={reviewer} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-fg-default truncate">{reviewer.name}</p>
+                      <p className="text-base font-medium text-fg-default truncate">{reviewer.name}</p>
                       <p className="text-xs text-fg-subtlest truncate">{reviewer.position} · {reviewer.department}</p>
                     </div>
                   </>
                 ) : (
-                  <p className="flex-1 text-sm text-fg-subtlest italic">알 수 없는 평가권자 ({a.reviewerId})</p>
+                  <p className="flex-1 text-base text-fg-subtlest italic">알 수 없는 평가권자 ({a.reviewerId})</p>
                 )}
                 <Pill tone={SOURCE_TONE[a.source]} size="xs">{sourceLabel}</Pill>
               </li>
@@ -256,7 +256,7 @@ function FieldDisplay({ fieldKey, value }: { fieldKey: ProfileFieldKey; value: s
   return (
     <div>
       <dt className="text-[11px] font-medium text-fg-subtlest uppercase tracking-wide mb-1">{PROFILE_FIELD_LABEL[fieldKey]}</dt>
-      <dd className="text-sm text-gray-080 break-all">{display}</dd>
+      <dd className="text-base text-gray-080 break-all">{display}</dd>
     </div>
   );
 }

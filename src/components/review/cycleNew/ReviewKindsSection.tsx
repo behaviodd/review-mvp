@@ -71,7 +71,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
   return (
     <div className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <header>
-        <h3 className="text-sm font-semibold text-gray-080">리뷰 유형</h3>
+        <h3 className="text-base font-semibold text-gray-080">리뷰 유형</h3>
         <p className="text-[11px] text-fg-subtlest">이 사이클에서 생성할 리뷰 종류를 선택합니다. 기본은 자기평가 + 조직장 리뷰.</p>
       </header>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -87,7 +87,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
             >
               <div className="flex items-center gap-2">
                 <MsCheckbox checked={active} onChange={() => toggle(opt.value)} />
-                <span className={cn('text-sm font-semibold', active ? 'text-pink-060' : 'text-gray-080')}>
+                <span className={cn('text-base font-semibold', active ? 'text-pink-060' : 'text-gray-080')}>
                   {opt.label}
                 </span>
               </div>

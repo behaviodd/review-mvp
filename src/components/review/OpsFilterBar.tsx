@@ -57,7 +57,7 @@ function Segment<T extends string>({
             title={opt.hint}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'h-7 px-2.5 text-sm rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
+              'h-7 px-2.5 text-base rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
               active
                 ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
                 : 'text-fg-subtle font-semibold hover:text-fg-default',
@@ -157,7 +157,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
           <MsCheckbox
             checked={filters.onlyOverdue}
             onChange={e => update({ onlyOverdue: e.target.checked })}
-            label={<span className="text-sm text-red-060 font-medium">지연만 보기</span>}
+            label={<span className="text-base text-red-060 font-medium">지연만 보기</span>}
           />
         </div>
       </div>

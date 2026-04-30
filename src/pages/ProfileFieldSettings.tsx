@@ -134,7 +134,7 @@ function FieldRow({
 
       {/* 필드명 */}
       <div className="w-28 shrink-0">
-        <p className="text-sm font-medium text-fg-default">{label}</p>
+        <p className="text-base font-medium text-fg-default">{label}</p>
         <FieldKeyHint k={field.key} />
       </div>
 

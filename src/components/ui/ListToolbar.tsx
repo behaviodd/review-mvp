@@ -175,8 +175,8 @@ interface SegmentPillsProps {
  * Phase D-3.C-1: Figma SegmentedControl (1143:13490) 정합
  *  - Track: bg-surface-sunken rounded-xl p-1 gap-1
  *  - Indicator (활성): bg-surface-default rounded-lg + drop-shadow inline +
- *    h-7 px-2.5 text-sm font-bold text-fg-default
- *  - SegmentItem (비활성): rounded-lg h-7 px-2.5 text-sm font-semibold text-fg-subtle
+ *    h-7 px-2.5 text-base font-bold text-fg-default
+ *  - SegmentItem (비활성): rounded-lg h-7 px-2.5 text-base font-semibold text-fg-subtle
  *  - drop-shadow 는 Figma 의 0 2px 4px rgba(76,90,102,0.16) 직접 inline (alias 추가 X)
  */
 function SegmentPills({ options, value, onChange, ariaLabel }: SegmentPillsProps) {
@@ -191,7 +191,7 @@ function SegmentPills({ options, value, onChange, ariaLabel }: SegmentPillsProps
             aria-pressed={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex items-center gap-1 h-7 px-2.5 text-sm rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
+              'flex items-center gap-1 h-7 px-2.5 text-base rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
               active
                 ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
                 : 'text-fg-subtle font-semibold hover:text-fg-default',

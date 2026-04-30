@@ -59,11 +59,11 @@ export function PendingApprovals() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {error && (
-        <div className="mb-4 text-sm text-red-060 bg-red-005 px-4 py-3 rounded-lg">{error}</div>
+        <div className="mb-4 text-base text-red-060 bg-red-005 px-4 py-3 rounded-lg">{error}</div>
       )}
 
       {loading && items.length === 0 && (
-        <div className="flex items-center justify-center py-16 text-sm text-fg-subtlest">
+        <div className="flex items-center justify-center py-16 text-base text-fg-subtlest">
           <Loader2 className="size-4 mr-2 animate-spin" /> 불러오는 중...
         </div>
       )}
@@ -81,12 +81,12 @@ export function PendingApprovals() {
         <div className="space-y-3">
           {items.map((it) => (
             <div key={it.email} className="flex items-center gap-3 px-3 py-3 rounded-lg border border-bd-default hover:bg-interaction-hovered transition-colors">
-              <div className="size-10 rounded-full bg-yellow-005 text-yellow-060 flex items-center justify-center flex-shrink-0 font-semibold text-sm">
+              <div className="size-10 rounded-full bg-yellow-005 text-yellow-060 flex items-center justify-center flex-shrink-0 font-semibold text-base">
                 {(it.name || it.email).slice(0, 1).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-semibold text-fg-default truncate">{it.name || '-'}</span>
+                  <span className="text-base font-semibold text-fg-default truncate">{it.name || '-'}</span>
                   <span className="text-xs text-fg-subtle truncate">{it.email}</span>
                 </div>
                 <div className="text-xs text-fg-subtlest mt-0.5">
@@ -233,7 +233,7 @@ function ApproveDialog({
           <select
             value={orgUnitId}
             onChange={e => setOrgUnitId(e.target.value)}
-            className="w-full text-sm py-2 px-3 rounded-lg border border-gray-010 bg-white"
+            className="w-full text-base py-2 px-3 rounded-lg border border-gray-010 bg-white"
           >
             <option value="">선택하지 않음</option>
             {orgUnits.map(u => (
@@ -248,7 +248,7 @@ function ApproveDialog({
           <select
             value={managerId}
             onChange={e => setManagerId(e.target.value)}
-            className="w-full text-sm py-2 px-3 rounded-lg border border-gray-010 bg-white"
+            className="w-full text-base py-2 px-3 rounded-lg border border-gray-010 bg-white"
           >
             <option value="">선택하지 않음</option>
             {users
@@ -275,7 +275,7 @@ function ApproveDialog({
                     onChange={() => toggleGroup(g.id)}
                     className="size-3.5"
                   />
-                  <span className="text-sm text-fg-default">{g.name}</span>
+                  <span className="text-base text-fg-default">{g.name}</span>
                   {g.isSystem && <span className="text-[11px] text-fg-subtlest">(시스템)</span>}
                 </label>
               ))
@@ -327,7 +327,7 @@ function RejectDialog({
   return (
     <DialogShell title={`${record.email} 반려`} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <p className="text-sm text-gray-060">
+        <p className="text-base text-gray-060">
           반려된 이메일은 이후 로그인 시도 시 차단됩니다. 다시 승인하려면 시트에서 직접 상태를 변경해야 합니다.
         </p>
         <MsInput

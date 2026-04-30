@@ -38,7 +38,7 @@ export function HrSnapshotSection<F extends SnapshotFormSlice>({ form, setForm }
   return (
     <div className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <header>
-        <h3 className="text-sm font-semibold text-gray-080">인사정보 적용 방식</h3>
+        <h3 className="text-base font-semibold text-gray-080">인사정보 적용 방식</h3>
         <p className="text-[11px] text-fg-subtlest">
           이 사이클이 어느 시점의 조직·평가권을 사용할지 결정합니다.
         </p>
@@ -65,7 +65,7 @@ export function HrSnapshotSection<F extends SnapshotFormSlice>({ form, setForm }
                 >
                   {active && <span className="size-2 rounded-full bg-pink-040" />}
                 </span>
-                <span className={cn('text-sm font-semibold', active ? 'text-pink-060' : 'text-gray-080')}>
+                <span className={cn('text-base font-semibold', active ? 'text-pink-060' : 'text-gray-080')}>
                   {opt.title}
                 </span>
                 {opt.recommended && (

@@ -203,7 +203,7 @@ export function TeamReviewList() {
               {urgent && !isCompleted && (
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
-              <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
+              <p className={`text-base font-semibold truncate group-hover:text-pink-060 ${
                 urgent && !isCompleted ? 'text-pink-060' : 'text-fg-default'
               }`}>
                 {cycle.title}
@@ -262,7 +262,7 @@ export function TeamReviewList() {
               {urgent && !isCompleted && (
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
-              <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
+              <p className={`text-base font-semibold truncate group-hover:text-pink-060 ${
                 urgent && !isCompleted ? 'text-pink-060' : 'text-fg-default'
               }`}>
                 {cycle.title}

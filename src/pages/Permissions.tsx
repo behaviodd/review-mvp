@@ -70,7 +70,7 @@ export function Permissions() {
               <header className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-sm font-semibold text-fg-default truncate">{group.name}</h3>
+                    <h3 className="text-base font-semibold text-fg-default truncate">{group.name}</h3>
                     {group.isSystem && (
                       <Pill tone="neutral" size="xs" leftIcon={<MsLockIcon size={10} />}>
                         시스템

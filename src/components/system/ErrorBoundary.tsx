@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <MsAlertIcon size={24} className="text-red-060" />
           </div>
           <p className="text-base font-semibold text-gray-080 mb-1">문제가 발생했어요</p>
-          <p className="text-sm text-fg-subtle mb-1">
+          <p className="text-base text-fg-subtle mb-1">
             페이지를 표시하는 중 오류가 발생했습니다.
           </p>
           <p className="text-xs text-fg-subtlest mb-6 break-words">

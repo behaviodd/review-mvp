@@ -121,7 +121,7 @@ export function Login() {
             </svg>
           </div>
           <h1 className="text-2xl/8 font-semibold text-fg-default tracking-tight">메이크스타 리뷰시스템</h1>
-          <p className="text-sm/6 text-fg-subtle mt-1">@{ALLOWED_DOMAIN} 계정으로 로그인하세요</p>
+          <p className="text-base/6 text-fg-subtle mt-1">@{ALLOWED_DOMAIN} 계정으로 로그인하세요</p>
         </div>
 
         {/* org 동기화 중 안내 */}
@@ -140,7 +140,7 @@ export function Login() {
                 <MsSettingIcon size={16} className="text-yellow-060" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-fg-default">초기 설정이 필요합니다</p>
+                <p className="text-base font-semibold text-fg-default">초기 설정이 필요합니다</p>
                 <p className="text-xs text-fg-subtle mt-0.5 leading-relaxed">
                   Google Sheets 연동이 설정되지 않았습니다.<br />
                   @{ALLOWED_DOMAIN} 계정으로 로그인하여 Apps Script URL을 먼저 등록해 주세요.
@@ -165,7 +165,7 @@ export function Login() {
           <div className="bg-white rounded-2xl ring-1 ring-gray-010 shadow-sm">
             <div className="p-5 space-y-3">
               {loading ? (
-                <div className="flex items-center justify-center py-3 text-sm text-fg-subtle">
+                <div className="flex items-center justify-center py-3 text-base text-fg-subtle">
                   <Loader2 className="size-4 mr-2 animate-spin" />
                   로그인 중...
                 </div>

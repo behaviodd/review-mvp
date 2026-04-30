@@ -43,7 +43,7 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
         const checked = selected.includes(opt);
         return (
           <button key={opt} type="button" disabled={disabled} onClick={() => toggle(opt)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm text-left transition-all ${
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-base text-left transition-all ${
               checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium'
               : disabled ? 'border-gray-010 bg-gray-005 text-gray-030 cursor-not-allowed'
               : 'border-gray-020 hover:border-pink-030 text-gray-070'
@@ -72,7 +72,7 @@ function RatingSelector({ question: _q, value, onChange, disabled }: {
       <div className="flex gap-2">
         {[1,2,3,4,5].map(n => (
           <button key={n} type="button" disabled={disabled} onClick={() => onChange(n)}
-            className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
+            className={`flex-1 py-2.5 rounded-xl border-2 text-base font-bold transition-all ${
               value === n ? 'border-pink-040 bg-pink-050 text-white'
               : disabled ? 'border-gray-010 bg-gray-005 text-gray-030 cursor-not-allowed'
               : 'border-gray-020 hover:border-pink-030 text-gray-060'
@@ -109,7 +109,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         </div>
       )}
       <div className="mb-3">
-        <p className="text-sm font-semibold text-gray-080 leading-snug mb-1">
+        <p className="text-base font-semibold text-gray-080 leading-snug mb-1">
           {question.text}{question.isRequired && <span className="text-red-050 ml-1">*</span>}
         </p>
         {question.helpText && (
@@ -127,7 +127,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         readOnly ? (
           (answer?.selectedOptions?.length ?? 0) > 0
             ? <div className="flex flex-wrap gap-1.5">{answer!.selectedOptions!.map(o => <span key={o} className="text-xs px-2 py-1 bg-pink-005 text-pink-060 rounded-full border border-pink-010">{o}</span>)}</div>
-            : <p className="text-sm text-fg-subtlest italic">미응답</p>
+            : <p className="text-base text-fg-subtlest italic">미응답</p>
         ) : (
           <MultipleChoiceSelector question={question} selected={answer?.selectedOptions ?? []}
             onChange={v => onChange({ questionId: question.id, selectedOptions: v })} />
@@ -165,16 +165,16 @@ function InputAnswerContent({ question, answer }: { question: TemplateQuestion; 
     return r ? (
       <div className="flex items-center gap-3">
         <div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${n===r?'bg-gray-070 text-white':n<r?'bg-gray-020 text-fg-subtle':'bg-gray-010 text-gray-030'}`}>{n}</span>)}</div>
-        <span className="text-sm font-semibold text-gray-070">{r}점</span>
+        <span className="text-base font-semibold text-gray-070">{r}점</span>
         <span className="text-xs text-fg-subtle font-medium">{RATING_LABELS[r]}</span>
       </div>
-    ) : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+    ) : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
   if (question.type === 'multiple_choice') {
     const opts = answer?.selectedOptions ?? [];
-    return opts.length > 0 ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+    return opts.length > 0 ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div> : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+  return t?.trim() ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
 }
 
 function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; answer?: Answer }) {
@@ -183,18 +183,18 @@ function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; a
     return r ? (
       <div className="flex items-center gap-3">
         <div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${n===r?'bg-pink-050 text-white':n<r?'bg-pink-010 text-pink-040':'bg-gray-010 text-gray-030'}`}>{n}</span>)}</div>
-        <span className="text-sm font-semibold text-gray-070">{r}점</span>
+        <span className="text-base font-semibold text-gray-070">{r}점</span>
         <span className="text-xs text-pink-050 font-medium">{RATING_LABELS[r]}</span>
       </div>
-    ) : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+    ) : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
   if (question.type === 'multiple_choice') {
     const opts = answer?.selectedOptions ?? [];
     return opts.length > 0
       ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-pink-005 text-pink-060 rounded-full border border-pink-010">{o}</span>)}</div>
-      : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+      : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
+  return t?.trim() ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
 }
 
 // ─── 참고자료 타입 ────────────────────────────────────────────────────────────
@@ -579,17 +579,17 @@ export function MyReviewWrite() {
           </div>
           <h1 className="text-2xl font-bold text-fg-default mb-3">수고하셨습니다! 🎉</h1>
           <p className="text-gray-060 mb-2">성장 돌아보기를 완료했습니다.</p>
-          <p className="text-sm text-fg-subtlest mb-8">리뷰가 안전하게 제출되었습니다.</p>
+          <p className="text-base text-fg-subtlest mb-8">리뷰가 안전하게 제출되었습니다.</p>
           <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
           <div className="mt-8 text-left space-y-2">
             <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
             <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
               <div className="w-9 h-9 bg-pink-005 rounded-xl flex items-center justify-center flex-shrink-0"><MsMessageIcon size={16} className="text-pink-050" /></div>
-              <div><p className="text-sm font-semibold text-gray-080">받은 피드백 확인</p><p className="text-xs text-fg-subtlest mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
+              <div><p className="text-base font-semibold text-gray-080">받은 피드백 확인</p><p className="text-xs text-fg-subtlest mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
             </button>
             <button onClick={() => navigate('/reviews/me')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
               <div className="w-9 h-9 bg-gray-005 rounded-lg flex items-center justify-center flex-shrink-0"><MsChevronLeftLineIcon size={16} className="text-fg-subtle" /></div>
-              <div><p className="text-sm font-semibold text-gray-080">내 리뷰 목록으로</p><p className="text-xs text-fg-subtlest mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
+              <div><p className="text-base font-semibold text-gray-080">내 리뷰 목록으로</p><p className="text-xs text-fg-subtlest mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
             </button>
           </div>
         </div>
@@ -644,7 +644,7 @@ export function MyReviewWrite() {
             <div className="flex items-start gap-3 p-4 bg-yellow-005 border border-yellow-060/30 rounded-xl">
               <MsLockIcon size={16} className="text-yellow-060 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-yellow-070">자기평가 기간이 종료되었습니다</p>
+                <p className="text-base font-semibold text-yellow-070">자기평가 기간이 종료되었습니다</p>
                 <p className="text-xs text-yellow-060 mt-0.5">리뷰가 조직장 평가 단계로 전환되었습니다.</p>
               </div>
             </div>
@@ -655,7 +655,7 @@ export function MyReviewWrite() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-fg-default">리뷰 결과</h2>
-                <p className="text-sm text-fg-subtlest mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
+                <p className="text-base text-fg-subtlest mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
               </div>
               <div className="rounded-lg overflow-hidden border border-bd-default">
                 <div className="hidden md:grid md:grid-cols-2">
@@ -678,8 +678,8 @@ export function MyReviewWrite() {
                   return (
                     <div key={q.id}>
                       <div className="px-5 py-3 bg-white flex items-start gap-1.5 border-t border-gray-010">
-                        <span className="text-sm text-fg-subtlest flex-shrink-0 mt-px">{idx + 1}.</span>
-                        <p className="text-sm font-semibold text-gray-080">{q.text}</p>
+                        <span className="text-base text-fg-subtlest flex-shrink-0 mt-px">{idx + 1}.</span>
+                        <p className="text-base font-semibold text-gray-080">{q.text}</p>
                       </div>
                       <div className={`grid grid-cols-1 md:grid-cols-2 ${!isLast ? 'border-b border-gray-010' : ''}`}>
                         <div className="px-5 py-4 bg-gray-005/30 md:border-r border-gray-010">
@@ -728,7 +728,7 @@ export function MyReviewWrite() {
           {isReadOnly && (
             <div className="flex items-center gap-2.5 p-4 bg-green-005 border border-green-010 rounded-xl">
               <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
-              <p className="text-sm font-medium text-green-060">
+              <p className="text-base font-medium text-green-060">
                 {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
               </p>
             </div>
@@ -738,7 +738,7 @@ export function MyReviewWrite() {
           {!isDownward && isReadOnly && !managerReview && (
             <div className="flex items-center gap-2.5 p-4 bg-gray-005 border border-gray-020 rounded-xl">
               <MsProfileIcon size={20} className="text-fg-subtlest flex-shrink-0" />
-              <p className="text-sm text-fg-subtle">
+              <p className="text-base text-fg-subtle">
                 {managerPendingPublic
                   ? '조직장 평가는 사이클 종료 후 공개됩니다.'
                   : '조직장 평가가 제출되면 여기에 표시됩니다.'}
@@ -750,7 +750,7 @@ export function MyReviewWrite() {
           {!isReadOnly && (
             <div className="pb-10 space-y-2">
               {showValidation && !completedSections.every(Boolean) && (
-                <p className="text-sm text-red-050 mb-3 text-center">필수 항목을 모두 작성한 후 제출해주세요.</p>
+                <p className="text-base text-red-050 mb-3 text-center">필수 항목을 모두 작성한 후 제출해주세요.</p>
               )}
               <MsButton
                 variant="outline-default"
@@ -790,7 +790,7 @@ export function MyReviewWrite() {
                 <MsCheckIcon size={24} className="text-pink-050" />
               </div>
               <h3 className="text-lg font-semibold text-fg-default mb-2">최종 제출하시겠습니까?</h3>
-              <p className="text-sm text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
+              <p className="text-base text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
               <MsButton variant="outline-default" size="lg" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1">취소</MsButton>

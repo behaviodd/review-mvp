@@ -49,7 +49,7 @@ function RatingInput({ value, onChange, disabled }: {
             type="button"
             disabled={disabled}
             onClick={() => onChange(n)}
-            className={`flex-1 py-2 rounded border-2 text-sm font-bold transition-all ${
+            className={`flex-1 py-2 rounded border-2 text-base font-bold transition-all ${
               value === n
                 ? 'border-pink-040 bg-pink-050 text-white'
                 : disabled
@@ -112,7 +112,7 @@ function RightPanel({
         <div className="flex items-center gap-2.5">
           <UserAvatar user={reviewee} size="sm" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg-default truncate">{reviewee.name}</p>
+            <p className="text-base font-semibold text-fg-default truncate">{reviewee.name}</p>
             <p className="text-xs text-fg-subtlest truncate">{reviewee.position} · {getSmallestOrg(reviewee)}</p>
           </div>
         </div>
@@ -656,7 +656,7 @@ export function TeamReviewWrite() {
             <div className="flex items-start gap-3 p-4 bg-yellow-005 border border-yellow-060/20 rounded-xl">
               <MsShieldCheckIcon size={16} className="text-yellow-060 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-yellow-070">관리자 열람 모드</p>
+                <p className="text-base font-semibold text-yellow-070">관리자 열람 모드</p>
                 <p className="text-xs text-yellow-060 mt-0.5">
                   {actualManager?.name}님이 작성 중인 평가를 열람하고 있습니다. 수정할 수 없습니다.
                 </p>
@@ -669,7 +669,7 @@ export function TeamReviewWrite() {
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
               <MsCalendarIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-gray-070">아직 조직장 리뷰 단계가 아닙니다</p>
+                <p className="text-base font-semibold text-gray-070">아직 조직장 리뷰 단계가 아닙니다</p>
                 <p className="text-xs text-fg-subtle mt-0.5">
                   현재는 자기평가 단계입니다. 관리자가 조직장 리뷰를 시작하면 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
@@ -682,7 +682,7 @@ export function TeamReviewWrite() {
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
               <MsLockIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-gray-070">{reviewee.name}님의 자기평가 대기 중</p>
+                <p className="text-base font-semibold text-gray-070">{reviewee.name}님의 자기평가 대기 중</p>
                 <p className="text-xs text-fg-subtle mt-0.5">
                   팀원이 자기평가를 제출하면 평가를 작성하고 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
@@ -694,7 +694,7 @@ export function TeamReviewWrite() {
           {hasMismatch && (
             <div className="flex items-start gap-3 p-4 bg-pink-005 border border-pink-020 rounded-xl">
               <MsWarningIcon size={16} className="text-pink-050 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-pink-060">
+              <p className="text-base text-pink-060">
                 <strong>{reviewee.name}님의 자기평가</strong>와 현재 평가 간 점수 차이가 큽니다. 1:1 면담에서 논의해 보세요.
               </p>
             </div>
@@ -767,7 +767,7 @@ export function TeamReviewWrite() {
                         <MsLockIcon size={12} /> 비공개
                       </span>
                     )}
-                    <p className="text-sm font-semibold text-gray-080">
+                    <p className="text-base font-semibold text-gray-080">
                       <span className="text-fg-subtlest mr-1.5">{idx + 1}.</span>
                       {q.text}
                       {q.isRequired && <span className="text-red-040 ml-1">*</span>}
@@ -803,7 +803,7 @@ export function TeamReviewWrite() {
                                   }`}>{n}</span>
                                 ))}
                               </div>
-                              <span className="text-sm font-semibold text-gray-070">{rv}점</span>
+                              <span className="text-base font-semibold text-gray-070">{rv}점</span>
                               <span className="text-xs text-fg-subtle font-medium">{FLAT_RATING_LABELS[rv]}</span>
                             </div>
                           ); })()}
@@ -815,7 +815,7 @@ export function TeamReviewWrite() {
                             </div>
                           )}
                           {selfAnswer?.textValue && (
-                            <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">
+                            <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">
                               {selfAnswer.textValue}
                             </p>
                           )}
@@ -841,10 +841,10 @@ export function TeamReviewWrite() {
                                   }`}>{n}</span>
                                 ))}
                               </div>
-                              <span className="text-sm font-semibold text-gray-070">{rv}점</span>
+                              <span className="text-base font-semibold text-gray-070">{rv}점</span>
                               <span className="text-xs text-pink-050 font-medium">{FLAT_RATING_LABELS[rv]}</span>
                             </div>
-                          ); })() : <p className="text-sm text-fg-subtlest italic">미응답</p>
+                          ); })() : <p className="text-base text-fg-subtlest italic">미응답</p>
                         ) : (
                           <RatingInput
                             value={answer?.ratingValue}
@@ -856,7 +856,7 @@ export function TeamReviewWrite() {
                         (isReadOnly || submitted) ? (
                           (answer?.selectedOptions?.length ?? 0) > 0
                             ? <div className="flex flex-wrap gap-1.5">{(answer?.selectedOptions ?? []).map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div>
-                            : <p className="text-sm text-fg-subtlest italic">미응답</p>
+                            : <p className="text-base text-fg-subtlest italic">미응답</p>
                         ) : (
                           <div className="space-y-2">
                             {(q.options ?? []).filter(o => o.trim()).map(opt => {
@@ -870,7 +870,7 @@ export function TeamReviewWrite() {
                               };
                               return (
                                 <button key={opt} type="button" onClick={toggle}
-                                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm text-left transition-all ${checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium' : 'border-gray-020 hover:border-pink-030 text-gray-070'}`}>
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-base text-left transition-all ${checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium' : 'border-gray-020 hover:border-pink-030 text-gray-070'}`}>
                                   <span className={`w-4 h-4 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${q.allowMultiple ? 'rounded' : 'rounded-full'} ${checked ? 'border-pink-040 bg-pink-040' : 'border-gray-030'}`}>
                                     {checked && <span className="w-2 h-2 bg-white rounded-sm" />}
                                   </span>
@@ -884,8 +884,8 @@ export function TeamReviewWrite() {
                       {q.type === 'text' && (
                         (isReadOnly || submitted) ? (
                           answer?.textValue?.trim()
-                            ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
-                            : <p className="text-sm text-fg-subtlest italic">미응답</p>
+                            ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
+                            : <p className="text-base text-fg-subtlest italic">미응답</p>
                         ) : (
                           <div>
                             <MsTextarea
@@ -910,7 +910,7 @@ export function TeamReviewWrite() {
           {(isReadOnly || submitted) && (
             <div className="flex items-center gap-2.5 p-4 bg-green-005 border border-green-010 rounded-xl">
               <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
-              <p className="text-sm font-medium text-green-060">{reviewee.name}님의 평가가 제출되었습니다.</p>
+              <p className="text-base font-medium text-green-060">{reviewee.name}님의 평가가 제출되었습니다.</p>
             </div>
           )}
 
@@ -956,7 +956,7 @@ export function TeamReviewWrite() {
                 <MsCheckIcon size={24} className="text-pink-050" />
               </div>
               <h3 className="text-lg font-semibold text-fg-default mb-1">{reviewee.name}님의 평가를 제출할까요?</h3>
-              <p className="text-sm text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
+              <p className="text-base text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
               <MsButton variant="default" onClick={() => setShowConfirm(false)} className="flex-1 h-auto py-2.5">취소</MsButton>

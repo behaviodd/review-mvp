@@ -132,7 +132,7 @@ export function PeerApprovalPage() {
               <div key={sub.id} className="flex items-center gap-3 px-5 py-3">
                 <MsProfileIcon size={20} className="shrink-0 text-fg-subtlest" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-080">
+                  <p className="text-base text-gray-080">
                     <strong>{reviewee?.name ?? '대상자'}</strong>의 동료 리뷰어로{' '}
                     <strong>{reviewer?.name ?? '동료'}</strong> 제안
                   </p>

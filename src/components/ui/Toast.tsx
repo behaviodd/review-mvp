@@ -42,7 +42,7 @@ function Toast({ toast }: { toast: ToastItem }) {
       animate-[fadeSlideDown_0.2s_ease]
     ">
       <Icon size={16} className={`flex-shrink-0 mt-0.5 ${iconCls}`} />
-      <p className="flex-1 text-sm/6 text-fg-default font-medium">{toast.message}</p>
+      <p className="flex-1 text-base/6 text-fg-default font-medium">{toast.message}</p>
       <button
         onClick={() => remove(toast.id)}
         className="flex-shrink-0 mt-0.5 text-fg-subtlest hover:text-gray-060 transition-colors"

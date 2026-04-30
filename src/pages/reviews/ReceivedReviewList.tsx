@@ -137,7 +137,7 @@ export function ReceivedReviewList() {
                     <Pill tone={KIND_TONE[sub.type]} size="sm">{KIND_LABEL[sub.type]}</Pill>
                   </div>
                   {subParts.length > 0 && (
-                    <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
+                    <p className="text-base font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
                       {subParts.join(' · ')}
                     </p>
                   )}

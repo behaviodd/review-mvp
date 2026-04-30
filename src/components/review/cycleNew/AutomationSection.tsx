@@ -67,14 +67,14 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
   return (
     <div className="rounded-xl border border-gray-010 bg-gray-001 p-4 space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-080">자동화 (선택)</h3>
+        <h3 className="text-base font-semibold text-gray-080">자동화 (선택)</h3>
         <p className="text-[11px] text-fg-subtlest">관리자 개입 없이 자동 실행될 규칙을 설정합니다. 모든 스위치는 OFF가 기본이고, 감사 로그에 실행 이력이 남습니다.</p>
       </div>
 
       {/* ── 예약 발행 ── */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-gray-080">예약 발행</p>
+          <p className="text-base text-gray-080">예약 발행</p>
           <p className="text-[11px] text-fg-subtlest mt-0.5">지정한 시각에 사이클이 자동으로 발행됩니다.</p>
         </div>
         <MsSwitch checked={!!form.scheduledPublishAt} onChange={toggleScheduledPublish} />
@@ -98,7 +98,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
       {/* ── 자동 단계 전환 ── */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-gray-080">자동 단계 전환</p>
+          <p className="text-base text-gray-080">자동 단계 전환</p>
           <p className="text-[11px] text-fg-subtlest mt-0.5">자기평가 마감 후 일정 시간과 제출율 조건이 만족되면 조직장 리뷰 단계로 자동 전환합니다.</p>
         </div>
         <MsSwitch checked={!!form.autoAdvance} onChange={toggleAutoAdvance} />
@@ -130,7 +130,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
 
       {/* ── 알림 정책 ── */}
       <div className="space-y-2">
-        <p className="text-sm text-gray-080">알림 정책 프리셋</p>
+        <p className="text-base text-gray-080">알림 정책 프리셋</p>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {([
             { key: 'none',     label: '없음',   hint: '자동 리마인드 없음' },

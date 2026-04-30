@@ -209,7 +209,7 @@ function OrgTreeNode({
         </button>
 
         {/* name — depth 0 Bold, depth >= 1 SemiBold (Figma 정합) */}
-        <span className={`flex-1 text-sm tracking-[-0.3px] leading-5 truncate text-fg-default ${depth === 0 ? 'font-bold' : 'font-semibold'}`}>
+        <span className={`flex-1 text-base tracking-[-0.3px] leading-5 truncate text-fg-default ${depth === 0 ? 'font-bold' : 'font-semibold'}`}>
           {unit.name}
         </span>
 
@@ -365,7 +365,7 @@ function MemberRow({
           )}
         </div>
         {subText && (
-          <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
+          <p className="text-base font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
             {subText}
           </p>
         )}
@@ -875,11 +875,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       {search ? (
         /* ── 검색 결과 — 시트형 (Phase D-2.4b) ── */
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-          <p className="text-sm text-fg-subtle mb-3 px-2">
+          <p className="text-base text-fg-subtle mb-3 px-2">
             <span className="font-semibold text-fg-default">'{search}'</span> 검색 결과 {searchResults.length}명
           </p>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-fg-subtle text-center py-12">검색 결과가 없습니다.</p>
+            <p className="text-base text-fg-subtle text-center py-12">검색 결과가 없습니다.</p>
           ) : (
             <div className="space-y-1">
               {searchResults.map(u => (
@@ -906,7 +906,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             {unassignedUsers.length > 0 && (
               <button
                 onClick={selectUnassigned}
-                className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg border text-base font-semibold transition-colors ${
                   showUnassigned
                     ? 'bg-bg-token-brand1-subtlest border-bd-primary text-fg-brand1'
                     : 'bg-bg-token-default border-bd-primary text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default'
@@ -934,7 +934,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 ) : (
                   <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">전체 구성원</h2>
                 )}
-                <p className="text-sm text-fg-subtle mt-0.5">{panelUsers.length}명</p>
+                <p className="text-base text-fg-subtle mt-0.5">{panelUsers.length}명</p>
               </div>
               {canEdit && !showTerminated && panelUsers.length > 0 && (
                 <MsCheckbox
@@ -962,13 +962,13 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             ) : panelUsers.length === 0 ? (
               <div className="flex flex-col items-center gap-3 text-center py-12">
                 <Users className="size-8 text-fg-subtlest" />
-                <p className="text-sm text-fg-subtle">
+                <p className="text-base text-fg-subtle">
                   {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
                 </p>
                 {canEdit && !showTerminated && (
                   <button
                     onClick={() => goAddMember(selectedOrgId ?? undefined)}
-                    className="text-sm font-semibold text-fg-brand1 hover:text-fg-brand1-bolder transition-colors">
+                    className="text-base font-semibold text-fg-brand1 hover:text-fg-brand1-bolder transition-colors">
                     + 구성원 추가
                   </button>
                 )}
@@ -994,7 +994,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             {/* 선택된 N명 액션 바 */}
             {canEdit && selectedIds.size > 0 && !showTerminated && (
               <div className="mt-3 px-3 py-2 rounded-lg bg-bg-token-brand1-subtlest flex items-center justify-between">
-                <span className="text-sm font-semibold text-fg-brand1">{selectedIds.size}명 선택됨</span>
+                <span className="text-base font-semibold text-fg-brand1">{selectedIds.size}명 선택됨</span>
                 <div className="flex items-center gap-2">
                   <MsButton variant="ghost" size="sm" onClick={clearSelection}>선택 해제</MsButton>
                   <MsButton
@@ -1021,7 +1021,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <p className={`text-base font-bold tracking-[-0.3px] leading-6 ${
                   !selectedOrgId && !showTerminated && !showUnassigned ? 'text-fg-brand1' : 'text-fg-default'
                 }`}>조직도</p>
-                <p className="text-sm text-fg-subtle tracking-[-0.3px] leading-5">
+                <p className="text-base text-fg-subtle tracking-[-0.3px] leading-5">
                   전체({totalActive})명
                 </p>
               </button>
@@ -1153,7 +1153,7 @@ function PendingApprovalsBanner() {
           <MsFriendAddIcon size={16} className="text-yellow-060" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-fg-default">신규 회원 {count}명 승인 대기</p>
+          <p className="text-base font-semibold text-fg-default">신규 회원 {count}명 승인 대기</p>
           <p className="text-xs text-fg-subtle mt-0.5">관리자가 승인해야 시스템을 사용할 수 있습니다.</p>
         </div>
       </div>

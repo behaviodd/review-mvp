@@ -135,7 +135,7 @@ export function CycleEdit() {
                     key={val}
                     type="button"
                     onClick={() => setForm(f => (f ? { ...f, type: val } : f))}
-                    className={`flex-1 py-2 rounded border-2 text-sm font-medium transition-all ${
+                    className={`flex-1 py-2 rounded border-2 text-base font-medium transition-all ${
                       form.type === val
                         ? 'border-pink-040 bg-pink-005 text-pink-060'
                         : 'border-gray-020 text-gray-060 hover:border-gray-030'
@@ -163,7 +163,7 @@ export function CycleEdit() {
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-medium ${form.templateId === t.id ? 'text-pink-060' : 'text-gray-070'}`}>
+                    <p className={`text-base font-medium ${form.templateId === t.id ? 'text-pink-060' : 'text-gray-070'}`}>
                       {t.name}
                     </p>
                     <p className="text-xs text-fg-subtlest mt-0.5">{t.description}</p>

@@ -111,7 +111,7 @@ export function SyncRetryDrawer({ open, onClose }: Props) {
         <div>
           {pendingOps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-semibold text-gray-070">대기 중인 항목이 없습니다.</p>
+              <p className="text-base font-semibold text-gray-070">대기 중인 항목이 없습니다.</p>
               <p className="mt-1 text-xs text-fg-subtlest">모든 변경 사항이 시트에 반영되었어요.</p>
             </div>
           ) : (

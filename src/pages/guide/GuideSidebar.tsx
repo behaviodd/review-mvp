@@ -43,7 +43,7 @@ export function GuideSidebar({ onItemClick }: Props) {
                   to={pageHref(page)}
                   onClick={onItemClick}
                   className={({ isActive }) => cn(
-                    'flex items-center px-3 py-2 rounded-md text-sm leading-5 tracking-[-0.3px] transition-colors',
+                    'flex items-center px-3 py-2 rounded-md text-base leading-5 tracking-[-0.3px] transition-colors',
                     isActive
                       ? 'bg-bg-token-brand1-subtlest text-fg-brand1 font-bold'
                       : 'text-fg-subtle hover:bg-interaction-hovered font-medium',

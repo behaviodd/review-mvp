@@ -72,7 +72,7 @@ export function DistributionSection<F extends DistributionFormSlice>({ form, set
     <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-080">등급 분포</h3>
+          <h3 className="text-base font-semibold text-gray-080">등급 분포</h3>
           <p className="text-[11px] text-fg-subtlest">조직장 리뷰 제출 시 등급 비율을 가이드(참고용) 또는 강제(제출 제한) 합니다.</p>
         </div>
         <label className="flex items-center gap-2 text-xs text-gray-060">

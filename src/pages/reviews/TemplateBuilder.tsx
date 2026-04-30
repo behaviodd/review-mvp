@@ -236,7 +236,7 @@ export function TemplateBuilder() {
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="설명 (선택)"
-              className="text-sm bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-gray-020 focus:border-pink-040 text-fg-subtle placeholder:text-gray-030 transition-colors"
+              className="text-base bg-transparent border-0 border-b focus:outline-none px-0 py-0.5 w-56 border-transparent hover:border-gray-020 focus:border-pink-040 text-fg-subtle placeholder:text-gray-030 transition-colors"
             />
           </div>
           {nameError && <p className="text-xs text-red-050 mt-0.5">{nameError}</p>}
@@ -285,12 +285,12 @@ export function TemplateBuilder() {
                       onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === 'Escape') setEditingSectionId(null);
                       }}
-                      className="text-sm font-semibold text-fg-default bg-white border border-pink-040 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-010 w-64"
+                      className="text-base font-semibold text-fg-default bg-white border border-pink-040 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-010 w-64"
                     />
                   ) : (
                     <button
                       onClick={() => setEditingSectionId(section.id)}
-                      className="flex items-center gap-2 text-sm font-semibold text-gray-080 hover:text-pink-050 transition-colors"
+                      className="flex items-center gap-2 text-base font-semibold text-gray-080 hover:text-pink-050 transition-colors"
                     >
                       <span className="w-2 h-2 rounded-full bg-pink-040 flex-shrink-0" />
                       {section.name.trim() || <span className="text-fg-subtlest font-normal italic">섹션 이름 입력</span>}
@@ -473,7 +473,7 @@ export function TemplateBuilder() {
               {/* 섹션 내 질문 추가 */}
               <button
                 onClick={() => addQ(section.id)}
-                className="w-full py-3 border-2 border-dashed border-gray-020 rounded-xl text-sm text-fg-subtlest hover:border-pink-030 hover:text-pink-050 hover:bg-pink-005/50 transition-all flex items-center justify-center gap-2 group"
+                className="w-full py-3 border-2 border-dashed border-gray-020 rounded-xl text-base text-fg-subtlest hover:border-pink-030 hover:text-pink-050 hover:bg-pink-005/50 transition-all flex items-center justify-center gap-2 group"
               >
                 <MsPlusIcon size={16} className="group-hover:scale-110 transition-transform" />
                 질문 추가
@@ -485,7 +485,7 @@ export function TemplateBuilder() {
         {/* 섹션 추가 */}
         <button
           onClick={addSection}
-          className="w-full py-3.5 border-2 border-dashed border-gray-030 rounded-xl text-sm text-fg-subtle hover:border-pink-040 hover:text-pink-050 hover:bg-pink-005/30 transition-all flex items-center justify-center gap-2 font-medium"
+          className="w-full py-3.5 border-2 border-dashed border-gray-030 rounded-xl text-base text-fg-subtle hover:border-pink-040 hover:text-pink-050 hover:bg-pink-005/30 transition-all flex items-center justify-center gap-2 font-medium"
         >
           <MsPlusIcon size={16} />
           섹션 추가

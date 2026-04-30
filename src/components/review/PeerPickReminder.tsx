@@ -47,7 +47,7 @@ export function PeerPickReminder() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-purple-060">동료 선택이 필요합니다</p>
+            <p className="text-base font-semibold text-purple-060">동료 선택이 필요합니다</p>
             <Pill tone="purple" size="sm">{pending.length}개 사이클</Pill>
           </div>
           <p className="mt-0.5 text-xs text-fg-subtle">

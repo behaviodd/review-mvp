@@ -139,7 +139,7 @@ export function MyReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               {kindBadge}
-              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
+              <p className={`text-base font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
                 {cycle?.title ?? '–'}
                 {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
               </p>
@@ -185,7 +185,7 @@ export function MyReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               {kindBadge}
-              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
+              <p className={`text-base font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
                 {cycle?.title ?? '–'}
                 {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
               </p>
@@ -265,7 +265,7 @@ export function MyReviewList() {
         <div className="flex md:hidden items-center gap-3 px-4 py-3.5">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-fg-default truncate group-hover:text-pink-060">
+              <p className="text-base font-semibold text-fg-default truncate group-hover:text-pink-060">
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">
@@ -281,7 +281,7 @@ export function MyReviewList() {
         <div className="hidden md:flex items-center gap-5 px-5 py-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-fg-default truncate group-hover:text-pink-060">
+              <p className="text-base font-semibold text-fg-default truncate group-hover:text-pink-060">
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">

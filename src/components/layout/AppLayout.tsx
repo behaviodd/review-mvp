@@ -80,7 +80,7 @@ export function AppLayout() {
                 <clipPath id="ms-mob-clip"><rect width="24" height="24" fill="white"/></clipPath>
               </defs>
             </svg>
-            <span className="text-sm font-semibold text-fg-default">메이크스타 리뷰시스템</span>
+            <span className="text-base font-semibold text-fg-default">메이크스타 리뷰시스템</span>
           </div>
           <button
             onClick={() => setMobileOpen(o => !o)}

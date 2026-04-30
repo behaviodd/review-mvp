@@ -110,7 +110,7 @@ export function ReviewerAssignmentModal({ open, onClose, revieweeId }: Props) {
             활성 평가권자 ({activeAssignments.length}명)
           </p>
           {activeAssignments.length === 0 ? (
-            <p className="text-sm text-fg-subtlest py-2">아직 배정된 평가권자가 없습니다.</p>
+            <p className="text-base text-fg-subtlest py-2">아직 배정된 평가권자가 없습니다.</p>
           ) : (
             <ul className="space-y-1">
               {activeAssignments.map(a => {
@@ -124,12 +124,12 @@ export function ReviewerAssignmentModal({ open, onClose, revieweeId }: Props) {
                       <>
                         <UserAvatar user={reviewer} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-fg-default truncate">{reviewer.name}</p>
+                          <p className="text-base font-medium text-fg-default truncate">{reviewer.name}</p>
                           <p className="text-xs text-fg-subtlest truncate">{reviewer.position} · {reviewer.department}</p>
                         </div>
                       </>
                     ) : (
-                      <p className="flex-1 text-sm text-fg-subtlest italic">알 수 없는 평가권자 ({a.reviewerId})</p>
+                      <p className="flex-1 text-base text-fg-subtlest italic">알 수 없는 평가권자 ({a.reviewerId})</p>
                     )}
                     <Pill tone={SOURCE_TONE[a.source]} size="xs">{SOURCE_LABEL[a.source]}</Pill>
                     <button
@@ -184,7 +184,7 @@ export function ReviewerAssignmentModal({ open, onClose, revieweeId }: Props) {
                   >
                     <UserAvatar user={u} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-fg-default truncate">{u.name}</p>
+                      <p className="text-base font-medium text-fg-default truncate">{u.name}</p>
                       <p className="text-xs text-fg-subtlest truncate">{u.position} · {u.department}</p>
                     </div>
                     {selectedReviewerId === u.id && (

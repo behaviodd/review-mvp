@@ -40,7 +40,7 @@ export function DistributionProgress({ policy, cycleId, reviewerId, submissions 
     <div className="border-t border-bd-default px-2 py-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-080">등급 분포 {policy.method === 'hard' ? '(강제)' : '(가이드)'}</h3>
+          <h3 className="text-base font-semibold text-gray-080">등급 분포 {policy.method === 'hard' ? '(강제)' : '(가이드)'}</h3>
           <p className="text-[11px] text-fg-subtlest">내 조직장 리뷰 {totalAssigned}건 중 {withRating.length}건 작성 완료</p>
         </div>
       </div>

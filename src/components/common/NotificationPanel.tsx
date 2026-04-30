@@ -56,7 +56,7 @@ export function NotificationPanel() {
           {/* header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-010">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-fg-default">알림</h3>
+              <h3 className="text-base font-semibold text-fg-default">알림</h3>
               {unread > 0 && (
                 <span className="text-xs font-bold bg-red-040 text-white px-1.5 py-0.5 rounded-full leading-none">
                   {unread}
@@ -84,7 +84,7 @@ export function NotificationPanel() {
           {/* list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-gray-010">
             {mine.length === 0 ? (
-              <p className="text-sm text-fg-subtle text-center py-10">새 알림이 없습니다.</p>
+              <p className="text-base text-fg-subtle text-center py-10">새 알림이 없습니다.</p>
             ) : mine.map(n => {
               const tc = TYPE_CONFIG[n.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.system;
               return (

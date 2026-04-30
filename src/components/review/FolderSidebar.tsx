@@ -113,7 +113,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
         onClick={() => onSelect(sel)}
         {...(dropId !== undefined ? dropHandlers(dropId, dragKey) : {})}
         className={cn(
-          'w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors text-left',
+          'w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-base transition-colors text-left',
           active
             ? 'bg-pink-005 text-pink-060 font-semibold'
             : 'text-gray-070 hover:bg-gray-005',
@@ -173,7 +173,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
                     if (e.key === 'Enter') handleRename(f.id);
                     if (e.key === 'Escape') setEditingId(null);
                   }}
-                  className="flex-1 rounded border border-pink-040 px-2 py-0.5 text-sm outline-none"
+                  className="flex-1 rounded border border-pink-040 px-2 py-0.5 text-base outline-none"
                 />
               </div>
             );
@@ -188,7 +188,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
                 type="button"
                 onClick={() => onSelect({ kind: 'folder', id: f.id })}
                 className={cn(
-                  'flex-1 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors text-left',
+                  'flex-1 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-base transition-colors text-left',
                   active
                     ? 'bg-pink-005 text-pink-060 font-semibold'
                     : 'text-gray-070 hover:bg-gray-005',
@@ -236,7 +236,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
                 if (e.key === 'Escape') setAdding(false);
               }}
               placeholder="폴더 이름"
-              className="flex-1 rounded border border-pink-040 px-2 py-0.5 text-sm outline-none"
+              className="flex-1 rounded border border-pink-040 px-2 py-0.5 text-base outline-none"
             />
           </div>
         )}

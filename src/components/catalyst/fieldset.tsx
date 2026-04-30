@@ -10,7 +10,7 @@ export function Fieldset({ className, children }: { className?: string; children
 
 export function Legend({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <legend className={cn('text-base/6 font-semibold text-fg-default sm:text-sm/6', className)}>
+    <legend className={cn('text-base/6 font-semibold text-fg-default sm:text-base/6', className)}>
       {children}
     </legend>
   )
@@ -34,7 +34,7 @@ export function FieldGroup({ className, children }: { className?: string; childr
 
 export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <label className={cn('cursor-default select-none text-base/6 font-medium text-fg-default sm:text-sm/6', className)}>
+    <label className={cn('cursor-default select-none text-base/6 font-medium text-fg-default sm:text-base/6', className)}>
       {children}
     </label>
   )
@@ -42,7 +42,7 @@ export function Label({ className, children }: { className?: string; children: R
 
 export function Description({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <p className={cn('text-base/6 text-fg-subtle sm:text-sm/6', className)}>
+    <p className={cn('text-base/6 text-fg-subtle sm:text-base/6', className)}>
       {children}
     </p>
   )
@@ -50,7 +50,7 @@ export function Description({ className, children }: { className?: string; child
 
 export function ErrorMessage({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <p className={cn('text-base/6 text-red-050 sm:text-sm/6', className)}>
+    <p className={cn('text-base/6 text-red-050 sm:text-base/6', className)}>
       {children}
     </p>
   )

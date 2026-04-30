@@ -35,7 +35,7 @@ function Card({ title, hint, tone, cycles, onClickAll, row }: CardProps) {
       <span className={cn('absolute left-0 top-4 h-6 w-1 rounded-r', t.bar)} />
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-fg-default">{title}</h3>
+          <h3 className="text-base font-semibold text-fg-default">{title}</h3>
           <p className="text-[11px] text-fg-subtlest">{hint}</p>
         </div>
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums', t.badge)}>
@@ -103,7 +103,7 @@ export function AdminCycleWidget() {
       className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-gray-005"
     >
       <span className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium text-gray-080">{c.title}</p>
+        <p className="truncate text-base font-medium text-gray-080">{c.title}</p>
         <p className="text-[11px] text-fg-subtlest">{detail}</p>
       </span>
       <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', TONE_STYLE[tone].badge)}>

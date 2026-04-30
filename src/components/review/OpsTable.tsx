@@ -138,7 +138,7 @@ export function OpsTable({
               >
                 <UserAvatar user={row.user} size="sm" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-080">{row.user.name}</p>
+                  <p className="truncate text-base font-medium text-gray-080">{row.user.name}</p>
                   <p className="truncate text-[11px] text-fg-subtlest">{row.user.position} · {row.user.email}</p>
                 </div>
               </button>

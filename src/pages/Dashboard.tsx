@@ -15,6 +15,8 @@ import { deadlineLabel, formatDate, isUrgent } from '../utils/dateUtils';
 import { TrendingUp } from 'lucide-react';
 import { MsAlertIcon, MsClockIcon, MsPlusIcon, MsUsersIcon } from '../components/ui/MsIcons';
 import { MsButton } from '../components/ui/MsButton';
+import { useShowToast } from '../components/ui/Toast';
+import type { User } from '../types';
 
 const tooltipStyle = { borderRadius: '8px', border: '1px solid #c4cdd4', fontSize: 12, color: '#111417' };
 
@@ -47,8 +49,33 @@ import { PeerPickReminder } from '../components/review/PeerPickReminder';
 
 function AdminDashboard() {
   const { cycles, submissions } = useReviewStore();
-  const { users } = useTeamStore();
+  const { users, orgUnits } = useTeamStore();
+  const startImpersonation = useAuthStore(s => s.startImpersonation);
+  const showToast = useShowToast();
   const navigate = useNavigate();
+
+  // Dev 도구: 디자인 센터 하위 조직 멤버 list. import.meta.env.DEV 일 때만 노출.
+  const designCenterMembers = useMemo(() => {
+    if (!import.meta.env.DEV) return [] as User[];
+    const center = orgUnits.find(o => o.name.replace(/\s+/g, '') === '디자인센터');
+    if (!center) return [] as User[];
+    const subOrgIds = new Set<string>();
+    const collect = (parentId: string) => {
+      orgUnits.filter(o => o.parentId === parentId).forEach(child => {
+        subOrgIds.add(child.id);
+        collect(child.id);
+      });
+    };
+    collect(center.id);
+    return users.filter(u => u.orgUnitId && subOrgIds.has(u.orgUnitId) && u.role !== 'admin');
+  }, [orgUnits, users]);
+
+  const handleImpersonateTest = (target: User) => {
+    const log = startImpersonation(target);
+    if (!log) { showToast('error', '마스터 로그인을 시작할 수 없습니다.'); return; }
+    showToast('success', `${target.name}(으)로 접속했습니다. 작성/수정은 차단됩니다.`);
+    navigate('/');
+  };
 
   const activeCycles = cycles.filter(c => c.status !== 'draft' && c.status !== 'closed');
 
@@ -198,6 +225,38 @@ function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Dev only: 테스트 계정 빙의 dropdown — production 빌드에선 import.meta.env.DEV=false 라 unmount */}
+      {import.meta.env.DEV && designCenterMembers.length > 0 && (
+        <div className="border-t border-bd-default py-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold text-orange-070 bg-orange-005 px-1.5 py-0.5 rounded uppercase tracking-wide">DEV</span>
+            <h2 className="text-sm font-semibold text-fg-default">테스트 계정으로 접속</h2>
+          </div>
+          <p className="text-xs text-fg-subtle mb-3">
+            디자인 센터 하위 조직 멤버 — 빙의 후 작성/수정은 차단됩니다 (조회 전용). 우상단 헤더에서 "원래 계정으로 복귀" 가능.
+          </p>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              const target = designCenterMembers.find(u => u.id === e.target.value);
+              if (target) handleImpersonateTest(target);
+              e.target.value = '';
+            }}
+            className="w-full max-w-md h-10 px-3 text-sm rounded-md border border-bd-default bg-surface-default text-fg-default focus:border-bd-focused focus:outline-none"
+          >
+            <option value="">선택…</option>
+            {designCenterMembers.map(u => {
+              const orgName = orgUnits.find(o => o.id === u.orgUnitId)?.name ?? '-';
+              return (
+                <option key={u.id} value={u.id}>
+                  {u.name} · {u.position} · {orgName} ({u.id})
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

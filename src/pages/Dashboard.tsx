@@ -75,7 +75,7 @@ function AdminDashboard() {
   const headerActions = useMemo(() => (
     <MsButton onClick={() => navigate('/cycles/new')} leftIcon={<MsPlusIcon size={16} />}>새 리뷰 생성</MsButton>
   ), [navigate]);
-  useSetPageHeader('관리자 대시보드', headerActions);
+  useSetPageHeader('홈', headerActions, { subtitle: '관리자 대시보드' });
 
   const activityFeed = useMemo(() => {
     type Event = { key: string; text: string; time: string; timestamp: string };
@@ -232,7 +232,7 @@ function ManagerDashboard() {
   const mySelfs = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self');
   const myDownwards = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'downward');
 
-  useSetPageHeader('조직장 대시보드');
+  useSetPageHeader('홈', undefined, { subtitle: '조직장 대시보드' });
 
   const getMemberStatus = (memberId: string) => {
     const sub = submissions.find(s => s.reviewerId === currentUser?.id && s.revieweeId === memberId && s.type === 'downward' && s.cycleId === activeCycle?.id);
@@ -344,7 +344,7 @@ function EmployeeDashboard() {
   const mySelf = submissions.find(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.cycleId === activeCycle?.id);
   const pastSubmissions = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.status === 'submitted');
 
-  useSetPageHeader(`안녕하세요, ${currentUser?.name}님 👋`);
+  useSetPageHeader('홈', undefined, { subtitle: `안녕하세요, ${currentUser?.name}님 👋` });
 
   /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음 */
   return (

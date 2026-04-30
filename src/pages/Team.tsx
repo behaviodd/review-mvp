@@ -309,7 +309,9 @@ function MemberRow({
   isAnyOrgHead?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
-  const canSelect = onToggle && user.role !== 'admin';
+  // 사용자 결정: admin 도 일반 구성원으로서 일괄 선택·일괄 작업 대상.
+  // 권한 자체는 권한그룹/role 으로 별도 관리되며, 체크박스/조직 변경/프로필 수정에는 영향 없음.
+  const canSelect = !!onToggle;
   const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
   // sub 텍스트: 직무/겸임role + 마지막 하위 조직 (Figma `{직무}•{마지막 하위조직}`)
@@ -559,7 +561,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
 
   const toggleSelectAll = (list: User[]) => {
-    const selectable = list.filter(u => u.role !== 'admin').map(u => u.id);
+    const selectable = list.map(u => u.id);
     const allSelected = selectable.every(id => selectedIds.has(id));
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -613,7 +615,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
     // 각 구성원이 변경된 조직 중 가장 하위 조직에 속하는지 확인 후 경로 재계산
     const memberPatches: { id: string; patch: Partial<Omit<User, 'id'>> }[] = [];
-    for (const user of users.filter(u => isUserActive(u) && u.role !== 'admin')) {
+    for (const user of users.filter(u => isUserActive(u))) {
       let bestId: string | null = null;
       let bestDepth = -1;
       for (const c of orgChanges) {
@@ -934,11 +936,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 )}
                 <p className="text-sm text-fg-subtle mt-0.5">{panelUsers.length}명</p>
               </div>
-              {canEdit && !showTerminated && panelUsers.filter(u => u.role !== 'admin').length > 0 && (
+              {canEdit && !showTerminated && panelUsers.length > 0 && (
                 <MsCheckbox
                   title="전체 선택"
-                  checked={panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
-                  indeterminate={panelUsers.filter(u => u.role !== 'admin').some(u => selectedIds.has(u.id)) && !panelUsers.filter(u => u.role !== 'admin').every(u => selectedIds.has(u.id))}
+                  checked={panelUsers.every(u => selectedIds.has(u.id))}
+                  indeterminate={panelUsers.some(u => selectedIds.has(u.id)) && !panelUsers.every(u => selectedIds.has(u.id))}
                   onChange={() => toggleSelectAll(panelUsers)}
                 />
               )}

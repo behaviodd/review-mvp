@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useTeamStore } from './stores/teamStore';
+import { useReviewStore } from './stores/reviewStore';
 import { hasPermission } from './utils/permissions';
 import type { PermissionCode } from './types';
 import { useSheetsSyncStore } from './stores/sheetsSyncStore';
@@ -16,7 +17,6 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { NotFound } from './pages/NotFound';
 import { MyReviewList } from './pages/reviews/MyReviewList';
-import { EmptyState } from './components/ui/EmptyState';
 import { MyReviewWrite } from './pages/reviews/MyReviewWrite';
 import { TeamReviewList } from './pages/reviews/TeamReviewList';
 import { TeamReviewWrite } from './pages/reviews/TeamReviewWrite';
@@ -155,25 +155,34 @@ function RouteBoundary({ children }: { children: React.ReactNode }) {
   return <ErrorBoundary scope="page">{children}</ErrorBoundary>;
 }
 
-/** /reviews/me: admin은 자기평가 대상이 아니므로 사이클 목록으로 안내 */
+/**
+ * /reviews/me 라우트 가드.
+ *
+ * Phase D-3.M-fix4 (사용자 명시 — admin 안내 페이지가 보이지 않아야):
+ * - admin 이고 본인이 작성/수신할 sub 가 0 이면 /cycles 로 자동 리다이렉트
+ * - admin 이라도 본인이 사이클 reviewee 로 포함되어 self/peer/upward 가 있거나
+ *   downward 결과를 수신한 게 있으면 일반 MyReviewList 노출 (옵션 B 정책)
+ * - 일반 멤버는 항상 MyReviewList
+ */
 function MyReviewsOrAdminGuide() {
   const { currentUser } = useAuthStore();
+  const submissions = useReviewStore(s => s.submissions);
   const navigate = useNavigate();
-  if (currentUser?.role === 'admin') {
-    return (
-      <EmptyState
-        illustration="empty-cycle"
-        title="관리자 계정에는 자기평가 대상이 없어요"
-        description={
-          <>
-            관리자는 리뷰 운영자로서 사이클을 관리합니다.
-            <br />
-            사이클 목록에서 진행 중인 리뷰를 확인해 주세요.
-          </>
-        }
-        action={{ label: '사이클 목록으로', onClick: () => navigate('/cycles') }}
-      />
-    );
+
+  const hasMyReviews = !!currentUser && submissions.some(s =>
+    (s.reviewerId === currentUser.id && (s.type === 'self' || s.type === 'peer' || s.type === 'upward')) ||
+    (s.revieweeId === currentUser.id && s.type === 'downward' && s.status === 'submitted'),
+  );
+
+  useEffect(() => {
+    if (currentUser?.role === 'admin' && !hasMyReviews) {
+      navigate('/cycles', { replace: true });
+    }
+  }, [currentUser?.role, hasMyReviews, navigate]);
+
+  if (currentUser?.role === 'admin' && !hasMyReviews) {
+    // 리다이렉트 대기 — 깜빡임 방지
+    return null;
   }
   return <MyReviewList />;
 }

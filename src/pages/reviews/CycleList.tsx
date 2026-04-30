@@ -438,7 +438,9 @@ export function CycleList() {
               <div className="w-4" />
             </div>
             {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기)
-               Phase D-3.C-3: visiblePage 만 렌더 (15개씩 페이지네이션) */}
+               Phase D-3.C-3: visiblePage 만 렌더 (15개씩 페이지네이션)
+               Phase D-3.C-4: 행간 12px 여백 (사용자 요청) — rows 만 별도 wrapper 로 묶고 gap-3 */}
+            <div className="flex flex-col gap-3 py-3">
             {visiblePage.map(cycle => {
               const isSelected = selected.has(cycle.id);
               return (
@@ -449,7 +451,7 @@ export function CycleList() {
                     navigate(`/cycles/${cycle.id}`);
                   }}
                   className={cn(
-                    'group flex items-center gap-4 px-2 py-3 rounded-lg cursor-pointer transition-colors',
+                    'relative group flex items-center gap-4 px-2 py-3 rounded-lg cursor-pointer transition-colors',
                     isSelected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered',
                   )}
                 >
@@ -507,7 +509,9 @@ export function CycleList() {
                     <p className="text-xs text-gray-040 mt-0.5">자기평가 마감</p>
                   </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all" data-action onClick={e => e.stopPropagation()}>
+                  {/* hover-actions: absolute 로 띄워서 단계/완료율/마감일 위치 변동 0 (사용자 요청 — 정렬 일관성)
+                     hover 시 마감일 영역 위에 겹쳐 보임 — 다른 컬럼 정렬은 절대 안 변함 */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity z-10" data-action onClick={e => e.stopPropagation()}>
                     <MsButton
                       size="sm"
                       variant="ghost"
@@ -551,10 +555,11 @@ export function CycleList() {
                       삭제
                     </MsButton>
                   </div>
-                  <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:text-pink-040 flex-shrink-0" />
+                  <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:opacity-0 transition-opacity flex-shrink-0" />
                 </div>
               );
             })}
+            </div>
           </div>
         )}
 

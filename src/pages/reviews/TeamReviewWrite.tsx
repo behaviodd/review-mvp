@@ -593,7 +593,7 @@ export function TeamReviewWrite() {
               const submitted = countSubmitted(node);
               const total = countTotal(node);
               return (
-                <div key={node.id} className="border-b border-gray-010 last:border-0">
+                <div key={node.id}>
                   <button
                     onClick={() => toggleGroup(node.id)}
                     style={{ paddingLeft: `${8 + depth * 12}px` }}

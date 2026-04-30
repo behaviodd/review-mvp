@@ -215,7 +215,7 @@ function AdminDashboard() {
             {activityFeed.map(item => (
               <div
                 key={item.key}
-                className="flex items-center gap-3 py-2 border-b border-bd-default last:border-0 px-1"
+                className="flex items-center gap-3 py-2 px-1 rounded-lg hover:bg-interaction-hovered transition-colors"
               >
                 <div className="w-1.5 h-1.5 bg-fg-subtlest rounded-full flex-shrink-0" />
                 <p className="text-sm text-fg-default flex-1">{item.text}</p>
@@ -445,7 +445,7 @@ function EmployeeDashboard() {
                 <button
                   key={s.id}
                   onClick={() => navigate(`/reviews/me/${s.id}`)}
-                  className="w-full flex items-center gap-4 py-2 border-b border-bd-default last:border-0 hover:bg-interaction-hovered rounded-lg px-1 transition-colors"
+                  className="w-full flex items-center gap-4 py-2 hover:bg-interaction-hovered rounded-lg px-1 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-pink-005 flex items-center justify-center font-bold text-pink-060 flex-shrink-0 text-sm">{grade}</div>
                   <div className="flex-1 text-left">

@@ -11,6 +11,7 @@ import {
   MsDeleteIcon, MsArticleIcon, MsCancelIcon,
 } from '../../components/ui/MsIcons';
 import { MsButton } from '../../components/ui/MsButton';
+import { MsActionMenu } from '../../components/ui/MsActionMenu';
 import { MsCheckbox } from '../../components/ui/MsControl';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { useShowToast } from '../../components/ui/Toast';
@@ -214,8 +215,7 @@ export function CycleList() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   /* ── 개별 행 액션 ──────────────────────────────────── */
-  const handleDeleteCycle = (e: React.MouseEvent, id: string, title: string) => {
-    e.stopPropagation();
+  const handleDeleteCycle = (id: string, title: string) => {
     setSingleDelete({ id, title });
   };
   const confirmSingleDelete = () => {
@@ -225,14 +225,12 @@ export function CycleList() {
     setSingleDelete(null);
   };
 
-  const handleArchiveCycle = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
+  const handleArchiveCycle = (id: string) => {
     const res = archiveCycle(id, currentUser?.id ?? 'system');
     showToast(res.ok ? 'success' : 'error', res.ok ? '보관함으로 이동했습니다.' : (res.error ?? '실패'));
   };
 
-  const handleCloneCycle = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
+  const handleCloneCycle = (id: string) => {
     navigate(`/cycles/new?from=${id}`);
   };
 
@@ -439,8 +437,9 @@ export function CycleList() {
             </div>
             {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기)
                Phase D-3.C-3: visiblePage 만 렌더 (15개씩 페이지네이션)
-               Phase D-3.C-4: 행간 12px 여백 (사용자 요청) — rows 만 별도 wrapper 로 묶고 gap-3 */}
-            <div className="flex flex-col gap-3 py-3">
+               Phase D-3.C-4: 행간 12px 여백 (사용자 요청) — rows 만 별도 wrapper 로 묶고 gap-3
+               Phase D-3.C-5: 행간 구분선 (divide-y) + hover 액션 더보기 메뉴 통합 (사용자 요청) */}
+            <div className="flex flex-col gap-3 py-3 divide-y divide-bd-default">
             {visiblePage.map(cycle => {
               const isSelected = selected.has(cycle.id);
               return (
@@ -509,53 +508,23 @@ export function CycleList() {
                     <p className="text-xs text-gray-040 mt-0.5">자기평가 마감</p>
                   </div>
 
-                  {/* hover-actions: absolute 로 띄워서 단계/완료율/마감일 위치 변동 0 (사용자 요청 — 정렬 일관성)
-                     hover 시 마감일 영역 위에 겹쳐 보임 — 다른 컬럼 정렬은 절대 안 변함 */}
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity z-10" data-action onClick={e => e.stopPropagation()}>
-                    <MsButton
-                      size="sm"
-                      variant="ghost"
-                      leftIcon={<MsArticleIcon size={12} />}
-                      onClick={e => handleCloneCycle(e, cycle.id)}
-                      title="이 리뷰를 복제하여 새 리뷰 생성"
-                    >
-                      복제
-                    </MsButton>
-                    <MsButton
-                      size="sm"
-                      variant="ghost"
-                      leftIcon={<MsEditIcon size={12} />}
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (cycle.status === 'draft') {
-                          navigate(`/cycles/new?draft=${cycle.id}`);
-                        } else {
-                          navigate(`/cycles/${cycle.id}?edit=1`);
-                        }
-                      }}
-                    >
-                      {cycle.status === 'draft' ? '이어 쓰기' : '편집'}
-                    </MsButton>
-                    {cycle.status === 'closed' && (
-                      <MsButton
-                        size="sm"
-                        variant="outline-default"
-                        leftIcon={<MsCancelIcon size={12} />}
-                        onClick={e => handleArchiveCycle(e, cycle.id)}
-                      >
-                        보관
-                      </MsButton>
-                    )}
-                    <MsButton
-                      size="sm"
-                      variant="outline-red"
-                      leftIcon={<MsDeleteIcon size={12} />}
-                      onClick={e => handleDeleteCycle(e, cycle.id, cycle.title)}
-                    >
-                      삭제
-                    </MsButton>
-                  </div>
-                  <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:opacity-0 transition-opacity flex-shrink-0" />
+                  {/* Phase D-3.C-5: hover 액션 4개 → 더보기 메뉴 1개로 통합 (사용자 요청)
+                     trigger 자체는 group-hover 시에만 노출 + 메뉴 열림 동안 강제 visible */}
+                  <MsActionMenu
+                    className="flex-shrink-0"
+                    triggerVisibility="hover"
+                    items={[
+                      { label: '복제', icon: <MsArticleIcon size={12} />, onClick: () => handleCloneCycle(cycle.id) },
+                      {
+                        label: cycle.status === 'draft' ? '이어 쓰기' : '편집',
+                        icon: <MsEditIcon size={12} />,
+                        onClick: () => navigate(cycle.status === 'draft' ? `/cycles/new?draft=${cycle.id}` : `/cycles/${cycle.id}?edit=1`),
+                      },
+                      { label: '보관', icon: <MsCancelIcon size={12} />, onClick: () => handleArchiveCycle(cycle.id), hidden: cycle.status !== 'closed' },
+                      { label: '삭제', icon: <MsDeleteIcon size={12} />, onClick: () => handleDeleteCycle(cycle.id, cycle.title), variant: 'danger' },
+                    ]}
+                  />
+                  <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:text-pink-040 flex-shrink-0" />
                 </div>
               );
             })}

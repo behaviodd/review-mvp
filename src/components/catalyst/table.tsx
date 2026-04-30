@@ -16,7 +16,7 @@ export function Table({ dense = false, grid = false, striped = false, bleed = fa
         <div className="inline-block min-w-full align-middle">
           <table
             className={cn(
-              'min-w-full text-left text-sm/6 text-gray-099',
+              'min-w-full text-left text-sm/6 text-fg-default',
               striped && '[&_tbody_tr:nth-child(even)]:bg-gray-005',
               grid && '[&_td]:border-l [&_td]:border-gray-010 [&_td:first-child]:border-l-0 [&_th]:border-l [&_th:first-child]:border-l-0 [&_th]:border-gray-010',
               dense && '[&_td]:py-2 [&_th]:py-2',
@@ -32,7 +32,7 @@ export function Table({ dense = false, grid = false, striped = false, bleed = fa
 
 export function TableHead({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <thead className={cn('text-gray-050', className)}>
+    <thead className={cn('text-fg-subtle', className)}>
       {children}
     </thead>
   )

@@ -91,7 +91,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
     <div className={cn('flex flex-col gap-3 border-t border-bd-default px-2 py-3', disabled && 'opacity-60 pointer-events-none')}>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-gray-050">관점</span>
+          <span className="text-[11px] font-medium text-fg-subtle">관점</span>
           <Segment
             ariaLabel="관점"
             value={filters.perspective}
@@ -101,7 +101,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
         </div>
         <div className="h-5 w-px bg-gray-010" />
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-gray-050">단계</span>
+          <span className="text-[11px] font-medium text-fg-subtle">단계</span>
           <Segment
             ariaLabel="단계"
             value={filters.stage}
@@ -120,7 +120,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
             <button
               type="button"
               onClick={() => onChange({ ...filters, stage: 'all', org: null, statuses: [], onlyOverdue: false, query: '' })}
-              className="text-xs font-medium text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
+              className="text-xs font-medium text-fg-subtle hover:text-gray-080 underline-offset-2 hover:underline"
             >
               초기화
             </button>
@@ -130,7 +130,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-gray-050">조직</span>
+          <span className="text-[11px] font-medium text-fg-subtle">조직</span>
           <MsSelect
             value={filters.org ?? ''}
             onChange={e => update({ org: e.target.value || null })}
@@ -142,7 +142,7 @@ export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {
         </div>
 
         <div className="flex items-center gap-3 pl-2 border-l border-gray-010">
-          <span className="text-[11px] font-medium text-gray-050">상태</span>
+          <span className="text-[11px] font-medium text-fg-subtle">상태</span>
           {STATUS_OPTIONS.map(opt => (
             <MsCheckbox
               key={opt.value}

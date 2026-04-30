@@ -37,7 +37,7 @@ export function BulkMoveFolderModal({ open, onClose, count, onConfirm }: Props) 
           {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
         </MsSelect>
         {folders.length === 0 && (
-          <p className="text-xs text-gray-040">좌측 사이드에서 폴더를 먼저 만들어 주세요.</p>
+          <p className="text-xs text-fg-subtlest">좌측 사이드에서 폴더를 먼저 만들어 주세요.</p>
         )}
       </div>
     </ModalShell>

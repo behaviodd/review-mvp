@@ -29,7 +29,7 @@ export function CycleBulkBar({
     >
       <span className="text-xs font-semibold text-gray-080">
         {selectedCount}개 선택됨
-        <span className="ml-2 text-gray-040 font-normal">
+        <span className="ml-2 text-fg-subtlest font-normal">
           대상 {totalMembers}명 · 제출 {totalSubmissions}건
         </span>
       </span>

@@ -120,13 +120,13 @@ export function Login() {
               </defs>
             </svg>
           </div>
-          <h1 className="text-2xl/8 font-semibold text-gray-099 tracking-tight">메이크스타 리뷰시스템</h1>
-          <p className="text-sm/6 text-gray-050 mt-1">@{ALLOWED_DOMAIN} 계정으로 로그인하세요</p>
+          <h1 className="text-2xl/8 font-semibold text-fg-default tracking-tight">메이크스타 리뷰시스템</h1>
+          <p className="text-sm/6 text-fg-subtle mt-1">@{ALLOWED_DOMAIN} 계정으로 로그인하세요</p>
         </div>
 
         {/* org 동기화 중 안내 */}
         {usersLoading && scriptUrl && (
-          <div className="flex items-center gap-2 justify-center py-2 text-xs text-gray-040">
+          <div className="flex items-center gap-2 justify-center py-2 text-xs text-fg-subtlest">
             <Loader2 className="size-3.5 animate-spin" />
             구성원 데이터를 불러오는 중...
           </div>
@@ -140,8 +140,8 @@ export function Login() {
                 <MsSettingIcon size={16} className="text-yellow-060" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-099">초기 설정이 필요합니다</p>
-                <p className="text-xs text-gray-050 mt-0.5 leading-relaxed">
+                <p className="text-sm font-semibold text-fg-default">초기 설정이 필요합니다</p>
+                <p className="text-xs text-fg-subtle mt-0.5 leading-relaxed">
                   Google Sheets 연동이 설정되지 않았습니다.<br />
                   @{ALLOWED_DOMAIN} 계정으로 로그인하여 Apps Script URL을 먼저 등록해 주세요.
                 </p>
@@ -165,7 +165,7 @@ export function Login() {
           <div className="bg-white rounded-2xl ring-1 ring-gray-010 shadow-sm">
             <div className="p-5 space-y-3">
               {loading ? (
-                <div className="flex items-center justify-center py-3 text-sm text-gray-050">
+                <div className="flex items-center justify-center py-3 text-sm text-fg-subtle">
                   <Loader2 className="size-4 mr-2 animate-spin" />
                   로그인 중...
                 </div>
@@ -189,7 +189,7 @@ export function Login() {
           </div>
         )}
 
-        <p className="text-center text-xs text-gray-040 pb-4">
+        <p className="text-center text-xs text-fg-subtlest pb-4">
           @{ALLOWED_DOMAIN} 도메인의 구성원만 로그인할 수 있습니다.
         </p>
       </div>

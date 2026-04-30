@@ -41,7 +41,7 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">겸임 조직</p>
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">겸임 조직</p>
         {!adding && (
           <button onClick={() => setAdding(true)}
             className="flex items-center gap-1 text-xs text-pink-050 hover:text-pink-060 font-medium">
@@ -50,7 +50,7 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
         )}
       </div>
       {myAssignments.length === 0 && !adding && (
-        <p className="text-xs text-gray-040 py-1">겸임 조직이 없습니다.</p>
+        <p className="text-xs text-fg-subtlest py-1">겸임 조직이 없습니다.</p>
       )}
       {myAssignments.map(a => {
         const isHead    = orgUnits.find(u => u.id === a.orgId)?.headId === userId;
@@ -66,7 +66,7 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <MsCheckbox size="md" checked={isHead} onChange={() => toggleHead(a)} label={<span className="text-[10px] font-medium text-gray-050">조직장</span>} />
+                <MsCheckbox size="md" checked={isHead} onChange={() => toggleHead(a)} label={<span className="text-[10px] font-medium text-fg-subtle">조직장</span>} />
                 <button onClick={() => removeSecondaryOrg(userId, a.orgId)}
                   className="p-1 text-gray-030 hover:text-red-040 transition-colors ml-1">
                   <MsDeleteIcon size={12} className="size-3.5" />
@@ -96,7 +96,7 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
             ) : (
               <button type="button"
                 onClick={() => { setEditingOrgId(a.orgId); setEditingRole(a.role ?? ''); }}
-                className="text-xs text-gray-040 hover:text-gray-070 text-left w-full truncate transition-colors">
+                className="text-xs text-fg-subtlest hover:text-gray-070 text-left w-full truncate transition-colors">
                 {a.role ? a.role : <span className="italic">역할 없음 · 클릭해서 입력</span>}
                 {a.ratio ? ` · ${a.ratio}%` : ''}
               </button>

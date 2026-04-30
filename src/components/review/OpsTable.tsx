@@ -32,7 +32,7 @@ function StageCell({ summary, deadline }: { summary?: OpsStageSummary; deadline:
     <div className="flex items-center gap-2 min-w-0">
       <StatusBadge type="submission" value={summary.status} />
       {multiple && (
-        <span className="text-[11px] tabular-nums text-gray-050">
+        <span className="text-[11px] tabular-nums text-fg-subtle">
           {summary.submitted}/{summary.total}
         </span>
       )}
@@ -139,7 +139,7 @@ export function OpsTable({
                 <UserAvatar user={row.user} size="sm" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-gray-080">{row.user.name}</p>
-                  <p className="truncate text-[11px] text-gray-040">{row.user.position} · {row.user.email}</p>
+                  <p className="truncate text-[11px] text-fg-subtlest">{row.user.position} · {row.user.email}</p>
                 </div>
               </button>
               <span className="truncate text-xs text-gray-060">{row.orgPath}</span>
@@ -152,7 +152,7 @@ export function OpsTable({
                 <div className="hidden md:block"><StageCell summary={row.upward} deadline={deadlines.manager} /></div>
               )}
               <span className="hidden md:inline text-xs font-semibold tabular-nums text-gray-070">{dLabel}</span>
-              <span className="hidden md:inline text-xs text-gray-040">
+              <span className="hidden md:inline text-xs text-fg-subtlest">
                 {row.lastSavedAt ? timeAgo(row.lastSavedAt) : '-'}
               </span>
 

@@ -40,12 +40,12 @@ export function EmptyState({
         </div>
       ) : Icon && (
         <div className="size-12 bg-gray-010 rounded-xl flex items-center justify-center mb-3">
-          <Icon size={20} className="text-gray-040" />
+          <Icon size={20} className="text-fg-subtlest" />
         </div>
       )}
       <p className="text-sm/6 font-semibold text-gray-080 mb-1">{title}</p>
       {description && (
-        <div className="text-sm/6 text-gray-050 mb-5 max-w-xs">{description}</div>
+        <div className="text-sm/6 text-fg-subtle mb-5 max-w-xs">{description}</div>
       )}
       {btn && (
         <Button color="dark/zinc" onClick={btn.onClick}>

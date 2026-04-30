@@ -67,12 +67,12 @@ export function ConfirmDialog({
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-bold text-gray-080">{title}</h2>
-            {description && <div className="mt-0.5 text-xs text-gray-050 leading-relaxed">{description}</div>}
+            {description && <div className="mt-0.5 text-xs text-fg-subtle leading-relaxed">{description}</div>}
           </div>
           <button
             type="button"
             onClick={loading ? undefined : onClose}
-            className="rounded-lg p-1.5 text-gray-050 hover:bg-gray-005 disabled:opacity-40"
+            className="rounded-lg p-1.5 text-fg-subtle hover:bg-gray-005 disabled:opacity-40"
             disabled={loading}
             aria-label="닫기"
           >

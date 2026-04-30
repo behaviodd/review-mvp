@@ -87,7 +87,7 @@ export function SubmissionActionRail({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-010 bg-gray-001 px-5 py-2">
-        <span className="text-[11px] font-semibold text-gray-050">관리자 액션</span>
+        <span className="text-[11px] font-semibold text-fg-subtle">관리자 액션</span>
         {canExtendAny && (
           <MsButton
             variant="outline-default"

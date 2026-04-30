@@ -130,20 +130,20 @@ export function PeerApprovalPage() {
 
             return (
               <div key={sub.id} className="flex items-center gap-3 px-5 py-3">
-                <MsProfileIcon size={20} className="shrink-0 text-gray-040" />
+                <MsProfileIcon size={20} className="shrink-0 text-fg-subtlest" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-080">
                     <strong>{reviewee?.name ?? '대상자'}</strong>의 동료 리뷰어로{' '}
                     <strong>{reviewer?.name ?? '동료'}</strong> 제안
                   </p>
-                  <p className="mt-0.5 text-[11px] text-gray-040">
+                  <p className="mt-0.5 text-[11px] text-fg-subtlest">
                     {cycle?.title} · 제안자 {proposer?.name ?? '본인'} ·{' '}
                     {isPending
                       ? (sub.peerProposal?.proposedAt ? timeAgo(sub.peerProposal.proposedAt) : '-')
                       : `${status === 'approved' ? '승인' : '반려'} ${sub.peerProposal?.decidedAt ? formatDate(sub.peerProposal.decidedAt) : '-'}`
                     }
                     {status === 'rejected' && sub.peerProposal?.rejectionReason && (
-                      <span className="ml-1 text-gray-050">· 사유: {sub.peerProposal.rejectionReason}</span>
+                      <span className="ml-1 text-fg-subtle">· 사유: {sub.peerProposal.rejectionReason}</span>
                     )}
                   </p>
                 </div>

@@ -99,13 +99,13 @@ export function ExtendDeadlineModal({
         <div className="rounded-lg border border-gray-010 bg-gray-001 p-3">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <p className="text-gray-040">대상 요약</p>
+              <p className="text-fg-subtlest">대상 요약</p>
               <p className="mt-1 font-semibold text-gray-080">
                 자기평가 {selfCount}건 · 조직장 {managerCount}건
               </p>
             </div>
             <div>
-              <p className="text-gray-040">제외</p>
+              <p className="text-fg-subtlest">제외</p>
               <p className="mt-1 font-semibold text-gray-080">
                 이미 제출 {alreadyDone}건
               </p>

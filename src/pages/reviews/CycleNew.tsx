@@ -672,8 +672,8 @@ export function CycleNew() {
           <PartyPopper className="w-10 h-10 text-green-040" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-099">리뷰가 발행되었습니다!</h1>
-          <p className="text-gray-050 text-sm">
+          <h1 className="text-2xl font-bold text-fg-default">리뷰가 발행되었습니다!</h1>
+          <p className="text-fg-subtle text-sm">
             <span className="font-semibold text-gray-070">"{publishedTitle}"</span> 리뷰가 성공적으로 시작되었습니다.
           </p>
         </div>
@@ -685,7 +685,7 @@ export function CycleNew() {
             { label: '생성된 제출 건',   value: `자기평가 ${selfCount}건 · 매니저 평가 ${downCount}건` },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center gap-3 text-sm">
-              <span className="text-gray-040 w-32 flex-shrink-0">{label}</span>
+              <span className="text-fg-subtlest w-32 flex-shrink-0">{label}</span>
               <span className="font-medium text-gray-080">{value}</span>
             </div>
           ))}
@@ -734,7 +734,7 @@ export function CycleNew() {
             임시 저장됨 · {lastSavedAt ? timeAgo(lastSavedAt) : '방금'}
           </span>
         ) : (
-          <span className="text-gray-040">저장되지 않은 변경사항</span>
+          <span className="text-fg-subtlest">저장되지 않은 변경사항</span>
         )}
       </div>
 
@@ -747,11 +747,11 @@ export function CycleNew() {
             <div key={i} className="flex items-center flex-1">
               <div className="flex flex-col items-center gap-1.5">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  done ? 'bg-pink-040 text-white' : current ? 'bg-pink-050 text-white' : 'bg-gray-010 text-gray-040'
+                  done ? 'bg-pink-040 text-white' : current ? 'bg-pink-050 text-white' : 'bg-gray-010 text-fg-subtlest'
                 }`}>
                   {done ? <MsCheckIcon size={16} /> : i + 1}
                 </div>
-                <span className={`text-xs whitespace-nowrap ${current || done ? 'text-pink-060 font-semibold' : 'text-gray-040'}`}>
+                <span className={`text-xs whitespace-nowrap ${current || done ? 'text-pink-060 font-semibold' : 'text-fg-subtlest'}`}>
                   {s.label}
                 </span>
               </div>
@@ -769,7 +769,7 @@ export function CycleNew() {
         {/* Step 0: 기본 정보 */}
         {step === 0 && (
           <div className="space-y-5">
-            <h2 className="text-lg font-semibold text-gray-099">기본 정보를 입력하세요</h2>
+            <h2 className="text-lg font-semibold text-fg-default">기본 정보를 입력하세요</h2>
             <MsInput
               label="리뷰 이름 *"
               type="text"
@@ -795,8 +795,8 @@ export function CycleNew() {
                       {form.type === val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm font-semibold ${form.type === val ? 'text-gray-099' : 'text-gray-060'}`}>{label}</p>
-                      <p className="text-xs text-gray-040">{desc}</p>
+                      <p className={`text-sm font-semibold ${form.type === val ? 'text-fg-default' : 'text-gray-060'}`}>{label}</p>
+                      <p className="text-xs text-fg-subtlest">{desc}</p>
                     </div>
                   </button>
                 ))}
@@ -829,7 +829,7 @@ export function CycleNew() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-099">리뷰 템플릿 선택</h2>
+              <h2 className="text-lg font-semibold text-fg-default">리뷰 템플릿 선택</h2>
               <button
                 type="button"
                 onClick={handleGoCreateTemplate}
@@ -847,18 +847,18 @@ export function CycleNew() {
                     <MsCheckIcon size={10} className="text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-099">{selectedTemplate.name}</p>
-                    <p className="text-xs text-gray-040 mt-0.5 truncate">{selectedTemplate.description}</p>
+                    <p className="text-sm font-semibold text-fg-default">{selectedTemplate.name}</p>
+                    <p className="text-xs text-fg-subtlest mt-0.5 truncate">{selectedTemplate.description}</p>
                   </div>
-                  <span className="text-xs text-gray-040 bg-gray-010 px-2 py-0.5 rounded flex-shrink-0">{selectedTemplate.questions.length}문항</span>
+                  <span className="text-xs text-fg-subtlest bg-gray-010 px-2 py-0.5 rounded flex-shrink-0">{selectedTemplate.questions.length}문항</span>
                   <button type="button" onClick={() => setTemplateLocked(false)}
-                    className="flex items-center gap-1 text-xs text-gray-040 hover:text-gray-060 flex-shrink-0 ml-2">
+                    className="flex items-center gap-1 text-xs text-fg-subtlest hover:text-gray-060 flex-shrink-0 ml-2">
                     <MsRefreshIcon size={12} /> 변경
                   </button>
                 </div>
                 <div className="pl-11 pr-4 py-2.5 space-y-1">
                   {selectedTemplate.questions.slice(0, 3).map(q => (
-                    <p key={q.id} className="text-xs text-gray-040">• {q.text}</p>
+                    <p key={q.id} className="text-xs text-fg-subtlest">• {q.text}</p>
                   ))}
                   {selectedTemplate.questions.length > 3 && (
                     <p className="text-xs text-gray-030">+{selectedTemplate.questions.length - 3}개 더...</p>
@@ -868,8 +868,8 @@ export function CycleNew() {
             ) : templates.length === 0 ? (
               <div className="text-center py-10 space-y-3">
                 <MsArticleIcon size={32} className="text-gray-020 mx-auto" />
-                <p className="text-sm text-gray-050 font-medium">저장된 템플릿이 없습니다</p>
-                <p className="text-xs text-gray-040">템플릿을 먼저 만들어야 리뷰를 생성할 수 있습니다.</p>
+                <p className="text-sm text-fg-subtle font-medium">저장된 템플릿이 없습니다</p>
+                <p className="text-xs text-fg-subtlest">템플릿을 먼저 만들어야 리뷰를 생성할 수 있습니다.</p>
                 <MsButton type="button" onClick={handleGoCreateTemplate} leftIcon={<MsPlusIcon size={16} />}>새 템플릿 만들기</MsButton>
               </div>
             ) : (
@@ -887,15 +887,15 @@ export function CycleNew() {
                           {isSelected && <MsCheckIcon size={10} className="text-white" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${isSelected ? 'text-gray-099' : 'text-gray-060'}`}>{t.name}</p>
-                          <p className="text-xs text-gray-040 mt-0.5 truncate">{t.description}</p>
+                          <p className={`text-sm font-semibold ${isSelected ? 'text-fg-default' : 'text-gray-060'}`}>{t.name}</p>
+                          <p className="text-xs text-fg-subtlest mt-0.5 truncate">{t.description}</p>
                         </div>
-                        <span className="text-xs text-gray-040 bg-gray-010 px-2 py-0.5 rounded flex-shrink-0">{t.questions.length}문항</span>
+                        <span className="text-xs text-fg-subtlest bg-gray-010 px-2 py-0.5 rounded flex-shrink-0">{t.questions.length}문항</span>
                       </button>
                       {isSelected && (
                         <div className="pl-11 pr-4 py-2.5 border-t border-gray-010 space-y-1">
                           {t.questions.slice(0, 3).map(q => (
-                            <p key={q.id} className="text-xs text-gray-040">• {q.text}</p>
+                            <p key={q.id} className="text-xs text-fg-subtlest">• {q.text}</p>
                           ))}
                           {t.questions.length > 3 && (
                             <p className="text-xs text-gray-030">+{t.questions.length - 3}개 더...</p>
@@ -914,7 +914,7 @@ export function CycleNew() {
         {step === 2 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-099">대상 구성원 선택</h2>
+              <h2 className="text-lg font-semibold text-fg-default">대상 구성원 선택</h2>
             </div>
 
             <div className="inline-flex rounded-lg border border-gray-010 bg-gray-005 p-0.5">
@@ -928,7 +928,7 @@ export function CycleNew() {
                   type="button"
                   onClick={() => setForm(f => ({ ...f, targetMode: val }))}
                   className={`px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                    form.targetMode === val ? 'bg-white text-gray-080 shadow-sm' : 'text-gray-050 hover:text-gray-070'
+                    form.targetMode === val ? 'bg-white text-gray-080 shadow-sm' : 'text-fg-subtle hover:text-gray-070'
                   }`}
                 >
                   {label}
@@ -953,7 +953,7 @@ export function CycleNew() {
                     ))}
                   </MsSelect>
                 </div>
-                <p className="text-xs text-gray-040">
+                <p className="text-xs text-fg-subtlest">
                   선택된 매니저의 부하 직원 <strong className="text-gray-080">{targetMembers.length}명</strong>이 대상자로 지정됩니다.
                 </p>
               </div>
@@ -970,12 +970,12 @@ export function CycleNew() {
             {form.targetMode === 'org' && (departments.length > 0 && (
               <div className="flex items-center gap-3 text-xs font-medium">
                 <button type="button" onClick={selectAllDepts} className="text-pink-050 hover:text-pink-060 transition-colors">전체 선택</button>
-                <button type="button" onClick={deselectAllDepts} className="text-gray-040 hover:text-gray-060 transition-colors">전체 해제</button>
+                <button type="button" onClick={deselectAllDepts} className="text-fg-subtlest hover:text-gray-060 transition-colors">전체 해제</button>
               </div>
             ))}
 
             {form.targetMode === 'org' && (departments.length === 0 ? (
-              <p className="text-sm text-gray-040 py-4">등록된 부서가 없습니다. 팀 구성에서 구성원을 추가해주세요.</p>
+              <p className="text-sm text-fg-subtlest py-4">등록된 부서가 없습니다. 팀 구성에서 구성원을 추가해주세요.</p>
             ) : (
               <div className="space-y-2">
                 {departments.map(dept => {
@@ -1004,7 +1004,7 @@ export function CycleNew() {
                           {isFullyChecked   && <MsCheckIcon size={11} className="text-white" />}
                           {isIndeterminate  && <span className="text-white font-bold text-sm leading-none select-none">−</span>}
                         </div>
-                        <span className={`flex-1 text-sm font-semibold ${deptSelected ? 'text-gray-099' : 'text-gray-050'}`}>
+                        <span className={`flex-1 text-sm font-semibold ${deptSelected ? 'text-fg-default' : 'text-fg-subtle'}`}>
                           {dept}
                         </span>
                         {deptSelected ? (
@@ -1012,7 +1012,7 @@ export function CycleNew() {
                             {isIndeterminate ? `${selectedInDept}명 선택` : `전체 ${totalDeptCount}명`}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-040">{totalDeptCount}명</span>
+                          <span className="text-xs text-fg-subtlest">{totalDeptCount}명</span>
                         )}
                       </button>
 
@@ -1040,7 +1040,7 @@ export function CycleNew() {
                                     {subIndeterm  && <span className="text-white font-bold text-xs leading-none select-none">−</span>}
                                   </div>
                                   <span className={`flex-1 text-sm ${subSelected ? 'text-gray-080' : 'text-gray-035'}`}>{subOrg.name}</span>
-                                  <span className="text-xs text-gray-040">{subCount}명</span>
+                                  <span className="text-xs text-fg-subtlest">{subCount}명</span>
                                 </button>
 
                                 {/* 팀 */}
@@ -1067,7 +1067,7 @@ export function CycleNew() {
                                               {teamIndeterm  && <span className="text-white font-bold text-[9px] leading-none select-none">−</span>}
                                             </div>
                                             <span className={`flex-1 text-xs ${teamSelected ? 'text-gray-070' : 'text-gray-030'}`}>{team.name}</span>
-                                            <span className="text-[11px] text-gray-040">{teamCount}명</span>
+                                            <span className="text-[11px] text-fg-subtlest">{teamCount}명</span>
                                           </button>
 
                                           {/* 스쿼드 */}
@@ -1087,7 +1087,7 @@ export function CycleNew() {
                                                       {sqSelected && <MsCheckIcon size={7} className="text-white" />}
                                                     </div>
                                                     <span className={`flex-1 text-[11px] ${sqSelected ? 'text-gray-060' : 'text-gray-030'}`}>{squad.name}</span>
-                                                    <span className="text-[10px] text-gray-040">{sqCount}명</span>
+                                                    <span className="text-[10px] text-fg-subtlest">{sqCount}명</span>
                                                   </button>
                                                 );
                                               })}
@@ -1115,7 +1115,7 @@ export function CycleNew() {
         {/* Step 3: 일정 */}
         {step === 3 && (
           <div className="space-y-5">
-            <h2 className="text-lg font-semibold text-gray-099">일정을 설정하세요</h2>
+            <h2 className="text-lg font-semibold text-fg-default">일정을 설정하세요</h2>
             {[
               { key: 'selfReviewDeadline',    label: '자기평가 마감일',       required: true  },
               { key: 'managerReviewDeadline', label: '매니저 리뷰 마감일',    required: true  },
@@ -1150,7 +1150,7 @@ export function CycleNew() {
         {/* Step 5: 최종 검토 */}
         {step === 5 && (
           <div className="space-y-5">
-            <h2 className="text-lg font-semibold text-gray-099">최종 검토 후 발행하세요</h2>
+            <h2 className="text-lg font-semibold text-fg-default">최종 검토 후 발행하세요</h2>
             <div className="space-y-0">
               {[
                 { label: '리뷰 이름',        value: form.title },
@@ -1167,7 +1167,7 @@ export function CycleNew() {
                 { label: '매니저 평가 마감', value: form.managerReviewDeadline },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-010 last:border-0">
-                  <span className="text-xs text-gray-050 w-32 flex-shrink-0">{label}</span>
+                  <span className="text-xs text-fg-subtle w-32 flex-shrink-0">{label}</span>
                   <span className="text-sm text-gray-080 font-medium">{value}</span>
                 </div>
               ))}
@@ -1182,14 +1182,14 @@ export function CycleNew() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-gray-005 hover:bg-gray-010 transition-colors text-sm font-medium text-gray-070"
                 >
                   <span>템플릿 문항 전체 보기 ({selectedTemplate.questions.length}개)</span>
-                  <MsChevronDownLineIcon size={16} className={`text-gray-040 transition-transform ${templatePreviewOpen ? 'rotate-180' : ''}`} />
+                  <MsChevronDownLineIcon size={16} className={`text-fg-subtlest transition-transform ${templatePreviewOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {templatePreviewOpen && (
                   <div className="divide-y divide-gray-010">
                     {selectedTemplate.questions.map((q, idx) => (
                       <div key={q.id} className="px-4 py-3 space-y-1.5">
                         <div className="flex items-start gap-2">
-                          <span className="text-xs text-gray-040 w-5 flex-shrink-0 mt-0.5">{idx + 1}.</span>
+                          <span className="text-xs text-fg-subtlest w-5 flex-shrink-0 mt-0.5">{idx + 1}.</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-080">{q.text}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1201,14 +1201,14 @@ export function CycleNew() {
                               }`}>
                                 {TYPE_LABEL[q.type] ?? q.type}
                               </span>
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-gray-010 text-gray-050' : q.target === 'leader' ? 'bg-orange-50 text-orange-600' : 'bg-teal-50 text-teal-600'}`}>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-gray-010 text-fg-subtle' : q.target === 'leader' ? 'bg-orange-50 text-orange-600' : 'bg-teal-50 text-teal-600'}`}>
                                 {q.target === 'self' ? '자기평가' : q.target === 'leader' ? '리더 평가' : '공통'}
                               </span>
-                              {q.isPrivate && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-010 text-gray-040">비공개</span>}
+                              {q.isPrivate && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-010 text-fg-subtlest">비공개</span>}
                               {q.isRequired && <span className="text-xs text-red-040">필수</span>}
                             </div>
                             {q.type === 'rating' && q.ratingScale && (
-                              <p className="text-xs text-gray-040 mt-1">{q.ratingScale}점 척도</p>
+                              <p className="text-xs text-fg-subtlest mt-1">{q.ratingScale}점 척도</p>
                             )}
                             {q.type === 'multiple_choice' && q.options && q.options.length > 0 && (
                               <div className="mt-1.5 flex flex-wrap gap-1">
@@ -1330,21 +1330,21 @@ export function CycleNew() {
                 <Rocket className="w-5 h-5 text-yellow-060" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-099">리뷰를 발행하시겠습니까?</h3>
-                <p className="text-xs text-gray-050 mt-0.5">발행 후에는 되돌릴 수 없습니다.</p>
+                <h3 className="text-base font-semibold text-fg-default">리뷰를 발행하시겠습니까?</h3>
+                <p className="text-xs text-fg-subtle mt-0.5">발행 후에는 되돌릴 수 없습니다.</p>
               </div>
             </div>
             <div className="bg-gray-005 rounded-xl p-4 space-y-2 text-sm">
               <div className="flex gap-3">
-                <span className="text-gray-040 w-28 flex-shrink-0">리뷰 이름</span>
+                <span className="text-fg-subtlest w-28 flex-shrink-0">리뷰 이름</span>
                 <span className="font-medium text-gray-080">{form.title}</span>
               </div>
               <div className="flex gap-3">
-                <span className="text-gray-040 w-28 flex-shrink-0">대상 구성원</span>
+                <span className="text-fg-subtlest w-28 flex-shrink-0">대상 구성원</span>
                 <span className="font-medium text-gray-080">{targetMembers.length}명</span>
               </div>
               <div className="flex gap-3">
-                <span className="text-gray-040 w-28 flex-shrink-0">생성될 제출 건</span>
+                <span className="text-fg-subtlest w-28 flex-shrink-0">생성될 제출 건</span>
                 <span className="font-medium text-gray-080">자기평가 {selfCount}건 · 매니저 평가 {downCount}건</span>
               </div>
             </div>

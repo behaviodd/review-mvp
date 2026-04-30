@@ -126,7 +126,7 @@ export function QuickAddMemberDialog({
           onChange={e => setForm(p => ({ ...p, position: e.target.value }))}
           placeholder="예) 프론트엔드 개발자"
         />
-        <p className="pt-1 text-[11px] text-gray-040">
+        <p className="pt-1 text-[11px] text-fg-subtlest">
           상세 정보(연락처·입사일·겸임 등)는 추가 후 프로필 편집에서 입력할 수 있습니다.
         </p>
       </form>

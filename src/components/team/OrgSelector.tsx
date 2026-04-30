@@ -18,7 +18,7 @@ export function OrgSelector({
 
   return (
     <div className="col-span-2 space-y-3">
-      <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">조직 배정</p>
+      <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">조직 배정</p>
       <div className="grid grid-cols-2 gap-3">
         <MsSelect
           label="주조직"

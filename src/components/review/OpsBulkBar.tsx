@@ -41,7 +41,7 @@ export function OpsBulkBar({
     >
       <span className="text-xs font-semibold text-gray-080">
         {selectedCount}명 선택됨
-        <span className="ml-2 text-gray-040 font-normal">미제출 {pendingCount}명</span>
+        <span className="ml-2 text-fg-subtlest font-normal">미제출 {pendingCount}명</span>
       </span>
       <div className="ml-auto flex items-center gap-2">
         <MsButton

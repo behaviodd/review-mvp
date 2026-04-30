@@ -99,8 +99,8 @@ export function ListToolbar<T extends string = string>({
                 className={cn(
                   'flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px',
                   isActive
-                    ? 'border-gray-099 text-gray-099'
-                    : 'border-transparent text-gray-030 hover:text-gray-050',
+                    ? 'border-gray-099 text-fg-default'
+                    : 'border-transparent text-gray-030 hover:text-fg-subtle',
                 )}
               >
                 {label}

@@ -34,7 +34,7 @@ interface CycleData {
 function StatusDot({ submitted, total, isClosed }: { submitted: number; total: number; isClosed: boolean }) {
   if (isClosed) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
         <MsCircleIcon size={14} /> 종료
       </span>
     );
@@ -54,7 +54,7 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
       <MsCircleIcon size={14} /> 미시작
     </span>
   );
@@ -64,10 +64,10 @@ function StatusDot({ submitted, total, isClosed }: { submitted: number; total: n
 function SectionHeader() {
   return (
     <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
-      <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-xs font-semibold text-gray-040 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">상태</div>
+      <div className="flex-1 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">상태</div>
       <div className="w-24" />
     </div>
   );
@@ -205,7 +205,7 @@ export function TeamReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
-                urgent && !isCompleted ? 'text-pink-060' : 'text-gray-099'
+                urgent && !isCompleted ? 'text-pink-060' : 'text-fg-default'
               }`}>
                 {cycle.title}
               </p>
@@ -213,12 +213,12 @@ export function TeamReviewList() {
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               <StatusDot submitted={submitted} total={total} isClosed={isClosed} />
               {cycle && (
-                <p className={`text-xs ${urgent && !isCompleted ? 'text-pink-050 font-medium' : 'text-gray-040'}`}>
+                <p className={`text-xs ${urgent && !isCompleted ? 'text-pink-050 font-medium' : 'text-fg-subtlest'}`}>
                   {deadlineLabel(cycle.managerReviewDeadline)}
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-040">
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-fg-subtlest">
               <span className="flex items-center gap-1">
                 <MsUsersIcon size={12} /> {total}명
               </span>
@@ -245,7 +245,7 @@ export function TeamReviewList() {
           <span className={`
             flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold mt-0.5
             ${isCompleted
-              ? 'text-gray-040'
+              ? 'text-fg-subtlest'
               : urgent
                 ? 'bg-pink-040 text-white'
                 : 'bg-pink-050 text-white'}
@@ -264,12 +264,12 @@ export function TeamReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               <p className={`text-sm font-semibold truncate group-hover:text-pink-060 ${
-                urgent && !isCompleted ? 'text-pink-060' : 'text-gray-099'
+                urgent && !isCompleted ? 'text-pink-060' : 'text-fg-default'
               }`}>
                 {cycle.title}
               </p>
             </div>
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-040">
+            <div className="flex items-center gap-3 mt-0.5 text-xs text-fg-subtlest">
               <span>{cycle.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'}</span>
               <span className="flex items-center gap-1">
                 <MsUsersIcon size={12} /> {total}명
@@ -287,7 +287,7 @@ export function TeamReviewList() {
             {!isCompleted ? (
               <div>
                 <ProgressBar value={pct} max={100} size="sm" />
-                <p className="text-xs text-gray-040 mt-1">
+                <p className="text-xs text-fg-subtlest mt-1">
                   {submitted}/{total} 완료
                 </p>
               </div>
@@ -301,7 +301,7 @@ export function TeamReviewList() {
             <p className={`text-xs font-medium ${urgent && !isCompleted ? 'text-pink-050' : 'text-gray-060'}`}>
               {deadlineLabel(cycle.managerReviewDeadline)}
             </p>
-            <p className="text-xs text-gray-040 mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
+            <p className="text-xs text-fg-subtlest mt-0.5">{formatDate(cycle.managerReviewDeadline)}</p>
           </div>
 
           {/* 상태 */}
@@ -315,7 +315,7 @@ export function TeamReviewList() {
               <button
                 onClick={e => { e.stopPropagation(); exportCycleToCSV(cycle, template, submissions, users); }}
                 title="엑셀 다운로드"
-                className="p-1.5 text-gray-040 hover:text-gray-070 hover:bg-gray-010 rounded-lg transition-colors"
+                className="p-1.5 text-fg-subtlest hover:text-gray-070 hover:bg-gray-010 rounded-lg transition-colors"
               >
                 <MsDownloadIcon size={12} />
               </button>
@@ -331,7 +331,7 @@ export function TeamReviewList() {
                 <MsChevronRightLineIcon size={12} />
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-gray-040 group-hover:text-gray-060">
+              <span className="inline-flex items-center gap-1 text-xs text-fg-subtlest group-hover:text-gray-060">
                 결과 보기 <MsChevronRightLineIcon size={12} />
               </span>
             )}
@@ -398,7 +398,7 @@ export function TeamReviewList() {
         <>
           {active.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">진행 중</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">진행 중</p>
               <div>
                 <SectionHeader />
                 {active.map(d => <CycleRow key={d.cycle.id} data={d} />)}
@@ -407,7 +407,7 @@ export function TeamReviewList() {
           )}
           {done.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">완료</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">완료</p>
               <div>
                 <SectionHeader />
                 {done.map(d => <CycleRow key={d.cycle.id} data={d} />)}
@@ -416,7 +416,7 @@ export function TeamReviewList() {
           )}
           {closed.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">종료됨</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">종료됨</p>
               <div>
                 <SectionHeader />
                 {closed.map(d => <CycleRow key={d.cycle.id} data={d} />)}

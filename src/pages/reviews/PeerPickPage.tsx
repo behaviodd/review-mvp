@@ -135,8 +135,8 @@ export function PeerPickPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <header className="rounded-xl border border-gray-010 bg-white p-5 shadow-card">
-        <h1 className="text-lg font-bold text-gray-099">{cycle.title}</h1>
-        <p className="mt-1 text-xs text-gray-050">
+        <h1 className="text-lg font-bold text-fg-default">{cycle.title}</h1>
+        <p className="mt-1 text-xs text-fg-subtle">
           나를 평가할 동료 <strong>{min}–{max}명</strong>을 선택해 주세요.
           {isProposal ? ' 선택 후 리더가 승인합니다.' : ' 선택 후 해당 동료에게 평가 작성이 요청됩니다.'}
         </p>
@@ -163,7 +163,7 @@ export function PeerPickPage() {
         />
         <div className="max-h-[480px] overflow-y-auto rounded-lg border border-gray-010 divide-y divide-gray-005">
           {candidates.length === 0 ? (
-            <p className="px-4 py-8 text-center text-xs text-gray-040">후보가 없습니다.</p>
+            <p className="px-4 py-8 text-center text-xs text-fg-subtlest">후보가 없습니다.</p>
           ) : (
             candidates.map(u => {
               const checked = selected.has(u.id);
@@ -179,7 +179,7 @@ export function PeerPickPage() {
                   <UserAvatar user={u} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
-                    <p className="text-[11px] text-gray-040 truncate">{u.position} · {getSmallestOrg(u)}</p>
+                    <p className="text-[11px] text-fg-subtlest truncate">{u.position} · {getSmallestOrg(u)}</p>
                   </div>
                 </label>
               );

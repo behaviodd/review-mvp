@@ -17,10 +17,10 @@ type TypeFilter   = 'all' | 'scheduled' | 'adhoc';
 function SectionHeader() {
   return (
     <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
-      <div className="flex-1 text-xs font-semibold text-gray-040 uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-xs font-semibold text-gray-040 uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-xs font-semibold text-gray-040 uppercase tracking-wide">상태</div>
+      <div className="flex-1 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">리뷰</div>
+      <div className="w-32 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">진행도</div>
+      <div className="w-28 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">마감</div>
+      <div className="w-24 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">상태</div>
       <div className="w-24" />
     </div>
   );
@@ -42,7 +42,7 @@ function StatusDot({ status }: { status: string }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-040">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
       <MsCircleIcon size={14} /> 미시작
     </span>
   );
@@ -97,8 +97,8 @@ export function MyReviewList() {
             <MsShieldCheckIcon size={28} className="text-blue-050" />
           </div>
           <div>
-            <p className="text-base font-semibold text-gray-099 mb-1">관리자는 셀프 리뷰 대상이 아닙니다</p>
-            <p className="text-sm text-gray-050">리뷰 주기 생성·관리 및 전체 평가 현황은 아래에서 확인하세요.</p>
+            <p className="text-base font-semibold text-fg-default mb-1">관리자는 셀프 리뷰 대상이 아닙니다</p>
+            <p className="text-sm text-fg-subtle">리뷰 주기 생성·관리 및 전체 평가 현황은 아래에서 확인하세요.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <button
@@ -108,7 +108,7 @@ export function MyReviewList() {
               <MsUsersIcon size={20} className="text-blue-050" />
               <div>
                 <p className="text-sm font-semibold text-gray-080">팀원 평가</p>
-                <p className="text-xs text-gray-040 mt-0.5">팀원별 평가 현황 열람</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">팀원별 평가 현황 열람</p>
               </div>
             </button>
             <button
@@ -118,7 +118,7 @@ export function MyReviewList() {
               <MsBarChart2Icon size={20} className="text-blue-050" />
               <div>
                 <p className="text-sm font-semibold text-gray-080">리뷰 운영</p>
-                <p className="text-xs text-gray-040 mt-0.5">주기 생성 및 현황 관리</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">주기 생성 및 현황 관리</p>
               </div>
             </button>
             <button
@@ -128,7 +128,7 @@ export function MyReviewList() {
               <MsArticleIcon size={20} className="text-blue-050" />
               <div>
                 <p className="text-sm font-semibold text-gray-080">템플릿 관리</p>
-                <p className="text-xs text-gray-040 mt-0.5">리뷰 양식 생성 및 수정</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">리뷰 양식 생성 및 수정</p>
               </div>
             </button>
           </div>
@@ -188,28 +188,28 @@ export function MyReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               {kindBadge}
-              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-gray-099'} group-hover:text-pink-060`}>
+              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
                 {cycle?.title ?? '–'}
-                {revieweeForOther && <span className="ml-1 text-xs font-normal text-gray-050">· {revieweeForOther.name}</span>}
+                {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
               </p>
             </div>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               <StatusDot status={sub.status} />
               {cycle && (
-                <p className={`text-xs ${urgent && !isSubmitted ? 'text-pink-050 font-medium' : 'text-gray-040'}`}>
+                <p className={`text-xs ${urgent && !isSubmitted ? 'text-pink-050 font-medium' : 'text-fg-subtlest'}`}>
                   {deadlineLabel(cycle.selfReviewDeadline)}
                 </p>
               )}
               {isSubmitted && (
                 managerEval
                   ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-gray-040"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-fg-subtlest"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
               )}
             </div>
             {!isSubmitted && (
               <div className="mt-2">
                 <ProgressBar value={progress} size="sm" />
-                <p className="text-xs text-gray-040 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
+                <p className="text-xs text-fg-subtlest mt-1">{sub.answers.length}/{selfQCount} 완료</p>
               </div>
             )}
           </div>
@@ -234,19 +234,19 @@ export function MyReviewList() {
                 <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
               )}
               {kindBadge}
-              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-gray-099'} group-hover:text-pink-060`}>
+              <p className={`text-sm font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
                 {cycle?.title ?? '–'}
-                {revieweeForOther && <span className="ml-1 text-xs font-normal text-gray-050">· {revieweeForOther.name}</span>}
+                {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
               </p>
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <p className="text-xs text-gray-040">
+              <p className="text-xs text-fg-subtlest">
                 {cycle?.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'}
               </p>
               {isSubmitted && (
                 managerEval
                   ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-gray-040"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
+                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-fg-subtlest"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
               )}
             </div>
           </div>
@@ -255,7 +255,7 @@ export function MyReviewList() {
             {!isSubmitted ? (
               <div>
                 <ProgressBar value={progress} size="sm" />
-                <p className="text-xs text-gray-040 mt-1">{sub.answers.length}/{selfQCount} 완료</p>
+                <p className="text-xs text-fg-subtlest mt-1">{sub.answers.length}/{selfQCount} 완료</p>
               </div>
             ) : (
               <div className="h-1.5 rounded-full bg-green-020" />
@@ -268,7 +268,7 @@ export function MyReviewList() {
                 <p className={`text-xs font-medium ${urgent && !isSubmitted ? 'text-pink-050' : 'text-gray-060'}`}>
                   {deadlineLabel(cycle.selfReviewDeadline)}
                 </p>
-                <p className="text-xs text-gray-040 mt-0.5">{formatDate(cycle.selfReviewDeadline)}</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">{formatDate(cycle.selfReviewDeadline)}</p>
               </>
             )}
           </div>
@@ -290,7 +290,7 @@ export function MyReviewList() {
                 <MsChevronRightLineIcon size={12} />
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-gray-040 group-hover:text-gray-060">
+              <span className="inline-flex items-center gap-1 text-xs text-fg-subtlest group-hover:text-gray-060">
                 결과 보기 <MsChevronRightLineIcon size={12} />
               </span>
             )}
@@ -314,14 +314,14 @@ export function MyReviewList() {
         <div className="flex md:hidden items-center gap-3 px-4 py-3.5">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-gray-099 truncate group-hover:text-pink-060">
+              <p className="text-sm font-semibold text-fg-default truncate group-hover:text-pink-060">
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">
                 <MsProfileIcon size={12} /> 조직장 평가
               </span>
             </div>
-            <p className="text-xs text-gray-040 mt-0.5">{reviewer?.name} 작성</p>
+            <p className="text-xs text-fg-subtlest mt-0.5">{reviewer?.name} 작성</p>
           </div>
           <MsChevronRightLineIcon size={16} className="text-gray-030 flex-shrink-0" />
         </div>
@@ -330,14 +330,14 @@ export function MyReviewList() {
         <div className="hidden md:flex items-center gap-5 px-5 py-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-gray-099 truncate group-hover:text-pink-060">
+              <p className="text-sm font-semibold text-fg-default truncate group-hover:text-pink-060">
                 {cycle?.title ?? '–'}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">
                 <MsProfileIcon size={12} /> 조직장 평가
               </span>
             </div>
-            <p className="text-xs text-gray-040 mt-0.5">
+            <p className="text-xs text-fg-subtlest mt-0.5">
               {reviewer?.name} · {reviewer?.position}
             </p>
           </div>
@@ -359,7 +359,7 @@ export function MyReviewList() {
           </div>
 
           <div className="flex-shrink-0 w-24 flex justify-end">
-            <span className="inline-flex items-center gap-1 text-xs text-gray-040 group-hover:text-gray-060">
+            <span className="inline-flex items-center gap-1 text-xs text-fg-subtlest group-hover:text-gray-060">
               결과 보기 <MsChevronRightLineIcon size={12} />
             </span>
           </div>
@@ -444,7 +444,7 @@ export function MyReviewList() {
         <>
           {active.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">진행 중</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">진행 중</p>
               <div>
                 <SectionHeader />
                 {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
@@ -453,7 +453,7 @@ export function MyReviewList() {
           )}
           {doneAll.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">완료</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">완료</p>
               <div>
                 <SectionHeader />
                 {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
@@ -463,7 +463,7 @@ export function MyReviewList() {
           )}
           {closedCount > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">종료됨</p>
+              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">종료됨</p>
               <div>
                 <SectionHeader />
                 {closedSelf.map(sub => <ReviewRow key={sub.id} sub={sub} />)}

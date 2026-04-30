@@ -88,7 +88,7 @@ export function AuditLogDrawer({ cycleId, open, onClose }: Props) {
     >
       <>
         <div className="flex items-center gap-2 border-b border-gray-010 bg-gray-001 px-5 py-2">
-          <span className="text-xs text-gray-050">필터</span>
+          <span className="text-xs text-fg-subtle">필터</span>
           <MsSelect
             value={actionFilter}
             onChange={e => setActionFilter(e.target.value as 'all' | AuditAction)}
@@ -105,7 +105,7 @@ export function AuditLogDrawer({ cycleId, open, onClose }: Props) {
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-sm font-semibold text-gray-070">기록이 없습니다.</p>
-              <p className="mt-1 text-xs text-gray-040">관리자 개입이 일어나면 여기에 남습니다.</p>
+              <p className="mt-1 text-xs text-fg-subtlest">관리자 개입이 일어나면 여기에 남습니다.</p>
             </div>
           ) : (
             <ul className="divide-y divide-gray-005">
@@ -120,13 +120,13 @@ export function AuditLogDrawer({ cycleId, open, onClose }: Props) {
                       <span className="text-xs text-gray-060 truncate">
                         {actor ? `${actor.name} (${actor.position})` : e.actorId}
                       </span>
-                      <span className="ml-auto text-[11px] text-gray-040" title={formatDateTime(e.at)}>
+                      <span className="ml-auto text-[11px] text-fg-subtlest" title={formatDateTime(e.at)}>
                         {timeAgo(e.at)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-080">{e.summary}</p>
                     {e.targetIds.length > 0 && (
-                      <p className="text-[11px] text-gray-040 truncate" title={e.targetIds.join(', ')}>
+                      <p className="text-[11px] text-fg-subtlest truncate" title={e.targetIds.join(', ')}>
                         대상 {e.targetIds.length}건
                       </p>
                     )}

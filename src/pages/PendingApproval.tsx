@@ -27,7 +27,7 @@ export function PendingApproval() {
 
   if (!currentUser || currentUser.status !== 'pending') {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-040 text-sm">
+      <div className="min-h-screen flex items-center justify-center text-fg-subtlest text-sm">
         <Loader2 className="size-4 mr-2 animate-spin" />
         이동 중...
       </div>
@@ -46,8 +46,8 @@ export function PendingApproval() {
           <div className="inline-flex items-center justify-center size-12 rounded-full bg-yellow-005 mb-3">
             <ShieldCheck className="size-6 text-yellow-060" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-099">관리자 승인 대기 중</h1>
-          <p className="text-sm text-gray-050 mt-1.5 leading-relaxed">
+          <h1 className="text-xl font-semibold text-fg-default">관리자 승인 대기 중</h1>
+          <p className="text-sm text-fg-subtle mt-1.5 leading-relaxed">
             관리자가 계정을 승인하면 모든 기능을 사용할 수 있습니다.
             <br />
             승인은 영업일 기준 1일 이내에 완료됩니다.
@@ -68,7 +68,7 @@ export function PendingApproval() {
           </MsButton>
         </div>
 
-        <p className="text-center text-xs text-gray-040">
+        <p className="text-center text-xs text-fg-subtlest">
           문의: 시스템 관리자에게 연락해 주세요.
         </p>
       </div>
@@ -79,8 +79,8 @@ export function PendingApproval() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-gray-050">{label}</span>
-      <span className="text-sm text-gray-099 font-medium truncate">{value}</span>
+      <span className="text-xs text-fg-subtle">{label}</span>
+      <span className="text-sm text-fg-default font-medium truncate">{value}</span>
     </div>
   );
 }

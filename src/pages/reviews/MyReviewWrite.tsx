@@ -104,8 +104,8 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
     }`}>
       {question.isPrivate && (
         <div className="flex items-center gap-1.5 mb-2">
-          <MsLockIcon size={12} className="text-gray-040" />
-          <span className="text-xs text-gray-040">매니저 전용</span>
+          <MsLockIcon size={12} className="text-fg-subtlest" />
+          <span className="text-xs text-fg-subtlest">매니저 전용</span>
         </div>
       )}
       <div className="mb-3">
@@ -113,10 +113,10 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
           {question.text}{question.isRequired && <span className="text-red-050 ml-1">*</span>}
         </p>
         {question.helpText && (
-          <p className="text-xs text-gray-040 leading-relaxed">{question.helpText}</p>
+          <p className="text-xs text-fg-subtlest leading-relaxed">{question.helpText}</p>
         )}
         {question.exampleAnswer && (
-          <p className="text-xs text-gray-040 italic mt-0.5">예시: {question.exampleAnswer}</p>
+          <p className="text-xs text-fg-subtlest italic mt-0.5">예시: {question.exampleAnswer}</p>
         )}
       </div>
       {(question.type === 'rating' || question.type === 'competency') && (
@@ -127,7 +127,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         readOnly ? (
           (answer?.selectedOptions?.length ?? 0) > 0
             ? <div className="flex flex-wrap gap-1.5">{answer!.selectedOptions!.map(o => <span key={o} className="text-xs px-2 py-1 bg-pink-005 text-pink-060 rounded-full border border-pink-010">{o}</span>)}</div>
-            : <p className="text-sm text-gray-040 italic">미응답</p>
+            : <p className="text-sm text-fg-subtlest italic">미응답</p>
         ) : (
           <MultipleChoiceSelector question={question} selected={answer?.selectedOptions ?? []}
             onChange={v => onChange({ questionId: question.id, selectedOptions: v })} />
@@ -147,7 +147,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
             {!readOnly && answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>}
             {!readOnly && answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>}
             {(!readOnly && !answer?.textValue) && <span />}
-            <p className="text-xs text-gray-040 ml-auto">{(answer?.textValue || '').length}/1000</p>
+            <p className="text-xs text-fg-subtlest ml-auto">{(answer?.textValue || '').length}/1000</p>
           </div>
         </div>
       )}
@@ -164,17 +164,17 @@ function InputAnswerContent({ question, answer }: { question: TemplateQuestion; 
   if (question.type === 'rating' || question.type === 'competency') {
     return r ? (
       <div className="flex items-center gap-3">
-        <div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${n===r?'bg-gray-070 text-white':n<r?'bg-gray-020 text-gray-050':'bg-gray-010 text-gray-030'}`}>{n}</span>)}</div>
+        <div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${n===r?'bg-gray-070 text-white':n<r?'bg-gray-020 text-fg-subtle':'bg-gray-010 text-gray-030'}`}>{n}</span>)}</div>
         <span className="text-sm font-semibold text-gray-070">{r}점</span>
-        <span className="text-xs text-gray-050 font-medium">{RATING_LABELS[r]}</span>
+        <span className="text-xs text-fg-subtle font-medium">{RATING_LABELS[r]}</span>
       </div>
-    ) : <p className="text-sm text-gray-040 italic">미응답</p>;
+    ) : <p className="text-sm text-fg-subtlest italic">미응답</p>;
   }
   if (question.type === 'multiple_choice') {
     const opts = answer?.selectedOptions ?? [];
-    return opts.length > 0 ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div> : <p className="text-sm text-gray-040 italic">미응답</p>;
+    return opts.length > 0 ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-gray-040 italic">미응답</p>;
+  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
 }
 
 function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; answer?: Answer }) {
@@ -186,15 +186,15 @@ function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; a
         <span className="text-sm font-semibold text-gray-070">{r}점</span>
         <span className="text-xs text-pink-050 font-medium">{RATING_LABELS[r]}</span>
       </div>
-    ) : <p className="text-sm text-gray-040 italic">미응답</p>;
+    ) : <p className="text-sm text-fg-subtlest italic">미응답</p>;
   }
   if (question.type === 'multiple_choice') {
     const opts = answer?.selectedOptions ?? [];
     return opts.length > 0
       ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-pink-005 text-pink-060 rounded-full border border-pink-010">{o}</span>)}</div>
-      : <p className="text-sm text-gray-040 italic">미응답</p>;
+      : <p className="text-sm text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-gray-040 italic">미응답</p>;
+  return t?.trim() ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-sm text-fg-subtlest italic">미응답</p>;
 }
 
 // ─── 참고자료 타입 ────────────────────────────────────────────────────────────
@@ -257,7 +257,7 @@ function RightPanel({
           <div className="size-6 rounded bg-pink-005 flex items-center justify-center flex-shrink-0">
             <MsArticleIcon size={12} className="text-pink-050" />
           </div>
-          <p className="text-xs font-semibold text-gray-099">리뷰 정보</p>
+          <p className="text-xs font-semibold text-fg-default">리뷰 정보</p>
         </div>
         {isDownward && reviewerId && (() => {
           const reviewer = users.find(u => u.id === reviewerId);
@@ -266,36 +266,36 @@ function RightPanel({
             <div className="flex items-center gap-2.5 p-2.5 bg-gray-005 rounded-lg border border-gray-010">
               <UserAvatar user={reviewer} size="sm" />
               <div className="min-w-0">
-                <p className="text-xs text-gray-040 leading-none mb-0.5">작성자</p>
+                <p className="text-xs text-fg-subtlest leading-none mb-0.5">작성자</p>
                 <p className="text-xs font-semibold text-gray-070 truncate">{reviewer.name}</p>
-                <p className="text-xs text-gray-040 truncate">{reviewer.position}</p>
+                <p className="text-xs text-fg-subtlest truncate">{reviewer.position}</p>
               </div>
             </div>
           );
         })()}
         <div>
-          <p className="text-xs font-medium text-gray-040 uppercase tracking-wider mb-0.5">리뷰 주기</p>
+          <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-0.5">리뷰 주기</p>
           <p className="text-xs font-medium text-gray-070 leading-snug">{cycle?.title ?? '—'}</p>
         </div>
         <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
-          <MsCalendarIcon size={12} className="text-gray-040 mt-0.5 flex-shrink-0" />
+          <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs text-gray-040">자기평가 마감</p>
+            <p className="text-xs text-fg-subtlest">자기평가 마감</p>
             <p className="text-xs font-medium text-gray-070">{cycle ? formatDate(cycle.selfReviewDeadline) : '—'}</p>
           </div>
         </div>
         <div className="p-3 bg-gray-005 rounded-lg border border-gray-010">
           <div className="flex items-center gap-1.5 mb-2">
-            <MsShieldCheckIcon size={14} className="text-gray-050" />
+            <MsShieldCheckIcon size={14} className="text-fg-subtle" />
             <p className="text-xs font-semibold text-gray-060">개인정보 보호</p>
           </div>
-          <p className="text-xs text-gray-050 leading-relaxed">작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 매니저와 관리자만 열람합니다.</p>
+          <p className="text-xs text-fg-subtle leading-relaxed">작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 매니저와 관리자만 열람합니다.</p>
         </div>
         {!isReadOnly && (
           <div>
-            <p className="text-xs font-medium text-gray-040 uppercase tracking-wider mb-2">작성 진행률</p>
+            <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-2">작성 진행률</p>
             <ProgressBar value={completedCount} max={totalSections} showPercent />
-            <p className="text-xs text-gray-040 mt-1.5">{completedCount}/{totalSections} 섹션 완료</p>
+            <p className="text-xs text-fg-subtlest mt-1.5">{completedCount}/{totalSections} 섹션 완료</p>
           </div>
         )}
         {isReadOnly && currentUser?.role === 'admin' && submission && template && cycle && (
@@ -315,11 +315,11 @@ function RightPanel({
       <div>
         <button onClick={() => setRefsOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-005 transition-colors border-b border-gray-010">
           <div className="flex items-center gap-2">
-            <MsPaperclipIcon size={12} className="text-gray-040" />
+            <MsPaperclipIcon size={12} className="text-fg-subtlest" />
             <span className="text-xs font-medium text-gray-070">참고자료</span>
             {refs.length > 0 && <span className="text-xs font-bold bg-pink-010 text-pink-050 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">{refs.length}</span>}
           </div>
-          {refsOpen ? <MsChevronDownLineIcon size={12} className="text-gray-040" /> : <MsChevronRightLineIcon size={12} className="text-gray-040" />}
+          {refsOpen ? <MsChevronDownLineIcon size={12} className="text-fg-subtlest" /> : <MsChevronRightLineIcon size={12} className="text-fg-subtlest" />}
         </button>
         {refsOpen && (
           <div className="px-4 py-3 space-y-3">
@@ -327,13 +327,13 @@ function RightPanel({
               <ul className="space-y-1.5">
                 {refs.map(item => (
                   <li key={item.id} className="flex items-center gap-2 group">
-                    {item.kind === 'link' ? <MsLinkIcon size={12} className="text-pink-040 flex-shrink-0" /> : <MsPaperclipIcon size={12} className="text-gray-040 flex-shrink-0" />}
+                    {item.kind === 'link' ? <MsLinkIcon size={12} className="text-pink-040 flex-shrink-0" /> : <MsPaperclipIcon size={12} className="text-fg-subtlest flex-shrink-0" />}
                     <span className="flex-1 min-w-0 text-xs text-gray-060 truncate">
                       {item.kind === 'link'
                         ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-pink-050 hover:underline inline-flex items-center gap-0.5">{item.title}<MsOutlinkIcon size={12} className="ml-0.5" /></a>
                         : item.name}
                     </span>
-                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-gray-040 hover:text-red-050 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
+                    {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-fg-subtlest hover:text-red-050 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
                   </li>
                 ))}
               </ul>
@@ -342,7 +342,7 @@ function RightPanel({
               <div className="space-y-2">
                 <div className="flex bg-gray-010 rounded-lg p-0.5">
                   {(['link', 'file'] as const).map(tab => (
-                    <button key={tab} onClick={() => setRefTab(tab)} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${refTab === tab ? 'bg-white text-gray-080 shadow-sm' : 'text-gray-050'}`}>
+                    <button key={tab} onClick={() => setRefTab(tab)} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${refTab === tab ? 'bg-white text-gray-080 shadow-sm' : 'text-fg-subtle'}`}>
                       {tab === 'link' ? <MsLinkIcon size={12} /> : <MsPaperclipIcon size={12} />}
                       {tab === 'link' ? '링크' : '파일'}
                     </button>
@@ -356,14 +356,14 @@ function RightPanel({
                   </div>
                 ) : (
                   <label className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border-2 border-dashed border-gray-020 rounded-lg hover:border-pink-030 hover:bg-pink-005/30 cursor-pointer transition-colors">
-                    <MsPaperclipIcon size={16} className="text-gray-040" />
-                    <span className="text-xs text-gray-050 font-medium">파일 선택</span>
+                    <MsPaperclipIcon size={16} className="text-fg-subtlest" />
+                    <span className="text-xs text-fg-subtle font-medium">파일 선택</span>
                     <input type="file" multiple className="hidden" onChange={handleFileChange} />
                   </label>
                 )}
               </div>
             )}
-            {refs.length === 0 && isReadOnly && <p className="text-xs text-gray-040 text-center py-1">참고자료가 없습니다.</p>}
+            {refs.length === 0 && isReadOnly && <p className="text-xs text-fg-subtlest text-center py-1">참고자료가 없습니다.</p>}
           </div>
         )}
       </div>
@@ -376,14 +376,14 @@ function RightPanel({
               <Lightbulb className="size-3.5 text-yellow-060" />
               <span className="text-xs font-medium text-gray-070">작성 팁</span>
             </div>
-            {tipsOpen ? <MsChevronDownLineIcon size={12} className="text-gray-040" /> : <MsChevronRightLineIcon size={12} className="text-gray-040" />}
+            {tipsOpen ? <MsChevronDownLineIcon size={12} className="text-fg-subtlest" /> : <MsChevronRightLineIcon size={12} className="text-fg-subtlest" />}
           </button>
           {tipsOpen && (
             <ul className="px-4 py-3 space-y-2.5">
               {WRITING_TIPS.map((tip, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="size-1.5 rounded-full bg-gray-030 flex-shrink-0 mt-1.5" />
-                  <p className="text-xs text-gray-050 leading-relaxed">{tip}</p>
+                  <p className="text-xs text-fg-subtle leading-relaxed">{tip}</p>
                 </li>
               ))}
             </ul>
@@ -584,19 +584,19 @@ export function MyReviewWrite() {
           <div className="w-20 h-20 bg-green-005 rounded-full flex items-center justify-center mx-auto mb-6">
             <PartyPopper className="w-10 h-10 text-green-050" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-099 mb-3">수고하셨습니다! 🎉</h1>
+          <h1 className="text-2xl font-bold text-fg-default mb-3">수고하셨습니다! 🎉</h1>
           <p className="text-gray-060 mb-2">성장 돌아보기를 완료했습니다.</p>
-          <p className="text-sm text-gray-040 mb-8">리뷰가 안전하게 제출되었습니다.</p>
+          <p className="text-sm text-fg-subtlest mb-8">리뷰가 안전하게 제출되었습니다.</p>
           <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
           <div className="mt-8 text-left space-y-2">
-            <p className="text-xs font-semibold text-gray-040 uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
+            <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
             <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
               <div className="w-9 h-9 bg-pink-005 rounded-xl flex items-center justify-center flex-shrink-0"><MsMessageIcon size={16} className="text-pink-050" /></div>
-              <div><p className="text-sm font-semibold text-gray-080">받은 피드백 확인</p><p className="text-xs text-gray-040 mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
+              <div><p className="text-sm font-semibold text-gray-080">받은 피드백 확인</p><p className="text-xs text-fg-subtlest mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
             </button>
             <button onClick={() => navigate('/reviews/me')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
-              <div className="w-9 h-9 bg-gray-005 rounded-lg flex items-center justify-center flex-shrink-0"><MsChevronLeftLineIcon size={16} className="text-gray-050" /></div>
-              <div><p className="text-sm font-semibold text-gray-080">내 리뷰 목록으로</p><p className="text-xs text-gray-040 mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
+              <div className="w-9 h-9 bg-gray-005 rounded-lg flex items-center justify-center flex-shrink-0"><MsChevronLeftLineIcon size={16} className="text-fg-subtle" /></div>
+              <div><p className="text-sm font-semibold text-gray-080">내 리뷰 목록으로</p><p className="text-xs text-fg-subtlest mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
             </button>
           </div>
         </div>
@@ -661,14 +661,14 @@ export function MyReviewWrite() {
           {!isDownward && isReadOnly && managerReview && managerUser ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-099">리뷰 결과</h2>
-                <p className="text-sm text-gray-040 mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
+                <h2 className="text-lg font-semibold text-fg-default">리뷰 결과</h2>
+                <p className="text-sm text-fg-subtlest mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
               </div>
               <div className="rounded-lg overflow-hidden border border-bd-default">
                 <div className="hidden md:grid md:grid-cols-2">
                   <div className="flex items-center gap-2.5 px-5 py-3 bg-gray-005 border-b border-r border-gray-010">
                     {currentUser && <UserAvatar user={currentUser} size="sm" />}
-                    <div><p className="text-xs font-semibold text-gray-070">내 자기평가</p><p className="text-xs text-gray-040">읽기 전용</p></div>
+                    <div><p className="text-xs font-semibold text-gray-070">내 자기평가</p><p className="text-xs text-fg-subtlest">읽기 전용</p></div>
                   </div>
                   <div className="flex items-center gap-2.5 px-5 py-3 bg-pink-005/60 border-b border-gray-010">
                     <UserAvatar user={managerUser} size="sm" anonymous={isManagerAnonymous} />
@@ -685,12 +685,12 @@ export function MyReviewWrite() {
                   return (
                     <div key={q.id}>
                       <div className="px-5 py-3 bg-white flex items-start gap-1.5 border-t border-gray-010">
-                        <span className="text-sm text-gray-040 flex-shrink-0 mt-px">{idx + 1}.</span>
+                        <span className="text-sm text-fg-subtlest flex-shrink-0 mt-px">{idx + 1}.</span>
                         <p className="text-sm font-semibold text-gray-080">{q.text}</p>
                       </div>
                       <div className={`grid grid-cols-1 md:grid-cols-2 ${!isLast ? 'border-b border-gray-010' : ''}`}>
                         <div className="px-5 py-4 bg-gray-005/30 md:border-r border-gray-010">
-                          <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 md:hidden">내 자기평가</p>
+                          <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 md:hidden">내 자기평가</p>
                           <InputAnswerContent question={q} answer={getAnswer(q.id)} />
                         </div>
                         <div className="px-5 py-4 bg-white">
@@ -713,7 +713,7 @@ export function MyReviewWrite() {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-pink-040 flex-shrink-0" />
-                  <h2 className="text-base font-semibold text-gray-099">
+                  <h2 className="text-base font-semibold text-fg-default">
                     {isDownward
                       ? `${users.find(u => u.id === submission.reviewerId)?.name ?? '조직장'}님의 평가`
                       : group.name}
@@ -744,8 +744,8 @@ export function MyReviewWrite() {
           {/* 조직장 평가 대기 */}
           {!isDownward && isReadOnly && !managerReview && (
             <div className="flex items-center gap-2.5 p-4 bg-gray-005 border border-gray-020 rounded-xl">
-              <MsProfileIcon size={20} className="text-gray-040 flex-shrink-0" />
-              <p className="text-sm text-gray-050">
+              <MsProfileIcon size={20} className="text-fg-subtlest flex-shrink-0" />
+              <p className="text-sm text-fg-subtle">
                 {managerPendingPublic
                   ? '조직장 평가는 사이클 종료 후 공개됩니다.'
                   : '조직장 평가가 제출되면 여기에 표시됩니다.'}
@@ -796,8 +796,8 @@ export function MyReviewWrite() {
               <div className="w-12 h-12 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-3">
                 <MsCheckIcon size={24} className="text-pink-050" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-099 mb-2">최종 제출하시겠습니까?</h3>
-              <p className="text-sm text-gray-050">제출 후에는 수정할 수 없습니다.</p>
+              <h3 className="text-lg font-semibold text-fg-default mb-2">최종 제출하시겠습니까?</h3>
+              <p className="text-sm text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
               <MsButton variant="outline-default" size="lg" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1">취소</MsButton>

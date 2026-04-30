@@ -104,7 +104,7 @@ export function AdminCycleWidget() {
     >
       <span className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium text-gray-080">{c.title}</p>
-        <p className="text-[11px] text-gray-040">{detail}</p>
+        <p className="text-[11px] text-fg-subtlest">{detail}</p>
       </span>
       <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', TONE_STYLE[tone].badge)}>
         {(c.completionRate ?? 0)}%

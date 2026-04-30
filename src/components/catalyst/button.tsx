@@ -10,7 +10,7 @@ export type ButtonColor =
 
 const solidColors: Record<string, string> = {
   'dark/zinc': 'bg-gray-080 text-white border-transparent shadow-sm hover:bg-gray-070 active:bg-gray-090 focus-visible:outline-gray-080',
-  white:       'bg-white text-gray-099 border-gray-020 shadow-sm hover:bg-gray-005 active:bg-gray-010 focus-visible:outline-white',
+  white:       'bg-white text-fg-default border-gray-020 shadow-sm hover:bg-gray-005 active:bg-gray-010 focus-visible:outline-white',
   zinc:        'bg-gray-060 text-white border-transparent shadow-sm hover:bg-gray-050 active:bg-gray-070 focus-visible:outline-gray-060',
   indigo:      'bg-blue-060 text-white border-transparent shadow-sm hover:bg-blue-050 active:bg-blue-070 focus-visible:outline-blue-060',
   cyan:        'bg-blue-020 text-blue-070 border-transparent shadow-sm hover:bg-blue-010 active:bg-blue-040 focus-visible:outline-blue-020',
@@ -45,18 +45,18 @@ const base = [
 
 const outlineBase = cn(
   base,
-  'border-gray-020 text-gray-099 bg-transparent',
+  'border-gray-020 text-fg-default bg-transparent',
   'hover:bg-gray-005 active:bg-gray-010',
   'focus-visible:outline-gray-099',
-  '[&_svg]:text-gray-050',
+  '[&_svg]:text-fg-subtle',
 )
 
 const plainBase = cn(
   base,
-  'border-transparent text-gray-099 bg-transparent',
+  'border-transparent text-fg-default bg-transparent',
   'hover:bg-gray-005 active:bg-gray-010',
   'focus-visible:outline-gray-099',
-  '[&_svg]:text-gray-050',
+  '[&_svg]:text-fg-subtle',
 )
 
 type ButtonProps = {

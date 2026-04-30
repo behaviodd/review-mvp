@@ -109,8 +109,8 @@ function ProfileBody({
         <UserAvatar user={target} size="xl" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold text-gray-099">{target.name}</h2>
-            {target.nameEn && <span className="text-sm text-gray-040">({target.nameEn})</span>}
+            <h2 className="text-lg font-semibold text-fg-default">{target.name}</h2>
+            {target.nameEn && <span className="text-sm text-fg-subtlest">({target.nameEn})</span>}
             <StatusBadge type="role" value={tier} />
             {target.activityStatus === 'terminated' && (
               <Pill tone="danger" size="sm">퇴사</Pill>
@@ -122,7 +122,7 @@ function ProfileBody({
               <Pill tone="warning" size="sm">장기 휴직</Pill>
             )}
           </div>
-          <p className="text-sm text-gray-050 mt-1">
+          <p className="text-sm text-fg-subtle mt-1">
             {target.department}
             {target.position && <> · {target.position}</>}
           </p>
@@ -131,10 +131,10 @@ function ProfileBody({
 
       {/* 기본 정보 카드 */}
       <div className="bg-white rounded-xl border border-gray-020 p-4">
-        <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-4">기본 정보</p>
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-4">기본 정보</p>
 
         {visibleFields.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-gray-040 py-2">
+          <div className="flex items-center gap-2 text-sm text-fg-subtlest py-2">
             <MsLockIcon size={14} />
             <span>표시할 수 있는 항목이 없습니다.</span>
           </div>
@@ -159,7 +159,7 @@ function FieldDisplay({ fieldKey, value }: { fieldKey: ProfileFieldKey; value: s
 
   return (
     <div>
-      <dt className="text-[11px] font-medium text-gray-040 uppercase tracking-wide mb-1">{PROFILE_FIELD_LABEL[fieldKey]}</dt>
+      <dt className="text-[11px] font-medium text-fg-subtlest uppercase tracking-wide mb-1">{PROFILE_FIELD_LABEL[fieldKey]}</dt>
       <dd className="text-sm text-gray-080 break-all">{display}</dd>
     </div>
   );

@@ -41,12 +41,12 @@ export function ModalShell({
         <header className="flex items-start justify-between gap-3 border-b border-gray-010 px-5 py-3">
           <div className="min-w-0">
             <h2 className="text-base font-bold text-gray-080">{title}</h2>
-            {description && <p className="mt-0.5 text-xs text-gray-040">{description}</p>}
+            {description && <p className="mt-0.5 text-xs text-fg-subtlest">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-050 hover:bg-gray-005"
+            className="rounded-lg p-1.5 text-fg-subtle hover:bg-gray-005"
             aria-label="닫기"
           >
             <MsCancelIcon size={18} />

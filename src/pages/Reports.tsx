@@ -80,9 +80,9 @@ export function Reports() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-semibold text-gray-099">리포트</h1>
+        <h1 className="text-xl font-semibold text-fg-default">리포트</h1>
         {activeCycle && (
-          <span className="text-xs text-gray-050 bg-gray-010 px-2 py-0.5 rounded">{activeCycle.title}</span>
+          <span className="text-xs text-fg-subtle bg-gray-010 px-2 py-0.5 rounded">{activeCycle.title}</span>
         )}
       </div>
 
@@ -97,10 +97,10 @@ export function Reports() {
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="p-4 md:p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className="w-4 h-4 text-gray-040" />
-                  <span className="text-xs text-gray-050">{label}</span>
+                  <Icon className="w-4 h-4 text-fg-subtlest" />
+                  <span className="text-xs text-fg-subtle">{label}</span>
                 </div>
-                <p className="text-2xl font-bold text-gray-099">{value}</p>
+                <p className="text-2xl font-bold text-fg-default">{value}</p>
               </div>
             ))}
           </div>
@@ -174,16 +174,16 @@ export function Reports() {
                       <UserAvatar user={m} size="sm" />
                       <div className="flex-1 min-w-0 text-left">
                         <p className="text-xs font-semibold text-gray-070">{m.name}</p>
-                        <p className="text-xs text-gray-040">{m.position}</p>
+                        <p className="text-xs text-fg-subtlest">{m.position}</p>
                       </div>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                         sub?.status === 'submitted' ? 'bg-green-005 text-green-060' :
                         sub?.status === 'in_progress' ? 'bg-pink-005 text-pink-050' :
-                        'bg-gray-010 text-gray-040'
+                        'bg-gray-010 text-fg-subtlest'
                       }`}>
                         {sub?.status === 'submitted' ? '제출' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
                       </span>
-                      {activeCycle && <MsChevronRightLineIcon size={12} className="text-gray-030 group-hover:text-gray-050 flex-shrink-0" />}
+                      {activeCycle && <MsChevronRightLineIcon size={12} className="text-gray-030 group-hover:text-fg-subtle flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -229,10 +229,10 @@ export function Reports() {
               ].map(({ icon: Icon, label, value, action, actionLabel }) => (
                 <div key={label} className="p-4 md:p-5 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-gray-040" />
-                    <span className="text-xs text-gray-050">{label}</span>
+                    <Icon className="w-4 h-4 text-fg-subtlest" />
+                    <span className="text-xs text-fg-subtle">{label}</span>
                   </div>
-                  <p className="text-2xl font-bold text-gray-099">{value}</p>
+                  <p className="text-2xl font-bold text-fg-default">{value}</p>
                   <button onClick={action} className="mt-auto text-xs text-pink-050 hover:underline text-left">{actionLabel} →</button>
                 </div>
               ))}
@@ -241,7 +241,7 @@ export function Reports() {
             {myAvg && (
               <div className="rounded-lg border border-bd-default p-5">
                 <h2 className="text-sm font-semibold text-gray-070 mb-1">최근 자기평가 평균 점수</h2>
-                <p className="text-3xl font-bold text-pink-050">{myAvg} <span className="text-base font-normal text-gray-040">/ 5.0</span></p>
+                <p className="text-3xl font-bold text-pink-050">{myAvg} <span className="text-base font-normal text-fg-subtlest">/ 5.0</span></p>
                 <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-pink-050 hover:underline">
                   최근 리뷰 상세 보기 →
                 </button>

@@ -50,7 +50,7 @@ export function PeerPickReminder() {
             <p className="text-sm font-semibold text-purple-060">동료 선택이 필요합니다</p>
             <Pill tone="purple" size="sm">{pending.length}개 사이클</Pill>
           </div>
-          <p className="mt-0.5 text-xs text-gray-050">
+          <p className="mt-0.5 text-xs text-fg-subtle">
             아래 사이클에서 나를 평가할 동료를 직접 선택해 주세요.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -68,7 +68,7 @@ export function PeerPickReminder() {
               );
             })}
             {pending.length > 3 && (
-              <span className="text-[11px] text-gray-050">+ {pending.length - 3}개 더</span>
+              <span className="text-[11px] text-fg-subtle">+ {pending.length - 3}개 더</span>
             )}
           </div>
         </div>

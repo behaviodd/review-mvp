@@ -81,7 +81,7 @@ export function ReassignReviewerModal({ open, onClose, submissionId, actorId, on
       <div className="space-y-4">
         <div className="rounded-lg border border-gray-010 bg-gray-001 p-3 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-gray-040">현재 작성자</span>
+            <span className="text-fg-subtlest">현재 작성자</span>
             <span className="font-semibold text-gray-080">
               {currentReviewer ? `${currentReviewer.name} · ${getSmallestOrg(currentReviewer)}` : submission.reviewerId}
             </span>

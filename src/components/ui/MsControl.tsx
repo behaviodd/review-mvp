@@ -67,7 +67,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
           )
         )}
       </span>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -107,7 +107,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
         />
         {checked && <span className={cn('rounded-full flex-shrink-0', dot, dotColor)} />}
       </span>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -159,7 +159,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
           thumbSize, thumbTranslate,
         )} />
       </button>
-      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-gray-040')}>{label}</span>}
+      {label && <span className={cn('text-sm text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -176,9 +176,9 @@ interface MsInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size
 }
 
 const INPUT_BASE =
-  'w-full border bg-gray-005 text-gray-099 placeholder:text-gray-040 transition-colors ' +
+  'w-full border bg-gray-005 text-fg-default placeholder:text-fg-subtlest transition-colors ' +
   'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
-  'disabled:bg-gray-005 disabled:text-gray-040 disabled:cursor-not-allowed';
+  'disabled:bg-gray-005 disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 const INPUT_SIZE = {
   sm: 'px-2.5 py-1.5 text-xs rounded-md',
@@ -203,7 +203,7 @@ export function MsInput({
       )}
       <div className="relative">
         {leftSlot && (
-          <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-040">
+          <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtlest">
             {leftSlot}
           </div>
         )}
@@ -220,13 +220,13 @@ export function MsInput({
           {...props}
         />
         {rightSlot && (
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-040">
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtlest">
             {rightSlot}
           </div>
         )}
       </div>
       {(hint || error) && (
-        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-fg-subtlest')}>{error ?? hint}</p>
       )}
     </div>
   );
@@ -243,9 +243,9 @@ interface MsTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const TEXTAREA_BASE =
-  'w-full border bg-gray-005 text-gray-099 placeholder:text-gray-040 transition-colors resize-y ' +
+  'w-full border bg-gray-005 text-fg-default placeholder:text-fg-subtlest transition-colors resize-y ' +
   'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
-  'disabled:bg-gray-005 disabled:text-gray-040 disabled:cursor-not-allowed';
+  'disabled:bg-gray-005 disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 const TEXTAREA_SIZE = {
   sm: 'px-2.5 py-1.5 text-xs rounded-md',
@@ -294,7 +294,7 @@ export function MsTextarea({
         {...props}
       />
       {(hint || error) && (
-        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-fg-subtlest')}>{error ?? hint}</p>
       )}
     </div>
   );
@@ -309,9 +309,9 @@ interface MsSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 const SELECT_BASE =
-  'w-full appearance-none px-3 py-2 pr-8 text-sm rounded-lg border bg-gray-005 text-gray-099 transition-colors ' +
+  'w-full appearance-none px-3 py-2 pr-8 text-sm rounded-lg border bg-gray-005 text-fg-default transition-colors ' +
   'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
-  'disabled:text-gray-040 disabled:cursor-not-allowed';
+  'disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 export function MsSelect({
   label, hint, error,
@@ -342,11 +342,11 @@ export function MsSelect({
         </select>
         <MsChevronDownLineIcon
           size={14}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-040"
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtlest"
         />
       </div>
       {(hint || error) && (
-        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>{error ?? hint}</p>
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-fg-subtlest')}>{error ?? hint}</p>
       )}
     </div>
   );

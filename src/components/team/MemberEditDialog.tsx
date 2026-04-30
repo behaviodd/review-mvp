@@ -14,7 +14,7 @@ const TIER_LABEL: Record<string, string> = { admin: '관리자', leader: '조직
 const TIER_COLOR: Record<string, string> = {
   admin:  'bg-blue-010 text-blue-070 border-blue-020',
   leader: 'bg-green-010 text-green-060 border-green-020',
-  member: 'bg-gray-010 text-gray-050 border-gray-020',
+  member: 'bg-gray-010 text-fg-subtle border-gray-020',
 };
 
 interface Props {
@@ -86,7 +86,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
   if (!member) {
     return (
       <ModalShell open={true} onClose={onClose} title="구성원 정보 수정" widthClass="max-w-md">
-        <div className="py-6 text-center text-sm text-gray-050">
+        <div className="py-6 text-center text-sm text-fg-subtle">
           구성원을 찾을 수 없습니다. 잘못된 경로이거나 삭제된 구성원입니다.
         </div>
       </ModalShell>
@@ -146,7 +146,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
         {/* 권한 티어 */}
         <div className="flex items-center justify-between p-3 rounded-lg bg-gray-005 border border-gray-010">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-050">권한</span>
+            <span className="text-xs text-fg-subtle">권한</span>
             <span className={`px-2 py-0.5 text-xs font-semibold rounded border ${TIER_COLOR[memberTier]}`}>
               {TIER_LABEL[memberTier]}
             </span>
@@ -168,7 +168,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
 
         {/* 기본 정보 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
           <div className="grid grid-cols-2 gap-3">
             <MsInput autoFocus label="이름" type="text" value={form.name} onChange={f('name')} />
             <MsInput label="영문이름" type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" />
@@ -181,7 +181,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
 
         {/* 조직 · 역할 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">조직 · 역할</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
               <button
                 type="button"
                 onClick={() => setShowTerminate(true)}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-040 hover:text-red-040 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-fg-subtlest hover:text-red-040 transition-colors"
               >
                 <MsCancelIcon size={12} className="size-3.5" /> 퇴사 처리
               </button>

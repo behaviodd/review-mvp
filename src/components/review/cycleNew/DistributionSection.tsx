@@ -73,7 +73,7 @@ export function DistributionSection<F extends DistributionFormSlice>({ form, set
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-gray-080">등급 분포</h3>
-          <p className="text-[11px] text-gray-040">조직장 리뷰 제출 시 등급 비율을 가이드(참고용) 또는 강제(제출 제한) 합니다.</p>
+          <p className="text-[11px] text-fg-subtlest">조직장 리뷰 제출 시 등급 비율을 가이드(참고용) 또는 강제(제출 제한) 합니다.</p>
         </div>
         <label className="flex items-center gap-2 text-xs text-gray-060">
           <input
@@ -88,7 +88,7 @@ export function DistributionSection<F extends DistributionFormSlice>({ form, set
       {enabled && policy && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-050">방식</span>
+            <span className="text-[11px] text-fg-subtle">방식</span>
             <MsSelect
               value={policy.method}
               onChange={e => updateMethod(e.target.value as DistributionPolicy['method'])}
@@ -122,12 +122,12 @@ export function DistributionSection<F extends DistributionFormSlice>({ form, set
                   max={100}
                   value={String(band.ratio)}
                   onChange={e => updateBand(idx, { ratio: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
-                  rightSlot={<span className="text-[11px] text-gray-040">%</span>}
+                  rightSlot={<span className="text-[11px] text-fg-subtlest">%</span>}
                 />
                 <button
                   type="button"
                   onClick={() => removeBand(idx)}
-                  className="p-1.5 rounded text-gray-040 hover:text-red-050 hover:bg-red-005"
+                  className="p-1.5 rounded text-fg-subtlest hover:text-red-050 hover:bg-red-005"
                   aria-label="삭제"
                 >
                   <MsDeleteIcon size={12} />

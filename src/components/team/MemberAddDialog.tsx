@@ -105,7 +105,7 @@ function MemberAddDialogContent({ context, onClose }: { context: MemberAddContex
       >
         {/* 기본 정보 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
           <div className="grid grid-cols-2 gap-3">
             <MsInput autoFocus label="이름 *" type="text" value={form.name} onChange={f('name')} placeholder="홍길동" />
             <MsInput label="영문이름" type="text" value={form.nameEn} onChange={f('nameEn')} placeholder="Hong Gil-dong" />
@@ -118,7 +118,7 @@ function MemberAddDialogContent({ context, onClose }: { context: MemberAddContex
 
         {/* 조직 · 역할 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">조직 · 역할</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">조직 · 역할</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <div className="flex items-center gap-3">

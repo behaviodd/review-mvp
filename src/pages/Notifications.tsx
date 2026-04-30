@@ -9,7 +9,7 @@ const TYPE_CONFIG: Record<NotificationType, { icon: typeof MsAlertIcon; color: s
   deadline: { icon: MsClockIcon, color: 'text-pink-050', bg: 'bg-pink-005' },
   feedback: { icon: MsMessageIcon, color: 'text-pink-050', bg: 'bg-pink-005' },
   review_result: { icon: MsAlertIcon, color: 'text-green-060', bg: 'bg-green-005' },
-  system: { icon: MsAlertIcon, color: 'text-gray-050', bg: 'bg-gray-010' },
+  system: { icon: MsAlertIcon, color: 'text-fg-subtle', bg: 'bg-gray-010' },
 };
 
 export function Notifications() {
@@ -32,8 +32,8 @@ export function Notifications() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-099">알림</h1>
-          {unreadCount > 0 && <p className="text-xs text-gray-040 mt-0.5">읽지 않은 알림 {unreadCount}개</p>}
+          <h1 className="text-xl font-semibold text-fg-default">알림</h1>
+          {unreadCount > 0 && <p className="text-xs text-fg-subtlest mt-0.5">읽지 않은 알림 {unreadCount}개</p>}
         </div>
         {unreadCount > 0 && (
           <button
@@ -48,7 +48,7 @@ export function Notifications() {
       {myNotifs.length === 0 ? (
         <div className="rounded-lg border border-bd-default p-12 text-center">
           <MsAlertIcon size={40} className="text-gray-030 mx-auto mb-3" />
-          <p className="text-sm text-gray-050">새 알림이 없습니다.</p>
+          <p className="text-sm text-fg-subtle">새 알림이 없습니다.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -68,12 +68,12 @@ export function Notifications() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className={`text-sm font-semibold ${!n.isRead ? 'text-gray-099' : 'text-gray-060'}`}>
+                    <p className={`text-sm font-semibold ${!n.isRead ? 'text-fg-default' : 'text-gray-060'}`}>
                       {n.title}
                     </p>
                     {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-pink-040 flex-shrink-0" />}
                   </div>
-                  <p className="text-xs text-gray-050 mt-0.5 leading-relaxed">{n.message}</p>
+                  <p className="text-xs text-fg-subtle mt-0.5 leading-relaxed">{n.message}</p>
                   <p className="text-xs text-gray-030 mt-1">{formatDateTime(n.createdAt)}</p>
                 </div>
                 {n.actionUrl && <MsChevronRightLineIcon size={16} className="text-gray-030 flex-shrink-0 mt-1" />}

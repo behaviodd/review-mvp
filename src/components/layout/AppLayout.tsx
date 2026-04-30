@@ -80,11 +80,11 @@ export function AppLayout() {
                 <clipPath id="ms-mob-clip"><rect width="24" height="24" fill="white"/></clipPath>
               </defs>
             </svg>
-            <span className="text-sm font-semibold text-gray-099">메이크스타 리뷰시스템</span>
+            <span className="text-sm font-semibold text-fg-default">메이크스타 리뷰시스템</span>
           </div>
           <button
             onClick={() => setMobileOpen(o => !o)}
-            className="p-1.5 rounded-lg text-gray-050 hover:text-gray-099 hover:bg-gray-010 transition-colors"
+            className="p-1.5 rounded-lg text-fg-subtle hover:text-fg-default hover:bg-gray-010 transition-colors"
             aria-label="메뉴 열기"
           >
             <MsMenuIcon size={16} />

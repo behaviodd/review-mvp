@@ -63,7 +63,7 @@ export function PendingApprovals() {
       )}
 
       {loading && items.length === 0 && (
-        <div className="flex items-center justify-center py-16 text-sm text-gray-040">
+        <div className="flex items-center justify-center py-16 text-sm text-fg-subtlest">
           <Loader2 className="size-4 mr-2 animate-spin" /> 불러오는 중...
         </div>
       )}
@@ -86,10 +86,10 @@ export function PendingApprovals() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-semibold text-gray-099 truncate">{it.name || '-'}</span>
-                  <span className="text-xs text-gray-050 truncate">{it.email}</span>
+                  <span className="text-sm font-semibold text-fg-default truncate">{it.name || '-'}</span>
+                  <span className="text-xs text-fg-subtle truncate">{it.email}</span>
                 </div>
-                <div className="text-xs text-gray-040 mt-0.5">
+                <div className="text-xs text-fg-subtlest mt-0.5">
                   최초 로그인: {it.firstLoginAt ? timeAgo(it.firstLoginAt) : '-'}
                 </div>
               </div>
@@ -265,7 +265,7 @@ function ApproveDialog({
           <label className="text-xs font-medium text-gray-080 block mb-1.5">권한 그룹</label>
           <div className="space-y-1.5 max-h-40 overflow-auto bg-gray-005 rounded-lg p-2">
             {permissionGroups.length === 0 ? (
-              <p className="text-xs text-gray-050 px-2 py-1.5">등록된 권한 그룹이 없습니다.</p>
+              <p className="text-xs text-fg-subtle px-2 py-1.5">등록된 권한 그룹이 없습니다.</p>
             ) : (
               permissionGroups.map(g => (
                 <label key={g.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white cursor-pointer">
@@ -275,13 +275,13 @@ function ApproveDialog({
                     onChange={() => toggleGroup(g.id)}
                     className="size-3.5"
                   />
-                  <span className="text-sm text-gray-099">{g.name}</span>
-                  {g.isSystem && <span className="text-[11px] text-gray-040">(시스템)</span>}
+                  <span className="text-sm text-fg-default">{g.name}</span>
+                  {g.isSystem && <span className="text-[11px] text-fg-subtlest">(시스템)</span>}
                 </label>
               ))
             )}
           </div>
-          <p className="text-[11px] text-gray-040 mt-1">선택하지 않으면 권한 없는 일반 멤버로 등록됩니다.</p>
+          <p className="text-[11px] text-fg-subtlest mt-1">선택하지 않으면 권한 없는 일반 멤버로 등록됩니다.</p>
         </div>
 
         {error && <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">{error}</p>}
@@ -355,7 +355,7 @@ function DialogShell({ title, children, onClose }: { title: string; children: Re
         className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold text-gray-099">{title}</h2>
+        <h2 className="text-base font-semibold text-fg-default">{title}</h2>
         {children}
       </div>
     </div>

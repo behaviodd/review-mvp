@@ -29,8 +29,8 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-gray-099">리뷰 운영 정책</h2>
-        <p className="text-xs text-gray-040 mt-0.5">
+        <h2 className="text-lg font-semibold text-fg-default">리뷰 운영 정책</h2>
+        <p className="text-xs text-fg-subtlest mt-0.5">
           익명·공개·참고 정보는 발행 후에도 <strong>리뷰 설정</strong> 드로어에서 다시 조정할 수 있습니다.
         </p>
       </div>
@@ -39,7 +39,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-2">
         <header>
           <h3 className="text-sm font-semibold text-gray-080">익명 설정</h3>
-          <p className="text-[11px] text-gray-040">피평가자가 결과를 볼 때 작성자 이름이 가려집니다. 관리자 뷰·감사 로그에는 항상 실명이 남습니다.</p>
+          <p className="text-[11px] text-fg-subtlest">피평가자가 결과를 볼 때 작성자 이름이 가려집니다. 관리자 뷰·감사 로그에는 항상 실명이 남습니다.</p>
         </header>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <MsCheckbox
@@ -60,7 +60,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
           <MsCheckbox
             checked={!!form.anonymity?.self}
             onChange={e => updateAnonymity({ self: e.target.checked })}
-            label={<span className="text-sm">자기평가 익명 <span className="text-[10px] text-gray-040">(거의 사용 X)</span></span>}
+            label={<span className="text-sm">자기평가 익명 <span className="text-[10px] text-fg-subtlest">(거의 사용 X)</span></span>}
           />
         </div>
       </section>
@@ -69,7 +69,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
         <header>
           <h3 className="text-sm font-semibold text-gray-080">결과 공개 범위 (→ 피평가자)</h3>
-          <p className="text-[11px] text-gray-040">피평가자가 자신에 대한 리뷰를 언제 볼 수 있는지 유형별로 결정합니다.</p>
+          <p className="text-[11px] text-fg-subtlest">피평가자가 자신에 대한 리뷰를 언제 볼 수 있는지 유형별로 결정합니다.</p>
         </header>
         {([
           { key: 'downwardToReviewee', label: '조직장 리뷰' },
@@ -99,7 +99,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
                       )}
                     >
                       <p className="text-sm font-semibold">{opt.label}</p>
-                      <p className="text-[11px] text-gray-040 mt-0.5">{opt.hint}</p>
+                      <p className="text-[11px] text-fg-subtlest mt-0.5">{opt.hint}</p>
                     </button>
                   );
                 })}
@@ -113,7 +113,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
       <section className="rounded-xl border border-gray-010 bg-white p-4 space-y-2">
         <header>
           <h3 className="text-sm font-semibold text-gray-080">작성 시 참고 정보</h3>
-          <p className="text-[11px] text-gray-040">리뷰 작성 화면 상단에 자동 첨부됩니다. 필요한 항목만 선택하세요.</p>
+          <p className="text-[11px] text-fg-subtlest">리뷰 작성 화면 상단에 자동 첨부됩니다. 필요한 항목만 선택하세요.</p>
         </header>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <MsCheckbox

@@ -110,19 +110,19 @@ export function GlobalSearch() {
         className="relative w-full max-w-xl rounded-2xl bg-white shadow-modal overflow-hidden"
       >
         <div className="flex items-center gap-2 border-b border-gray-010 px-4 py-2.5">
-          <MsArticleIcon size={14} className="text-gray-040" />
+          <MsArticleIcon size={14} className="text-fg-subtlest" />
           <input
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onInputKey}
             placeholder="사이클·템플릿·구성원 검색"
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-040"
+            className="flex-1 bg-transparent outline-none text-sm placeholder:text-fg-subtlest"
           />
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg p-1 text-gray-040 hover:bg-gray-005 hover:text-gray-080"
+            className="rounded-lg p-1 text-fg-subtlest hover:bg-gray-005 hover:text-gray-080"
             aria-label="닫기"
           >
             <MsCancelIcon size={14} />
@@ -130,9 +130,9 @@ export function GlobalSearch() {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {!query.trim() ? (
-            <p className="px-4 py-8 text-center text-xs text-gray-040">이름·제목·태그를 입력해 검색하세요.</p>
+            <p className="px-4 py-8 text-center text-xs text-fg-subtlest">이름·제목·태그를 입력해 검색하세요.</p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-8 text-center text-xs text-gray-040">검색 결과가 없습니다.</p>
+            <p className="px-4 py-8 text-center text-xs text-fg-subtlest">검색 결과가 없습니다.</p>
           ) : (
             <ul className="py-1">
               {results.map((r, idx) => {
@@ -154,7 +154,7 @@ export function GlobalSearch() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-080 truncate">{r.title}</p>
-                        <p className="text-[11px] text-gray-040 truncate">{meta.label} · {r.subtitle}</p>
+                        <p className="text-[11px] text-fg-subtlest truncate">{meta.label} · {r.subtitle}</p>
                       </div>
                     </button>
                   </li>
@@ -163,7 +163,7 @@ export function GlobalSearch() {
             </ul>
           )}
         </div>
-        <div className="border-t border-gray-010 bg-gray-001 px-4 py-2 text-[10px] text-gray-050 flex items-center justify-between">
+        <div className="border-t border-gray-010 bg-gray-001 px-4 py-2 text-[10px] text-fg-subtle flex items-center justify-between">
           <span>⌘K · Ctrl+K 로 열기 · ↑↓ 이동 · Enter 선택 · Esc 닫기</span>
         </div>
       </div>

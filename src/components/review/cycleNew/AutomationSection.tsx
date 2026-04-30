@@ -68,14 +68,14 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
     <div className="rounded-xl border border-gray-010 bg-gray-001 p-4 space-y-4">
       <div>
         <h3 className="text-sm font-semibold text-gray-080">자동화 (선택)</h3>
-        <p className="text-[11px] text-gray-040">관리자 개입 없이 자동 실행될 규칙을 설정합니다. 모든 스위치는 OFF가 기본이고, 감사 로그에 실행 이력이 남습니다.</p>
+        <p className="text-[11px] text-fg-subtlest">관리자 개입 없이 자동 실행될 규칙을 설정합니다. 모든 스위치는 OFF가 기본이고, 감사 로그에 실행 이력이 남습니다.</p>
       </div>
 
       {/* ── 예약 발행 ── */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-gray-080">예약 발행</p>
-          <p className="text-[11px] text-gray-040 mt-0.5">지정한 시각에 사이클이 자동으로 발행됩니다.</p>
+          <p className="text-[11px] text-fg-subtlest mt-0.5">지정한 시각에 사이클이 자동으로 발행됩니다.</p>
         </div>
         <MsSwitch checked={!!form.scheduledPublishAt} onChange={toggleScheduledPublish} />
       </div>
@@ -99,7 +99,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-gray-080">자동 단계 전환</p>
-          <p className="text-[11px] text-gray-040 mt-0.5">자기평가 마감 후 일정 시간과 제출율 조건이 만족되면 조직장 리뷰 단계로 자동 전환합니다.</p>
+          <p className="text-[11px] text-fg-subtlest mt-0.5">자기평가 마감 후 일정 시간과 제출율 조건이 만족되면 조직장 리뷰 단계로 자동 전환합니다.</p>
         </div>
         <MsSwitch checked={!!form.autoAdvance} onChange={toggleAutoAdvance} />
       </div>
@@ -150,7 +150,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
                 )}
               >
                 <p className="text-xs font-semibold">{opt.label}</p>
-                <p className="text-[10px] text-gray-040 mt-0.5">{opt.hint}</p>
+                <p className="text-[10px] text-fg-subtlest mt-0.5">{opt.hint}</p>
               </button>
             );
           })}
@@ -158,7 +158,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
         {(preset === 'standard' || preset === 'strong' || preset === 'custom') && form.reminderPolicy && form.reminderPolicy.length > 0 && (
           <ul className="mt-1 space-y-1">
             {form.reminderPolicy.map(r => (
-              <li key={r.id} className="text-[11px] text-gray-050">
+              <li key={r.id} className="text-[11px] text-fg-subtle">
                 • {r.trigger === 'before_deadline' ? `마감 ${r.offsetHours}시간 전` : `마감 후 ${r.offsetHours}시간`}
                 {' · '}
                 {r.stage === 'self' ? '자기평가' : r.stage === 'manager' ? '조직장 리뷰' : '양 단계'}

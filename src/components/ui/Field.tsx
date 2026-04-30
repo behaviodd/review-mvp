@@ -28,7 +28,7 @@ export function Field({ label, hint, error, required, children, className, id }:
       )}
       {children}
       {(hint || error) && (
-        <p className={cn('text-xs', error ? 'text-red-050' : 'text-gray-040')}>
+        <p className={cn('text-xs', error ? 'text-red-050' : 'text-fg-subtlest')}>
           {error ?? hint}
         </p>
       )}

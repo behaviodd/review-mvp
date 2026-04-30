@@ -120,7 +120,7 @@ export function CycleEdit() {
       <div className="py-2">
         <form onSubmit={handleSubmit} className="space-y-5">
           <section>
-            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
+            <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
             <MsInput
               label="리뷰 이름 *"
               type="text"
@@ -149,7 +149,7 @@ export function CycleEdit() {
           </section>
 
           <section>
-            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">리뷰 템플릿</p>
+            <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">리뷰 템플릿</p>
             <div className="space-y-2">
               {templates.map(t => (
                 <button
@@ -166,10 +166,10 @@ export function CycleEdit() {
                     <p className={`text-sm font-medium ${form.templateId === t.id ? 'text-pink-060' : 'text-gray-070'}`}>
                       {t.name}
                     </p>
-                    <p className="text-xs text-gray-040 mt-0.5">{t.description}</p>
+                    <p className="text-xs text-fg-subtlest mt-0.5">{t.description}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <span className="text-xs text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded">
+                    <span className="text-xs text-fg-subtlest bg-gray-010 px-1.5 py-0.5 rounded">
                       {t.questions.length}문항
                     </span>
                     {form.templateId === t.id && <MsCheckIcon size={16} className="text-pink-050" />}
@@ -180,7 +180,7 @@ export function CycleEdit() {
           </section>
 
           <section>
-            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">대상 부서</p>
+            <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">대상 부서</p>
             <div className="flex flex-wrap gap-2">
               {departments.map(dept => {
                 const selected = form.targetDepartments.includes(dept);
@@ -203,20 +203,20 @@ export function CycleEdit() {
                   >
                     {selected && <MsCheckIcon size={12} />}
                     {dept}
-                    <span className="text-gray-040">{count}명</span>
+                    <span className="text-fg-subtlest">{count}명</span>
                   </button>
                 );
               })}
             </div>
             {form.targetDepartments.length > 0 && (
-              <p className="text-xs text-gray-040 mt-2">
+              <p className="text-xs text-fg-subtlest mt-2">
                 총 <strong className="text-gray-070">{targetMembers.length}명</strong> 포함
               </p>
             )}
           </section>
 
           <section>
-            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">일정</p>
+            <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">일정</p>
             <div className="grid grid-cols-2 gap-3">
               <MsInput
                 label="자기평가 마감일 *"

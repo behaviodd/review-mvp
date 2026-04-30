@@ -112,7 +112,7 @@ export function SyncRetryDrawer({ open, onClose }: Props) {
           {pendingOps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-sm font-semibold text-gray-070">대기 중인 항목이 없습니다.</p>
-              <p className="mt-1 text-xs text-gray-040">모든 변경 사항이 시트에 반영되었어요.</p>
+              <p className="mt-1 text-xs text-fg-subtlest">모든 변경 사항이 시트에 반영되었어요.</p>
             </div>
           ) : (
             <ul className="divide-y divide-gray-005">
@@ -128,8 +128,8 @@ export function SyncRetryDrawer({ open, onClose }: Props) {
                         {failed ? `실패 ${op.tryCount}회` : '대기 중'}
                       </span>
                       <span className="text-xs font-semibold text-gray-080">{KIND_LABEL[op.kind]}</span>
-                      <span className="text-xs text-gray-040 truncate">#{op.targetId}</span>
-                      <span className="ml-auto text-[11px] text-gray-040">
+                      <span className="text-xs text-fg-subtlest truncate">#{op.targetId}</span>
+                      <span className="ml-auto text-[11px] text-fg-subtlest">
                         {op.lastTriedAt ? timeAgo(op.lastTriedAt) : timeAgo(op.queuedAt)}
                       </span>
                     </div>

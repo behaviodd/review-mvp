@@ -39,7 +39,7 @@ export function HrSnapshotSection<F extends SnapshotFormSlice>({ form, setForm }
     <div className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <header>
         <h3 className="text-sm font-semibold text-gray-080">인사정보 적용 방식</h3>
-        <p className="text-[11px] text-gray-040">
+        <p className="text-[11px] text-fg-subtlest">
           이 사이클이 어느 시점의 조직·평가권을 사용할지 결정합니다.
         </p>
       </header>
@@ -74,7 +74,7 @@ export function HrSnapshotSection<F extends SnapshotFormSlice>({ form, setForm }
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-050 leading-relaxed">{opt.desc}</p>
+              <p className="text-[11px] text-fg-subtle leading-relaxed">{opt.desc}</p>
             </button>
           );
         })}

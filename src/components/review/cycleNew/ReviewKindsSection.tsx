@@ -72,7 +72,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
     <div className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <header>
         <h3 className="text-sm font-semibold text-gray-080">리뷰 유형</h3>
-        <p className="text-[11px] text-gray-040">이 사이클에서 생성할 리뷰 종류를 선택합니다. 기본은 자기평가 + 조직장 리뷰.</p>
+        <p className="text-[11px] text-fg-subtlest">이 사이클에서 생성할 리뷰 종류를 선택합니다. 기본은 자기평가 + 조직장 리뷰.</p>
       </header>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {KIND_META.map(opt => {
@@ -91,7 +91,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
                   {opt.label}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-050">{opt.desc}</p>
+              <p className="text-[11px] text-fg-subtle">{opt.desc}</p>
             </label>
           );
         })}
@@ -119,7 +119,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
               );
             })}
           </div>
-          <p className="text-[11px] text-gray-050">
+          <p className="text-[11px] text-fg-subtle">
             선택한 차수의 평가권자가 각각 1건씩 조직장 리뷰를 작성합니다.
             {' '}1차는 직속 매니저(평가권 또는 조직장 자동 매핑), 2차 이상은 명시적으로 배정된 평가권자만 인정됩니다.
             {' '}1차/2차가 동일인이면 1건만 생성됩니다.
@@ -156,7 +156,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
               label="최대 동료 수"
             />
           </div>
-          <p className="text-[11px] text-gray-050">
+          <p className="text-[11px] text-fg-subtle">
             <strong>관리자가 배정</strong>: 운영 센터에서 관리자가 직접 선택.
             {' · '}
             <strong>대상자가 선택</strong>: 피평가자 본인이 동료를 고릅니다.

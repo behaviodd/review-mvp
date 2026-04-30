@@ -68,7 +68,7 @@ export function BulkMove() {
       <div className="py-2 space-y-5">
         {/* 선택된 구성원 미리보기 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">이동할 구성원</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">이동할 구성원</p>
           <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2.5 bg-gray-005 rounded-lg border border-gray-010">
             {selectedUsers.map(u => (
               <span key={u.id} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-white border border-gray-020 rounded-full text-gray-070 font-medium">
@@ -86,19 +86,19 @@ export function BulkMove() {
 
         {/* 이동할 조직 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">이동할 조직</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">이동할 조직</p>
           {orgUnits.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />
             </div>
           ) : (
-            <p className="text-xs text-gray-040">등록된 조직 구조가 없습니다.</p>
+            <p className="text-xs text-fg-subtlest">등록된 조직 구조가 없습니다.</p>
           )}
         </section>
 
         {/* 보고 대상 */}
         <section>
-          <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">보고 대상</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">보고 대상</p>
           <MsSelect label="" value={managerId} onChange={e => setManagerId(e.target.value)}>
             <option value="__keep__">변경하지 않음</option>
             <option value="">없음</option>

@@ -41,7 +41,7 @@ export function DistributionProgress({ policy, cycleId, reviewerId, submissions 
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-080">등급 분포 {policy.method === 'hard' ? '(강제)' : '(가이드)'}</h3>
-          <p className="text-[11px] text-gray-040">내 조직장 리뷰 {totalAssigned}건 중 {withRating.length}건 작성 완료</p>
+          <p className="text-[11px] text-fg-subtlest">내 조직장 리뷰 {totalAssigned}건 중 {withRating.length}건 작성 완료</p>
         </div>
       </div>
       <div className="space-y-2">
@@ -55,7 +55,7 @@ export function DistributionProgress({ policy, cycleId, reviewerId, submissions 
             <div key={band.label} className="space-y-1">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-semibold text-gray-080">{band.label}</span>
-                <span className={cn('tabular-nums', over ? 'text-red-060' : 'text-gray-050')}>
+                <span className={cn('tabular-nums', over ? 'text-red-060' : 'text-fg-subtle')}>
                   {current}/{target}명 <span className="opacity-60">(목표 {targetPct}%)</span>
                   {over && <span className="ml-1 font-semibold text-red-060">초과</span>}
                 </span>

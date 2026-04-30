@@ -5,7 +5,7 @@ import type { SyncSummary } from '../../utils/syncQueue';
 type Tone = 'idle' | 'healthy' | 'warning' | 'danger';
 
 const TONE_STYLE: Record<Tone, string> = {
-  idle:    'bg-gray-005 text-gray-050 border-gray-010',
+  idle:    'bg-gray-005 text-fg-subtle border-gray-010',
   healthy: 'bg-green-005 text-green-070 border-green-020',
   warning: 'bg-orange-005 text-orange-070 border-orange-020',
   danger:  'bg-red-005 text-red-070 border-red-020',

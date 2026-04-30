@@ -95,7 +95,7 @@ export function CycleArchive() {
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-gray-040 mt-0.5">
+                <p className="text-xs text-fg-subtlest mt-0.5">
                   종료 {formatDate(cycle.managerReviewDeadline)} · 보관 {formatDate(cycle.archivedAt ?? cycle.createdAt)}
                 </p>
               </div>

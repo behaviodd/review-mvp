@@ -116,15 +116,15 @@ export function Settings() {
       {/* Profile */}
       <section className="py-6 first:pt-0">
         <div className="flex items-center gap-2 mb-4">
-          <MsProfileIcon size={16} className="text-gray-040" />
+          <MsProfileIcon size={16} className="text-fg-subtlest" />
           <h2 className="text-sm font-semibold text-gray-080">프로필</h2>
         </div>
         <div className="flex items-center gap-4">
           <UserAvatar user={currentUser} size="xl" />
           <div>
-            <p className="text-lg font-semibold text-gray-099">{currentUser.name}</p>
-            <p className="text-sm text-gray-050">{currentUser.position}</p>
-            <p className="text-xs text-gray-040">{currentUser.department} · {currentUser.email}</p>
+            <p className="text-lg font-semibold text-fg-default">{currentUser.name}</p>
+            <p className="text-sm text-fg-subtle">{currentUser.position}</p>
+            <p className="text-xs text-fg-subtlest">{currentUser.department} · {currentUser.email}</p>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-gray-005 flex items-center justify-between">
@@ -142,7 +142,7 @@ export function Settings() {
       {currentUser.role === 'admin' && (
       <section className="py-6">
         <div className="flex items-center gap-2 mb-4">
-          <Sheet className="w-4 h-4 text-gray-040" />
+          <Sheet className="w-4 h-4 text-fg-subtlest" />
           <h2 className="text-sm font-semibold text-gray-080">Google Sheets 연동</h2>
         </div>
 
@@ -193,7 +193,7 @@ export function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-080">조직 데이터 자동 동기화</p>
-                <p className="text-xs text-gray-040 mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">구성원 시트 → 팀 구성 화면 반영 (60초 주기)</p>
               </div>
               <MsSwitch checked={orgSyncEnabled} onChange={setOrgSyncEnabled} />
             </div>
@@ -211,11 +211,11 @@ export function Settings() {
                       {formatSyncTime(orgLastSyncedAt)} · 구성원 {users.length}명
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
+                    <p className="text-xs text-fg-subtlest">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
                 <button onClick={() => refetchOrg({ force: true })} disabled={orgLoading} title="지금 동기화"
-                  className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
+                  className="p-1 rounded-md text-fg-subtlest hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${orgLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
@@ -225,7 +225,7 @@ export function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-080">리뷰 운영 데이터 자동 동기화</p>
-                <p className="text-xs text-gray-040 mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
+                <p className="text-xs text-fg-subtlest mt-0.5">리뷰·템플릿·제출내용 시트 ↔ 앱 (5분 주기)</p>
               </div>
               <MsSwitch checked={reviewSyncEnabled} onChange={setReviewSyncEnabled} />
             </div>
@@ -243,11 +243,11 @@ export function Settings() {
                       {formatSyncTime(reviewLastSyncedAt)} · 리뷰 {cycles.length}개 · 템플릿 {templates.length}개 · 제출 {submissions.length}건
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-040">아직 동기화된 기록이 없습니다.</p>
+                    <p className="text-xs text-fg-subtlest">아직 동기화된 기록이 없습니다.</p>
                   )}
                 </div>
                 <button onClick={() => refetchReview({ force: true })} disabled={reviewLoading} title="지금 동기화"
-                  className="p-1 rounded-md text-gray-040 hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
+                  className="p-1 rounded-md text-fg-subtlest hover:text-gray-070 hover:bg-gray-010 disabled:opacity-40 transition-colors">
                   <MsRefreshIcon size={12} className={`${reviewLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
@@ -257,14 +257,14 @@ export function Settings() {
             <div className="flex items-start justify-between gap-3 pt-1">
               <div className="min-w-0">
                 <p className="text-sm text-gray-080">쓰기 큐 상태</p>
-                <p className="text-xs text-gray-040 mt-0.5">
+                <p className="text-xs text-fg-subtlest mt-0.5">
                   리뷰 저장·리마인드 등 쓰기 실패가 생기면 여기에 쌓입니다.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ${pendingOps.filter(o => o.tryCount > 0).length > 0 ? 'bg-red-005 text-red-070' : pendingOps.length > 0 ? 'bg-orange-005 text-orange-070' : 'bg-green-005 text-green-070'}`}>
                     대기 {pendingOps.length}건 · 실패 {pendingOps.filter(o => o.tryCount > 0).length}건
                   </span>
-                  <span className="text-gray-050">
+                  <span className="text-fg-subtle">
                     {lastSuccessAt ? `마지막 성공: ${timeAgo(lastSuccessAt)}` : '성공 이력 없음'}
                   </span>
                 </div>
@@ -293,7 +293,7 @@ export function Settings() {
                 </button>
               )}
               {scriptUrl && (
-                <p className="text-[11px] text-gray-040">_구성원 시트의 사번/이메일을 _계정 시트에 누락 없이 채워 권한관리 인덱스로 사용</p>
+                <p className="text-[11px] text-fg-subtlest">_구성원 시트의 사번/이메일을 _계정 시트에 누락 없이 채워 권한관리 인덱스로 사용</p>
               )}
             </div>
             <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>
@@ -306,14 +306,14 @@ export function Settings() {
       {currentUser.role === 'admin' && scriptUrl && (
         <section className="py-6">
           <div className="flex items-center gap-2 mb-4">
-            <MsInfoIcon size={16} className="text-gray-040" />
+            <MsInfoIcon size={16} className="text-fg-subtlest" />
             <h2 className="text-sm font-semibold text-gray-080">운영 토글</h2>
           </div>
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-080">신규 사용자 자동 승인</p>
-              <p className="text-xs text-gray-040 mt-1 leading-5">
+              <p className="text-xs text-fg-subtlest mt-1 leading-5">
                 @makestar.com 도메인 첫 로그인 시 승인 대기 큐를 거치지 않고 즉시 활성 멤버로 등록합니다.
                 임시 사번(<code className="text-[11px] bg-gray-010 px-1 rounded">auto_*</code>) 으로 들어오며, 직책·소속 조직·보고대상은 비어 있는 채로 진입합니다 — 운영자 보강 필요.
               </p>
@@ -323,7 +323,7 @@ export function Settings() {
             </div>
             <div className="flex-shrink-0 pt-1">
               {autoApprove === null ? (
-                <span className="text-xs text-gray-040">불러오는 중…</span>
+                <span className="text-xs text-fg-subtlest">불러오는 중…</span>
               ) : (
                 <MsSwitch
                   checked={autoApprove}

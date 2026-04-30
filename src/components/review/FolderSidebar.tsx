@@ -123,7 +123,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
         {iconBullet}
         <span className="flex-1 truncate">{label}</span>
         {accessory}
-        <span className="text-[11px] text-gray-040 tabular-nums">{count}</span>
+        <span className="text-[11px] text-fg-subtlest tabular-nums">{count}</span>
       </button>
     );
   };
@@ -143,18 +143,18 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
 
       <div className="space-y-1">
         <div className="flex items-center justify-between px-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-040">폴더</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-fg-subtlest">폴더</span>
           <button
             type="button"
             onClick={() => { setAdding(true); setDraft(''); }}
-            className="rounded p-0.5 text-gray-040 hover:text-gray-080 hover:bg-gray-005"
+            className="rounded p-0.5 text-fg-subtlest hover:text-gray-080 hover:bg-gray-005"
             title="새 폴더"
           >
             <MsPlusIcon size={12} />
           </button>
         </div>
         {folders.length === 0 && !adding && (
-          <p className="px-2 py-1 text-[11px] text-gray-040">폴더 없음</p>
+          <p className="px-2 py-1 text-[11px] text-fg-subtlest">폴더 없음</p>
         )}
         {[...folders].sort((a, b) => a.order - b.order).map(f => {
           const dragKey = `folder:${f.id}`;
@@ -197,14 +197,14 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
               >
                 <span className="w-2 h-2 rounded-full" style={{ background: f.color }} />
                 <span className="flex-1 truncate">{f.name}</span>
-                <span className="text-[11px] text-gray-040 tabular-nums">{count}</span>
+                <span className="text-[11px] text-fg-subtlest tabular-nums">{count}</span>
               </button>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                 <button
                   type="button"
                   title="이름 변경"
                   onClick={() => { setEditingId(f.id); setEditDraft(f.name); }}
-                  className="p-1 text-gray-040 hover:text-gray-080"
+                  className="p-1 text-fg-subtlest hover:text-gray-080"
                 >
                   <MsEditIcon size={10} />
                 </button>
@@ -216,7 +216,7 @@ export function FolderSidebar({ selected, onSelect, cycles, onMoveCycleToFolder 
                     deleteFolder(f.id);
                     if (active) onSelect({ kind: 'all' });
                   }}
-                  className="p-1 text-gray-040 hover:text-red-050"
+                  className="p-1 text-fg-subtlest hover:text-red-050"
                 >
                   <MsDeleteIcon size={10} />
                 </button>

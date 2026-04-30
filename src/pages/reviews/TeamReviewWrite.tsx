@@ -105,37 +105,37 @@ function RightPanel({
           <div className="size-6 rounded bg-pink-005 flex items-center justify-center flex-shrink-0">
             <MsArticleIcon size={12} className="text-pink-050" />
           </div>
-          <p className="text-xs font-semibold text-gray-099">셀프리뷰 정보</p>
+          <p className="text-xs font-semibold text-fg-default">셀프리뷰 정보</p>
         </div>
 
         {/* 대상자 */}
         <div className="flex items-center gap-2.5">
           <UserAvatar user={reviewee} size="sm" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-099 truncate">{reviewee.name}</p>
-            <p className="text-xs text-gray-040 truncate">{reviewee.position} · {getSmallestOrg(reviewee)}</p>
+            <p className="text-sm font-semibold text-fg-default truncate">{reviewee.name}</p>
+            <p className="text-xs text-fg-subtlest truncate">{reviewee.position} · {getSmallestOrg(reviewee)}</p>
           </div>
         </div>
 
         {/* 리뷰 주기 */}
         <div className="space-y-2.5">
           <div>
-            <p className="text-xs font-medium text-gray-040 uppercase tracking-wider mb-0.5">리뷰 주기</p>
+            <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-0.5">리뷰 주기</p>
             <p className="text-xs font-medium text-gray-070 leading-snug">{cycle.title}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-2">
             <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
-              <MsCalendarIcon size={12} className="text-gray-040 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-gray-040">자기평가 마감</p>
+                <p className="text-xs text-fg-subtlest">자기평가 마감</p>
                 <p className="text-xs font-medium text-gray-070">{formatDate(cycle.selfReviewDeadline)}</p>
               </div>
             </div>
             <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
-              <MsCalendarIcon size={12} className="text-gray-040 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-gray-040">매니저 평가 마감</p>
+                <p className="text-xs text-fg-subtlest">매니저 평가 마감</p>
                 <p className="text-xs font-medium text-gray-070">{formatDate(cycle.managerReviewDeadline)}</p>
               </div>
             </div>
@@ -144,7 +144,7 @@ function RightPanel({
 
         {/* 자기평가 상태 */}
         <div>
-          <p className="text-xs font-medium text-gray-040 uppercase tracking-wider mb-1.5">자기평가 상태</p>
+          <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-1.5">자기평가 상태</p>
           <div className="flex items-center gap-2">
             <StatusBadge type="submission" value={selfSubmission?.status || 'not_started'} />
             {selfSubmitted && (
@@ -158,17 +158,17 @@ function RightPanel({
         {/* 열람 권한 */}
         <div className="p-3 bg-gray-005 rounded-lg border border-gray-010">
           <div className="flex items-center gap-1.5 mb-2">
-            <MsShieldCheckIcon size={14} className="text-gray-050" />
+            <MsShieldCheckIcon size={14} className="text-fg-subtle" />
             <p className="text-xs font-semibold text-gray-060">열람 권한</p>
           </div>
           <ul className="space-y-1">
-            <li className="text-xs text-gray-050 flex items-center gap-1.5">
+            <li className="text-xs text-fg-subtle flex items-center gap-1.5">
               <span className="size-1 rounded-full bg-gray-040 flex-shrink-0" />
               매니저 · 관리자만 결과 열람 가능
             </li>
             {privateCount > 0 && (
-              <li className="text-xs text-gray-050 flex items-center gap-1.5">
-                <MsLockIcon size={12} className="text-gray-040 flex-shrink-0" />
+              <li className="text-xs text-fg-subtle flex items-center gap-1.5">
+                <MsLockIcon size={12} className="text-fg-subtlest flex-shrink-0" />
                 비공개 문항 {privateCount}개 포함
               </li>
             )}
@@ -196,8 +196,8 @@ function RightPanel({
       {/* ── 참고자료 ── */}
       <div className="flex-1 flex flex-col">
         <div className="px-4 py-3 border-b border-gray-010 flex items-center gap-2">
-          <BookOpen className="size-3.5 text-gray-040" />
-          <p className="text-xs font-semibold text-gray-099">참고자료</p>
+          <BookOpen className="size-3.5 text-fg-subtlest" />
+          <p className="text-xs font-semibold text-fg-default">참고자료</p>
         </div>
 
         {/* 이전 리뷰 accordion */}
@@ -207,17 +207,17 @@ function RightPanel({
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-005 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <History className="size-3.5 text-gray-040" />
+              <History className="size-3.5 text-fg-subtlest" />
               <span className="text-xs font-medium text-gray-070">이전 리뷰</span>
               {pastSubmissions.length > 0 && (
-                <span className="text-xs font-bold bg-gray-010 text-gray-050 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-gray-010 text-fg-subtle px-1.5 py-0.5 rounded-full">
                   {pastSubmissions.length}
                 </span>
               )}
             </div>
             {histOpen
-              ? <MsChevronDownLineIcon size={12} className="text-gray-040" />
-              : <MsChevronRightLineIcon size={12} className="text-gray-040" />
+              ? <MsChevronDownLineIcon size={12} className="text-fg-subtlest" />
+              : <MsChevronRightLineIcon size={12} className="text-fg-subtlest" />
             }
           </button>
 
@@ -226,7 +226,7 @@ function RightPanel({
               {pastSubmissions.length === 0 ? (
                 <div className="text-center py-6">
                   <History className="size-6 text-gray-020 mx-auto mb-1.5" />
-                  <p className="text-xs text-gray-040">이전 리뷰 이력이 없습니다.</p>
+                  <p className="text-xs text-fg-subtlest">이전 리뷰 이력이 없습니다.</p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -235,12 +235,12 @@ function RightPanel({
                     return (
                       <div key={s.id} className="p-2.5 bg-white rounded-lg border border-gray-010">
                         <p className="text-xs font-semibold text-gray-080">{c?.title}</p>
-                        <p className="text-xs text-gray-040 mt-0.5">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
+                        <p className="text-xs text-fg-subtlest mt-0.5">{s.submittedAt ? formatDate(s.submittedAt) : ''}</p>
                         {s.overallRating && (
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <MsStarIcon size={12} className="text-pink-040" />
                             <span className="text-xs font-bold text-gray-070">{s.overallRating.toFixed(1)}</span>
-                            <span className="text-xs text-gray-040">{RATING_LABELS[Math.round(s.overallRating)]}</span>
+                            <span className="text-xs text-fg-subtlest">{RATING_LABELS[Math.round(s.overallRating)]}</span>
                           </div>
                         )}
                       </div>
@@ -533,7 +533,7 @@ export function TeamReviewWrite() {
         <div className="px-4 pt-3 pb-2.5 border-b border-gray-010 space-y-2">
           <button
             onClick={() => navigate('/reviews/team')}
-            className="flex items-center gap-1.5 text-xs text-gray-040 hover:text-gray-070 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-fg-subtlest hover:text-gray-070 transition-colors"
           >
             <MsChevronLeftLineIcon size={12} /> 하향 평가 목록
           </button>
@@ -576,7 +576,7 @@ export function TeamReviewWrite() {
                     <p className={`text-xs font-medium truncate ${isSel ? 'text-pink-060' : 'text-gray-080'}`}>
                       {m.name}
                     </p>
-                    <p className="text-xs text-gray-040 truncate">{getSmallestOrg(m)}</p>
+                    <p className="text-xs text-fg-subtlest truncate">{getSmallestOrg(m)}</p>
                   </div>
                   {isDone
                     ? <MsCheckCircleIcon size={14} className="flex-shrink-0 text-green-050" />
@@ -609,7 +609,7 @@ export function TeamReviewWrite() {
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${
                       submitted === total && total > 0
                         ? 'bg-green-005 text-green-060'
-                        : 'bg-gray-010 text-gray-040'
+                        : 'bg-gray-010 text-fg-subtlest'
                     }`}>
                       {submitted}/{total}
                     </span>
@@ -667,10 +667,10 @@ export function TeamReviewWrite() {
           {/* ── 조직장 리뷰 단계 전 안내 배너 ── */}
           {!isAdmin && isPhaseBeforeManagerReview && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
-              <MsCalendarIcon size={16} className="text-gray-050 mt-0.5 flex-shrink-0" />
+              <MsCalendarIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-gray-070">아직 조직장 리뷰 단계가 아닙니다</p>
-                <p className="text-xs text-gray-050 mt-0.5">
+                <p className="text-xs text-fg-subtle mt-0.5">
                   현재는 자기평가 단계입니다. 관리자가 조직장 리뷰를 시작하면 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
               </div>
@@ -680,10 +680,10 @@ export function TeamReviewWrite() {
           {/* ── 자기평가 미제출 잠금 배너 ── */}
           {!selfSubmitted && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
-              <MsLockIcon size={16} className="text-gray-050 mt-0.5 flex-shrink-0" />
+              <MsLockIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-gray-070">{reviewee.name}님의 자기평가 대기 중</p>
-                <p className="text-xs text-gray-050 mt-0.5">
+                <p className="text-xs text-fg-subtle mt-0.5">
                   팀원이 자기평가를 제출하면 평가를 작성하고 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
               </div>
@@ -706,7 +706,7 @@ export function TeamReviewWrite() {
               <StatusBadge type="submission" value={mySubmission?.status || 'not_started'} />
               {selfSubmitted
                 ? <span className="text-xs text-green-060 bg-green-005 border border-green-010 px-2 py-0.5 rounded font-medium">셀프 완료</span>
-                : <span className="text-xs text-gray-040 bg-gray-010 px-2 py-0.5 rounded">셀프 대기</span>
+                : <span className="text-xs text-fg-subtlest bg-gray-010 px-2 py-0.5 rounded">셀프 대기</span>
               }
             </div>
           </div>
@@ -736,7 +736,7 @@ export function TeamReviewWrite() {
                 <UserAvatar user={reviewee} size="sm" />
                 <div>
                   <p className="text-xs font-semibold text-gray-070">{reviewee.name}님의 자기평가</p>
-                  <p className="text-xs text-gray-040">읽기 전용</p>
+                  <p className="text-xs text-fg-subtlest">읽기 전용</p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5 px-5 py-3 bg-pink-005/60 border-b border-gray-010">
@@ -763,12 +763,12 @@ export function TeamReviewWrite() {
                   {/* 질문 타이틀 */}
                   <div className={`md:col-span-2 px-5 py-3 bg-white flex items-start gap-2 border-t border-gray-010 ${isLastRow ? '' : 'border-b-0'}`}>
                     {q.isPrivate && (
-                      <span className="flex items-center gap-1 text-xs text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5">
+                      <span className="flex items-center gap-1 text-xs text-fg-subtlest bg-gray-010 px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5">
                         <MsLockIcon size={12} /> 비공개
                       </span>
                     )}
                     <p className="text-sm font-semibold text-gray-080">
-                      <span className="text-gray-040 mr-1.5">{idx + 1}.</span>
+                      <span className="text-fg-subtlest mr-1.5">{idx + 1}.</span>
                       {q.text}
                       {q.isRequired && <span className="text-red-040 ml-1">*</span>}
                     </p>
@@ -778,7 +778,7 @@ export function TeamReviewWrite() {
                   <div className="grid grid-cols-1 md:grid-cols-2">
                     {/* 셀프 리뷰 셀 */}
                     <div className={`px-5 py-4 bg-gray-005/40 md:bg-white md:border-r border-gray-010 ${!isLastRow ? 'border-b border-gray-010' : ''}`}>
-                      <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 md:hidden">
+                      <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 md:hidden">
                         {reviewee.name}님 자기평가
                       </p>
                       {q.isPrivate ? (
@@ -798,13 +798,13 @@ export function TeamReviewWrite() {
                                 {[1,2,3,4,5].map(n => (
                                   <span key={n} className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${
                                     n === rv ? 'bg-gray-070 text-white'
-                                    : n < rv  ? 'bg-gray-020 text-gray-050'
+                                    : n < rv  ? 'bg-gray-020 text-fg-subtle'
                                     : 'bg-gray-010 text-gray-030'
                                   }`}>{n}</span>
                                 ))}
                               </div>
                               <span className="text-sm font-semibold text-gray-070">{rv}점</span>
-                              <span className="text-xs text-gray-050 font-medium">{FLAT_RATING_LABELS[rv]}</span>
+                              <span className="text-xs text-fg-subtle font-medium">{FLAT_RATING_LABELS[rv]}</span>
                             </div>
                           ); })()}
                           {(selfAnswer?.selectedOptions?.length ?? 0) > 0 && (
@@ -844,7 +844,7 @@ export function TeamReviewWrite() {
                               <span className="text-sm font-semibold text-gray-070">{rv}점</span>
                               <span className="text-xs text-pink-050 font-medium">{FLAT_RATING_LABELS[rv]}</span>
                             </div>
-                          ); })() : <p className="text-sm text-gray-040 italic">미응답</p>
+                          ); })() : <p className="text-sm text-fg-subtlest italic">미응답</p>
                         ) : (
                           <RatingInput
                             value={answer?.ratingValue}
@@ -856,7 +856,7 @@ export function TeamReviewWrite() {
                         (isReadOnly || submitted) ? (
                           (answer?.selectedOptions?.length ?? 0) > 0
                             ? <div className="flex flex-wrap gap-1.5">{(answer?.selectedOptions ?? []).map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div>
-                            : <p className="text-sm text-gray-040 italic">미응답</p>
+                            : <p className="text-sm text-fg-subtlest italic">미응답</p>
                         ) : (
                           <div className="space-y-2">
                             {(q.options ?? []).filter(o => o.trim()).map(opt => {
@@ -885,7 +885,7 @@ export function TeamReviewWrite() {
                         (isReadOnly || submitted) ? (
                           answer?.textValue?.trim()
                             ? <p className="text-sm text-gray-070 leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
-                            : <p className="text-sm text-gray-040 italic">미응답</p>
+                            : <p className="text-sm text-fg-subtlest italic">미응답</p>
                         ) : (
                           <div>
                             <MsTextarea
@@ -955,8 +955,8 @@ export function TeamReviewWrite() {
               <div className="w-12 h-12 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-3">
                 <MsCheckIcon size={24} className="text-pink-050" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-099 mb-1">{reviewee.name}님의 평가를 제출할까요?</h3>
-              <p className="text-sm text-gray-050">제출 후에는 수정할 수 없습니다.</p>
+              <h3 className="text-lg font-semibold text-fg-default mb-1">{reviewee.name}님의 평가를 제출할까요?</h3>
+              <p className="text-sm text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
             </div>
             <div className="flex gap-3">
               <MsButton variant="default" onClick={() => setShowConfirm(false)} className="flex-1 h-auto py-2.5">취소</MsButton>

@@ -43,7 +43,7 @@ export function NotificationPanel() {
         className="relative p-2 rounded-lg hover:bg-gray-010 transition-colors"
         aria-label={`알림 ${unread}개`}
       >
-        <MsAlertIcon size={16} className={unread > 0 ? 'text-gray-070' : 'text-gray-050'} />
+        <MsAlertIcon size={16} className={unread > 0 ? 'text-gray-070' : 'text-fg-subtle'} />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-040 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unread > 9 ? '9+' : unread}
@@ -56,7 +56,7 @@ export function NotificationPanel() {
           {/* header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-010">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-099">알림</h3>
+              <h3 className="text-sm font-semibold text-fg-default">알림</h3>
               {unread > 0 && (
                 <span className="text-xs font-bold bg-red-040 text-white px-1.5 py-0.5 rounded-full leading-none">
                   {unread}
@@ -74,7 +74,7 @@ export function NotificationPanel() {
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded hover:bg-gray-010 text-gray-040 hover:text-gray-070"
+                className="p-1 rounded hover:bg-gray-010 text-fg-subtlest hover:text-gray-070"
               >
                 <MsCancelIcon size={12} />
               </button>
@@ -84,7 +84,7 @@ export function NotificationPanel() {
           {/* list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-gray-010">
             {mine.length === 0 ? (
-              <p className="text-sm text-gray-050 text-center py-10">새 알림이 없습니다.</p>
+              <p className="text-sm text-fg-subtle text-center py-10">새 알림이 없습니다.</p>
             ) : mine.map(n => {
               const tc = TYPE_CONFIG[n.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.system;
               return (
@@ -101,9 +101,9 @@ export function NotificationPanel() {
                           {tc.label}
                         </span>
                       </div>
-                      <p className="text-xs font-semibold text-gray-099 leading-snug">{n.title}</p>
-                      <p className="text-xs text-gray-050 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
-                      <p className="text-[11px] text-gray-040 mt-1">{formatDateTime(n.createdAt)}</p>
+                      <p className="text-xs font-semibold text-fg-default leading-snug">{n.title}</p>
+                      <p className="text-xs text-fg-subtle mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                      <p className="text-[11px] text-fg-subtlest mt-1">{formatDateTime(n.createdAt)}</p>
                     </div>
                   </div>
                 </button>

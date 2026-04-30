@@ -28,7 +28,7 @@ import type { ReviewStatus, ReviewType } from '../../types';
 import { cn } from '../../utils/cn';
 
 const STATUS_CONFIG: Record<ReviewStatus, { label: string; dot: string; text: string }> = {
-  draft:          { label: '초안',        dot: 'bg-gray-030',  text: 'text-gray-050' },
+  draft:          { label: '초안',        dot: 'bg-gray-030',  text: 'text-fg-subtle' },
   active:         { label: '진행 중',     dot: 'bg-pink-040',  text: 'text-pink-060' },
   self_review:    { label: '자기평가 중', dot: 'bg-pink-040',  text: 'text-pink-060' },
   manager_review: { label: '매니저 리뷰', dot: 'bg-pink-040',  text: 'text-pink-050' },
@@ -380,7 +380,7 @@ export function CycleList() {
               <button
                 type="button"
                 onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
-                className="text-xs font-medium text-gray-050 hover:text-gray-080 underline-offset-2 hover:underline"
+                className="text-xs font-medium text-fg-subtle hover:text-gray-080 underline-offset-2 hover:underline"
               >
                 초기화
               </button>
@@ -389,7 +389,7 @@ export function CycleList() {
 
           {(allTags.length > 0 || filters.tags.length > 0) && (
             <div className="flex items-start gap-2">
-              <span className="pt-1 text-[11px] font-medium text-gray-050 shrink-0">태그</span>
+              <span className="pt-1 text-[11px] font-medium text-fg-subtle shrink-0">태그</span>
               <div className="flex-1">
                 <TagInput
                   value={filters.tags}
@@ -472,7 +472,7 @@ export function CycleList() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-gray-099 group-hover:text-pink-060 truncate leading-snug">
+                      <p className="text-sm font-medium text-fg-default group-hover:text-pink-060 truncate leading-snug">
                         {cycle.title}
                       </p>
                       {(cycle.tags ?? []).slice(0, 3).map(t => (
@@ -481,12 +481,12 @@ export function CycleList() {
                         </span>
                       ))}
                       {(cycle.tags?.length ?? 0) > 3 && (
-                        <span className="rounded-full bg-gray-005 px-1.5 py-0.5 text-[10px] text-gray-050">
+                        <span className="rounded-full bg-gray-005 px-1.5 py-0.5 text-[10px] text-fg-subtle">
                           +{(cycle.tags?.length ?? 0) - 3}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-040 mt-0.5">
+                    <p className="text-xs text-fg-subtlest mt-0.5">
                       {cycle.type === 'scheduled' ? '정기' : '수시'} · 생성 {formatDate(cycle.createdAt)}
                     </p>
                   </div>
@@ -504,7 +504,7 @@ export function CycleList() {
                             style={{ width: `${cycle.completionRate ?? 0}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-050 tabular-nums w-7 text-right">{cycle.completionRate ?? 0}%</span>
+                        <span className="text-xs text-fg-subtle tabular-nums w-7 text-right">{cycle.completionRate ?? 0}%</span>
                       </div>
                     ) : (
                       <span className="text-xs text-gray-030">—</span>
@@ -513,7 +513,7 @@ export function CycleList() {
 
                   <div className="w-24 flex-shrink-0 text-right">
                     <p className="text-xs text-gray-060">{formatDate(cycle.selfReviewDeadline)}</p>
-                    <p className="text-xs text-gray-040 mt-0.5">자기평가 마감</p>
+                    <p className="text-xs text-fg-subtlest mt-0.5">자기평가 마감</p>
                   </div>
 
                   {/* Phase D-3.C-5: hover 액션 4개 → 더보기 메뉴 1개로 통합 (사용자 요청)

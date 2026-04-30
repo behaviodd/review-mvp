@@ -51,7 +51,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
         <div className="flex items-center gap-2.5">
           {mode === 'received' ? (
             fb.isAnonymous ? (
-              <div className="w-9 h-9 rounded-full bg-gray-020 flex items-center justify-center text-gray-040 text-xs font-bold flex-shrink-0">?</div>
+              <div className="w-9 h-9 rounded-full bg-gray-020 flex items-center justify-center text-fg-subtlest text-xs font-bold flex-shrink-0">?</div>
             ) : fromUser ? (
               <UserAvatar user={fromUser} size="sm" />
             ) : null
@@ -64,7 +64,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
                 ? (fb.isAnonymous ? '익명' : fromUser?.name)
                 : toUser?.name}
             </p>
-            <p className="text-xs text-gray-040">{formatDateTime(fb.createdAt)}</p>
+            <p className="text-xs text-fg-subtlest">{formatDateTime(fb.createdAt)}</p>
           </div>
         </div>
         <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
@@ -148,7 +148,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         <div className="px-4 py-4 border-b border-gray-010">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-gray-050 hover:text-gray-080 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-fg-subtle hover:text-gray-080 transition-colors"
           >
             <MsChevronLeftLineIcon size={16} className="w-4 h-4" /> 피드백 목록
           </button>
@@ -164,7 +164,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             placeholder="이름, 부서 검색..."
             leftSlot={<MsSearchIcon size={12} />}
             rightSlot={search ? (
-              <button onClick={() => setSearch('')} className="text-gray-040 hover:text-gray-060 transition-colors">
+              <button onClick={() => setSearch('')} className="text-fg-subtlest hover:text-gray-060 transition-colors">
                 <MsCancelIcon size={12} />
               </button>
             ) : undefined}
@@ -173,10 +173,10 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 
         {/* 수신자 목록 */}
         <div className="flex-1 overflow-y-auto">
-          <p className="text-xs font-semibold text-gray-040 uppercase tracking-wider px-4 py-3">받는 사람</p>
+          <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider px-4 py-3">받는 사람</p>
           {filteredRecipients.length === 0 ? (
             <div className="px-4 py-6 text-center">
-              <p className="text-xs text-gray-040">검색 결과가 없습니다.</p>
+              <p className="text-xs text-fg-subtlest">검색 결과가 없습니다.</p>
             </div>
           ) : filteredRecipients.map(user => {
             const isSel = toUserId === user.id;
@@ -195,7 +195,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                   <p className={`text-sm font-medium truncate ${isSel ? 'text-pink-060' : 'text-gray-080'}`}>
                     {user.name}
                   </p>
-                  <p className="text-xs text-gray-040 truncate">{getSmallestOrg(user)} · {user.position}</p>
+                  <p className="text-xs text-fg-subtlest truncate">{getSmallestOrg(user)} · {user.position}</p>
                 </div>
               </button>
             );
@@ -205,7 +205,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         {/* 최근 대화 */}
         {selectedUser && recentWithUser.length > 0 && (
           <div className="border-t border-gray-010 p-3">
-            <p className="text-xs font-semibold text-gray-040 uppercase tracking-wider mb-2 px-1">
+            <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider mb-2 px-1">
               {selectedUser.name}님과 최근 피드백
             </p>
             <div className="space-y-1.5">
@@ -216,7 +216,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                   <div key={fb.id} className="p-2 bg-gray-005 rounded-lg">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-xs">{cfg.emoji}</span>
-                      <span className={`text-xs font-medium ${isMine ? 'text-pink-050' : 'text-gray-050'}`}>
+                      <span className={`text-xs font-medium ${isMine ? 'text-pink-050' : 'text-fg-subtle'}`}>
                         {isMine ? '내가 보냄' : '받음'}
                       </span>
                     </div>
@@ -267,7 +267,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                       <UserAvatar user={u} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
-                        <p className="text-xs text-gray-040 truncate">{getSmallestOrg(u)} · {u.position}</p>
+                        <p className="text-xs text-fg-subtlest truncate">{getSmallestOrg(u)} · {u.position}</p>
                       </div>
                     </button>
                   ))}
@@ -283,13 +283,13 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             <div className="flex items-center gap-3 p-4 rounded-lg border border-bd-default">
               <UserAvatar user={selectedUser} size="xl" />
               <div>
-                <p className="text-base font-semibold text-gray-099">{selectedUser.name}</p>
-                <p className="text-sm text-gray-040">{selectedUser.position} · {getSmallestOrg(selectedUser)}</p>
+                <p className="text-base font-semibold text-fg-default">{selectedUser.name}</p>
+                <p className="text-sm text-fg-subtlest">{selectedUser.position} · {getSmallestOrg(selectedUser)}</p>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2 p-4 rounded-lg border border-dashed border-gray-030">
-              <p className="text-sm text-gray-040">← 왼쪽에서 받는 사람을 선택하세요</p>
+              <p className="text-sm text-fg-subtlest">← 왼쪽에서 받는 사람을 선택하세요</p>
             </div>
           )}
 
@@ -305,7 +305,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                     type="button"
                     onClick={() => setType(key)}
                     className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition-all ${
-                      isActive ? cfg.activeClass : 'border-gray-020 text-gray-050 hover:border-gray-030 bg-white'
+                      isActive ? cfg.activeClass : 'border-gray-020 text-fg-subtle hover:border-gray-030 bg-white'
                     }`}
                   >
                     <span className="text-xl">{cfg.emoji}</span>
@@ -334,7 +334,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>
               )}
               {content.length === 0 && <span />}
-              <p className="text-xs text-gray-040 ml-auto">{content.length}/500</p>
+              <p className="text-xs text-fg-subtlest ml-auto">{content.length}/500</p>
             </div>
           </div>
 
@@ -346,7 +346,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 onChange={e => setAnonymous(e.target.checked)}
                 label="익명으로 보내기"
               />
-              <span className="text-xs text-gray-040 hidden sm:inline">(받는 사람이 보낸 사람을 알 수 없습니다)</span>
+              <span className="text-xs text-fg-subtlest hidden sm:inline">(받는 사람이 보낸 사람을 알 수 없습니다)</span>
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         {/* 하단 제출 바 */}
         <div className="sticky bottom-0 px-6 pb-6 max-w-2xl mx-auto">
           <div className="bg-white rounded-xl border border-gray-010 px-4 py-3 shadow-raised flex items-center justify-between">
-            <p className="text-xs text-gray-040">
+            <p className="text-xs text-fg-subtlest">
               {selectedUser ? `${selectedUser.name}님에게 ${TYPE_CONFIG[type].emoji} ${TYPE_CONFIG[type].label} 피드백` : '받는 사람을 선택하세요'}
             </p>
             <MsButton onClick={handleSubmit} disabled={!toUserId || content.trim().length < 10} leftIcon={<MsSendIcon size={16} />}>피드백 보내기</MsButton>
@@ -369,7 +369,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
             <div className="size-6 rounded bg-yellow-005 flex items-center justify-center flex-shrink-0">
               <TipIcon className="size-3.5 text-yellow-060" />
             </div>
-            <p className="text-xs font-semibold text-gray-099">작성 가이드</p>
+            <p className="text-xs font-semibold text-fg-default">작성 가이드</p>
           </div>
         </div>
 
@@ -379,14 +379,14 @@ function WriteView({ initialToUserId, onBack, onSent }: {
           className="flex items-center justify-between px-4 py-3 hover:bg-gray-005 transition-colors border-b border-gray-010"
         >
           <span className="text-xs font-medium text-gray-070">좋은 피드백 작성법</span>
-          {tipsOpen ? <MsChevronDownLineIcon size={12} className="text-gray-040" /> : <MsChevronRightLineIcon size={12} className="text-gray-040" />}
+          {tipsOpen ? <MsChevronDownLineIcon size={12} className="text-fg-subtlest" /> : <MsChevronRightLineIcon size={12} className="text-fg-subtlest" />}
         </button>
         {tipsOpen && (
           <ul className="px-4 py-3 space-y-3">
             {FEEDBACK_TIPS.map((tip, i) => (
               <li key={i} className="space-y-0.5">
                 <p className="text-xs font-semibold text-gray-070">{tip.title}</p>
-                <p className="text-xs text-gray-050 leading-relaxed">{tip.desc}</p>
+                <p className="text-xs text-fg-subtle leading-relaxed">{tip.desc}</p>
               </li>
             ))}
           </ul>
@@ -394,7 +394,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
 
         {/* 유형별 예시 */}
         <div className="border-t border-gray-010 p-4 space-y-3">
-          <p className="text-xs font-semibold text-gray-040 uppercase tracking-wider">유형별 예시</p>
+          <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider">유형별 예시</p>
           <div className="space-y-2.5">
             <div className="p-2.5 bg-green-005 rounded-lg">
               <p className="text-xs font-semibold text-green-060 mb-1">🌟 칭찬 예시</p>
@@ -453,7 +453,7 @@ export function Feedback() {
 
         {/* 헤더 */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-099">피드백</h1>
+          <h1 className="text-xl font-semibold text-fg-default">피드백</h1>
           <MsButton onClick={() => goToWrite()} leftIcon={<MsPlusIcon size={16} />}>피드백 보내기</MsButton>
         </div>
 
@@ -466,12 +466,12 @@ export function Feedback() {
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 tab === key
                   ? 'bg-gray-099 text-white shadow-sm'
-                  : 'text-gray-050 hover:text-gray-080 hover:bg-gray-005'
+                  : 'text-fg-subtle hover:text-gray-080 hover:bg-gray-005'
               }`}
             >
               {label}
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                tab === key ? 'bg-white/20 text-white' : 'bg-gray-010 text-gray-050'
+                tab === key ? 'bg-white/20 text-white' : 'bg-gray-010 text-fg-subtle'
               }`}>
                 {count}
               </span>

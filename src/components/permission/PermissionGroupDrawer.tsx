@@ -149,7 +149,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-gray-099"
+              className="px-4 py-2 text-sm font-medium text-gray-060 hover:text-fg-default"
             >
               취소
             </button>
@@ -162,7 +162,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
         <div className="space-y-5">
           {/* 기본 정보 */}
           <div>
-            <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>
+            <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <MsInput
@@ -189,9 +189,9 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
           {/* 권한 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">권한</p>
-              {lockMeta && <MsLockIcon size={12} className="text-gray-040" />}
-              <span className="text-[11px] text-gray-040">{permissions.length}개 선택</span>
+              <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">권한</p>
+              {lockMeta && <MsLockIcon size={12} className="text-fg-subtlest" />}
+              <span className="text-[11px] text-fg-subtlest">{permissions.length}개 선택</span>
             </div>
             <div className="space-y-3">
               {PERMISSION_CATEGORIES.map(cat => {
@@ -199,7 +199,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                 if (items.length === 0) return null;
                 return (
                   <div key={cat} className="rounded-lg border border-gray-010 p-3">
-                    <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wider mb-2">{cat}</p>
+                    <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wider mb-2">{cat}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {items.map(meta => {
                         const checked = permissions.includes(meta.code);
@@ -217,7 +217,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-080">{meta.label}</p>
-                              <p className="text-[11px] text-gray-050">{meta.description}</p>
+                              <p className="text-[11px] text-fg-subtle">{meta.description}</p>
                             </div>
                           </label>
                         );
@@ -232,8 +232,8 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
           {/* 멤버 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide">멤버</p>
-              <span className="text-[11px] text-gray-040">{memberIds.length}명</span>
+              <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">멤버</p>
+              <span className="text-[11px] text-fg-subtlest">{memberIds.length}명</span>
             </div>
 
             {/* 현재 멤버 칩 */}
@@ -252,7 +252,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                       <button
                         type="button"
                         onClick={() => toggleMember(id)}
-                        className="text-gray-040 hover:text-red-060"
+                        className="text-fg-subtlest hover:text-red-060"
                         aria-label="제거"
                       >
                         <MsCancelIcon size={10} />
@@ -270,7 +270,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
             />
             <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-gray-010 divide-y divide-gray-005">
               {candidateUsers.length === 0 ? (
-                <p className="px-4 py-6 text-center text-xs text-gray-040">검색 결과가 없습니다.</p>
+                <p className="px-4 py-6 text-center text-xs text-fg-subtlest">검색 결과가 없습니다.</p>
               ) : (
                 candidateUsers.map(u => {
                   const checked = memberIds.includes(u.id);
@@ -285,7 +285,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                       <UserAvatar user={u} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
-                        <p className="text-[11px] text-gray-040 truncate">
+                        <p className="text-[11px] text-fg-subtlest truncate">
                           {u.position}{u.department ? ` · ${u.department}` : ''}
                         </p>
                       </div>
@@ -297,7 +297,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
                 })
               )}
             </div>
-            <p className="mt-2 text-[11px] text-gray-040">
+            <p className="mt-2 text-[11px] text-fg-subtlest">
               admin 역할 사용자는 자동으로 모든 권한을 보유하므로 별도 가입이 불필요합니다 (소유자 그룹).
             </p>
           </div>

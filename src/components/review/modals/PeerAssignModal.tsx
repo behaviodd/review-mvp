@@ -111,7 +111,7 @@ export function PeerAssignModal({ open, onClose, cycle, revieweeId, actorId, onA
         />
         <div className="max-h-96 overflow-y-auto rounded-lg border border-gray-010 divide-y divide-gray-005">
           {candidates.length === 0 ? (
-            <p className="px-4 py-8 text-center text-xs text-gray-040">후보가 없습니다.</p>
+            <p className="px-4 py-8 text-center text-xs text-fg-subtlest">후보가 없습니다.</p>
           ) : (
             candidates.map(u => {
               const checked = selected.has(u.id);
@@ -126,7 +126,7 @@ export function PeerAssignModal({ open, onClose, cycle, revieweeId, actorId, onA
                   <UserAvatar user={u} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-080 truncate">{u.name}</p>
-                    <p className="text-[11px] text-gray-040 truncate">{u.position} · {getSmallestOrg(u)}</p>
+                    <p className="text-[11px] text-fg-subtlest truncate">{u.position} · {getSmallestOrg(u)}</p>
                   </div>
                 </label>
               );

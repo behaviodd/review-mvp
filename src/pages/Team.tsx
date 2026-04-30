@@ -1153,11 +1153,11 @@ function PendingApprovalsBanner() {
           <MsFriendAddIcon size={16} className="text-yellow-060" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-099">신규 회원 {count}명 승인 대기</p>
-          <p className="text-xs text-gray-050 mt-0.5">관리자가 승인해야 시스템을 사용할 수 있습니다.</p>
+          <p className="text-sm font-semibold text-fg-default">신규 회원 {count}명 승인 대기</p>
+          <p className="text-xs text-fg-subtle mt-0.5">관리자가 승인해야 시스템을 사용할 수 있습니다.</p>
         </div>
       </div>
-      <MsChevronRightLineIcon size={14} className="text-gray-040" />
+      <MsChevronRightLineIcon size={14} className="text-fg-subtlest" />
     </button>
     </div>
   );

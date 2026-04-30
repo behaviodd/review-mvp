@@ -62,14 +62,14 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
           <p className="text-sm font-semibold text-gray-080">
             작성 참고 정보
             {reviewee && variant === 'downward' && (
-              <span className="ml-2 text-xs font-normal text-gray-040">· {reviewee.name}</span>
+              <span className="ml-2 text-xs font-normal text-fg-subtlest">· {reviewee.name}</span>
             )}
           </p>
-          <p className="text-[11px] text-gray-040">
+          <p className="text-[11px] text-fg-subtlest">
             {[includeGoals && '목표', includePrev && '직전 사이클'].filter(Boolean).join(' · ')}
           </p>
         </div>
-        <MsChevronDownLineIcon size={14} className={cn('text-gray-050 transition-transform', open && 'rotate-180')} />
+        <MsChevronDownLineIcon size={14} className={cn('text-fg-subtle transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
         <div className="border-t border-gray-010 px-4 py-3 space-y-3">
@@ -77,20 +77,20 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
             <div>
               <p className="text-[11px] font-semibold text-gray-060 mb-1.5">목표 {revieweeGoals.length}개</p>
               {revieweeGoals.length === 0 ? (
-                <p className="text-xs text-gray-040">등록된 목표가 없습니다.</p>
+                <p className="text-xs text-fg-subtlest">등록된 목표가 없습니다.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {revieweeGoals.slice(0, 4).map(g => (
                     <li key={g.id} className="flex items-center gap-2 text-xs">
                       <span className="flex-1 min-w-0 truncate text-gray-080">{g.title}</span>
-                      <span className="tabular-nums text-gray-050 w-10 text-right">{g.progress}%</span>
+                      <span className="tabular-nums text-fg-subtle w-10 text-right">{g.progress}%</span>
                       <div className="h-1 w-20 overflow-hidden rounded-full bg-gray-010">
                         <div className="h-full rounded-full bg-pink-040" style={{ width: `${g.progress}%` }} />
                       </div>
                     </li>
                   ))}
                   {revieweeGoals.length > 4 && (
-                    <li className="text-[11px] text-gray-040">+ {revieweeGoals.length - 4}개 더 있음</li>
+                    <li className="text-[11px] text-fg-subtlest">+ {revieweeGoals.length - 4}개 더 있음</li>
                   )}
                 </ul>
               )}
@@ -101,17 +101,17 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
             <div>
               <p className="text-[11px] font-semibold text-gray-060 mb-1.5">직전 사이클 요약</p>
               {!previousReview ? (
-                <p className="text-xs text-gray-040">이전에 제출된 자기평가가 없습니다.</p>
+                <p className="text-xs text-fg-subtlest">이전에 제출된 자기평가가 없습니다.</p>
               ) : (
                 <div className="rounded-lg border border-gray-005 bg-gray-001 px-3 py-2">
                   <p className="text-xs font-medium text-gray-080">
                     {previousReview.cycle.title}
-                    <span className="ml-1 text-gray-040 font-normal">
+                    <span className="ml-1 text-fg-subtlest font-normal">
                       · 제출 {formatDate(previousReview.sub.submittedAt ?? previousReview.sub.lastSavedAt)}
                     </span>
                   </p>
                   {previousReview.sub.overallRating != null && (
-                    <p className="text-[11px] text-gray-050 mt-0.5">
+                    <p className="text-[11px] text-fg-subtle mt-0.5">
                       종합 평점 {previousReview.sub.overallRating.toFixed(1)}
                     </p>
                   )}
@@ -130,7 +130,7 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
                           <li key={q.id} className="text-[11px] text-gray-060">
                             <span className="font-semibold text-gray-080">Q.</span> {q.text.slice(0, 40)}{q.text.length > 40 ? '…' : ''}
                             <br />
-                            <span className="text-gray-050">{val}</span>
+                            <span className="text-fg-subtle">{val}</span>
                           </li>
                         );
                       })}

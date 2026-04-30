@@ -144,13 +144,13 @@ function SubmissionViewPanel({
             ? 'bg-green-010 text-green-060'
             : sub?.status === 'in_progress'
             ? 'bg-yellow-005 text-yellow-060'
-            : 'bg-gray-010 text-gray-040'
+            : 'bg-gray-010 text-fg-subtlest'
         }`}>
           {sub?.status === 'submitted' ? '제출 완료' : sub?.status === 'in_progress' ? '작성 중' : '미시작'}
         </span>
       </div>
       {sub?.submittedAt && (
-        <p className="text-[11px] text-gray-040 mt-0.5">{formatDate(sub.submittedAt)} 제출</p>
+        <p className="text-[11px] text-fg-subtlest mt-0.5">{formatDate(sub.submittedAt)} 제출</p>
       )}
       {extra}
     </div>
@@ -172,12 +172,12 @@ function SubmissionViewPanel({
           <div className="flex items-center gap-3">
             <UserAvatar user={member} size="md" />
             <div>
-              <p className="text-base font-semibold text-gray-099">{member.name}</p>
-              <p className="text-xs text-gray-040 mt-0.5">{member.position} · {getSmallestOrg(member)}</p>
+              <p className="text-base font-semibold text-fg-default">{member.name}</p>
+              <p className="text-xs text-fg-subtlest mt-0.5">{member.position} · {getSmallestOrg(member)}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-010 rounded-lg transition-colors">
-            <MsCancelIcon size={20} className="text-gray-050" />
+            <MsCancelIcon size={20} className="text-fg-subtle" />
           </button>
         </div>
 
@@ -203,7 +203,7 @@ function SubmissionViewPanel({
             sub={managerSub}
             accent="bg-green-005/60"
             extra={reviewer && (
-              <p className="text-[11px] text-gray-040 mt-0.5">
+              <p className="text-[11px] text-fg-subtlest mt-0.5">
                 작성자: <strong className="text-gray-060">{reviewer.name}</strong>
               </p>
             )}
@@ -219,7 +219,7 @@ function SubmissionViewPanel({
                   <>
                     <MsStarIcon size={12} className="text-pink-040 flex-shrink-0" />
                     <div>
-                      <span className="text-[10px] text-gray-040 font-medium">종합 평점</span>
+                      <span className="text-[10px] text-fg-subtlest font-medium">종합 평점</span>
                       <p className="text-base font-bold text-pink-060 leading-none mt-0.5">
                         {s.overallRating.toFixed(1)}
                         <span className="text-xs font-medium ml-1">{RATING_LABELS[Math.round(s.overallRating)] ?? ''}</span>
@@ -256,12 +256,12 @@ function SubmissionViewPanel({
                 <div key={q.id} className={`${idx < allQuestions.length - 1 ? 'border-b border-gray-010' : ''}`}>
                   {/* 질문 텍스트 — 전체 너비 */}
                   <div className="flex items-start gap-2.5 px-5 pt-4 pb-3">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-010 text-[10px] font-bold text-gray-050 flex items-center justify-center mt-0.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-010 text-[10px] font-bold text-fg-subtle flex items-center justify-center mt-0.5">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-040 bg-gray-010 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-fg-subtlest bg-gray-010 px-1.5 py-0.5 rounded">
                           {typeLabel}
                         </span>
                         {q.isPrivate && (
@@ -762,7 +762,7 @@ export function CycleDetail() {
           <div className="absolute inset-0 bg-overlay-048" onClick={() => setUnlockOpen(false)} />
           <div className="relative w-full max-w-md rounded-xl bg-white p-5 shadow-modal space-y-4">
             <h3 className="text-base font-bold text-gray-080">편집 잠금 해제</h3>
-            <p className="text-xs text-gray-050">사유는 감사 로그에 기록됩니다.</p>
+            <p className="text-xs text-fg-subtle">사유는 감사 로그에 기록됩니다.</p>
             <MsInput
               value={unlockReason}
               onChange={e => setUnlockReason(e.target.value)}

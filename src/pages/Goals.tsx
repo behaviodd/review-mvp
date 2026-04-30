@@ -17,7 +17,7 @@ const STATUS_CONFIG: Record<GoalStatus, { label: string; icon: typeof MsCheckIco
   on_track: { label: '순조로움', icon: MsCheckIcon, color: 'text-green-060', bg: 'bg-green-005' },
   at_risk: { label: '주의 필요', icon: MsWarningIcon, color: 'text-pink-050', bg: 'bg-pink-005' },
   completed: { label: '완료', icon: MsCheckIcon, color: 'text-pink-050', bg: 'bg-pink-005' },
-  cancelled: { label: '취소', icon: MsCancelIcon, color: 'text-gray-040', bg: 'bg-gray-010' },
+  cancelled: { label: '취소', icon: MsCancelIcon, color: 'text-fg-subtlest', bg: 'bg-gray-010' },
 };
 
 interface GoalForm {
@@ -70,7 +70,7 @@ export function Goals() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-099">목표 관리</h1>
+        <h1 className="text-xl font-semibold text-fg-default">목표 관리</h1>
         <MsButton onClick={() => setShowForm(true)} leftIcon={<MsPlusIcon size={16} />}>목표 추가</MsButton>
       </div>
 
@@ -101,7 +101,7 @@ export function Goals() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-080">새 목표 추가</h2>
             <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-010 rounded-lg">
-              <MsCancelIcon size={16} className="text-gray-040" />
+              <MsCancelIcon size={16} className="text-fg-subtlest" />
             </button>
           </div>
           <MsInput
@@ -154,7 +154,7 @@ export function Goals() {
         <>
           {active.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-050">진행 중 ({active.length})</h2>
+              <h2 className="text-sm font-semibold text-fg-subtle">진행 중 ({active.length})</h2>
               {active.map(goal => {
                 const cfg = STATUS_CONFIG[goal.status];
                 const Icon = cfg.icon;
@@ -162,14 +162,14 @@ export function Goals() {
                   <div key={goal.id} className="rounded-lg border border-bd-default p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 pr-3">
-                        <h3 className="text-sm font-semibold text-gray-099">{goal.title}</h3>
-                        {goal.description && <p className="text-xs text-gray-040 mt-0.5">{goal.description}</p>}
+                        <h3 className="text-sm font-semibold text-fg-default">{goal.title}</h3>
+                        {goal.description && <p className="text-xs text-fg-subtlest mt-0.5">{goal.description}</p>}
                       </div>
                       <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
                         <Icon className="w-3 h-3" /> {cfg.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-040 mb-3">
+                    <div className="flex items-center gap-2 text-xs text-fg-subtlest mb-3">
                       <MsClockIcon size={12} />
                       <span>기한: {formatDate(goal.dueDate)}</span>
                     </div>
@@ -198,7 +198,7 @@ export function Goals() {
 
           {done.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-050">완료 ({done.length})</h2>
+              <h2 className="text-sm font-semibold text-fg-subtle">완료 ({done.length})</h2>
               {done.map(goal => (
                 <div key={goal.id} className="rounded-lg border border-bd-default p-5 opacity-60">
                   <div className="flex items-center justify-between mb-1">

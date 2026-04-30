@@ -91,12 +91,12 @@ export function TagInput({ value, onChange, suggestions = [], placeholder = '태
           onBlur={() => setTimeout(() => setFocused(false), 150)}
           placeholder={value.length === 0 ? placeholder : ''}
           disabled={disabled}
-          className="flex-1 min-w-[80px] bg-transparent outline-none text-xs placeholder:text-gray-040"
+          className="flex-1 min-w-[80px] bg-transparent outline-none text-xs placeholder:text-fg-subtlest"
         />
       </div>
       {focused && availableSuggestions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-gray-040">추천</span>
+          <span className="text-[11px] text-fg-subtlest">추천</span>
           {availableSuggestions.map(s => (
             <button
               key={s}

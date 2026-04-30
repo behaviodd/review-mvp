@@ -443,7 +443,7 @@ export function CycleList() {
                Phase D-3.C-5: 행간 구분선 + hover 액션 더보기 메뉴 통합 (사용자 요청)
                Phase D-3.C-6: 구분선을 row 의 rounded 와 무관한 직선으로 (sibling divider) +
                               메뉴 열린 row 에 z-20 (다음 row hover/구분선 위로 레이어) */}
-            <div className="flex flex-col py-3">
+            <div className="flex flex-col">
             {visiblePage.map((cycle, idx) => {
               const isSelected = selected.has(cycle.id);
               const isMenuOpen = openMenuCycleId === cycle.id;

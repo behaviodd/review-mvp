@@ -89,13 +89,13 @@ export function Reports() {
       {isAdmin && (
         <>
           {/* Stat cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-0 md:divide-x md:divide-bd-default md:border md:border-bd-default md:rounded-lg">
             {[
               { icon: Users, label: '총 구성원', value: `${activeUsers.length}명` },
               { icon: BarChart2, label: '진행 중 리뷰', value: `${cycles.filter(c => c.status !== 'closed' && c.status !== 'draft').length}개` },
               { icon: TrendingUp, label: '전체 제출률', value: `${Math.round(allSubmitted.length / Math.max(submissions.filter(s => s.type === 'self').length, 1) * 100)}%` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-white rounded-xl border border-gray-010 shadow-card p-4">
+              <div key={label} className="p-4 md:p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="w-4 h-4 text-gray-040" />
                   <span className="text-xs text-gray-050">{label}</span>
@@ -106,7 +106,7 @@ export function Reports() {
           </div>
 
           {/* Dept completion bar chart */}
-          <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+          <div className="rounded-lg border border-bd-default p-5">
             <h2 className="text-sm font-semibold text-gray-070 mb-4">부서별 제출률</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={deptData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -120,7 +120,7 @@ export function Reports() {
           </div>
 
           {/* Rating distribution */}
-          <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+          <div className="rounded-lg border border-bd-default p-5">
             <h2 className="text-sm font-semibold text-gray-070 mb-4">등급 분포</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -141,7 +141,7 @@ export function Reports() {
         <>
           {/* Team completion pie */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+            <div className="rounded-lg border border-bd-default p-5">
               <h2 className="text-sm font-semibold text-gray-070 mb-3">자기평가 제출 현황</h2>
               {teamMembers.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
@@ -159,7 +159,7 @@ export function Reports() {
             </div>
 
             {/* Team member stats */}
-            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+            <div className="rounded-lg border border-bd-default p-5">
               <h2 className="text-sm font-semibold text-gray-070 mb-3">팀원 현황</h2>
               <div className="space-y-2">
                 {teamMembers.map(m => {
@@ -193,7 +193,7 @@ export function Reports() {
 
           {/* Self vs Manager comparison */}
           {teamData.some(d => d.자기평가 > 0) && (
-            <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+            <div className="rounded-lg border border-bd-default p-5">
               <h2 className="text-sm font-semibold text-gray-070 mb-4">자기평가 vs 매니저평가 비교</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={teamData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -221,13 +221,13 @@ export function Reports() {
 
         return (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-0 md:divide-x md:divide-bd-default md:border md:border-bd-default md:rounded-lg">
               {[
                 { icon: MsStarIcon, label: '제출한 자기평가', value: `${mySubs.length}회`, action: () => navigate('/reviews/me'), actionLabel: '내 리뷰 보기' },
                 { icon: MsMessageIcon, label: '받은 피드백', value: `${myReceived.length}개`, action: () => navigate('/feedback'), actionLabel: '확인하기' },
                 { icon: TrendingUp, label: '보낸 피드백', value: `${mySent.length}개`, action: () => navigate('/feedback'), actionLabel: '보내기' },
               ].map(({ icon: Icon, label, value, action, actionLabel }) => (
-                <div key={label} className="bg-white rounded-xl border border-gray-010 shadow-card p-4 flex flex-col gap-2">
+                <div key={label} className="p-4 md:p-5 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-gray-040" />
                     <span className="text-xs text-gray-050">{label}</span>
@@ -239,7 +239,7 @@ export function Reports() {
             </div>
 
             {myAvg && (
-              <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+              <div className="rounded-lg border border-bd-default p-5">
                 <h2 className="text-sm font-semibold text-gray-070 mb-1">최근 자기평가 평균 점수</h2>
                 <p className="text-3xl font-bold text-pink-050">{myAvg} <span className="text-base font-normal text-gray-040">/ 5.0</span></p>
                 <button onClick={() => myLatestSub && navigate(`/reviews/me/${myLatestSub.id}`)} className="mt-3 text-xs text-pink-050 hover:underline">

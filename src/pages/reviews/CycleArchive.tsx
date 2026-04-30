@@ -80,7 +80,7 @@ export function CycleArchive() {
           description="다른 검색어를 입력해 보세요."
         />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-010 shadow-card overflow-hidden">
+        <div>
           {archived.map(cycle => (
             <div
               key={cycle.id}

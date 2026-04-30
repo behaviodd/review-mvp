@@ -65,7 +65,7 @@ export function BulkMove() {
 
   return (
     <div className="space-y-5 max-w-2xl">
-      <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5 space-y-5">
+      <div className="py-2 space-y-5">
         {/* 선택된 구성원 미리보기 */}
         <section>
           <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">이동할 구성원</p>

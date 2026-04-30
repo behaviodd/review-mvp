@@ -46,7 +46,7 @@ export function Notifications() {
       </div>
 
       {myNotifs.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-020 p-12 text-center">
+        <div className="rounded-lg border border-bd-default p-12 text-center">
           <MsAlertIcon size={40} className="text-gray-030 mx-auto mb-3" />
           <p className="text-sm text-gray-050">새 알림이 없습니다.</p>
         </div>
@@ -59,8 +59,8 @@ export function Notifications() {
               <button
                 key={n.id}
                 onClick={() => handleClick(n.id, n.actionUrl)}
-                className={`w-full flex items-start gap-3.5 p-4 rounded-xl border text-left transition-all hover:shadow-card ${
-                  !n.isRead ? 'bg-white border-pink-020 shadow-card' : 'bg-white border-gray-020'
+                className={`w-full flex items-start gap-3.5 p-4 rounded-lg border text-left transition-colors hover:bg-interaction-hovered ${
+                  !n.isRead ? 'border-pink-020 bg-pink-005/30' : 'border-bd-default'
                 }`}
               >
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>

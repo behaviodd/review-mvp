@@ -729,7 +729,7 @@ export function TeamReviewWrite() {
           )}
 
           {/* 병렬 컬럼 헤더 + 질문 */}
-          <div className="rounded-xl overflow-hidden border border-gray-010 shadow-card">
+          <div className="rounded-lg overflow-hidden border border-bd-default">
             {/* 컬럼 헤더 (데스크톱) */}
             <div className="hidden md:grid md:grid-cols-2">
               <div className="flex items-center gap-2.5 px-5 py-3 bg-gray-005 border-b border-r border-gray-010">

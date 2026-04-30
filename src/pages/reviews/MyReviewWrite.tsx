@@ -97,10 +97,10 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
   })();
 
   return (
-    <div className={`bg-white rounded-xl border p-5 ${
+    <div className={`rounded-lg border p-5 ${
       isUnanswered ? 'border-red-020 bg-red-005/30'
       : question.isPrivate ? 'border-gray-020 bg-gray-005/50'
-      : 'border-gray-010 shadow-card'
+      : 'border-bd-default'
     }`}>
       {question.isPrivate && (
         <div className="flex items-center gap-1.5 mb-2">
@@ -590,11 +590,11 @@ export function MyReviewWrite() {
           <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
           <div className="mt-8 text-left space-y-2">
             <p className="text-xs font-semibold text-gray-040 uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
-            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 bg-white border border-gray-010 rounded-xl hover:border-pink-020 shadow-card transition-all text-left">
+            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
               <div className="w-9 h-9 bg-pink-005 rounded-xl flex items-center justify-center flex-shrink-0"><MsMessageIcon size={16} className="text-pink-050" /></div>
               <div><p className="text-sm font-semibold text-gray-080">받은 피드백 확인</p><p className="text-xs text-gray-040 mt-0.5">동료들의 피드백을 확인해보세요.</p></div>
             </button>
-            <button onClick={() => navigate('/reviews/me')} className="w-full flex items-center gap-4 p-4 bg-white border border-gray-010 rounded-xl hover:border-pink-020 shadow-card transition-all text-left">
+            <button onClick={() => navigate('/reviews/me')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
               <div className="w-9 h-9 bg-gray-005 rounded-lg flex items-center justify-center flex-shrink-0"><MsChevronLeftLineIcon size={16} className="text-gray-050" /></div>
               <div><p className="text-sm font-semibold text-gray-080">내 리뷰 목록으로</p><p className="text-xs text-gray-040 mt-0.5">제출한 리뷰를 다시 확인할 수 있습니다.</p></div>
             </button>
@@ -664,7 +664,7 @@ export function MyReviewWrite() {
                 <h2 className="text-lg font-semibold text-gray-099">리뷰 결과</h2>
                 <p className="text-sm text-gray-040 mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
               </div>
-              <div className="rounded-xl overflow-hidden border border-gray-010 shadow-card">
+              <div className="rounded-lg overflow-hidden border border-bd-default">
                 <div className="hidden md:grid md:grid-cols-2">
                   <div className="flex items-center gap-2.5 px-5 py-3 bg-gray-005 border-b border-r border-gray-010">
                     {currentUser && <UserAvatar user={currentUser} size="sm" />}

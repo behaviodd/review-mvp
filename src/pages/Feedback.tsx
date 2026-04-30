@@ -46,7 +46,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
   const cfg      = TYPE_CONFIG[fb.type];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+    <div className="p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5">
           {mode === 'received' ? (
@@ -280,7 +280,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         <div className="px-6 py-6 space-y-6 max-w-2xl mx-auto">
           {/* 수신자 프리뷰 */}
           {selectedUser ? (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-010 shadow-card">
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-bd-default">
               <UserAvatar user={selectedUser} size="xl" />
               <div>
                 <p className="text-base font-semibold text-gray-099">{selectedUser.name}</p>
@@ -288,7 +288,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 p-4 bg-white rounded-xl border border-dashed border-gray-030">
+            <div className="flex items-center justify-center gap-2 p-4 rounded-lg border border-dashed border-gray-030">
               <p className="text-sm text-gray-040">← 왼쪽에서 받는 사람을 선택하세요</p>
             </div>
           )}
@@ -458,7 +458,7 @@ export function Feedback() {
         </div>
 
         {/* 세그먼트 필터 */}
-        <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-010 shadow-card p-1 w-fit">
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-bd-default p-1 w-fit">
           {TABS.map(({ key, label, count }) => (
             <button
               key={key}

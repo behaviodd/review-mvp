@@ -97,7 +97,7 @@ export function Goals() {
 
       {/* Add goal form */}
       {showForm && (
-        <div className="bg-white rounded-xl border border-pink-020 p-5 space-y-4">
+        <div className="rounded-lg border border-pink-020 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-080">새 목표 추가</h2>
             <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-010 rounded-lg">
@@ -159,7 +159,7 @@ export function Goals() {
                 const cfg = STATUS_CONFIG[goal.status];
                 const Icon = cfg.icon;
                 return (
-                  <div key={goal.id} className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+                  <div key={goal.id} className="rounded-lg border border-bd-default p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 pr-3">
                         <h3 className="text-sm font-semibold text-gray-099">{goal.title}</h3>
@@ -200,7 +200,7 @@ export function Goals() {
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-gray-050">완료 ({done.length})</h2>
               {done.map(goal => (
-                <div key={goal.id} className="bg-white rounded-xl border border-gray-010 p-5 opacity-60">
+                <div key={goal.id} className="rounded-lg border border-bd-default p-5 opacity-60">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="text-sm font-semibold text-gray-060 line-through">{goal.title}</h3>
                     <span className="flex items-center gap-1 text-xs font-medium text-pink-050 bg-pink-005 px-2 py-0.5 rounded">

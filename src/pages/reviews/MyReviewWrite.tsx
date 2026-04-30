@@ -500,17 +500,10 @@ export function MyReviewWrite() {
     );
   }
   if (!isProxyMode) {
-    if (currentUser?.role === 'admin') {
-      return (
-        <EmptyState
-          illustration="empty-list"
-          title="대리 작성 모드로 진입이 필요해요"
-          description="관리자 계정은 사이클 상세에서 '대리 작성'을 통해서만 이 화면에 진입할 수 있어요."
-          action={{ label: '사이클 목록으로', onClick: () => navigate('/cycles') }}
-        />
-      );
-    }
-    // 작성자가 아니면서 downward 피평가자도 아닌 경우 차단
+    // admin role 은 권한 표시일 뿐 — 본인이 사이클 reviewee 로 포함되어 self/peer/upward
+    // submission 이 할당되어 있으면 일반 멤버처럼 작성 가능. 본인 외 sub 진입은 아래
+    // isReviewerOwner / isDownwardViewer 가드로 차단되며, admin 의 대리 작성 흐름은
+    // proxy=1 query 로 별개 가드.
     const isReviewerOwner = submission.reviewerId === currentUser?.id;
     const isDownwardViewer = isDownward && submission.revieweeId === currentUser?.id;
     if (!isReviewerOwner && !isDownwardViewer) {

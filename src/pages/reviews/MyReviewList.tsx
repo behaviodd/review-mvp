@@ -7,7 +7,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsArticleIcon, MsCircleIcon, MsShieldCheckIcon, MsUsersIcon, MsBarChart2Icon } from '../../components/ui/MsIcons';
+import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsCircleIcon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { useTeamStore } from '../../stores/teamStore';
 
@@ -88,54 +88,6 @@ export function MyReviewList() {
   useSetPageHeader('내 작성', undefined, {
     subtitle: `진행 중 ${active.length} · 완료 ${doneAll.length} · 종료됨 ${closedSelf.length + closedReceived.length}`,
   });
-
-  if (currentUser?.role === 'admin' && mySubmissions.length === 0 && receivedReviews.length === 0) {
-    return (
-      <div className="space-y-5">
-        <div className="text-center space-y-5 py-12">
-          <div className="w-14 h-14 bg-blue-005 rounded-2xl flex items-center justify-center mx-auto">
-            <MsShieldCheckIcon size={28} className="text-blue-050" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-fg-default mb-1">관리자는 셀프 리뷰 대상이 아닙니다</p>
-            <p className="text-sm text-fg-subtle">리뷰 주기 생성·관리 및 전체 평가 현황은 아래에서 확인하세요.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <button
-              onClick={() => navigate('/reviews/team')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-020 hover:border-blue-020 hover:bg-blue-005/40 transition-colors text-left"
-            >
-              <MsUsersIcon size={20} className="text-blue-050" />
-              <div>
-                <p className="text-sm font-semibold text-gray-080">팀원 평가</p>
-                <p className="text-xs text-fg-subtlest mt-0.5">팀원별 평가 현황 열람</p>
-              </div>
-            </button>
-            <button
-              onClick={() => navigate('/cycles')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-020 hover:border-blue-020 hover:bg-blue-005/40 transition-colors text-left"
-            >
-              <MsBarChart2Icon size={20} className="text-blue-050" />
-              <div>
-                <p className="text-sm font-semibold text-gray-080">리뷰 운영</p>
-                <p className="text-xs text-fg-subtlest mt-0.5">주기 생성 및 현황 관리</p>
-              </div>
-            </button>
-            <button
-              onClick={() => navigate('/templates')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-020 hover:border-blue-020 hover:bg-blue-005/40 transition-colors text-left"
-            >
-              <MsArticleIcon size={20} className="text-blue-050" />
-              <div>
-                <p className="text-sm font-semibold text-gray-080">템플릿 관리</p>
-                <p className="text-xs text-fg-subtlest mt-0.5">리뷰 양식 생성 및 수정</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (mySubmissions.length === 0 && receivedReviews.length === 0) {
     return (

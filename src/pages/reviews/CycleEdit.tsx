@@ -9,7 +9,6 @@ import { MsInput } from '../../components/ui/MsControl';
 import { MsCheckIcon } from '../../components/ui/MsIcons';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getDescendantOrgUnitIds } from '../../utils/userCompat';
-import { isSystemOperator } from '../../utils/permissions';
 
 export function CycleEdit() {
   const { cycleId } = useParams<{ cycleId: string }>();
@@ -83,7 +82,6 @@ export function CycleEdit() {
     }
   }
   const targetMembers = users.filter(u => {
-    if (isSystemOperator(u)) return false;
     if (u.orgUnitId && selectedSubtreeIds.has(u.orgUnitId)) return true;
     return form.targetDepartments.includes(u.department);
   });
@@ -189,7 +187,6 @@ export function CycleEdit() {
                 const main = orgUnits.find(o => o.type === 'mainOrg' && o.name === dept);
                 const subtree = main ? getDescendantOrgUnitIds(main.id, orgUnits) : new Set<string>();
                 const count = users.filter(u => {
-                  if (isSystemOperator(u)) return false;
                   if (u.orgUnitId && subtree.has(u.orgUnitId)) return true;
                   return u.department === dept;
                 }).length;

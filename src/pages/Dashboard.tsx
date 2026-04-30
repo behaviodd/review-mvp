@@ -67,7 +67,7 @@ function AdminDashboard() {
       });
     };
     collect(center.id);
-    return users.filter(u => u.orgUnitId && subOrgIds.has(u.orgUnitId) && u.role !== 'admin');
+    return users.filter(u => u.orgUnitId && subOrgIds.has(u.orgUnitId));
   }, [orgUnits, users]);
 
   const handleImpersonateTest = (target: User) => {
@@ -82,7 +82,7 @@ function AdminDashboard() {
   const deptStats = useMemo(() => {
     const active = activeCycles[0];
     if (!active) return [];
-    const activeUsers = users.filter(u => u.isActive !== false && u.role !== 'admin');
+    const activeUsers = users.filter(u => u.isActive !== false);
     const depts = Array.from(new Set(activeUsers.map(u => u.department))).filter(Boolean);
     return depts.map(dept => {
       const members = activeUsers.filter(u => u.department === dept);
@@ -277,7 +277,6 @@ function ManagerDashboard() {
     );
     return users.filter(u =>
       u.isActive !== false &&
-      u.role !== 'admin' &&
       u.id !== currentUser?.id &&
       (byManagerId.has(u.id) ||
        headOrgNames.has(u.department) ||

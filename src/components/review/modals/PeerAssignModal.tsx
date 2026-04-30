@@ -41,7 +41,6 @@ export function PeerAssignModal({ open, onClose, cycle, revieweeId, actorId, onA
     const q = query.trim().toLowerCase();
     return users
       .filter(u =>
-        u.role !== 'admin' &&
         u.isActive !== false &&
         u.id !== revieweeId &&
         !existingReviewerIds.has(u.id)

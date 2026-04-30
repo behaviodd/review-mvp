@@ -42,7 +42,6 @@ export function PeerPickPage() {
     const q = query.trim().toLowerCase();
     return users
       .filter(u =>
-        u.role !== 'admin' &&
         u.isActive !== false &&
         u.id !== currentUser.id &&
         !existingPeerReviewerIds.has(u.id)

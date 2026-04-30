@@ -1,7 +1,6 @@
 import type { OrgUnit, ReviewCycle, ReviewTemplate, ReviewerAssignment, User } from '../types';
 import { resolveTargetMembers, resolveTargetIds } from './resolveTargets';
 import { isUserActive, shouldAutoExcludeFromCycle } from './userCompat';
-// Phase: isSystemOperator 거부 룰 제거 — admin 도 조직장 가능 (사용자 명시)
 
 export type PreflightSeverity = 'block' | 'warn';
 

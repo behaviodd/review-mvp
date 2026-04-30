@@ -202,7 +202,7 @@ export function CycleList() {
     let subs = 0;
     for (const c of selectedCycles) {
       for (const u of users) {
-        if (c.targetDepartments.includes(u.department) && u.role !== 'admin') members.add(u.id);
+        if (c.targetDepartments.includes(u.department)) members.add(u.id);
       }
       subs += submissions.filter(s => s.cycleId === c.id).length;
     }

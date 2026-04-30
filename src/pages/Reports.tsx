@@ -31,7 +31,7 @@ export function Reports() {
   const { isAdmin, isLeader } = usePermission();
 
   const { users } = useTeamStore();
-  const activeUsers = users.filter(u => u.isActive !== false && u.role !== 'admin');
+  const activeUsers = users.filter(u => u.isActive !== false);
 
   const activeCycle = cycles.find(c => c.status === 'self_review' || c.status === 'manager_review');
 

@@ -37,7 +37,6 @@ export function ReassignReviewerModal({ open, onClose, submissionId, actorId, on
     if (!submission) return [];
     return users
       .filter(u =>
-        u.role !== 'admin' &&
         u.id !== submission.reviewerId &&
         u.id !== submission.revieweeId &&
         u.isActive !== false

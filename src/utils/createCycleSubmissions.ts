@@ -1,5 +1,4 @@
 import type { OrgUnit, ReviewCycle, ReviewKind, ReviewSubmission, ReviewerAssignment, User } from '../types';
-import { isSystemOperator } from './permissions';
 
 function makeId() {
   return `sub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -22,7 +21,6 @@ function resolveReviewerByRank(
   orgUnits: OrgUnit[],
   assignments: ReviewerAssignment[] | undefined,
 ): User | undefined {
-  // Phase: admin 도 조직장 가능 (사용자 명시) — 평가자 측 isSystemOperator 거부 룰 제거.
   // 1) 명시적 ReviewerAssignment
   if (assignments) {
     const ra = assignments.find(a =>
@@ -105,8 +103,6 @@ export function createCycleSubmissions(
     : [1];
 
   for (const member of targetMembers) {
-    if (isSystemOperator(member)) continue;
-
     if (include('self')) {
       submissions.push({
         id:          makeId(),

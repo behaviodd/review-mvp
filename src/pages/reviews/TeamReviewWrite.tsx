@@ -273,7 +273,7 @@ export function TeamReviewWrite() {
   const isAdmin = currentUser?.role === 'admin';
 
   const teamMembers = useMemo(() => {
-    if (isAdmin) return users.filter(u => u.role !== 'admin');
+    if (isAdmin) return users.filter(u => u.id !== currentUser?.id);
 
     const byManagerId = new Set(
       users.filter(u => u.managerId === currentUser?.id).map(u => u.id)
@@ -284,7 +284,6 @@ export function TeamReviewWrite() {
 
     return users.filter(u =>
       u.id !== currentUser?.id &&
-      u.role !== 'admin' &&
       (
         byManagerId.has(u.id) ||
         headOrgNames.has(u.department) ||

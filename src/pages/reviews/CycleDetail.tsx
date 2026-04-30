@@ -565,7 +565,7 @@ export function CycleDetail() {
       if (cycle.status === 'self_review') {
         const leaderIds = new Set<string>();
         for (const m of targetMembers) {
-          const mgr = users.find(u => u.id === m.managerId && u.role !== 'admin');
+          const mgr = users.find(u => u.id === m.managerId);
           if (mgr) { leaderIds.add(mgr.id); continue; }
           const org = orgUnits.find(o =>
             o.headId && o.headId !== m.id &&

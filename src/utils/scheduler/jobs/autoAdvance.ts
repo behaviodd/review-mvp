@@ -54,7 +54,7 @@ export function collectAutoAdvanceJobs(
         const targets = resolveTargetMembers(current, users);
         const leaderIds = new Set<string>();
         for (const m of targets) {
-          const mgr = users.find(u => u.id === m.managerId && u.role !== 'admin');
+          const mgr = users.find(u => u.id === m.managerId);
           if (mgr) { leaderIds.add(mgr.id); continue; }
           const org = orgUnits.find(o =>
             o.headId && o.headId !== m.id &&

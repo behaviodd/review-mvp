@@ -87,7 +87,7 @@ export function TeamReviewList() {
   // - admin: admin을 제외한 모든 구성원
   // - leader: ① managerId로 지정된 구성원 + ② headId 기반 조직 소속 구성원 (OR)
   const teamMembers = useMemo(() => {
-    if (isAdmin) return users.filter(u => u.role !== 'admin');
+    if (isAdmin) return users.filter(u => u.id !== currentUser?.id);
 
     const byManagerId = new Set(
       users.filter(u => u.managerId === currentUser?.id).map(u => u.id)
@@ -98,7 +98,6 @@ export function TeamReviewList() {
 
     return users.filter(u =>
       u.id !== currentUser?.id &&
-      u.role !== 'admin' &&
       (
         byManagerId.has(u.id) ||
         headOrgNames.has(u.department) ||

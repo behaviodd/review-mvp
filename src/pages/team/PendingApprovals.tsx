@@ -252,7 +252,7 @@ function ApproveDialog({
           >
             <option value="">선택하지 않음</option>
             {users
-              .filter(u => u.role !== 'admin' && (u.isActive ?? true))
+              .filter(u => (u.isActive ?? true))
               .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
               .map(u => (
                 <option key={u.id} value={u.id}>

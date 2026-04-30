@@ -384,16 +384,14 @@ export function CycleNew() {
   const targetMembers = useMemo(() => {
     if (form.targetMode === 'manager') {
       if (!form.targetManagerId) return [];
-      return users.filter(u => u.managerId === form.targetManagerId && u.role !== 'admin');
+      return users.filter(u => u.managerId === form.targetManagerId);
     }
     if (form.targetMode === 'custom') {
       const set = new Set(form.targetUserIds ?? []);
-      return users.filter(u => set.has(u.id) && u.role !== 'admin');
+      return users.filter(u => set.has(u.id));
     }
     // org mode — R7: orgUnitId 트리 매칭 우선, legacy 4단계 이름 매칭 폴백
     return users.filter(u => {
-      if (u.role === 'admin') return false;
-
       // 1) R7: orgUnitId 가 선택된 mainOrg 의 자손이면 포함
       if (u.orgUnitId && selectedOrgSubtreeIds.has(u.orgUnitId)) return true;
 
@@ -411,13 +409,13 @@ export function CycleNew() {
 
   const managerCandidates = useMemo(
     () => users
-      .filter(m => m.role !== 'admin' && m.isActive !== false && users.some(u => u.managerId === m.id))
+      .filter(m => m.isActive !== false && users.some(u => u.managerId === m.id))
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
     [users],
   );
   const customCandidates = useMemo(
     () => users
-      .filter(u => u.role !== 'admin' && u.isActive !== false)
+      .filter(u => u.isActive !== false)
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
     [users],
   );
@@ -989,7 +987,7 @@ export function CycleNew() {
                     && selectedSub.length > 0 && selectedSub.length < subOrgNames.length;
                   const isFullyChecked   = deptSelected
                     && (subOrgNames.length === 0 || selectedSub.length === subOrgNames.length);
-                  const totalDeptCount   = users.filter(u => u.department === dept && u.role !== 'admin').length;
+                  const totalDeptCount   = users.filter(u => u.department === dept).length;
                   const selectedInDept   = deptSelected ? targetMembers.filter(u => u.department === dept).length : 0;
 
                   return (
@@ -1023,7 +1021,7 @@ export function CycleNew() {
                         <div className="border-t border-pink-010">
                           {subOrgs.map(subOrg => {
                             const subSelected    = form.targetSubOrgs.includes(subOrg.name);
-                            const subCount       = users.filter(u => u.department === dept && u.subOrg === subOrg.name && u.role !== 'admin').length;
+                            const subCount       = users.filter(u => u.department === dept && u.subOrg === subOrg.name).length;
                             const subTeams       = subOrgTeamsMap[subOrg.name] ?? [];
                             const subTeamNames   = subTeams.map(o => o.name);
                             const selSubTeams    = form.targetTeams.filter(t => subTeamNames.includes(t));
@@ -1050,7 +1048,7 @@ export function CycleNew() {
                                   <div className="bg-gray-005/50">
                                     {subTeams.map(team => {
                                       const teamSelected  = form.targetTeams.includes(team.name);
-                                      const teamCount     = users.filter(u => u.team === team.name && u.role !== 'admin').length;
+                                      const teamCount     = users.filter(u => u.team === team.name).length;
                                       const squads        = teamSquadsMap[team.name] ?? [];
                                       const squadNames    = squads.map(o => o.name);
                                       const selSquads     = form.targetSquads.filter(s => squadNames.includes(s));
@@ -1077,7 +1075,7 @@ export function CycleNew() {
                                             <div className="bg-gray-005">
                                               {squads.map(squad => {
                                                 const sqSelected = form.targetSquads.includes(squad.name);
-                                                const sqCount    = users.filter(u => u.squad === squad.name && u.role !== 'admin').length;
+                                                const sqCount    = users.filter(u => u.squad === squad.name).length;
                                                 return (
                                                   <button key={squad.id} type="button"
                                                     onClick={() => toggleSquad(dept, subOrg.name, team.name, squad.name)}

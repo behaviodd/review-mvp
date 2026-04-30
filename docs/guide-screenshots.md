@@ -92,7 +92,7 @@
 | 60 | `60-team-page.png` | `/team` | 좌 멤버 + 우 조직도 페이지 | 좌우 패널 분할 |
 | 61 | `61-member-drawer.png` | `/team?member=<id>` | 멤버 drawer 진입 직후 | 기본 정보 |
 | 62 | `62-member-edit.png` | `/team?member=<id>&action=edit` | drawer 편집 모드 | 입력 필드들 |
-| ~~63~~ | ~~`63-member-status.png`~~ | — | **(미구현)** `MemberEditDialog` 에 `activityStatus` 드롭다운 미추가 | UI 추가 후 재정의 |
+| 63 | `63-member-status.png` | `/team?member=<id>&action=edit` | MemberEditDialog 안 "근무 상태" 섹션 + activityStatus select | 정상/단기/장기/퇴사/기타 5종 |
 
 ## 5d. team/org-tree.md
 
@@ -107,9 +107,9 @@
 
 | # | 파일명 | URL | 상태 / 영역 | 강조 |
 |---|---|---|---|---|
-| ~~80~~ | ~~`80-reviewer-section.png`~~ | — | **(미구현)** drawer 안 시각적 평가권자 섹션 미존재 (권한 계산용으로만 사용) | UI 추가 후 재정의 |
-| ~~81~~ | ~~`81-reviewer-modal.png`~~ | — | **(미구현)** team 영역에 reviewer 배정 모달 자체 없음 | UI 추가 후 재정의 |
-| ~~82~~ | ~~`82-reviewer-ranks.png`~~ | — | **(미구현)** 81 결과 화면 — 81 없이 불가 | UI 추가 후 재정의 |
+| 80 | `80-reviewer-section.png` | `/team?member=<id>` | drawer 안 평가권자 카드 (read-only) | 1차/2차 rank pill + UserAvatar + source pill |
+| 81 | `81-reviewer-modal.png` | drawer → 평가권자 카드 "편집" 버튼 | ReviewerAssignmentModal — 활성 list + 추가 영역 | rank select + reviewer 검색 |
+| 82 | `82-reviewer-ranks.png` | 81 모달 안 | rank 별 활성 평가권자 결과 (1차+2차+...) | source pill (조직장 자동/수동 지정) |
 
 ## 6. 작업 체크리스트
 
@@ -143,7 +143,7 @@
 - [x] `60-team-page.png`
 - [x] `61-member-drawer.png`
 - [x] `62-member-edit.png`
-- [ ] ~~`63-member-status.png`~~ — 🚧 미구현 (`MemberEditDialog` 에 활성상태 드롭다운 미추가). UI 추가 후 캡처
+- [x] `63-member-status.png` — Phase G-4.63 구현 + 캡처 완료
 
 ### org-tree.md
 - [x] `70-org-panel.png`
@@ -152,9 +152,9 @@
 - [x] `73-org-head.png` — OrgUnitDialog 편집 모드의 조직장 드롭다운으로 의미 재정의
 
 ### reviewer.md
-- [ ] ~~`80-reviewer-section.png`~~ — 🚧 미구현 (drawer 시각 섹션 부재). UI 추가 후 캡처
-- [ ] ~~`81-reviewer-modal.png`~~ — 🚧 미구현 (team 영역에 평가권자 배정 모달 자체 없음). UI 추가 후 캡처
-- [ ] ~~`82-reviewer-ranks.png`~~ — 🚧 미구현 (81 결과 화면). UI 추가 후 캡처
+- [x] `80-reviewer-section.png` — Phase G-4.80 구현 + 캡처 완료
+- [x] `81-reviewer-modal.png` — Phase G-4.81 구현 + 캡처 완료
+- [x] `82-reviewer-ranks.png` — Phase G-4.81 구현 (81 모달 안 동일 화면) + 캡처 완료
 
 ---
 

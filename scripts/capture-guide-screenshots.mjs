@@ -161,8 +161,14 @@ const submissions = [
 ];
 
 const seedAuth = { state: { currentUser: adminUser, impersonatingFromId: null, originalUser: null, activeImpersonationLogId: null }, version: 0 };
+const reviewerAssignments = [
+  // M002 박개발 — 1차: 이리더(직속), 2차: 김관리(admin) → 80/81/82 캡처용
+  { id: 'ra_seed_M002_1', revieweeId: 'M002', reviewerId: 'M001', rank: 1, source: 'org_head_inherited', startDate: NOW, createdAt: NOW, createdBy: 'A001' },
+  { id: 'ra_seed_M002_2', revieweeId: 'M002', reviewerId: 'A001', rank: 2, source: 'manual',             startDate: NOW, createdAt: NOW, createdBy: 'A001' },
+];
+
 const seedTeam = { state: {
-  users, orgUnits, secondaryOrgs: [], reviewerAssignments: [], orgSnapshots: [],
+  users, orgUnits, secondaryOrgs: [], reviewerAssignments, orgSnapshots: [],
   permissionGroups: [],  // ensureSystemPermissionGroups 가 onRehydrate 에서 자동 시드
   schemaVersion: 'r1',   // R1 마이그레이션 스킵 — 안 그러면 M005 의 orgUnitId 가 ou_root 로 자동 채워짐
   teams: [],
@@ -350,7 +356,26 @@ async function gotoAndWait(page, url, waitFor) {
   await gotoAndWait(page, '/team?member=M002&action=edit', 'h1, h2');
   await capture(page, 'team/62-member-edit.png');
 
-  // 63 (활성상태 select), 80 (평가권자 섹션) — UI 미구현. 캡처 안 함.
+  // 63: MemberEditDialog 안 "근무 상태" 섹션 — 모달 안 스크롤 후 select 영역 캡처
+  console.log('▶ /team?member=M002&action=edit — 63-member-status');
+  // 모달이 이미 열린 상태. activityStatus select 영역까지 스크롤
+  const statusScroll = await page.evaluate(() => {
+    const select = document.querySelector('[role="dialog"] select');
+    // 모든 select 중 activityStatus value 포함하는 것
+    const selects = Array.from(document.querySelectorAll('[role="dialog"] select'));
+    const activitySelect = selects.find(s => Array.from(s.options).some(o => o.value === 'leave_short'));
+    if (activitySelect) {
+      activitySelect.scrollIntoView({ block: 'center', behavior: 'instant' });
+      return true;
+    }
+    return !!select;
+  });
+  if (statusScroll) {
+    await page.waitForTimeout(300);
+    await capture(page, 'team/63-member-status.png');
+  } else {
+    console.log('  ✗ activityStatus select 미탐지');
+  }
 
   // ─── 인터랙션 화면 (51, 70, 71, 72, 73) — 다이얼로그/모달/DnD ─────
 
@@ -454,8 +479,57 @@ async function gotoAndWait(page, url, waitFor) {
     console.log('  ✗ 트리 노드 미탐지');
   }
 
-  // 미구현 화면 — 영구 스킵 (가이드에서도 "예정 기능"으로 표기됨)
-  console.log('▶ 미구현 영구 스킵: 63 (활성상태 select) / 80 (평가권자 섹션) / 81 (평가권자 모달) / 82 (1차+2차)');
+  // 80: drawer 의 평가권자 카드 — M002 (1차/2차 시드된 멤버)
+  console.log('▶ /team?member=M002 — 80-reviewer-section (drawer 평가권자 카드)');
+  await gotoAndWait(page, '/team?member=M002', 'h1, h2');
+  // 평가권자 카드까지 스크롤
+  const reviewerScroll = await page.evaluate(() => {
+    const heading = Array.from(document.querySelectorAll('p')).find(p => p.textContent?.trim() === '평가권자');
+    if (heading) {
+      heading.scrollIntoView({ block: 'center', behavior: 'instant' });
+      return true;
+    }
+    return false;
+  });
+  if (reviewerScroll) {
+    await page.waitForTimeout(300);
+    await capture(page, 'team/80-reviewer-section.png');
+  } else {
+    console.log('  ✗ "평가권자" 카드 미탐지');
+  }
+
+  // 81: drawer 의 "편집" 버튼 클릭 → ReviewerAssignmentModal
+  console.log('▶ /team?member=M002 → 편집 — 81-reviewer-modal');
+  const editReviewerBtn = await page.evaluate(() => {
+    // 평가권자 카드 안의 "편집" 버튼만 (멤버 정보 수정의 "정보 수정" 과 구분 필요)
+    const headings = Array.from(document.querySelectorAll('p'));
+    const heading = headings.find(p => p.textContent?.trim() === '평가권자');
+    const card = heading?.closest('div.bg-white');
+    if (!card) return false;
+    const btn = card.querySelector('button');
+    if (btn && btn.textContent?.includes('편집')) {
+      btn.click();
+      return true;
+    }
+    return false;
+  });
+  if (editReviewerBtn) {
+    await page.waitForSelector('[role="dialog"][aria-label*="평가권자 배정"]', { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await capture(page, 'team/81-reviewer-modal.png');
+
+    // 82: 같은 모달 — rank 결과가 1차+2차 노출됨 (시드된 활성 평가권자 2건)
+    console.log('▶ ReviewerAssignmentModal — 82-reviewer-ranks');
+    await capture(page, 'team/82-reviewer-ranks.png');
+
+    // 닫기는 graceful — drawer 가 모달 위로 zindex 가질 수 있어 timeout 발생 가능. 무시하고 진행.
+    const closeBtn = await page.$('[role="dialog"][aria-label*="평가권자 배정"] button:has-text("닫기")');
+    if (closeBtn) {
+      await closeBtn.click({ force: true, timeout: 2000 }).catch(() => {});
+    }
+  } else {
+    console.log('  ✗ 평가권자 카드 "편집" 버튼 미탐지');
+  }
 
   await browser.close();
   console.log('\n✓ DONE');

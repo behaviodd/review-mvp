@@ -398,8 +398,31 @@ function EmployeeDashboard() {
   const { cycles, submissions } = useReviewStore();
   const navigate = useNavigate();
 
-  const activeCycle = cycles.find(c => c.status !== 'draft' && c.status !== 'closed');
-  const mySelf = submissions.find(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.cycleId === activeCycle?.id);
+  // Phase D-3.M-fix2: 다중 활성 사이클 시 본인 미제출 self submission 이 있는 사이클을
+  // 우선 노출. 기존엔 cycles.find 가 첫 번째만 반환해서 본인이 다른 사이클에 포함되어
+  // 있을 때 자기평가 카드가 hidden 되는 버그.
+  const activeCycleIds = new Set(
+    cycles.filter(c => c.status !== 'draft' && c.status !== 'closed').map(c => c.id),
+  );
+  const mySelfActive = useMemo(() =>
+    submissions
+      .filter(s =>
+        s.reviewerId === currentUser?.id &&
+        s.type === 'self' &&
+        s.status !== 'submitted' &&
+        activeCycleIds.has(s.cycleId),
+      )
+      .map(s => ({ sub: s, cycle: cycles.find(c => c.id === s.cycleId) }))
+      .filter((x): x is { sub: typeof submissions[number]; cycle: typeof cycles[number] } => !!x.cycle)
+      .sort((a, b) =>
+        new Date(a.cycle.selfReviewDeadline).getTime() -
+        new Date(b.cycle.selfReviewDeadline).getTime(),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [submissions, cycles, currentUser?.id],
+  );
+  const mySelf = mySelfActive[0]?.sub;
+  const activeCycle = mySelfActive[0]?.cycle;
   const pastSubmissions = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.status === 'submitted');
 
   useSetPageHeader('홈', undefined, { subtitle: `안녕하세요, ${currentUser?.name}님 👋` });

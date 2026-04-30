@@ -13,7 +13,7 @@ import {
 } from '../utils/teamUtils';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Users } from 'lucide-react';
+import { Users, ArrowUpDown } from 'lucide-react';
 import {
   MsPlusIcon, MsCancelIcon, MsEditIcon, MsSearchIcon,
   MsChevronRightMonoIcon, MsChevronDownMonoIcon, MsDeleteIcon,
@@ -259,7 +259,7 @@ function OrgTreeNode({
 
       {/* Children */}
       {expanded && hasChildren && (
-        <div>
+        <div className="flex flex-col gap-1 mt-1">
           {children.map(child => (
             <OrgTreeNode
               key={child.id}
@@ -524,18 +524,27 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   ), []);
 
   const headerTabActions = useMemo(() => (
-    terminatedUsers.length > 0 ? (
-      <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
-        className={`inline-flex items-center gap-1 h-6 min-w-6 px-2 text-xs font-bold rounded-md border transition-colors ${
-          showTerminated
-            ? 'bg-interaction-pressed border-bd-primary text-fg-default'
-            : 'border-bd-primary text-fg-default hover:bg-interaction-hovered'
-        }`}>
-        <MsCancelIcon size={14} /> 퇴사자 {terminatedUsers.length}명
+    <>
+      {/* Phase D-2.4c: 정렬 버튼 (Figma 1143:13795 정합) — UI placeholder, 옵션 메뉴는 별도 phase */}
+      <button
+        onClick={() => showToast('info', '정렬 옵션은 준비 중입니다')}
+        className="inline-flex items-center gap-0.5 h-6 min-w-6 px-2 text-xs font-bold rounded-md border border-bd-primary text-fg-default hover:bg-interaction-hovered transition-colors"
+        title="정렬"
+      >
+        <ArrowUpDown size={14} /> 정렬
       </button>
-    ) : null
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [terminatedUsers.length, showTerminated]);
+      {terminatedUsers.length > 0 && (
+        <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
+          className={`inline-flex items-center gap-1 h-6 min-w-6 px-2 text-xs font-bold rounded-md border transition-colors ${
+            showTerminated
+              ? 'bg-interaction-pressed border-bd-primary text-fg-default'
+              : 'border-bd-primary text-fg-default hover:bg-interaction-hovered'
+          }`}>
+          <MsCancelIcon size={14} /> 퇴사자 {terminatedUsers.length}명
+        </button>
+      )}
+    </>
+  ), [terminatedUsers.length, showTerminated, showToast]);
 
   useSetPageHeader('구성원', headerActions, {
     tabs: headerTabs,
@@ -1037,7 +1046,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   )}
                 </div>
               ) : (
-                <div>
+                <div className="flex flex-col gap-1">
                   {mainOrgs.map(unit => (
                     <OrgTreeNode
                       key={unit.id}

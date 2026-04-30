@@ -159,12 +159,12 @@ function AdminDashboard() {
         <StatCard label="이번 주 마감" value={urgentCount} sub="개 리뷰" icon={MsAlertIcon} color="text-pink-050" iconBg="bg-pink-005" />
       </div>
 
-      <div className="border-t border-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6">
         <AdminCycleWidget />
       </div>
 
       {/* 차트 + 액션 — md+ divide-x 가운데 line */}
-      <div className="border-t border-bd-default grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6 grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-bd-default">
         <div className="lg:col-span-2 lg:pr-6 pb-6 lg:pb-0">
           <h2 className="text-base font-semibold text-fg-default mb-4">부서별 완료율</h2>
           <ResponsiveContainer width="100%" height={220}>
@@ -201,7 +201,7 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <div className="border-t border-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-fg-default">최근 활동</h2>
           <button onClick={() => navigate('/cycles')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
@@ -311,7 +311,7 @@ function ManagerDashboard() {
       <div className="mt-6">
         <PeerPickReminder />
       </div>
-      <div className="border-t border-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6">
         <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">할 일</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {mySelfs.some(s => s.status !== 'submitted') && (
@@ -343,7 +343,7 @@ function ManagerDashboard() {
         </div>
       </div>
 
-      <div className="border-t border-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-fg-default">팀원 리뷰 현황</h2>
           <button onClick={() => navigate('/reports')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">
@@ -369,7 +369,7 @@ function ManagerDashboard() {
         </div>
       </div>
 
-      <div className="border-t border-bd-default">
+      <div className="border-t border-bd-default pt-6 mt-6">
         <h2 className="text-base font-semibold text-fg-default mb-4">팀 리뷰 완료율</h2>
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
@@ -430,7 +430,7 @@ function EmployeeDashboard() {
       )}
 
       {pastSubmissions.length > 0 && (
-        <div className="border-t border-bd-default">
+        <div className="border-t border-bd-default pt-6 mt-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-fg-default">리뷰 이력</h2>
             <button onClick={() => navigate('/reviews/me')} className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline">

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useProfileFieldStore, PROFILE_FIELD_LABEL } from '../../stores/profileFieldStore';
@@ -12,6 +13,7 @@ import { Pill } from '../ui/Pill';
 import { canViewField, getFieldValue, getViewerTypes } from '../../utils/profileFieldVisibility';
 import { formatDate } from '../../utils/dateUtils';
 import type { ProfileFieldKey } from '../../types';
+import { ReviewerAssignmentModal } from './ReviewerAssignmentModal';
 
 interface Props {
   /** 열람할 구성원 id. null 이면 드로어 닫힘. */
@@ -32,6 +34,7 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
   const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
   const fields = useProfileFieldStore(s => s.fields);
   const { isAdmin, can } = usePermission();
+  const canManageReviewerAssignments = can.manageReviewerAssignments;
 
   const target = userId ? users.find(u => u.id === userId) ?? null : null;
 
@@ -75,6 +78,7 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
             reviewerAssignments={reviewerAssignments}
             fields={fields}
             isAdmin={isAdmin}
+            canManageReviewerAssignments={canManageReviewerAssignments}
           />
         )}
       </div>
@@ -83,7 +87,7 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
 }
 
 function ProfileBody({
-  target, currentUser, users, orgUnits, reviewerAssignments, fields, isAdmin,
+  target, currentUser, users, orgUnits, reviewerAssignments, fields, isAdmin, canManageReviewerAssignments,
 }: {
   target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
   currentUser: ReturnType<typeof useAuthStore.getState>['currentUser'];
@@ -92,6 +96,7 @@ function ProfileBody({
   reviewerAssignments: ReturnType<typeof useTeamStore.getState>['reviewerAssignments'];
   fields: ReturnType<typeof useProfileFieldStore.getState>['fields'];
   isAdmin: boolean;
+  canManageReviewerAssignments: boolean;
 }) {
   const viewerTypes = getViewerTypes(currentUser, target, orgUnits, reviewerAssignments);
   const sortedFields = [...fields].sort((a, b) => a.order - b.order);
@@ -147,8 +152,13 @@ function ProfileBody({
         )}
       </div>
 
-      {/* 평가권자 카드 (read-only) */}
-      <ReviewerSection target={target} reviewerAssignments={reviewerAssignments} users={users} />
+      {/* 평가권자 카드 */}
+      <ReviewerSection
+        target={target}
+        reviewerAssignments={reviewerAssignments}
+        users={users}
+        canManageReviewerAssignments={canManageReviewerAssignments}
+      />
     </div>
   );
 }
@@ -157,18 +167,33 @@ function ReviewerSection({
   target,
   reviewerAssignments,
   users,
+  canManageReviewerAssignments,
 }: {
   target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
   reviewerAssignments: ReturnType<typeof useTeamStore.getState>['reviewerAssignments'];
   users: ReturnType<typeof useTeamStore.getState>['users'];
+  canManageReviewerAssignments: boolean;
 }) {
+  const [modalOpen, setModalOpen] = useState(false);
   const activeAssignments = reviewerAssignments
     .filter(a => a.revieweeId === target.id && !a.endDate)
     .sort((a, b) => a.rank - b.rank);
 
   return (
     <div className="bg-white rounded-xl border border-gray-020 p-4">
-      <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-4">평가권자</p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">평가권자</p>
+        {canManageReviewerAssignments && (
+          <MsButton
+            variant="outline-default"
+            size="sm"
+            leftIcon={<MsEditIcon size={12} />}
+            onClick={() => setModalOpen(true)}
+          >
+            편집
+          </MsButton>
+        )}
+      </div>
       {activeAssignments.length === 0 ? (
         <p className="text-sm text-fg-subtlest py-2">배정된 평가권자가 없습니다.</p>
       ) : (
@@ -197,6 +222,13 @@ function ReviewerSection({
             );
           })}
         </ul>
+      )}
+      {canManageReviewerAssignments && (
+        <ReviewerAssignmentModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          revieweeId={target.id}
+        />
       )}
     </div>
   );

@@ -83,7 +83,7 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
 }
 
 function ProfileBody({
-  target, currentUser, orgUnits, reviewerAssignments, fields, isAdmin,
+  target, currentUser, users, orgUnits, reviewerAssignments, fields, isAdmin,
 }: {
   target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
   currentUser: ReturnType<typeof useAuthStore.getState>['currentUser'];
@@ -146,9 +146,73 @@ function ProfileBody({
           </dl>
         )}
       </div>
+
+      {/* 평가권자 카드 (read-only) */}
+      <ReviewerSection target={target} reviewerAssignments={reviewerAssignments} users={users} />
     </div>
   );
 }
+
+function ReviewerSection({
+  target,
+  reviewerAssignments,
+  users,
+}: {
+  target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
+  reviewerAssignments: ReturnType<typeof useTeamStore.getState>['reviewerAssignments'];
+  users: ReturnType<typeof useTeamStore.getState>['users'];
+}) {
+  const activeAssignments = reviewerAssignments
+    .filter(a => a.revieweeId === target.id && !a.endDate)
+    .sort((a, b) => a.rank - b.rank);
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-020 p-4">
+      <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-4">평가권자</p>
+      {activeAssignments.length === 0 ? (
+        <p className="text-sm text-fg-subtlest py-2">배정된 평가권자가 없습니다.</p>
+      ) : (
+        <ul className="space-y-2">
+          {activeAssignments.map(a => {
+            const reviewer = users.find(u => u.id === a.reviewerId);
+            const sourceLabel = SOURCE_LABEL[a.source];
+            return (
+              <li key={a.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-interaction-hovered transition-colors">
+                <span className="inline-flex items-center justify-center min-w-[40px] h-6 px-2 rounded-full bg-bg-token-brand1-subtlest text-fg-brand1 text-xs font-semibold">
+                  {a.rank}차
+                </span>
+                {reviewer ? (
+                  <>
+                    <UserAvatar user={reviewer} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-fg-default truncate">{reviewer.name}</p>
+                      <p className="text-xs text-fg-subtlest truncate">{reviewer.position} · {reviewer.department}</p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="flex-1 text-sm text-fg-subtlest italic">알 수 없는 평가권자 ({a.reviewerId})</p>
+                )}
+                <Pill tone={SOURCE_TONE[a.source]} size="xs">{sourceLabel}</Pill>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  org_head_inherited: '조직장 자동',
+  manual:             '수동 지정',
+  excel_import:       '엑셀 일괄',
+};
+
+const SOURCE_TONE: Record<string, 'info' | 'neutral' | 'success'> = {
+  org_head_inherited: 'info',
+  manual:             'neutral',
+  excel_import:       'success',
+};
 
 function FieldDisplay({ fieldKey, value }: { fieldKey: ProfileFieldKey; value: string }) {
   const display = !value

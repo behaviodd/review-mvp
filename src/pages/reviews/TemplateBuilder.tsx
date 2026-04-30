@@ -206,7 +206,7 @@ export function TemplateBuilder() {
   const totalQuestions = questions.length;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-gray-005">
+    <div className="flex flex-col h-full overflow-y-auto">
 
       {/* ── Top toolbar ───────────────────────────────────── */}
       <div className="flex items-center gap-4 px-6 py-3.5 bg-white border-b border-gray-020 flex-shrink-0 shadow-sm sticky top-0 z-20">

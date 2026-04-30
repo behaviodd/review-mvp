@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useShowToast } from '../../components/ui/Toast';
@@ -78,22 +78,30 @@ export function TemplateBuilder() {
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
   // 초기 섹션 구성: 기존 템플릿 sections 사용, 없으면 default 1개 생성 (isInitial=true)
+  // T-1 fix: initSections / initQuestions 가 각각 newSection 호출하면 Math.random() 포함된
+  //         id 가 서로 달라 첫 질문의 sectionId 매칭 실패 → 화면에서 "1번 hidden, 2번부터 시작".
+  //         useRef 로 default section 1회만 생성, 두 initializer 가 같은 id 공유.
+  const defaultSecRef = useRef<TemplateSection | null>(null);
+  const getDefaultSec = (): TemplateSection => {
+    if (!defaultSecRef.current) defaultSecRef.current = newSection(1, true);
+    return defaultSecRef.current;
+  };
+
   const initSections = (): TemplateSection[] => {
     if (existing?.sections && existing.sections.length > 0) {
       return [...existing.sections].sort((a, b) => a.order - b.order);
     }
-    return [newSection(1, true)];
+    return [getDefaultSec()];
   };
 
   const initQuestions = (): TemplateQuestion[] => {
     if (existing?.questions && existing.questions.length > 0) {
       const qs = [...existing.questions];
-      // 기존 질문에 sectionId 없으면 첫 섹션에 배정
-      const firstSectionId = (existing.sections?.[0] ?? { id: '' }).id || `sec_${Date.now()}_1`;
+      // legacy 호환: 기존 질문에 sectionId 없으면 첫 섹션 (또는 default sec) 에 배정
+      const firstSectionId = (existing.sections?.[0] ?? { id: '' }).id || getDefaultSec().id;
       return qs.map(q => ({ ...q, sectionId: q.sectionId ?? firstSectionId }));
     }
-    const sec = newSection(1, true);
-    return [newQuestion(1, sec.id)];
+    return [newQuestion(1, getDefaultSec().id)];
   };
 
   const [sections,  setSections]  = useState<TemplateSection[]>(initSections);
@@ -140,11 +148,29 @@ export function TemplateBuilder() {
   /* ── 저장 ───────────────────────────────────────────────── */
   const handleSave = async () => {
     let valid = true;
-    if (!name.trim()) { setNameError('템플릿 이름을 입력해주세요.'); valid = false; }
+    let firstErrorMsg = '';
+    if (!name.trim()) {
+      setNameError('템플릿 이름을 입력해주세요.');
+      firstErrorMsg = '템플릿 이름을 입력해주세요.';
+      valid = false;
+    }
     const qErrs: Record<string, string> = {};
     questions.forEach(q => { if (!q.text.trim()) qErrs[q.id] = '질문 내용을 입력해주세요.'; });
-    if (Object.keys(qErrs).length > 0) { setQuestionErrors(qErrs); valid = false; }
-    if (!valid) return;
+    if (Object.keys(qErrs).length > 0) {
+      setQuestionErrors(qErrs);
+      if (!firstErrorMsg) firstErrorMsg = `질문 ${Object.keys(qErrs).length}개의 내용을 입력해주세요.`;
+      valid = false;
+    }
+    if (!valid) {
+      // 사용자 피드백 — 이전엔 화면 변화 없어 "저장 안 됨" 으로 보였음
+      showToast('error', firstErrorMsg || '입력을 확인해주세요.');
+      // 첫 에러 영역으로 자동 스크롤
+      setTimeout(() => {
+        const target = document.querySelector('[data-validation-error="true"]') ?? document.querySelector('input[aria-invalid="true"]');
+        if (target instanceof HTMLElement) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+      return;
+    }
     if (!currentUser || saving) return;
 
     setSaving(true);

@@ -130,6 +130,7 @@ export function templateToRow(t: ReviewTemplate): Record<string, unknown> {
     '생성자ID':  t.createdBy,
     '생성일시':  t.createdAt,
     '질문JSON':  JSON.stringify(t.questions),
+    '섹션JSON':  JSON.stringify(t.sections ?? []),
   };
 }
 

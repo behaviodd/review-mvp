@@ -2,7 +2,7 @@
  * Google Sheets 행 → ReviewCycle / ReviewTemplate / ReviewSubmission 파싱
  */
 import type {
-  ReviewCycle, ReviewTemplate, TemplateQuestion,
+  ReviewCycle, ReviewTemplate, TemplateQuestion, TemplateSection,
   ReviewSubmission, Answer,
 } from '../types';
 
@@ -76,6 +76,7 @@ export function parseSheetTemplate(row: Row): ReviewTemplate | null {
     createdBy:   str(row['생성자ID']),
     createdAt:   str(row['생성일시']),
     questions:   parseJSON<TemplateQuestion[]>(row['질문JSON'], []),
+    sections:    parseJSON<TemplateSection[]>(row['섹션JSON'], []),
   };
 }
 

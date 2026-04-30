@@ -112,9 +112,9 @@ export function Settings() {
   if (!currentUser) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="divide-y divide-bd-default">
       {/* Profile */}
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+      <section className="py-6 first:pt-0">
         <div className="flex items-center gap-2 mb-4">
           <MsProfileIcon size={16} className="text-gray-040" />
           <h2 className="text-sm font-semibold text-gray-080">프로필</h2>
@@ -136,11 +136,11 @@ export function Settings() {
           </div>
           <MsButton variant="outline-default" size="sm" disabled title="프로필 편집은 아직 지원되지 않습니다">편집</MsButton>
         </div>
-      </div>
+      </section>
 
       {/* Google Sheets 연동 (관리자 전용) */}
       {currentUser.role === 'admin' && (
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+      <section className="py-6">
         <div className="flex items-center gap-2 mb-4">
           <Sheet className="w-4 h-4 text-gray-040" />
           <h2 className="text-sm font-semibold text-gray-080">Google Sheets 연동</h2>
@@ -299,12 +299,12 @@ export function Settings() {
             <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>
           </div>
         </div>
-      </div>
+      </section>
       )}
 
       {/* R8: 운영 토글 — 자동 승인 모드 (관리자 전용, scriptUrl 연결된 경우만) */}
       {currentUser.role === 'admin' && scriptUrl && (
-        <div className="bg-white rounded-xl border border-gray-010 shadow-card p-5">
+        <section className="py-6">
           <div className="flex items-center gap-2 mb-4">
             <MsInfoIcon size={16} className="text-gray-040" />
             <h2 className="text-sm font-semibold text-gray-080">운영 토글</h2>
@@ -333,10 +333,10 @@ export function Settings() {
               )}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      <p className="text-center text-xs text-gray-030 pb-4">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>
+      <p className="text-center text-xs text-gray-030 py-6">메이크스타 리뷰시스템 v0.1.0 · 프로토타입</p>
 
       <SyncRetryDrawer open={syncDrawerOpen} onClose={() => setSyncDrawerOpen(false)} />
     </div>

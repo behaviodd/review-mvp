@@ -602,7 +602,7 @@ export function MyReviewWrite() {
     <div className="flex flex-1 overflow-hidden">
 
       {/* ── 중앙 ── */}
-      <div className="flex-1 overflow-y-auto bg-gray-005">
+      <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-6 space-y-10">
 
           {isReviewerMode && !isSelf && !isReadOnly && (() => {

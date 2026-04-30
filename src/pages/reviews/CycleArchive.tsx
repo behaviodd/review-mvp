@@ -84,7 +84,7 @@ export function CycleArchive() {
           {archived.map(cycle => (
             <div
               key={cycle.id}
-              className="flex items-center gap-4 px-5 py-3.5 border-b border-gray-005 last:border-0"
+              className="flex items-center gap-4 px-5 py-3.5 rounded-lg hover:bg-interaction-hovered transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">

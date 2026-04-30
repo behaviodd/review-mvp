@@ -175,9 +175,8 @@ export function MyReviewList() {
       <div
         onClick={() => navigate(`/reviews/me/${sub.id}`)}
         className={`
-          group cursor-pointer transition-colors
-          border-b border-gray-010 last:border-0
-          ${urgent && !isSubmitted ? 'bg-pink-005/40 hover:bg-pink-005/70' : 'hover:bg-gray-005/70'}
+          group cursor-pointer transition-colors rounded-lg
+          ${urgent && !isSubmitted ? 'bg-pink-005/40 hover:bg-pink-005/70' : 'hover:bg-interaction-hovered'}
         `}
       >
         {/* 모바일 */}
@@ -308,7 +307,7 @@ export function MyReviewList() {
     return (
       <div
         onClick={() => navigate(`/reviews/me/${sub.id}`)}
-        className="group cursor-pointer transition-colors border-b border-gray-010 last:border-0 hover:bg-gray-005/70"
+        className="group cursor-pointer transition-colors rounded-lg hover:bg-interaction-hovered"
       >
         {/* 모바일 */}
         <div className="flex md:hidden items-center gap-3 px-4 py-3.5">

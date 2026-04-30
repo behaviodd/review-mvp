@@ -1,8 +1,9 @@
-import {
+import React, {
   type InputHTMLAttributes,
   type TextareaHTMLAttributes,
   type SelectHTMLAttributes,
   type ReactNode,
+  type ChangeEvent,
   useRef,
   useEffect,
 } from 'react';
@@ -271,6 +272,33 @@ export function MsTextarea({
     el.style.height = `${el.scrollHeight}px`;
   }, [autoResize, value]);
 
+  /**
+   * Phase D-3.M-fix6: maxLength 한국어 IME 우회 방지.
+   *
+   * native textarea 의 maxLength 는 한국어 IME 조합 입력 (CompositionEvent) 시
+   * 우회됨 — 알려진 브라우저 버그. 조합 종료 후 max 초과 값이 그대로 setState.
+   *
+   * 해결: onChange 시 명시적으로 substring + onCompositionEnd 시 한 번 더 검증.
+   */
+  const max = props.maxLength;
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    if (max != null && e.target.value.length > max) {
+      e.target.value = e.target.value.slice(0, max);
+    }
+    onChange?.(e);
+  };
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    if (max != null && target.value.length > max) {
+      const trimmed = target.value.slice(0, max);
+      // setNativeValue 패턴 — React controlled input 에 native value 동기화
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      setter?.call(target, trimmed);
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    props.onCompositionEnd?.(e);
+  };
+
   const textareaId = id ?? (label ? label.replace(/\s+/g, '-') : undefined);
   return (
     <div className="space-y-1">
@@ -283,7 +311,6 @@ export function MsTextarea({
         ref={taRef}
         id={textareaId}
         value={value}
-        onChange={onChange}
         className={cn(
           TEXTAREA_BASE,
           TEXTAREA_SIZE[size],
@@ -292,6 +319,8 @@ export function MsTextarea({
           className,
         )}
         {...props}
+        onChange={handleChange}
+        onCompositionEnd={handleCompositionEnd}
       />
       {(hint || error) && (
         <p className={cn('text-xs', error ? 'text-red-050' : 'text-fg-subtlest')}>{error ?? hint}</p>

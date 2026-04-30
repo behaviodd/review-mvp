@@ -635,7 +635,7 @@ export function TeamReviewWrite() {
       </div>
 
       {/* ── 중앙: 리뷰 내용 ── */}
-      <div className="flex-1 overflow-y-auto bg-gray-005">
+      <div className="flex-1 overflow-y-auto">
 
         {/* 모바일 팀원 선택바 */}
         <div className="md:hidden bg-white border-b border-gray-010 px-4 py-2.5 sticky top-0 z-10">

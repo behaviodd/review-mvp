@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { Fragment, useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -169,6 +169,8 @@ export function CycleList() {
 
   /* ── 선택 상태 ─────────────────────────────────────── */
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // D-3.C-6: 더보기 메뉴 열린 row id — 해당 row 만 z-20 부여하여 메뉴가 다음 row hover/구분선 위로 레이어
+  const [openMenuCycleId, setOpenMenuCycleId] = useState<string | null>(null);
   const toggleOne = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
@@ -438,22 +440,28 @@ export function CycleList() {
             {/* Phase D-3.C-2: row 평면화 — 행간 border 제거, hover 효과만. drag 도 제거 (폴더 기능 폐기)
                Phase D-3.C-3: visiblePage 만 렌더 (15개씩 페이지네이션)
                Phase D-3.C-4: 행간 12px 여백 (사용자 요청) — rows 만 별도 wrapper 로 묶고 gap-3
-               Phase D-3.C-5: 행간 구분선 (divide-y) + hover 액션 더보기 메뉴 통합 (사용자 요청) */}
-            <div className="flex flex-col gap-3 py-3 divide-y divide-bd-default">
-            {visiblePage.map(cycle => {
+               Phase D-3.C-5: 행간 구분선 + hover 액션 더보기 메뉴 통합 (사용자 요청)
+               Phase D-3.C-6: 구분선을 row 의 rounded 와 무관한 직선으로 (sibling divider) +
+                              메뉴 열린 row 에 z-20 (다음 row hover/구분선 위로 레이어) */}
+            <div className="flex flex-col py-3">
+            {visiblePage.map((cycle, idx) => {
               const isSelected = selected.has(cycle.id);
+              const isMenuOpen = openMenuCycleId === cycle.id;
               return (
-                <div
-                  key={cycle.id}
-                  onClick={(e) => {
-                    if ((e.target as HTMLElement).closest('[data-action]')) return;
-                    navigate(`/cycles/${cycle.id}`);
-                  }}
-                  className={cn(
-                    'relative group flex items-center gap-4 px-2 py-3 rounded-lg cursor-pointer transition-colors',
-                    isSelected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered',
-                  )}
-                >
+                <Fragment key={cycle.id}>
+                  {/* 구분선 — 첫 row 위엔 없음. wrapper 너비 전체에 직선 (row rounded 와 무관) */}
+                  {idx > 0 && <div className="border-t border-bd-default" />}
+                  <div
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('[data-action]')) return;
+                      navigate(`/cycles/${cycle.id}`);
+                    }}
+                    className={cn(
+                      'relative group flex items-center gap-4 px-2 py-3 my-1.5 rounded-lg cursor-pointer transition-colors',
+                      isMenuOpen && 'z-20',
+                      isSelected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered',
+                    )}
+                  >
                   <div className="w-5 shrink-0" data-action>
                     <MsCheckbox
                       checked={isSelected}
@@ -513,6 +521,7 @@ export function CycleList() {
                   <MsActionMenu
                     className="flex-shrink-0"
                     triggerVisibility="hover"
+                    onOpenChange={open => setOpenMenuCycleId(open ? cycle.id : null)}
                     items={[
                       { label: '복제', icon: <MsArticleIcon size={12} />, onClick: () => handleCloneCycle(cycle.id) },
                       {
@@ -525,7 +534,8 @@ export function CycleList() {
                     ]}
                   />
                   <MsChevronRightLineIcon size={16} className="text-gray-030 group-hover:text-pink-040 flex-shrink-0" />
-                </div>
+                  </div>
+                </Fragment>
               );
             })}
             </div>

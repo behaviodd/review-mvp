@@ -35,6 +35,9 @@ interface MsActionMenuProps {
    *  'hover'  — 부모에 .group 클래스가 있을 때 group-hover 시에만 trigger 표시.
    *             메뉴 열림 (aria-expanded=true) 동안엔 hover 풀려도 강제 visible. */
   triggerVisibility?: 'always' | 'hover';
+  /** 메뉴 열림/닫힘 상태 변경 콜백. 부모가 row 의 z-index 동적 부여 등에 활용
+   *  (메뉴가 다음 row 의 hover bg / 구분선 위로 레이어되도록). */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function MsActionMenu({
@@ -43,9 +46,13 @@ export function MsActionMenu({
   triggerSize = 16,
   ariaLabel = '더보기',
   triggerVisibility = 'always',
+  onOpenChange,
 }: MsActionMenuProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // open 변경 시 외부에 알림
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
@@ -82,7 +89,7 @@ export function MsActionMenu({
         <MsMoreIcon size={triggerSize} />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 min-w-[140px] rounded-md border border-bd-default bg-elevated-default shadow-md py-1 z-50">
+        <div role="menu" className="absolute right-0 top-full mt-1 min-w-[140px] rounded-md border border-bd-default bg-surface-overlay shadow-md py-1 z-50">
           {visible.map((item, i) => (
             <button
               key={i}

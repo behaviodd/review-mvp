@@ -399,7 +399,7 @@ export function TeamReviewList() {
           {active.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">진행 중</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {active.map(d => <CycleRow key={d.cycle.id} data={d} />)}
               </div>
@@ -408,7 +408,7 @@ export function TeamReviewList() {
           {done.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">완료</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {done.map(d => <CycleRow key={d.cycle.id} data={d} />)}
               </div>
@@ -417,7 +417,7 @@ export function TeamReviewList() {
           {closed.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">종료됨</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {closed.map(d => <CycleRow key={d.cycle.id} data={d} />)}
               </div>
@@ -426,7 +426,7 @@ export function TeamReviewList() {
         </>
       ) : (
         /* 단독 필터 */
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+        <div>
           <SectionHeader />
           {filtered.map(d => <CycleRow key={d.cycle.id} data={d} />)}
         </div>

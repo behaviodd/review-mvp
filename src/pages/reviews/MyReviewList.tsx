@@ -92,7 +92,7 @@ export function MyReviewList() {
   if (currentUser?.role === 'admin' && mySubmissions.length === 0 && receivedReviews.length === 0) {
     return (
       <div className="space-y-5">
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card p-8 text-center space-y-5">
+        <div className="text-center space-y-5 py-12">
           <div className="w-14 h-14 bg-blue-005 rounded-2xl flex items-center justify-center mx-auto">
             <MsShieldCheckIcon size={28} className="text-blue-050" />
           </div>
@@ -423,18 +423,18 @@ export function MyReviewList() {
           }
         />
       ) : statusFilter === 'active' ? (
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+        <div>
           <SectionHeader />
           {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
         </div>
       ) : statusFilter === 'done' ? (
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+        <div>
           <SectionHeader />
           {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
           {filteredReceived.filter(s => !closedCycleIds.has(s.cycleId)).map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
         </div>
       ) : statusFilter === 'closed' ? (
-        <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+        <div>
           <SectionHeader />
           {closedSelf.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
           {closedReceived.map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
@@ -445,7 +445,7 @@ export function MyReviewList() {
           {active.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">진행 중</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
               </div>
@@ -454,7 +454,7 @@ export function MyReviewList() {
           {doneAll.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">완료</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
                 {filteredReceived.filter(s => !closedCycleIds.has(s.cycleId)).map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
@@ -464,7 +464,7 @@ export function MyReviewList() {
           {closedCount > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-040 uppercase tracking-wide mb-2 px-1">종료됨</p>
-              <div className="bg-white rounded-xl border border-gray-020 shadow-card overflow-hidden">
+              <div>
                 <SectionHeader />
                 {closedSelf.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
                 {closedReceived.map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}

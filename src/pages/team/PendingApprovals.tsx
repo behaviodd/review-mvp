@@ -80,7 +80,7 @@ export function PendingApprovals() {
       {items.length > 0 && (
         <div className="space-y-3">
           {items.map((it) => (
-            <div key={it.email} className="bg-white rounded-xl border border-gray-010 shadow-card p-4 flex items-center gap-3">
+            <div key={it.email} className="flex items-center gap-3 px-3 py-3 rounded-lg border border-bd-default hover:bg-interaction-hovered transition-colors">
               <div className="size-10 rounded-full bg-yellow-005 text-yellow-060 flex items-center justify-center flex-shrink-0 font-semibold text-sm">
                 {(it.name || it.email).slice(0, 1).toUpperCase()}
               </div>

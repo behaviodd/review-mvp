@@ -13,7 +13,7 @@ type Result =
   | { kind: 'user'; id: string; title: string; subtitle: string };
 
 const KIND_META: Record<Result['kind'], { label: string; icon: typeof MsArticleIcon; tone: string }> = {
-  cycle:    { label: '사이클',   icon: MsRefreshIcon,  tone: 'text-pink-060 bg-pink-005' },
+  cycle:    { label: '리뷰 운영', icon: MsRefreshIcon,  tone: 'text-pink-060 bg-pink-005' },
   template: { label: '템플릿',   icon: MsArticleIcon,  tone: 'text-blue-060 bg-blue-005' },
   user:     { label: '구성원',   icon: MsProfileIcon,  tone: 'text-green-060 bg-green-005' },
 };

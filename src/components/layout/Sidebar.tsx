@@ -160,7 +160,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
 
     /* 어드민 — 리뷰 운영 */
     { kind: 'section', label: '리뷰 운영', show: showCycleSection },
-    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '사이클',  show: showCycles,    indent: true },
+    { kind: 'item', to: '/cycles',         icon: MsRefreshIcon, label: '리뷰 운영', show: showCycles, indent: true },
     { kind: 'item', to: '/templates',      icon: MsArticleIcon, label: '템플릿',  show: showTemplates, indent: true },
     { kind: 'item', to: '/cycles/archive', icon: MsDeleteIcon,  label: '보관함',  show: showCycles && hasArchivedCycles, indent: true },
 

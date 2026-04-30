@@ -764,7 +764,7 @@ export function CycleNew() {
       </div>
 
       {/* 스텝 콘텐츠 */}
-      <div className="bg-white rounded-xl border border-gray-010 shadow-card p-6 mb-5 min-h-[320px]">
+      <div className="py-6 mb-5 min-h-[320px]">
 
         {/* Step 0: 기본 정보 */}
         {step === 0 && (
@@ -928,7 +928,7 @@ export function CycleNew() {
                   type="button"
                   onClick={() => setForm(f => ({ ...f, targetMode: val }))}
                   className={`px-3 h-7 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                    form.targetMode === val ? 'bg-white text-gray-080 shadow-card' : 'text-gray-050 hover:text-gray-070'
+                    form.targetMode === val ? 'bg-white text-gray-080 shadow-sm' : 'text-gray-050 hover:text-gray-070'
                   }`}
                 >
                   {label}
@@ -1240,7 +1240,7 @@ export function CycleNew() {
       </div>
 
       {/* 네비게이션 */}
-      <div className="flex items-center justify-between bg-white rounded-xl border border-gray-010 px-5 py-4">
+      <div className="flex items-center justify-between border-t border-bd-default px-5 py-4">
         <MsButton
           variant="ghost"
           leftIcon={<MsChevronLeftLineIcon size={16} />}

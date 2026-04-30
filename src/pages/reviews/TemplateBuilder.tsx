@@ -315,8 +315,8 @@ export function TemplateBuilder() {
                 return (
                   <div
                     key={q.id}
-                    className={`bg-white rounded-xl border shadow-sm transition-shadow hover:shadow-md ${
-                      questionErrors[q.id] ? 'border-red-020' : 'border-gray-020'
+                    className={`rounded-lg border ${
+                      questionErrors[q.id] ? 'border-red-020' : 'border-bd-default'
                     }`}
                   >
                     {/* Question header */}

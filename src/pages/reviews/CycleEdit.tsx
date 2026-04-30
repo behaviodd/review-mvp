@@ -117,7 +117,7 @@ export function CycleEdit() {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <div className="bg-white rounded-xl border border-gray-020 shadow-card p-5">
+      <div className="py-2">
         <form onSubmit={handleSubmit} className="space-y-5">
           <section>
             <p className="text-[11px] font-semibold text-gray-040 uppercase tracking-wide mb-3">기본 정보</p>

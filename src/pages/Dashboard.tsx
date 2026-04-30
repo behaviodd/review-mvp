@@ -48,11 +48,37 @@ import { TodayPanel } from '../components/dashboard/TodayPanel';
 import { PeerPickReminder } from '../components/review/PeerPickReminder';
 
 function AdminDashboard() {
+  const { currentUser } = useAuthStore();
   const { cycles, submissions } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
   const startImpersonation = useAuthStore(s => s.startImpersonation);
   const showToast = useShowToast();
   const navigate = useNavigate();
+
+  // Phase D-3.M-fix3: admin 도 본인이 사이클 reviewee 로 포함되면 자기평가 카드 노출
+  // (옵션 B 정책 — admin 도 평가 대상 가능)
+  const adminActiveCycleIds = new Set(
+    cycles.filter(c => c.status !== 'draft' && c.status !== 'closed').map(c => c.id),
+  );
+  const mySelfActive = useMemo(() =>
+    submissions
+      .filter(s =>
+        s.reviewerId === currentUser?.id &&
+        s.type === 'self' &&
+        s.status !== 'submitted' &&
+        adminActiveCycleIds.has(s.cycleId),
+      )
+      .map(s => ({ sub: s, cycle: cycles.find(c => c.id === s.cycleId) }))
+      .filter((x): x is { sub: typeof submissions[number]; cycle: typeof cycles[number] } => !!x.cycle)
+      .sort((a, b) =>
+        new Date(a.cycle.selfReviewDeadline).getTime() -
+        new Date(b.cycle.selfReviewDeadline).getTime(),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [submissions, cycles, currentUser?.id],
+  );
+  const mySelf = mySelfActive[0]?.sub;
+  const activeSelfCycle = mySelfActive[0]?.cycle;
 
   // Dev 도구: 디자인 센터 하위 조직 멤버 list. import.meta.env.DEV 일 때만 노출.
   const designCenterMembers = useMemo(() => {
@@ -149,6 +175,25 @@ function AdminDashboard() {
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
+      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드 (TodayPanel 위에 우선 노출) */}
+      {mySelf && activeSelfCycle && (
+        <div className="border-l-4 border-fg-brand1 pl-5 py-1 mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-fg-brand1 mb-1">내 자기평가 — 진행 중</p>
+              <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeSelfCycle.title}</h2>
+              <div className="w-full sm:w-52">
+                <ProgressBar value={mySelf.answers.length} max={6} showPercent />
+                <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeSelfCycle.selfReviewDeadline)}</p>
+              </div>
+            </div>
+            <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
+              {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
+            </MsButton>
+          </div>
+        </div>
+      )}
+
       <TodayPanel variant="admin" />
 
       {/* Stats — 첫 border-t 제거 (사용자 명시), mt-6 spacing 만. grid 안 md:divide-x 유지 */}

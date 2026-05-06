@@ -68,7 +68,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
           )
         )}
       </span>
-      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-fg-default', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -108,7 +108,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
         />
         {checked && <span className={cn('rounded-full flex-shrink-0', dot, dotColor)} />}
       </span>
-      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-fg-default', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }
@@ -160,7 +160,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
           thumbSize, thumbTranslate,
         )} />
       </button>
-      {label && <span className={cn('text-base text-gray-080', disabled && 'text-fg-subtlest')}>{label}</span>}
+      {label && <span className={cn('text-base text-fg-default', disabled && 'text-fg-subtlest')}>{label}</span>}
     </label>
   );
 }

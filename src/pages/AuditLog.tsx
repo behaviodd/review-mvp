@@ -51,20 +51,20 @@ export function AuditLog() {
   const auditEntries = useAuditLogStore(s => s.entries);
   const { logs: impersonationLogs, loading: impLoading, refetch } = useImpersonationLogs();
 
-  const [tab, setTab] = useState<TabKey>('impersonation');
+  const [tab, setTab] = useState<TabKey>('all');
 
   /* Phase D-3.E: ListToolbar segments → 헤더 탭, rightSlot → tabActions.
      subtitle 제거 (다른 페이지 일관). */
   const headerTabs = useMemo(() => (
     <>
+      <HeaderTab active={tab === 'all'} onClick={() => setTab('all')}>
+        전체 {impersonationLogs.length + auditEntries.length}
+      </HeaderTab>
       <HeaderTab active={tab === 'impersonation'} onClick={() => setTab('impersonation')}>
         마스터 로그인 {impersonationLogs.length}
       </HeaderTab>
       <HeaderTab active={tab === 'system'} onClick={() => setTab('system')}>
         시스템 액션 {auditEntries.length}
-      </HeaderTab>
-      <HeaderTab active={tab === 'all'} onClick={() => setTab('all')}>
-        전체 {impersonationLogs.length + auditEntries.length}
       </HeaderTab>
     </>
   ), [tab, impersonationLogs.length, auditEntries.length]);

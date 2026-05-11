@@ -209,6 +209,13 @@ export function TemplateBuilder() {
   const totalQuestions = questions.length;
 
   /* ── 헤더 ─────────────────────────────────────────────── */
+  // headerActions 는 반드시 useMemo 로 안정화한다 — 매 렌더 새 ReactNode 면
+  // useSetPageHeader 의 effect deps 가 매번 변경되어 setHeader → 리렌더 무한 루프 (Maximum update depth exceeded).
+  // 동시에 handleSave 는 questions/name/description/sections 등을 closure 로 잡으므로 deps 에 넣지 않으면 stale.
+  // → ref 패턴으로 onClick 호출 시점에 최신 handleSave 를 dereference 한다.
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+
   const headerActions = useMemo(() => (
     <>
       {!isNew && (activeUsingCount > 0 || historicalCount > 0) && (
@@ -227,15 +234,27 @@ export function TemplateBuilder() {
       <MsButton variant="outline-default" onClick={() => setPreviewOpen(true)} leftIcon={<Eye size={16} />}>
         미리보기
       </MsButton>
-      <MsButton onClick={handleSave} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
+      <MsButton onClick={() => handleSaveRef.current()} loading={saving} leftIcon={<MsCheckIcon size={16} />}>
         {returnTo === 'cycle-wizard' ? '저장 후 리뷰 작성' : '저장'}
       </MsButton>
     </>
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [isNew, activeUsingCount, historicalCount, totalQuestions, saving, returnTo]);
 
   useSetPageHeader(name.trim() || (isNew ? '새 템플릿' : '템플릿 편집'), headerActions, {
-    onBack: () => navigate(returnTo === 'cycle-wizard' ? '/cycles/new' : '/templates'),
+    onBack: () => {
+      // 새 템플릿 작성 중이고 사용자가 입력한 흔적이 있으면 확인 다이얼로그.
+      // - 첫 default 섹션 '섹션 1' (isInitial=true) 은 자동 생성된 것이라 dirty 로 보지 않음.
+      // - 빈 첫 질문 (text='') 도 자동 생성 — 입력이 들어가야 dirty.
+      if (isNew) {
+        const hasContent =
+          name.trim() !== '' ||
+          description.trim() !== '' ||
+          questions.some(q => q.text.trim() !== '' || (q.options ?? []).some(o => o.trim() !== '')) ||
+          sections.length > 1;
+        if (hasContent && !confirm('작성한 내용이 모두 사라집니다. 계속하시겠습니까?')) return;
+      }
+      navigate(returnTo === 'cycle-wizard' ? '/cycles/new' : '/templates');
+    },
     subtitle: description.trim() || undefined,
   });
 

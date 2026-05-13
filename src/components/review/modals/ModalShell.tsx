@@ -31,7 +31,7 @@ export function ModalShell({
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-overlay-048" onClick={onClose} aria-hidden />
       <div
         role="dialog"

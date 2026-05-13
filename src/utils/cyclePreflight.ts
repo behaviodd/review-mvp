@@ -110,7 +110,8 @@ export function runPreflight(params: {
     });
   }
 
-  // 2. 매니저 미배정 (차단) — R3: cycle.downwardReviewerRanks 의 모든 차수에 대해 체크
+  // 2. 매니저 미배정 (경고) — R3: cycle.downwardReviewerRanks 의 모든 차수에 대해 체크
+  // 해당 차수 reviewer 가 없는 멤버는 createCycleSubmissions 가 graceful skip → self 등 다른 종류만 생성됨
   const activeMembers = targetMembers.filter(u => !inactive.includes(u));
   const ranks = cycle.downwardReviewerRanks && cycle.downwardReviewerRanks.length > 0
     ? cycle.downwardReviewerRanks
@@ -123,9 +124,9 @@ export function runPreflight(params: {
         const rankLabel = rank === 1 ? '1차(직속)' : `${rank}차`;
         checks.push({
           id: `missing_reviewer_rank_${rank}`,
-          severity: 'block',
+          severity: 'warn',
           title: `${rankLabel} 평가권자가 없는 대상자 존재`,
-          detail: `${missing.length}명에게 ${rankLabel} 평가권자가 배정되지 않았습니다. 해당 차수의 조직장 리뷰가 생성되지 않습니다.`,
+          detail: `${missing.length}명에게 ${rankLabel} 평가권자가 배정되지 않았습니다. 해당 멤버는 ${rankLabel} 조직장 리뷰가 생성되지 않습니다 (자기평가 등 다른 종류는 정상 생성).`,
           affectedIds: missing.map(u => u.id),
         });
       }

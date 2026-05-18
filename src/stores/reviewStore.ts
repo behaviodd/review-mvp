@@ -291,8 +291,11 @@ export const useReviewStore = create<ReviewState>()(
        *   부서/매니저 변동이 발생하면 mode 기반 재계산 결과에서 빠질 수
        *   있으나, submission 은 실제 존재 → 게이트는 submission 기반
        * - cycle.targetUserIds 갱신 (custom 모드로 전환 또는 유지)
-       * - 해당 user 가 reviewee 인 미완료 submission (not_started / in_progress) 에
-       *   autoExcluded 마크 부여. 제출 완료된 submission 은 그대로 보존 (이미 평가 유효)
+       * - 해당 user 가 reviewee 인 모든 submission 에 autoExcluded 마크 부여
+       *   (제출 완료 건 포함). autoExcluded = "운영 리스트에서 숨김" 마커이며
+       *   submission 본체 / answers / 평점은 그대로 보존 → 평가 자체는 유효
+       *   유지 (KPI / Reports 등은 마크 무관). 운영 리스트(OpsCenter) 에서는
+       *   buildOpsRows 의 !autoExcluded 필터로 자연 숨김
        * - 데이터 손실 방지를 위해 submission 자체는 삭제하지 않음
        */
       removeCycleParticipant: (cycleId, userId, actorId, reason) => {
@@ -329,11 +332,14 @@ export const useReviewStore = create<ReviewState>()(
 
         const at = new Date().toISOString();
         const marked: ReviewSubmission[] = [];
+        // autoExcluded = "운영 리스트에서 숨김" 마커. submission 본체 / answers /
+        // 평점은 모두 보존되며 평가 자체의 유효성도 그대로. 제출 완료 건도
+        // 마크 → 운영 리스트(OpsCenter)에서 자연 숨김. KPI / Reports 는 마크
+        // 무관 (별도 후속 phase 에서 분모 보정 검토).
         set(s => ({
           submissions: s.submissions.map(sub => {
             if (sub.cycleId !== cycleId) return sub;
             if (sub.revieweeId !== userId) return sub;
-            if (sub.status === 'submitted') return sub;
             if (sub.autoExcluded) return sub;
             const next: ReviewSubmission = {
               ...sub,

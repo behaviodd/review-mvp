@@ -18,8 +18,9 @@ interface Props {
 /**
  * 사이클 진행 중 참가자 제외 확정 모달.
  * - 특정 userId 가 미리 결정된 상태에서 사유만 받는 confirm 다이얼로그
- * - removeCycleParticipant action 호출 → 미완료 submission autoExcluded 마크
- *   (제출 완료된 건은 보존)
+ * - removeCycleParticipant action 호출 → 해당 reviewee 의 모든 submission 에
+ *   autoExcluded 마크 부여 (제출 완료 건 포함). submission 본체 / answers /
+ *   평점은 그대로 보존되며 운영 리스트(OpsCenter) 에서만 숨김
  */
 export function RemoveParticipantModal({ cycleId, userId, open, onClose }: Props) {
   const removeCycleParticipant = useReviewStore(s => s.removeCycleParticipant);
@@ -43,7 +44,7 @@ export function RemoveParticipantModal({ cycleId, userId, open, onClose }: Props
     const res = removeCycleParticipant(cycleId, userId, currentUser.id, reason.trim() || undefined);
     setSubmitting(false);
     if (res.ok) {
-      showToast('success', `${targetUser?.name ?? '사용자'}님을 제외했습니다. (${res.markedSubmissions ?? 0}건 자동제외)`);
+      showToast('success', `${targetUser?.name ?? '사용자'}님을 제외했습니다. (${res.markedSubmissions ?? 0}건 숨김 처리)`);
       handleClose();
     } else {
       showToast('error', res.error ?? '제외에 실패했습니다.');
@@ -57,7 +58,7 @@ export function RemoveParticipantModal({ cycleId, userId, open, onClose }: Props
       open={open}
       onClose={handleClose}
       title="참가자 제외"
-      description="제출 완료된 건은 보존되며, 미완료 submission 만 자동제외 마크됩니다."
+      description="평가 본체는 그대로 보존되며 운영 리스트에서만 숨김 처리됩니다."
       widthClass="max-w-md"
       footer={
         <>

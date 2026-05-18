@@ -6,7 +6,10 @@ import { useAuthStore } from '../../stores/authStore';
 import { useSheetsSyncStore } from '../../stores/sheetsSyncStore';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
-import { MsRefreshIcon } from '../ui/MsIcons';
+import { MsRefreshIcon, MsFriendAddIcon } from '../ui/MsIcons';
+import { usePermission } from '../../hooks/usePermission';
+import { AddParticipantModal } from './modals/AddParticipantModal';
+import { RemoveParticipantModal } from './modals/RemoveParticipantModal';
 import {
   DEFAULT_FILTERS,
   applyFilters,
@@ -55,6 +58,16 @@ export function OpsCenter({ cycleId, onOpenMember, headerActions }: Props) {
   const [repushingSelection, setRepushingSelection] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
+  const [removeUserId, setRemoveUserId] = useState<string | null>(null);
+
+  const { can } = usePermission();
+  const canManageParticipants = !!cycle
+    && can.manageCycles
+    && cycle.status !== 'draft'
+    && cycle.status !== 'closed';
+  // 행 인라인 제외는 'reviewee' (대상자) perspective + 권한 보유 시만 노출
+  const showRowRemove = canManageParticipants && filters.perspective === 'reviewee';
 
   const allRows = useMemo<OpsRow[]>(() => {
     if (!cycle) return [];
@@ -197,6 +210,17 @@ export function OpsCenter({ cycleId, onOpenMember, headerActions }: Props) {
           >
             사이클 재푸시
           </MsButton>
+          {canManageParticipants && (
+            <MsButton
+              variant="outline-brand1"
+              size="sm"
+              onClick={() => setAddParticipantOpen(true)}
+              leftIcon={<MsFriendAddIcon />}
+              title="중도 입사·신규 합류 인원을 진행 중 사이클에 추가"
+            >
+              참가자 추가
+            </MsButton>
+          )}
           {headerActions}
         </div>
       </div>
@@ -217,6 +241,7 @@ export function OpsCenter({ cycleId, onOpenMember, headerActions }: Props) {
         onToggle={toggleOne}
         onToggleAll={toggleAll}
         onRowOpen={row => onOpenMember(row.user.id)}
+        onRowRemove={showRowRemove ? (row => setRemoveUserId(row.user.id)) : undefined}
         deadlines={{ self: cycle.selfReviewDeadline, manager: cycle.managerReviewDeadline }}
         perspectiveLabel={filters.perspective === 'reviewee' ? '대상자' : '작성자'}
         showPeer={kpis.hasPeer}
@@ -250,6 +275,21 @@ export function OpsCenter({ cycleId, onOpenMember, headerActions }: Props) {
           cycleId={cycle.id}
           open={auditOpen}
           onClose={() => setAuditOpen(false)}
+        />
+      )}
+      {canManageParticipants && (
+        <AddParticipantModal
+          cycleId={cycle.id}
+          open={addParticipantOpen}
+          onClose={() => setAddParticipantOpen(false)}
+        />
+      )}
+      {canManageParticipants && (
+        <RemoveParticipantModal
+          cycleId={cycle.id}
+          userId={removeUserId}
+          open={removeUserId !== null}
+          onClose={() => setRemoveUserId(null)}
         />
       )}
     </section>

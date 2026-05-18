@@ -4,7 +4,7 @@ import { MsCheckbox } from '../ui/MsControl';
 import { StatusBadge } from '../ui/StatusBadge';
 import { UserAvatar } from '../ui/UserAvatar';
 import { EmptyState } from '../ui/EmptyState';
-import { MsProfileIcon } from '../ui/MsIcons';
+import { MsProfileIcon, MsCancelIcon } from '../ui/MsIcons';
 import { deadlineLabel, daysUntil, timeAgo } from '../../utils/dateUtils';
 import type { OpsRow, OpsStageSummary } from '../../utils/opsCenter';
 
@@ -14,6 +14,8 @@ interface Props {
   onToggle: (key: string) => void;
   onToggleAll: () => void;
   onRowOpen: (row: OpsRow) => void;
+  /** 행 인라인 제외 액션. 미제공 시 액션 컬럼 자체 미노출 */
+  onRowRemove?: (row: OpsRow) => void;
   deadlines: { self: string; manager: string };
   perspectiveLabel: string;
   showPeer?: boolean;
@@ -60,11 +62,12 @@ function StageCell({ summary, deadline }: { summary?: OpsStageSummary; deadline:
 }
 
 export function OpsTable({
-  rows, selected, onToggle, onToggleAll, onRowOpen, deadlines, perspectiveLabel,
+  rows, selected, onToggle, onToggleAll, onRowOpen, onRowRemove, deadlines, perspectiveLabel,
   showPeer = false, showUpward = false,
 }: Props) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.key));
   const someChecked = rows.some(r => selected.has(r.key));
+  const showActionCol = !!onRowRemove;
 
   // 열 구성: 기본 자기평가 + 조직장 (+ peer, upward 옵션) — CSS Grid 변수 기반
   const stageColsTemplate = [
@@ -75,7 +78,7 @@ export function OpsTable({
   ].filter(Boolean).join(' ');
 
   const gridStyle: CSSProperties = {
-    gridTemplateColumns: `40px minmax(0, 2fr) minmax(0, 1fr) ${stageColsTemplate} minmax(0, 0.8fr) minmax(0, 0.8fr)`,
+    gridTemplateColumns: `40px minmax(0, 2fr) minmax(0, 1fr) ${stageColsTemplate} minmax(0, 0.8fr) minmax(0, 0.8fr)${showActionCol ? ' 32px' : ''}`,
   };
 
   if (rows.length === 0) {
@@ -110,6 +113,7 @@ export function OpsTable({
         {showUpward && <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">상향 리뷰</span>}
         <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">마감</span>
         <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">마지막 저장</span>
+        {showActionCol && <span aria-hidden="true" />}
       </div>
 
       <ul className="divide-y divide-bd-default">
@@ -122,7 +126,7 @@ export function OpsTable({
               key={row.key}
               style={gridStyle}
               className={cn(
-                'md:grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 px-4 py-2.5 transition-colors',
+                'group md:grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 px-4 py-2.5 transition-colors',
                 isSelected ? 'bg-pink-005/40' : 'hover:bg-gray-001 focus-within:bg-gray-001',
               )}
             >
@@ -155,6 +159,17 @@ export function OpsTable({
               <span className="hidden md:inline text-xs text-fg-subtlest">
                 {row.lastSavedAt ? timeAgo(row.lastSavedAt) : '-'}
               </span>
+              {showActionCol && (
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); onRowRemove!(row); }}
+                  title={`${row.user.name}님을 사이클에서 제외`}
+                  aria-label={`${row.user.name}님 제외`}
+                  className="hidden md:inline-flex w-6 h-6 items-center justify-center rounded text-fg-subtlest opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-005 hover:text-red-060 transition"
+                >
+                  <MsCancelIcon size={14} />
+                </button>
+              )}
 
               <div className="col-start-2 flex flex-wrap items-center gap-2 md:hidden">
                 <StageCell summary={row.self} deadline={deadlines.self} />

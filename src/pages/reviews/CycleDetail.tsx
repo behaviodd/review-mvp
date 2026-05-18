@@ -25,7 +25,6 @@ import { MsButton } from '../../components/ui/MsButton';
 import { MsInput } from '../../components/ui/MsControl';
 import { getSmallestOrg } from '../../utils/userUtils';
 import { OpsCenter } from '../../components/review/OpsCenter';
-import { CycleParticipantsPanel } from '../../components/review/CycleParticipantsPanel';
 import { SubmissionActionRail } from '../../components/review/SubmissionActionRail';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuthStore } from '../../stores/authStore';
@@ -791,10 +790,8 @@ export function CycleDetail() {
         </div>
       )}
 
-      {/* 참가자 관리 — 중도 입사/퇴사 등 진행 중 인원 변경 */}
-      <CycleParticipantsPanel cycleId={cycle.id} />
-
-      {/* Ops Center — Phase D-3.D-1: 위에 border-t 추가로 영역 분리 */}
+      {/* Ops Center — Phase D-3.D-1: 위에 border-t 추가로 영역 분리.
+          참가자 추가/제외는 OpsCenter 헤더 + 대상자 리스트 인라인으로 통합 */}
       <div className="border-t border-bd-default pt-4">
         <OpsCenter
           cycleId={cycle.id}

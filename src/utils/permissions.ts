@@ -58,10 +58,26 @@ export function hasPermission(
   );
 }
 
+/**
+ * 사이클이 "편집 잠금" 상태인지.
+ *
+ * invariant: `editLockedAt` 은 `closed + EDIT_LOCK_DAYS` 자동 lock (autoArchive)
+ * 한 가지 경로로만 set 되는 것이 의도. 따라서 `status !== 'closed'` 인데
+ * `editLockedAt` 가 있다면 데이터 정합성 깨진 상태(잔재) 이며 lock 효과는 무시.
+ *
+ * UI 인지/해제 진입점(🔒 칩 표시, "잠금 해제" 버튼) 은 raw `cycle.editLockedAt`
+ * 를 그대로 봐서 admin 이 풀 수 있도록 유지하고, "차단 효과" (편집/제출/단계
+ * 전환 등) 만 이 헬퍼로 게이트한다.
+ */
+export function isCycleEditLocked(cycle: ReviewCycle | undefined): boolean {
+  if (!cycle) return false;
+  return !!cycle.editLockedAt && cycle.status === 'closed';
+}
+
 function isCycleMutable(cycle?: ReviewCycle): boolean {
   if (!cycle) return false;
   if (cycle.status === 'closed') return false;
-  if (cycle.editLockedAt) return false;
+  if (isCycleEditLocked(cycle)) return false;
   return true;
 }
 

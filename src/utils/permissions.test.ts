@@ -11,6 +11,7 @@ import {
   canViewAuditLog,
   canViewSubmissionResult,
   hasPermission,
+  isCycleEditLocked,
 } from './permissions';
 import type {
   PermissionCode,
@@ -128,7 +129,10 @@ describe('review operation permissions', () => {
   ];
   const activeCycle = cycle();
   const closedCycle = cycle({ status: 'closed' });
-  const lockedCycle = cycle({ editLockedAt: now });
+  // editLockedAt 은 'closed + EDIT_LOCK_DAYS' 자동 lock 한 경로로만 set 되는 게
+  // 의도 — 따라서 lock 의 차단 효과는 closed 사이클에서만 발현된다.
+  // status !== 'closed' 인데 editLockedAt 가 있는 케이스(잔재 데이터)는 무시.
+  const lockedCycle = cycle({ status: 'closed', editLockedAt: now });
   const downward = submission();
   const selfReview = submission({ type: 'self' });
   const submitted = submission({ status: 'submitted' });
@@ -144,6 +148,24 @@ describe('review operation permissions', () => {
     expect(canExtendDeadline({ actor: admin, cycle: closedCycle, submission: downward, groups })).toBe(false);
     expect(canReopenSubmission({ actor: admin, cycle: lockedCycle, submission: submitted, groups })).toBe(false);
     expect(canBulkIntervene({ actor: cycleManager, cycle: lockedCycle, groups })).toBe(false);
+  });
+
+  // invariant: editLockedAt 은 closed 사이클에서만 차단 효과를 발휘한다.
+  // 진행 단계(self_review·manager_review) 에 lock 데이터가 잔재로 남아 있어도
+  // 차단 효과는 무시 — 운영 흐름이 막히지 않도록 한다.
+  // UI 표시(🔒 칩)와 admin 의 "잠금 해제" 진입점은 별도 경로로 유지된다.
+  it('ignores editLockedAt as a block when the cycle is not closed (stale lock)', () => {
+    const staleSelf = cycle({ status: 'self_review', editLockedAt: now });
+    const staleManager = cycle({ status: 'manager_review', editLockedAt: now });
+    const properClosedLock = cycle({ status: 'closed', editLockedAt: now });
+
+    expect(isCycleEditLocked(staleSelf)).toBe(false);
+    expect(isCycleEditLocked(staleManager)).toBe(false);
+    expect(isCycleEditLocked(properClosedLock)).toBe(true);
+
+    // 차단 동작도 같은 invariant: stale lock 은 차단하지 않음
+    expect(canExtendDeadline({ actor: cycleManager, cycle: staleSelf, submission: downward, groups })).toBe(true);
+    expect(canBulkIntervene({ actor: cycleManager, cycle: staleManager, groups })).toBe(true);
   });
 
   it('allows deadline extension for cycles.manage holders and assigned reviewers', () => {

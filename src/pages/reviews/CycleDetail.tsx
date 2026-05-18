@@ -35,6 +35,7 @@ import { runPreflight, type PreflightResult } from '../../utils/cyclePreflight';
 import { resolveEffectiveOrgData } from '../../utils/snapshotResolver';
 import { getEffectiveTemplate } from '../../utils/effectiveTemplate';
 import { resolveTargetMembers } from '../../utils/resolveTargets';
+import { isCycleEditLocked } from '../../utils/permissions';
 
 // 상태 전환 정의
 const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
@@ -406,7 +407,7 @@ export function CycleDetail() {
         {cycle.editLockedAt && currentUser?.role === 'admin' && (
           <MsButton size="sm" variant="outline-default" onClick={() => setUnlockOpen(true)}>잠금 해제</MsButton>
         )}
-        {transition && !cycle.editLockedAt && (
+        {transition && !isCycleEditLocked(cycle) && (
           <MsButton size="sm" variant={transition.isDanger ? 'outline-red' : 'outline-brand1'} onClick={() => handleTransitionClick()}>
             {transition.label}
           </MsButton>
@@ -427,7 +428,7 @@ export function CycleDetail() {
         <MsButton size="sm" variant="outline-default" onClick={() => setDryRunOpen(true)} leftIcon={<Eye />}>드라이런</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/new?from=${cycle.id}`)} leftIcon={<MsEditIcon />}>복제</MsButton>
         <MsButton size="sm" variant="outline-default" onClick={() => setSettingsOpen(true)} leftIcon={<MsSettingIcon />}>리뷰 설정</MsButton>
-        <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/${cycle.id}/edit`)} leftIcon={<MsEditIcon />} disabled={!!cycle.editLockedAt}>편집</MsButton>
+        <MsButton size="sm" variant="outline-default" onClick={() => navigate(`/cycles/${cycle.id}/edit`)} leftIcon={<MsEditIcon />} disabled={isCycleEditLocked(cycle)}>편집</MsButton>
         {cycle.status === 'closed' && !cycle.archivedAt && (
           <MsButton
             size="sm"
@@ -441,7 +442,7 @@ export function CycleDetail() {
             보관
           </MsButton>
         )}
-        <MsButton size="sm" variant="outline-red" onClick={() => setShowDeleteConfirm(true)} leftIcon={<MsDeleteIcon />} disabled={!!cycle.editLockedAt}>삭제</MsButton>
+        <MsButton size="sm" variant="outline-red" onClick={() => setShowDeleteConfirm(true)} leftIcon={<MsDeleteIcon />} disabled={isCycleEditLocked(cycle)}>삭제</MsButton>
       </>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

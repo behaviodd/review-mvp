@@ -9,6 +9,7 @@ import { TagInput } from './TagInput';
 import { PolicySection } from './cycleNew/PolicySection';
 import { AutomationSection } from './cycleNew/AutomationSection';
 import { recordAudit } from '../../utils/auditLog';
+import { isCycleEditLocked } from '../../utils/permissions';
 import type {
   AnonymityPolicy, AutoAdvanceRule, ReferenceInfoPolicy, ReminderRule, ReviewCycle, VisibilityPolicy,
 } from '../../types';
@@ -55,7 +56,7 @@ export function CycleSettingsDrawer({ cycle, open, onClose }: Props) {
 
   if (!open) return null;
 
-  const readOnly = !!cycle.editLockedAt;
+  const readOnly = isCycleEditLocked(cycle);
   const allTags = Array.from(new Set(allCycles.flatMap(c => c.tags ?? [])));
 
   const save = () => {

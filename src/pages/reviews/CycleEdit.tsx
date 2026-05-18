@@ -9,6 +9,7 @@ import { MsInput } from '../../components/ui/MsControl';
 import { MsCheckIcon } from '../../components/ui/MsIcons';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getDescendantOrgUnitIds } from '../../utils/userCompat';
+import { isCycleEditLocked } from '../../utils/permissions';
 
 export function CycleEdit() {
   const { cycleId } = useParams<{ cycleId: string }>();
@@ -52,7 +53,7 @@ export function CycleEdit() {
     );
   }
 
-  if (cycle.editLockedAt) {
+  if (isCycleEditLocked(cycle)) {
     return (
       <EmptyState
         illustration="empty-cycle"

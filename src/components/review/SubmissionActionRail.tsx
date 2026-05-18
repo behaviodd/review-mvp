@@ -15,6 +15,7 @@ import {
   canProxyWrite,
   canReopenSubmission,
   hasPermission,
+  isCycleEditLocked,
 } from '../../utils/permissions';
 import type { ReviewCycle, ReviewSubmission, User } from '../../types';
 
@@ -50,7 +51,7 @@ export function SubmissionActionRail({
   const supportsPeer = cycle.reviewKinds?.includes('peer') && cycle.peerSelection?.method === 'admin_assigns';
   const canAssignPeer = !!supportsPeer && !!revieweeId
     && hasPermission(currentUser, 'reviewer_assignments.manage', groups)
-    && !cycle.editLockedAt && cycle.status !== 'closed';
+    && !isCycleEditLocked(cycle) && cycle.status !== 'closed';
 
   // 권한 계산 (stage별) — R2: assignments + R6: groups 전달로 평가권자/권한그룹 모두 인정
   const canExtendSelf = !!selfSub && canExtendDeadline({ actor: currentUser, cycle, submission: selfSub, assignments, groups });

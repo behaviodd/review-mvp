@@ -132,7 +132,12 @@ export function buildOpsRows(
   users: User[],
   perspective: OpsPerspective,
 ): OpsRow[] {
-  const cycleSubs = submissions.filter(s => s.cycleId === cycle.id);
+  // 진행 중 인원 변경 — autoExcluded 마크된 submission 은 운영 리스트에서 숨김
+  // (데이터 보존을 위해 삭제하지 않고 마크만 부여하는 정책이므로 이 단계에서
+  // 필터링). 제외된 reviewee 의 모든 submission 이 autoExcluded 인 경우 행
+  // 자체 사라짐. 그 user 가 reviewer 로서 작성 중인 다른 사람의 submission
+  // 은 영향받지 않음 (autoExcluded 가 revieweeId 기준으로만 부여됨)
+  const cycleSubs = submissions.filter(s => s.cycleId === cycle.id && !s.autoExcluded);
   const userMap = new Map(users.map(u => [u.id, u]));
 
   const groupKey = (s: ReviewSubmission) =>

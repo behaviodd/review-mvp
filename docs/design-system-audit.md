@@ -81,11 +81,11 @@ Avatar, Badge, BottomSheet, Button, ButtonGroup, Chip, Control, DataTable, DateP
 - Semantic color 토큰 (fg/bg/elevated/brand)
 - 본문 16px / LNB 14px
 
-### P1 (미세 정합 가능 — 작업 면적 작음)
-1. **Pill ↔ Chip / Badge 분리** — DS 의 Chip + Badge 의미 분리. review-mvp 의 Pill 을 두 컴포넌트로 분할 또는 명명 명확화
-2. **MsInput lg size 추가** — DS 의 lg (48px) 추가. 사이클 검색 등 visible inputs 에 적용
-3. **gray-005 토큰 정리** — DS gray-010 의 변형인지, 별도 의도인지 결정. 가능하면 gray-010 으로 통일
-4. **MsButton `xxl` → `2xl` 명명 동기** — 면적 1줄
+### P1 (Phase DS-1 — 2026-05-18 완료)
+1. ~~Pill ↔ Chip / Badge 분리~~ → **분리 불필요 결론**. 48건 사용처 조사 결과 모두 단순 status indicator (tone + xs/sm size + label, 인터랙티브 패턴 0건). DS Badge 의미로 확정. 향후 closable Chip 요구 발생 시 별도 신설
+2. ✅ **MsInput lg size 추가** — `lg: 'px-3.5 py-3 text-base rounded-lg'` (≈48px) + leftSlot/rightSlot 의 pl-10/pr-10 분기 추가
+3. ~~gray-005 토큰 정리~~ → **유지 결론**. review-mvp `gray-001 (#fcfdfd) = DS gray-010` (hex 동일, 명명만 다름). `gray-005 (#f0f3f4)` 는 DS 에 직접 매핑 없는 **별도 중간 톤** (113건 사용 중). DS scale 의 확장으로 유지. 폐기 시 시각 회귀 큼
+4. ✅ **MsButton `xxl` → `2xl`** — Size type + SIZE map key 변경. 외부 사용처 0건 (자체 사용만)
 
 ### P2 (자체 구현 → DS 패턴으로 마이그레이션)
 5. **SegmentControl** — 자체 segmented control → DS SegmentControl 패턴 (size sm/md/lg + fullWidth). OpsFilterBar / ListToolbar / GuideSidebar nav 영향
@@ -129,12 +129,13 @@ Avatar, Badge, BottomSheet, Button, ButtonGroup, Chip, Control, DataTable, DateP
 
 ## 6. Open Questions
 
-1. **DS 의 정확한 raw gray 단계**: `gray-010 #FCFDFD` ~ `gray-990 #111417`. review-mvp 의 `gray-005` 가 무엇인지 (별도 hex? gray-010 변형?) → tailwind.config 확인 + DS color 페이지 재정독 필요
+1. ~~DS 의 정확한 raw gray 단계~~ → **해소 (Phase DS-1)**: review-mvp `gray-001 = #fcfdfd = DS gray-010` (명명만 다름). review-mvp 가 `gray-005 (#f0f3f4)` 라는 중간 톤을 추가한 확장 scale. 폐기 X
 2. **MsControl 의 React 적응 패턴**: 단일 component (DS) vs 다중 export (review-mvp). 합의 후 명문화 — `docs/ui-tokens.md` 업데이트
 3. **font-family Pretendard Variable**: review-mvp 가 실제로 Pretendard 를 쓰는지 (index.html / tailwind / CSS 확인 필요)
 4. **DS DatePicker 채택 여부**: 사이클 일정 (CycleNew Step 3 / CycleEdit) 에서 native input 만 사용 중인지, 자체 DatePicker 가 있는지
 5. **DS DataTable vs OpsTable**: OpsTable 은 운영센터의 KPI/filter/select 가 결합된 도메인 특화. DataTable 표준화 vs 분리 유지 결정
 6. **token 명명 동기**: Tailwind 기본 (`text-base`)  ↔ DS (`text-body-lg-regular`). semantic alias 도입 검토 — 코드 가독성 + DS 동기 트레이드오프
+7. **MsInput sm size 28→32 정합**: 본 phase 에서 lg 만 추가. DS sm = 32px 와 review-mvp sm = ~28px 미세 차이. 향후 별도 검토
 
 ---
 

@@ -173,7 +173,7 @@ interface MsInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size
   error?: string;
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const INPUT_BASE =
@@ -183,7 +183,8 @@ const INPUT_BASE =
 
 const INPUT_SIZE = {
   sm: 'px-2.5 py-1.5 text-xs rounded-md',
-  md: 'px-3 py-2 text-base rounded-lg',
+  md: 'px-3   py-2   text-base rounded-lg',
+  lg: 'px-3.5 py-3   text-base rounded-lg',
 } as const;
 
 export function MsInput({
@@ -213,8 +214,8 @@ export function MsInput({
           className={cn(
             INPUT_BASE,
             INPUT_SIZE[size],
-            leftSlot  && (size === 'sm' ? 'pl-7'  : 'pl-8'),
-            rightSlot && (size === 'sm' ? 'pr-7'  : 'pr-9'),
+            leftSlot  && (size === 'sm' ? 'pl-7'  : size === 'lg' ? 'pl-10' : 'pl-8'),
+            rightSlot && (size === 'sm' ? 'pr-7'  : size === 'lg' ? 'pr-10' : 'pr-9'),
             error ? 'border-red-040 focus:ring-red-005 focus:border-red-040' : 'border-gray-020',
             className,
           )}

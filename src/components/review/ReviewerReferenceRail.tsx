@@ -30,10 +30,11 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
     [goals, revieweeId],
   );
 
-  // 1회성 입력 (cycle.referenceInfo.oneOffGoals) 우선. goalStore (전역) 는
-  // 현재 입력 진입점이 없는 상태라 사실상 oneOffGoals 만 의미 있음.
-  const oneOffGoalText = cycle.referenceInfo?.oneOffGoals?.[revieweeId]?.trim() ?? '';
-  const hasOneOff = oneOffGoalText.length > 0;
+  // 이번 사이클 공통 목표 (cycle.referenceInfo.cycleGoals) 우선. 모든 reviewee
+  // 에게 동일하게 표시. goalStore (전역) 는 현재 입력 진입점이 없는 상태라
+  // 사실상 cycleGoals 만 의미 있음.
+  const cycleGoalsText = cycle.referenceInfo?.cycleGoals?.trim() ?? '';
+  const hasCycleGoals = cycleGoalsText.length > 0;
 
   const previousReview = useMemo(() => {
     const candidates = submissions
@@ -81,10 +82,10 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
           {includeGoals && (
             <div>
               <p className="text-[11px] font-semibold text-gray-060 mb-1.5">
-                {hasOneOff ? '이번 사이클 목표' : `목표 ${revieweeGoals.length}개`}
+                {hasCycleGoals ? '이번 사이클 목표' : `목표 ${revieweeGoals.length}개`}
               </p>
-              {hasOneOff ? (
-                <p className="text-xs text-gray-080 whitespace-pre-wrap">{oneOffGoalText}</p>
+              {hasCycleGoals ? (
+                <p className="text-xs text-gray-080 whitespace-pre-wrap">{cycleGoalsText}</p>
               ) : revieweeGoals.length === 0 ? (
                 <p className="text-xs text-fg-subtlest">등록된 목표가 없습니다.</p>
               ) : (

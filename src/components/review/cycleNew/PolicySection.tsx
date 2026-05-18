@@ -1,11 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { useMemo } from 'react';
 import { MsCheckbox, MsTextarea } from '../../ui/MsControl';
-import { UserAvatar } from '../../ui/UserAvatar';
 import { cn } from '../../../utils/cn';
-import type { AnonymityPolicy, CycleTargetMode, DistributionPolicy, ReferenceInfoPolicy, VisibilityPolicy, VisibilityWhen as _VisibilityWhen } from '../../../types';
-import { useTeamStore } from '../../../stores/teamStore';
-import { resolveTargetMembers } from '../../../utils/resolveTargets';
+import type { AnonymityPolicy, DistributionPolicy, ReferenceInfoPolicy, VisibilityPolicy, VisibilityWhen as _VisibilityWhen } from '../../../types';
 import { DistributionSection } from './DistributionSection';
 type VisibilityWhen = _VisibilityWhen;
 
@@ -14,12 +10,6 @@ interface PolicyFormSlice {
   visibility?: VisibilityPolicy;
   referenceInfo?: ReferenceInfoPolicy;
   distribution?: DistributionPolicy;
-  // resolveTargetMembers 호출에 필요한 target criteria — CycleNew FormState /
-  // CycleSettingsDrawer DraftState 둘 다 보유
-  targetMode?: CycleTargetMode;
-  targetDepartments: string[];
-  targetManagerId?: string;
-  targetUserIds?: string[];
 }
 
 interface Props<F extends PolicyFormSlice> {
@@ -28,30 +18,12 @@ interface Props<F extends PolicyFormSlice> {
 }
 
 export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Props<F>) {
-  const users = useTeamStore(s => s.users);
   const updateAnonymity = (patch: Partial<AnonymityPolicy>) =>
     setForm(f => ({ ...f, anonymity: { ...(f.anonymity ?? {}), ...patch } }));
   const updateVisibility = (patch: Partial<VisibilityPolicy>) =>
     setForm(f => ({ ...f, visibility: { ...(f.visibility ?? {}), ...patch } }));
   const updateReference = (patch: Partial<ReferenceInfoPolicy>) =>
     setForm(f => ({ ...f, referenceInfo: { ...(f.referenceInfo ?? {}), ...patch } }));
-
-  const reviewees = useMemo(
-    () => resolveTargetMembers(form, users),
-    [form, users],
-  );
-
-  // 빈 문자열은 키 제거 (불필요한 저장 방지)
-  const setOneOffGoal = (userId: string, text: string) => {
-    setForm(f => {
-      const prev = f.referenceInfo?.oneOffGoals ?? {};
-      const next = { ...prev };
-      const trimmed = text.trim();
-      if (trimmed.length === 0) delete next[userId];
-      else next[userId] = text;
-      return { ...f, referenceInfo: { ...(f.referenceInfo ?? {}), oneOffGoals: next } };
-    });
-  };
 
 
   return (
@@ -160,40 +132,18 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
         {form.referenceInfo?.includeGoals && (
           <div className="mt-3 rounded-lg border border-gray-005 bg-gray-001 p-3 space-y-2">
             <div>
-              <p className="text-xs font-semibold text-gray-080">이번 사이클 한정 목표 (선택)</p>
+              <p className="text-xs font-semibold text-gray-080">이번 사이클 목표 (선택)</p>
               <p className="text-[11px] text-fg-subtlest mt-0.5">
-                각 피평가자별로 이 사이클에서만 사용할 목표를 자유 형식으로 입력하세요. 빈 칸은 저장되지 않습니다.
+                이번 사이클의 공통 목표를 자유 형식으로 입력하세요. 모든 피평가자의 작성 화면 상단에 동일하게 표시됩니다. 빈 칸은 저장되지 않습니다.
               </p>
             </div>
-            {reviewees.length === 0 ? (
-              <p className="text-xs text-fg-subtlest py-2">대상자를 먼저 선택하세요.</p>
-            ) : (
-              <ul className="space-y-2 max-h-96 overflow-y-auto">
-                {reviewees.map(u => {
-                  const value = form.referenceInfo?.oneOffGoals?.[u.id] ?? '';
-                  return (
-                    <li key={u.id} className="flex items-start gap-2">
-                      <div className="flex items-center gap-2 w-44 shrink-0 pt-1.5">
-                        <UserAvatar user={u} size="sm" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-fg-default truncate">{u.name}</p>
-                          <p className="text-[11px] text-fg-subtle truncate">{u.department ?? '—'}</p>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <MsTextarea
-                          value={value}
-                          onChange={e => setOneOffGoal(u.id, e.target.value)}
-                          rows={2}
-                          maxLength={500}
-                          placeholder="예: 매출 10% 성장 / 신규 고객 5건 확보"
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <MsTextarea
+              value={form.referenceInfo?.cycleGoals ?? ''}
+              onChange={e => updateReference({ cycleGoals: e.target.value })}
+              rows={4}
+              maxLength={2000}
+              placeholder="예: 매출 10% 성장 / 신규 고객 확보 / 핵심 인재 리텐션"
+            />
           </div>
         )}
       </section>

@@ -341,10 +341,10 @@ export interface VisibilityPolicy {
 export interface ReferenceInfoPolicy {
   includeGoals?: boolean;
   includePreviousReview?: boolean;
-  // 1회성 목표 — 이번 사이클 한정. goalStore (전역) 와 별개로 cycle 안에서
-  // reviewee 별 자유형식 multi-line 텍스트. ReviewerReferenceRail 는 이 값을
-  // 우선 표시하고 비어있으면 goalStore fallback.
-  oneOffGoals?: Record<string, string>;
+  // 이번 사이클의 공통 목표 (1회성). 모든 reviewee 에게 동일하게 표시.
+  // goalStore (전역) 와 별개. ReviewerReferenceRail 는 이 값을 우선 표시하고
+  // 비어있으면 goalStore fallback.
+  cycleGoals?: string;
 }
 
 // Phase 3.3b-1

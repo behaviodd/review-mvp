@@ -5,8 +5,11 @@ import type { ReviewCycle, ReviewTemplate, ReviewSubmission, Answer, Notificatio
 import { cycleWriter, templateWriter, submissionWriter } from '../utils/reviewSheetWriter';
 import { useSheetsSyncStore } from './sheetsSyncStore';
 import { useNotificationStore } from './notificationStore';
+import { useTeamStore } from './teamStore';
 import { DEFAULT_TEMPLATE } from '../data/defaultTemplate';
 import { recordAudit } from '../utils/auditLog';
+import { resolveTargetMembers } from '../utils/resolveTargets';
+import { createCycleSubmissions } from '../utils/createCycleSubmissions';
 
 type PersistedState = {
   cycles: ReviewCycle[];
@@ -33,6 +36,10 @@ interface ReviewState {
   submitSubmission: (submissionId: string, overallRating?: number) => void;
   getSubmission: (cycleId: string, reviewerId: string, revieweeId: string, type: ReviewKind) => ReviewSubmission | undefined;
   publishCycle: (cycleId: string, actorId: string) => { ok: boolean; error?: string };
+  addCycleParticipant: (cycleId: string, userId: string, actorId: string) =>
+    { ok: boolean; error?: string; createdSubmissions?: number };
+  removeCycleParticipant: (cycleId: string, userId: string, actorId: string, reason?: string) =>
+    { ok: boolean; error?: string; markedSubmissions?: number };
   closeCycle: (cycleId: string, actorId: string) => { ok: boolean; error?: string };
   archiveCycle: (cycleId: string, actorId: string) => { ok: boolean; error?: string };
   unarchiveCycle: (cycleId: string, actorId: string) => { ok: boolean; error?: string };
@@ -205,6 +212,131 @@ export const useReviewStore = create<ReviewState>()(
           meta: { to: 'closed', trigger: actorId === 'system' ? 'auto' : 'manual' },
         });
         return { ok: true };
+      },
+
+      /**
+       * 사이클 진행 중에 참가자(피평가자)를 추가한다.
+       * - 중도 입사·신규 합류 인원 대응
+       * - targetMode 가 custom 이 아닐 때는 현재 effective member 집합을 동결하여
+       *   targetUserIds 에 넣고 targetMode='custom' 으로 전환 (이후 모드 의존 제거)
+       * - 신규 submission 은 createCycleSubmissions 와 동일 로직으로 즉시 생성
+       *   (self / downward / upward — cycle.reviewKinds 따름)
+       * - 상태: closed 가 아니면 허용 (self_review·manager_review 단계 모두 가능)
+       */
+      addCycleParticipant: (cycleId, userId, actorId) => {
+        const state = get();
+        const cycle = state.cycles.find(c => c.id === cycleId);
+        if (!cycle) return { ok: false, error: '사이클을 찾을 수 없습니다.' };
+        if (cycle.status === 'draft') return { ok: false, error: '발행 전 사이클입니다. 편집 화면에서 대상자를 설정하세요.' };
+        if (cycle.status === 'closed') return { ok: false, error: '종료된 사이클에는 참가자를 추가할 수 없습니다.' };
+
+        const team = useTeamStore.getState();
+        const users = team.users;
+        const orgUnits = team.orgUnits;
+        const assignments = team.reviewerAssignments;
+
+        const targetUser = users.find(u => u.id === userId);
+        if (!targetUser) return { ok: false, error: '대상 사용자를 찾을 수 없습니다.' };
+
+        const currentIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
+        if (currentIds.has(userId)) return { ok: false, error: '이미 참가 중인 사용자입니다.' };
+
+        // targetMode 동결: custom 이 아니면 현재 effective members 를 targetUserIds 에 넣고 custom 전환
+        const nextTargetUserIds = cycle.targetMode === 'custom'
+          ? [...(cycle.targetUserIds ?? []), userId]
+          : [...Array.from(currentIds), userId];
+        const frozenFrom = cycle.targetMode !== 'custom' ? (cycle.targetMode ?? 'org') : undefined;
+
+        const updated: ReviewCycle = {
+          ...cycle,
+          targetMode: 'custom',
+          targetUserIds: nextTargetUserIds,
+        };
+        set(s => ({ cycles: s.cycles.map(c => c.id === cycleId ? updated : c) }));
+        if (isReviewSyncEnabled()) cycleWriter.upsert(updated);
+
+        const subs = createCycleSubmissions(cycleId, [targetUser], users, orgUnits, cycle, assignments);
+        if (subs.length > 0) {
+          set(s => ({ submissions: [...s.submissions, ...subs] }));
+          if (isReviewSyncEnabled()) subs.forEach(sub => submissionWriter.upsert(sub));
+        }
+
+        recordAudit({
+          cycleId,
+          actorId,
+          action: 'cycle.participant_added',
+          targetIds: [userId],
+          summary: `참가자 추가 — ${targetUser.name} (${subs.length}건 submission 생성)`,
+          meta: { userId, createdSubmissions: subs.length, modeFrozenFrom: frozenFrom },
+        });
+
+        return { ok: true, createdSubmissions: subs.length };
+      },
+
+      /**
+       * 사이클 진행 중 참가자를 제외한다 (중도 퇴사·이동 대응).
+       * - cycle.targetUserIds 갱신 (custom 모드로 전환 또는 유지)
+       * - 해당 user 가 reviewee 인 미완료 submission (not_started / in_progress) 에
+       *   autoExcluded 마크 부여. 제출 완료된 submission 은 그대로 보존 (이미 평가 유효)
+       * - 데이터 손실 방지를 위해 submission 자체는 삭제하지 않음
+       */
+      removeCycleParticipant: (cycleId, userId, actorId, reason) => {
+        const state = get();
+        const cycle = state.cycles.find(c => c.id === cycleId);
+        if (!cycle) return { ok: false, error: '사이클을 찾을 수 없습니다.' };
+        if (cycle.status === 'draft') return { ok: false, error: '발행 전 사이클입니다. 편집 화면에서 대상자를 변경하세요.' };
+        if (cycle.status === 'closed') return { ok: false, error: '종료된 사이클에서는 참가자를 제외할 수 없습니다.' };
+
+        const team = useTeamStore.getState();
+        const users = team.users;
+
+        const targetUser = users.find(u => u.id === userId);
+        if (!targetUser) return { ok: false, error: '대상 사용자를 찾을 수 없습니다.' };
+
+        const currentIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
+        if (!currentIds.has(userId)) return { ok: false, error: '참가 중이 아닌 사용자입니다.' };
+
+        const nextTargetUserIds = cycle.targetMode === 'custom'
+          ? (cycle.targetUserIds ?? []).filter(id => id !== userId)
+          : Array.from(currentIds).filter(id => id !== userId);
+        const frozenFrom = cycle.targetMode !== 'custom' ? (cycle.targetMode ?? 'org') : undefined;
+
+        const updated: ReviewCycle = {
+          ...cycle,
+          targetMode: 'custom',
+          targetUserIds: nextTargetUserIds,
+        };
+        set(s => ({ cycles: s.cycles.map(c => c.id === cycleId ? updated : c) }));
+        if (isReviewSyncEnabled()) cycleWriter.upsert(updated);
+
+        const at = new Date().toISOString();
+        const marked: ReviewSubmission[] = [];
+        set(s => ({
+          submissions: s.submissions.map(sub => {
+            if (sub.cycleId !== cycleId) return sub;
+            if (sub.revieweeId !== userId) return sub;
+            if (sub.status === 'submitted') return sub;
+            if (sub.autoExcluded) return sub;
+            const next: ReviewSubmission = {
+              ...sub,
+              autoExcluded: { at, reason: 'removed' },
+            };
+            marked.push(next);
+            return next;
+          }),
+        }));
+        if (isReviewSyncEnabled()) marked.forEach(sub => submissionWriter.upsert(sub));
+
+        recordAudit({
+          cycleId,
+          actorId,
+          action: 'cycle.participant_removed',
+          targetIds: [userId],
+          summary: `참가자 제외 — ${targetUser.name} (${marked.length}건 자동제외)${reason ? ` · 사유: ${reason}` : ''}`,
+          meta: { userId, reason, markedSubmissions: marked.length, modeFrozenFrom: frozenFrom },
+        });
+
+        return { ok: true, markedSubmissions: marked.length };
       },
 
       unlockEdit: (cycleId, actorId, reason) => {

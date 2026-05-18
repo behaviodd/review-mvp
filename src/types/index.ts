@@ -436,7 +436,10 @@ export type AuditAction =
   | 'permission_group.updated'
   | 'permission_group.deleted'
   | 'permission_group.member_added'
-  | 'permission_group.member_removed';
+  | 'permission_group.member_removed'
+  // 사이클 진행 중 인원 변경 — 중도 입사/퇴사 대응
+  | 'cycle.participant_added'
+  | 'cycle.participant_removed';
 
 export interface AuditLogEntry {
   id: string;

@@ -32,6 +32,8 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'permission_group.deleted':          '권한 그룹 삭제',
   'permission_group.member_added':     '권한 그룹 멤버 추가',
   'permission_group.member_removed':   '권한 그룹 멤버 제거',
+  'cycle.participant_added':           '참가자 추가',
+  'cycle.participant_removed':         '참가자 제외',
 };
 
 const ACTION_TONE: Record<AuditAction, string> = {
@@ -59,6 +61,8 @@ const ACTION_TONE: Record<AuditAction, string> = {
   'permission_group.deleted':          'bg-red-005 text-red-070',
   'permission_group.member_added':     'bg-purple-005 text-purple-060',
   'permission_group.member_removed':   'bg-gray-005 text-gray-070',
+  'cycle.participant_added':           'bg-green-005 text-green-070',
+  'cycle.participant_removed':         'bg-orange-005 text-orange-070',
 };
 
 interface Props {

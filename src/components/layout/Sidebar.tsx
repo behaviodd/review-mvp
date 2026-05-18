@@ -115,6 +115,18 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   // 보관함 가시성 — 보관된 사이클이 1건이라도 있어야 노출
   const hasArchivedCycles = useMemo(() => cycles.some(c => !!c.archivedAt), [cycles]);
 
+  // '내 작성' 메뉴 가시성 — admin 도 본인이 작성/수신할 리뷰가 있으면 노출
+  // (옵션 B 정책: admin = 평가자·피평가자). App.tsx 의 MyReviewsOrAdminGuide
+  // 의 hasMyReviews 조건과 동일 — 진입 경로 (Sidebar 메뉴) 와 라우트 분기
+  // 의 일관성 보장
+  const hasMyReviews = useMemo(() => {
+    if (!currentUser) return false;
+    return submissions.some(s =>
+      (s.reviewerId === currentUser.id && (s.type === 'self' || s.type === 'peer' || s.type === 'upward')) ||
+      (s.revieweeId === currentUser.id && s.type === 'downward' && s.status === 'submitted')
+    );
+  }, [submissions, currentUser]);
+
   // R7: 신규 회원 승인 대기 카운트 — 구성원 메뉴 옆 빨간 배지
   const pendingApprovalCount = usePendingApprovalsStore(s => s.count);
   const refreshPendingApprovals = usePendingApprovalsStore(s => s.refresh);
@@ -146,7 +158,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
   const navItems: NavNode[] = ([
     /* 일반 사용자 메뉴 */
     { kind: 'item', to: '/',                            icon: MsHomeIcon,    label: '홈',           show: true },
-    { kind: 'item', to: '/reviews/me',                  icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin || isImpersonating },
+    { kind: 'item', to: '/reviews/me',                  icon: MsRefreshIcon, label: '내 작성',      show: !isAdmin || isImpersonating || hasMyReviews },
     { kind: 'item', to: '/reviews/received',            icon: MsProfileIcon, label: '받은 리뷰',    show: true },
     { kind: 'item', to: '/reviews/team',                icon: MsProfileIcon, label: '하향 평가',    show: can.viewTeamReviews && !isAdmin && leadeeIds.size > 0 },
     { kind: 'item', to: '/reviews/team/peer-approvals', icon: MsArticleIcon, label: '승인 대기',    show: !isImpersonating && (can.viewTeamReviews || isAdmin) && peerApprovalsHasData, badge: pendingApprovals },

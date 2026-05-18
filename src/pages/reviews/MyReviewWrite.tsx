@@ -134,22 +134,27 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         )
       )}
       {question.type === 'text' && (
-        <div>
-          <MsTextarea
-            value={answer?.textValue || ''}
-            onChange={e => onChange({ questionId: question.id, textValue: e.target.value })}
-            disabled={readOnly}
-            rows={5}
-            maxLength={1000}
-            placeholder={readOnly ? '' : '구체적인 사례와 수치를 포함해 작성하세요.'}
-          />
-          <div className="flex justify-between mt-1">
-            {!readOnly && answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>}
-            {!readOnly && answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>}
-            {(!readOnly && !answer?.textValue) && <span />}
-            <p className="text-xs text-fg-subtlest ml-auto">{(answer?.textValue || '').length}/1000</p>
+        readOnly ? (
+          answer?.textValue?.trim()
+            ? <p className="text-base text-fg-default leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
+            : <p className="text-base text-fg-subtlest italic">미응답</p>
+        ) : (
+          <div>
+            <MsTextarea
+              value={answer?.textValue || ''}
+              onChange={e => onChange({ questionId: question.id, textValue: e.target.value })}
+              rows={5}
+              maxLength={1000}
+              placeholder="구체적인 사례와 수치를 포함해 작성하세요."
+            />
+            <div className="flex justify-between mt-1">
+              {answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>}
+              {answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>}
+              {!answer?.textValue && <span />}
+              <p className="text-xs text-fg-subtlest ml-auto">{(answer?.textValue || '').length}/1000</p>
+            </div>
           </div>
-        </div>
+        )
       )}
       {isUnanswered && <p className="mt-2 text-xs text-red-050">필수 항목입니다. 답변을 입력해주세요.</p>}
     </div>
@@ -174,7 +179,7 @@ function InputAnswerContent({ question, answer }: { question: TemplateQuestion; 
     const opts = answer?.selectedOptions ?? [];
     return opts.length > 0 ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div> : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
+  return t?.trim() ? <p className="text-base text-fg-default leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
 }
 
 function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; answer?: Answer }) {
@@ -194,7 +199,7 @@ function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; a
       ? <div className="flex flex-wrap gap-1.5">{opts.map(o => <span key={o} className="text-xs px-2 py-1 bg-pink-005 text-pink-060 rounded-full border border-pink-010">{o}</span>)}</div>
       : <p className="text-base text-fg-subtlest italic">미응답</p>;
   }
-  return t?.trim() ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
+  return t?.trim() ? <p className="text-base text-fg-default leading-relaxed whitespace-pre-wrap">{t}</p> : <p className="text-base text-fg-subtlest italic">미응답</p>;
 }
 
 // ─── 참고자료 타입 ────────────────────────────────────────────────────────────

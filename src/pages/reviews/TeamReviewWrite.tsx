@@ -815,7 +815,7 @@ export function TeamReviewWrite() {
                             </div>
                           )}
                           {selfAnswer?.textValue && (
-                            <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">
+                            <p className="text-base text-fg-default leading-relaxed whitespace-pre-wrap">
                               {selfAnswer.textValue}
                             </p>
                           )}
@@ -884,7 +884,7 @@ export function TeamReviewWrite() {
                       {q.type === 'text' && (
                         (isReadOnly || submitted) ? (
                           answer?.textValue?.trim()
-                            ? <p className="text-base text-gray-070 leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
+                            ? <p className="text-base text-fg-default leading-relaxed whitespace-pre-wrap">{answer.textValue}</p>
                             : <p className="text-base text-fg-subtlest italic">미응답</p>
                         ) : (
                           <div>

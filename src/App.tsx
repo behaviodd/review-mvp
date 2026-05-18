@@ -39,6 +39,7 @@ import { PendingApprovals } from './pages/team/PendingApprovals';
 import { BulkMove } from './pages/team/BulkMove';
 import { AuditLog } from './pages/AuditLog';
 import { PendingApproval } from './pages/PendingApproval';
+import { Goals } from './pages/Goals';
 import { GuideLayout } from './pages/guide/GuideLayout';
 import { GuideIndex } from './pages/guide/GuideIndex';
 import { GuidePage } from './pages/guide/GuidePage';
@@ -385,6 +386,7 @@ export default function App() {
               }
             />
             <Route path="settings" element={<RouteBoundary><Settings /></RouteBoundary>} />
+            <Route path="goals" element={<RouteBoundary><Goals /></RouteBoundary>} />
 
             {/* 가이드 — 모든 인증 사용자 접근. /guide 인덱스 + /guide/:cat/:slug 페이지 */}
             <Route path="guide" element={<RouteBoundary><GuideLayout /></RouteBoundary>}>

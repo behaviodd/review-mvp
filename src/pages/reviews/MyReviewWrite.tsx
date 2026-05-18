@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyModeBanner } from '../../components/review/ProxyModeBanner';
 import { PartyPopper, Lightbulb, Save } from 'lucide-react';
@@ -15,6 +15,7 @@ import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
 import { exportSubmissionToCSV } from '../../utils/exportUtils';
 import { getEffectiveTemplate } from '../../utils/effectiveTemplate';
+import { mapPreviousAnswers } from '../../utils/previousAnswers';
 import { ReviewerReferenceRail } from '../../components/review/ReviewerReferenceRail';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { ProgressBar } from '../../components/ui/ProgressBar';
@@ -86,10 +87,23 @@ function RatingSelector({ question: _q, value, onChange, disabled }: {
 }
 
 // ─── 질문 카드 ────────────────────────────────────────────────────────────────
-function QuestionCard({ question, answer, onChange, readOnly, showError }: {
+function QuestionCard({ question, answer, onChange, readOnly, showError, previousAnswer, previousCycleTitle }: {
   question: TemplateQuestion; answer?: Answer; onChange: (a: Answer) => void;
   readOnly?: boolean; showError?: boolean;
+  previousAnswer?: Answer;
+  previousCycleTitle?: string;
 }) {
+  const canPrefill = !readOnly && previousAnswer && !answer?.textValue?.trim()
+    && !answer?.ratingValue && !(answer?.selectedOptions?.length);
+  const prefillFromPrevious = () => {
+    if (!previousAnswer) return;
+    const next: Answer = { questionId: question.id };
+    if (question.type === 'text' && previousAnswer.textValue?.trim()) next.textValue = previousAnswer.textValue;
+    else if ((question.type === 'rating' || question.type === 'competency') && previousAnswer.ratingValue != null) next.ratingValue = previousAnswer.ratingValue;
+    else if (question.type === 'multiple_choice' && previousAnswer.selectedOptions?.length) next.selectedOptions = [...previousAnswer.selectedOptions];
+    else return;
+    onChange(next);
+  };
   const isUnanswered = showError && question.isRequired && !readOnly && (() => {
     if (question.type === 'text') return !answer?.textValue?.trim();
     if (question.type === 'multiple_choice') return !answer?.selectedOptions?.length;
@@ -109,9 +123,21 @@ function QuestionCard({ question, answer, onChange, readOnly, showError }: {
         </div>
       )}
       <div className="mb-3">
-        <p className="text-base font-semibold text-gray-080 leading-snug mb-1">
-          {question.text}{question.isRequired && <span className="text-red-050 ml-1">*</span>}
-        </p>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className="text-base font-semibold text-gray-080 leading-snug flex-1">
+            {question.text}{question.isRequired && <span className="text-red-050 ml-1">*</span>}
+          </p>
+          {canPrefill && (
+            <button
+              type="button"
+              onClick={prefillFromPrevious}
+              className="flex-shrink-0 text-xs font-medium text-pink-050 hover:text-pink-060 hover:underline transition-colors"
+              title={previousCycleTitle ? `${previousCycleTitle} 답변 가져오기` : '이전 회차 답변 가져오기'}
+            >
+              ↺ 이전 답변 채우기
+            </button>
+          )}
+        </div>
         {question.helpText && (
           <p className="text-xs text-fg-subtlest leading-relaxed">{question.helpText}</p>
         )}
@@ -412,6 +438,32 @@ export function MyReviewWrite() {
   const submission = submissions.find(s => s.id === submissionId);
   const cycle      = cycles.find(c => c.id === submission?.cycleId);
   const template   = getEffectiveTemplate(cycle, templates);
+
+  // 이전 회차 같은 type 의 본인 self 제출물 — 답변 채우기 매핑용
+  const previousSelfSubmission = useMemo(() => {
+    if (!submission || submission.type !== 'self') return null;
+    const candidates = submissions
+      .filter(s =>
+        s.revieweeId === submission.revieweeId &&
+        s.reviewerId === submission.reviewerId &&
+        s.type === 'self' &&
+        s.cycleId !== submission.cycleId &&
+        s.status === 'submitted'
+      )
+      .sort((a, b) => (b.submittedAt ?? b.lastSavedAt).localeCompare(a.submittedAt ?? a.lastSavedAt));
+    return candidates[0] ?? null;
+  }, [submissions, submission]);
+
+  const previousByQuestionId = useMemo(() => {
+    if (!previousSelfSubmission) return new Map<string, Answer>();
+    const prevCycle = cycles.find(c => c.id === previousSelfSubmission.cycleId);
+    const prevTemplate = getEffectiveTemplate(prevCycle, templates);
+    return mapPreviousAnswers(template, prevTemplate, previousSelfSubmission.answers);
+  }, [previousSelfSubmission, cycles, templates, template]);
+
+  const previousCycleTitle = previousSelfSubmission
+    ? cycles.find(c => c.id === previousSelfSubmission.cycleId)?.title
+    : undefined;
 
   const [showSuccess,    setShowSuccess]    = useState(false);
   const [showConfirm,    setShowConfirm]    = useState(false);
@@ -722,7 +774,15 @@ export function MyReviewWrite() {
                       <QuestionCard key={q.id} question={q} answer={getAnswer(q.id)} onChange={() => {}} readOnly />
                     ))
                   : group.questions.map(q => (
-                      <QuestionCard key={q.id} question={q} answer={getAnswer(q.id)} onChange={handleChange} showError={showValidation} />
+                      <QuestionCard
+                        key={q.id}
+                        question={q}
+                        answer={getAnswer(q.id)}
+                        onChange={handleChange}
+                        showError={showValidation}
+                        previousAnswer={previousByQuestionId.get(q.id)}
+                        previousCycleTitle={previousCycleTitle}
+                      />
                     ))
                 }
               </section>

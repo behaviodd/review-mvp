@@ -27,6 +27,13 @@ interface DraftState {
   autoAdvance?: AutoAdvanceRule;
   reminderPolicy?: ReminderRule[];
   scheduledPublishAt?: string;
+  // PolicySection 의 1회성 목표 입력 영역이 reviewees 를 resolveTargetMembers
+  // 로 계산하므로 target criteria 4종이 draft 에 필요. 단 본 drawer 는 편집
+  // 대상이 아니라 read-only 로 전달 (저장 단계에서 updateCycle payload 에 포함 X)
+  targetMode?: ReviewCycle['targetMode'];
+  targetDepartments: string[];
+  targetManagerId?: string;
+  targetUserIds?: string[];
 }
 
 function buildDraft(c: ReviewCycle): DraftState {
@@ -38,6 +45,10 @@ function buildDraft(c: ReviewCycle): DraftState {
     autoAdvance: c.autoAdvance ? { ...c.autoAdvance } : undefined,
     reminderPolicy: c.reminderPolicy ? [...c.reminderPolicy] : undefined,
     scheduledPublishAt: c.scheduledPublishAt,
+    targetMode: c.targetMode,
+    targetDepartments: [...c.targetDepartments],
+    targetManagerId: c.targetManagerId,
+    targetUserIds: c.targetUserIds ? [...c.targetUserIds] : undefined,
   };
 }
 

@@ -36,7 +36,23 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
   const cycleGoalsText = cycle.referenceInfo?.cycleGoals?.trim() ?? '';
   const hasCycleGoals = cycleGoalsText.length > 0;
 
+  // previousReview 분기 (kind):
+  //  - 'sameCycleSelf' (downward 작성 시 우선) — 같은 사이클의 reviewee 본인
+  //    self 제출물. 매니저가 부하 평가 시 부하가 이미 제출한 자기평가를 참고.
+  //  - 'prevCycle' (fallback / self 작성 시) — 다른 사이클의 self 제출물 최신.
   const previousReview = useMemo(() => {
+    if (variant === 'downward') {
+      const sameCycleSelf = submissions.find(s =>
+        s.revieweeId === revieweeId &&
+        s.cycleId === cycle.id &&
+        s.type === 'self' &&
+        s.status === 'submitted'
+      );
+      if (sameCycleSelf) {
+        const template = getEffectiveTemplate(cycle, templates);
+        return { sub: sameCycleSelf, cycle, template, kind: 'sameCycleSelf' as const };
+      }
+    }
     const candidates = submissions
       .filter(s =>
         s.revieweeId === revieweeId &&
@@ -50,8 +66,8 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
     const prevCycle = cycles.find(c => c.id === sub.cycleId);
     if (!prevCycle) return null;
     const template = getEffectiveTemplate(prevCycle, templates);
-    return { sub, cycle: prevCycle, template };
-  }, [submissions, cycles, templates, revieweeId, cycle.id]);
+    return { sub, cycle: prevCycle, template, kind: 'prevCycle' as const };
+  }, [submissions, cycles, templates, revieweeId, cycle, variant]);
 
   if (!includeGoals && !includePrev) return null;
 
@@ -72,7 +88,10 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
             )}
           </p>
           <p className="text-[11px] text-fg-subtlest">
-            {[includeGoals && '목표', includePrev && '직전 사이클'].filter(Boolean).join(' · ')}
+            {[
+              includeGoals && '목표',
+              includePrev && (previousReview?.kind === 'sameCycleSelf' ? '본인 자기평가' : '직전 사이클'),
+            ].filter(Boolean).join(' · ')}
           </p>
         </div>
         <MsChevronDownLineIcon size={14} className={cn('text-fg-subtle transition-transform', open && 'rotate-180')} />
@@ -109,9 +128,15 @@ export function ReviewerReferenceRail({ cycle, revieweeId, variant = 'self' }: P
 
           {includePrev && (
             <div>
-              <p className="text-[11px] font-semibold text-gray-060 mb-1.5">직전 사이클 요약</p>
+              <p className="text-[11px] font-semibold text-gray-060 mb-1.5">
+                {previousReview?.kind === 'sameCycleSelf' ? '본인 자기평가 요약' : '직전 사이클 요약'}
+              </p>
               {!previousReview ? (
-                <p className="text-xs text-fg-subtlest">이전에 제출된 자기평가가 없습니다.</p>
+                <p className="text-xs text-fg-subtlest">
+                  {variant === 'downward'
+                    ? '본인이 작성한 자기평가가 아직 없습니다.'
+                    : '이전에 제출된 자기평가가 없습니다.'}
+                </p>
               ) : (
                 <div className="rounded-lg border border-gray-005 bg-gray-001 px-3 py-2">
                   <p className="text-xs font-medium text-gray-080">

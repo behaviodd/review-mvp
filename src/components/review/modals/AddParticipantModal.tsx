@@ -7,7 +7,6 @@ import { MsButton } from '../../ui/MsButton';
 import { MsInput } from '../../ui/MsControl';
 import { ModalShell } from './ModalShell';
 import { UserAvatar } from '../../ui/UserAvatar';
-import { resolveTargetMembers } from '../../../utils/resolveTargets';
 
 interface Props {
   cycleId: string;
@@ -23,6 +22,7 @@ interface Props {
  */
 export function AddParticipantModal({ cycleId, open, onClose }: Props) {
   const cycle = useReviewStore(s => s.cycles.find(c => c.id === cycleId));
+  const submissions = useReviewStore(s => s.submissions);
   const addCycleParticipant = useReviewStore(s => s.addCycleParticipant);
   const users = useTeamStore(s => s.users);
   const currentUser = useAuthStore(s => s.currentUser);
@@ -32,10 +32,19 @@ export function AddParticipantModal({ cycleId, open, onClose }: Props) {
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // "참가 중" 판정 = 해당 cycle 에 user 가 reviewee 인 active submission 존재
+  // reviewStore.addCycleParticipant 의 게이트 정책과 동일하게 맞춰 후보가
+  // 보였는데 추가 시 거부되는 UX 불일치 차단
   const currentMemberIds = useMemo(() => {
     if (!cycle) return new Set<string>();
-    return new Set(resolveTargetMembers(cycle, users).map(u => u.id));
-  }, [cycle, users]);
+    const ids = new Set<string>();
+    for (const s of submissions) {
+      if (s.cycleId !== cycle.id) continue;
+      if (s.autoExcluded) continue;
+      ids.add(s.revieweeId);
+    }
+    return ids;
+  }, [cycle, submissions]);
 
   const candidates = useMemo(() => {
     return users

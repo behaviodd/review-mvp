@@ -217,7 +217,11 @@ export const useReviewStore = create<ReviewState>()(
       /**
        * 사이클 진행 중에 참가자(피평가자)를 추가한다.
        * - 중도 입사·신규 합류 인원 대응
-       * - targetMode 가 custom 이 아닐 때는 현재 effective member 집합을 동결하여
+       * - "참가 중" 판정의 진실의 원천 = 해당 cycle 에 user 가 reviewee 인
+       *   submission 이 존재하는지 (autoExcluded 제외). resolveTargetMembers
+       *   결과를 쓰지 않는 이유: 발행 후 부서/매니저 변동이 발생하면 mode
+       *   기반 재계산 결과가 실제 submission 분포와 불일치 가능
+       * - targetMode 가 custom 이 아닐 때는 effective member 집합을 동결하여
        *   targetUserIds 에 넣고 targetMode='custom' 으로 전환 (이후 모드 의존 제거)
        * - 신규 submission 은 createCycleSubmissions 와 동일 로직으로 즉시 생성
        *   (self / downward / upward — cycle.reviewKinds 따름)
@@ -238,13 +242,19 @@ export const useReviewStore = create<ReviewState>()(
         const targetUser = users.find(u => u.id === userId);
         if (!targetUser) return { ok: false, error: '대상 사용자를 찾을 수 없습니다.' };
 
-        const currentIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
-        if (currentIds.has(userId)) return { ok: false, error: '이미 참가 중인 사용자입니다.' };
+        // 진실의 원천 = submission. autoExcluded 인 건 다시 활성화로 간주하지
+        // 않고 현재는 그대로 두며, 추가 시 새 submission 한 벌을 생성
+        const activeAsReviewee = state.submissions.some(s =>
+          s.cycleId === cycleId && s.revieweeId === userId && !s.autoExcluded
+        );
+        if (activeAsReviewee) return { ok: false, error: '이미 참가 중인 사용자입니다.' };
 
         // targetMode 동결: custom 이 아니면 현재 effective members 를 targetUserIds 에 넣고 custom 전환
+        // 동결용 effective members 만 mode 기반 계산 사용 (게이트는 위에서 submission 기반)
+        const effectiveIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
         const nextTargetUserIds = cycle.targetMode === 'custom'
-          ? [...(cycle.targetUserIds ?? []), userId]
-          : [...Array.from(currentIds), userId];
+          ? Array.from(new Set([...(cycle.targetUserIds ?? []), userId]))
+          : Array.from(new Set([...Array.from(effectiveIds), userId]));
         const frozenFrom = cycle.targetMode !== 'custom' ? (cycle.targetMode ?? 'org') : undefined;
 
         const updated: ReviewCycle = {
@@ -275,6 +285,11 @@ export const useReviewStore = create<ReviewState>()(
 
       /**
        * 사이클 진행 중 참가자를 제외한다 (중도 퇴사·이동 대응).
+       * - "참가 중" 판정의 진실의 원천 = 해당 cycle 에 user 가 reviewee 인
+       *   submission 이 1건 이상 존재. resolveTargetMembers 결과를 쓰지
+       *   않는 이유: cycle.targetMode 가 'org'/'manager' 인 경우 발행 후
+       *   부서/매니저 변동이 발생하면 mode 기반 재계산 결과에서 빠질 수
+       *   있으나, submission 은 실제 존재 → 게이트는 submission 기반
        * - cycle.targetUserIds 갱신 (custom 모드로 전환 또는 유지)
        * - 해당 user 가 reviewee 인 미완료 submission (not_started / in_progress) 에
        *   autoExcluded 마크 부여. 제출 완료된 submission 은 그대로 보존 (이미 평가 유효)
@@ -293,12 +308,15 @@ export const useReviewStore = create<ReviewState>()(
         const targetUser = users.find(u => u.id === userId);
         if (!targetUser) return { ok: false, error: '대상 사용자를 찾을 수 없습니다.' };
 
-        const currentIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
-        if (!currentIds.has(userId)) return { ok: false, error: '참가 중이 아닌 사용자입니다.' };
+        const hasActiveSubmission = state.submissions.some(s =>
+          s.cycleId === cycleId && s.revieweeId === userId && !s.autoExcluded
+        );
+        if (!hasActiveSubmission) return { ok: false, error: '참가 중이 아닌 사용자입니다.' };
 
+        const effectiveIds = new Set(resolveTargetMembers(cycle, users).map(u => u.id));
         const nextTargetUserIds = cycle.targetMode === 'custom'
           ? (cycle.targetUserIds ?? []).filter(id => id !== userId)
-          : Array.from(currentIds).filter(id => id !== userId);
+          : Array.from(effectiveIds).filter(id => id !== userId);
         const frozenFrom = cycle.targetMode !== 'custom' ? (cycle.targetMode ?? 'org') : undefined;
 
         const updated: ReviewCycle = {

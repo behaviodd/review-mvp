@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeStorage } from '../utils/safeStorage';
 
+/**
+ * B7 라운드 14 — markWrite 다중 탭 공유 (stability-audit-B § B7).
+ * 단일 운영자가 여러 탭을 사용할 때, 한 탭의 쓰기가 다른 탭의 polling 에 grace 를 주지 않아
+ * stale-overwrite 가 발생하던 race window 차단. BroadcastChannel 로 lastWriteAt 동기화.
+ */
+const SYNC_CHANNEL_NAME = 'sheets-sync';
+const broadcastChannel: BroadcastChannel | null =
+  typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(SYNC_CHANNEL_NAME) : null;
+
 export type SyncOpKind =
   | 'cycle.upsert' | 'cycle.delete'
   | 'template.upsert' | 'template.delete'
@@ -100,7 +109,12 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       setReviewSyncEnabled:  (reviewSyncEnabled)  => set({ reviewSyncEnabled }),
       setReviewLastSyncedAt: (reviewLastSyncedAt) => set({ reviewLastSyncedAt }),
       setReviewSyncError:    (reviewSyncError, kind = null) => set({ reviewSyncError, reviewSyncErrorKind: reviewSyncError ? kind : null }),
-      markWrite: () => set({ lastWriteAt: Date.now() }),
+      markWrite: () => {
+        const now = Date.now();
+        set({ lastWriteAt: now });
+        // B7 — 다른 탭에 broadcast (자신은 onmessage 안 받음, 같은 탭은 직접 set 으로 처리됨)
+        broadcastChannel?.postMessage({ type: 'markWrite', at: now });
+      },
       markSubmitSuppress: (untilMs) => set({ submitSuppressUntil: untilMs }),
 
       enqueueOp: (op) => set(s => {
@@ -160,3 +174,18 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
     },
   ),
 );
+
+// B7 라운드 14 — 다른 탭의 markWrite broadcast 수신 → 본 탭의 lastWriteAt 갱신.
+// store 정의 직후 module-level setup (한 번만 등록).
+// markWrite 를 다시 호출하지 않고 직접 setState 로 갱신해 broadcast 무한 루프 차단.
+if (broadcastChannel) {
+  broadcastChannel.addEventListener('message', (e: MessageEvent) => {
+    if (e.data?.type === 'markWrite' && typeof e.data.at === 'number') {
+      const current = useSheetsSyncStore.getState().lastWriteAt;
+      // 들어온 timestamp 가 더 최신일 때만 갱신 (시계 skew / 순서 뒤집힘 방지)
+      if (e.data.at > current) {
+        useSheetsSyncStore.setState({ lastWriteAt: e.data.at });
+      }
+    }
+  });
+}

@@ -120,27 +120,19 @@ export async function rejectMember(input: { email: string; reason?: string; appr
 }
 
 /**
- * `_계정` 시트에 신규 사번/이메일 인덱스 행을 생성 (권한관리용).
- * 이미 존재하는 행은 건드리지 않음 (수동으로 추가된 권한 컬럼 보존).
+ * @deprecated B11 라운드 14 — R7 이후 `_계정` 시트 정책 폐기.
+ * Google SSO 도입으로 권한관리 인덱스 시트 불필요 (시트 권한 + audit log 로 대체).
+ * 함수는 호출 차단 위해 no-op 으로 유지 (호출처가 즉시 영향 받지 않도록).
  */
-export async function initAccount(userId: string, email: string): Promise<boolean> {
-  try {
-    const json = await post('initAccount', { userId, email: email.toLowerCase() });
-    return json.ok === true;
-  } catch {
-    return false;
-  }
+export async function initAccount(_userId: string, _email: string): Promise<boolean> {
+  void _userId; void _email;  // no-op (deprecated)
+  return true;
 }
 
 /**
- * `_구성원` 전체를 `_계정` 시트에 일괄 동기화 — 누락된 사번만 추가.
- * 기존 행(수동 권한 컬럼 포함)은 건드리지 않음.
+ * @deprecated B11 라운드 14 — `_계정` 시트 동기화 폐기.
+ * UI 진입점 제거됨. 함수 자체는 backwards-compat 으로 no-op 유지.
  */
 export async function syncAccounts(): Promise<{ ok: boolean; created: number }> {
-  try {
-    const json = await post('syncAccounts', {});
-    return { ok: json.ok === true, created: Number(json.created ?? 0) };
-  } catch {
-    return { ok: false, created: 0 };
-  }
+  return { ok: true, created: 0 };
 }

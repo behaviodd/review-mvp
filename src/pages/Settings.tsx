@@ -13,7 +13,6 @@ import { MsSwitch, MsInput } from '../components/ui/MsControl';
 import { MsButton } from '../components/ui/MsButton';
 import { SyncRetryDrawer } from '../components/review/SyncRetryDrawer';
 import { timeAgo } from '../utils/dateUtils';
-import { syncAccounts } from '../utils/authApi';
 import { getSetting, setSetting } from '../utils/settingsApi';
 
 export function Settings() {
@@ -34,7 +33,6 @@ export function Settings() {
 
   useSetPageHeader('설정');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
-  const [syncAccountsState, setSyncAccountsState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
 
   // R8: 자동 승인 토글. null = 로딩 중 / 미연결, 'unknown' = 조회 실패 (UI 비활성)
   const [autoApprove, setAutoApprove] = useState<boolean | null>(null);
@@ -64,17 +62,7 @@ export function Settings() {
     }
   };
 
-  const handleSyncAccounts = async () => {
-    setSyncAccountsState('loading');
-    const result = await syncAccounts();
-    setSyncAccountsState(result.ok ? 'ok' : 'fail');
-    if (result.ok) {
-      showToast('success', `_계정 시트 동기화 완료 — ${result.created}명 신규 추가`);
-    } else {
-      showToast('error', '_계정 시트 동기화에 실패했습니다. Apps Script URL을 확인해 주세요.');
-    }
-    setTimeout(() => setSyncAccountsState('idle'), 3000);
-  };
+  // B11 라운드 14: _계정 시트 동기화 폐기 (R7 이후 deprecated). UI 제거됨.
 
   const handleSaveUrl = () => {
     setScriptUrl(urlDraft.trim());
@@ -280,22 +268,8 @@ export function Settings() {
 
           </div>
 
-          {/* 저장 / _계정 시트 동기화 */}
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2">
-              {scriptUrl && (
-                <button
-                  onClick={handleSyncAccounts}
-                  disabled={syncAccountsState === 'loading'}
-                  className="px-3 py-2 text-xs font-semibold text-yellow-070 bg-yellow-005 border border-yellow-060/20 rounded-lg hover:bg-yellow-060/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {syncAccountsState === 'loading' ? '처리 중...' : '_계정 시트 동기화'}
-                </button>
-              )}
-              {scriptUrl && (
-                <p className="text-[11px] text-fg-subtlest">_구성원 시트의 사번/이메일을 _계정 시트에 누락 없이 채워 권한관리 인덱스로 사용</p>
-              )}
-            </div>
+          {/* 저장 — B11 라운드 14: _계정 시트 동기화 진입점 제거 (R7 이후 deprecated) */}
+          <div className="flex items-center justify-end pt-1">
             <MsButton onClick={handleSaveUrl} disabled={urlDraft.trim() === scriptUrl} size="sm">저장</MsButton>
           </div>
         </div>

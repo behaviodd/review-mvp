@@ -8,6 +8,7 @@ import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
 import { MsCancelIcon } from '../ui/MsIcons';
 import { ModalShell } from '../review/modals/ModalShell';
 import { OrgSelector } from './OrgSelector';
+import { useStaleFormGuard } from '../../hooks/useStaleFormGuard';
 import { SecondaryOrgSection } from './SecondaryOrgSection';
 import { buildOrgSelFromMember, resolveOrgNamesFromSel } from '../../utils/teamUtils';
 
@@ -39,6 +40,9 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
   const showToast = useShowToast();
 
   const member = users.find(u => u.id === userId);
+
+  // B2 라운드 14 — stale-form 가드. 폼 열린 동안 다른 운영자/탭이 같은 row 를 변경하면 감지.
+  const staleGuard = useStaleFormGuard(member);
 
   const headIds    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
   const allLeaders = useMemo(
@@ -150,6 +154,25 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
         className="space-y-5"
         onSubmit={e => { e.preventDefault(); handleSubmit(); }}
       >
+        {/* B2 라운드 14 — stale-form 가드 (외부에서 같은 row 변경 감지) */}
+        {staleGuard.isStale && (
+          <div className="rounded-lg border border-orange-020 bg-orange-005 p-3 flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-semibold text-orange-070">다른 곳에서 이 구성원의 정보가 변경되었어요.</p>
+              <p className="text-xs text-orange-070 mt-0.5">
+                저장하면 현재 화면의 값으로 덮어쓰여 다른 변경이 손실됩니다. 최신 정보로 새로 불러올 수 있어요.
+              </p>
+            </div>
+            <MsButton size="sm" variant="outline-default" onClick={() => {
+              staleGuard.acknowledgeReload();
+              showToast('info', '최신 정보로 다시 불러왔습니다. 필요한 변경을 다시 입력해 주세요.');
+              onClose();  // 폼 닫고 다시 열도록 안내 (사용자가 다시 클릭)
+            }}>
+              새로 불러오기
+            </MsButton>
+          </div>
+        )}
+
         {/* 권한 티어 */}
         <div className="flex items-center justify-between p-3 rounded-lg bg-gray-005 border border-gray-010">
           <div className="flex items-center gap-2">

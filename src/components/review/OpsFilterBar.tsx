@@ -1,5 +1,6 @@
 import { cn } from '../../utils/cn';
 import { MsInput, MsSelect, MsCheckbox } from '../ui/MsControl';
+import { SegmentControl } from '../ui/SegmentControl';
 import type { OpsFilters, OpsPerspective, OpsStage } from '../../utils/opsCenter';
 import type { SubmissionStatus } from '../../types';
 
@@ -29,46 +30,17 @@ const STATUS_OPTIONS: { value: SubmissionStatus; label: string }[] = [
   { value: 'submitted', label: '제출 완료' },
 ];
 
-function Segment<T extends string>({
-  value,
-  options,
-  onChange,
-  ariaLabel,
-}: {
+/**
+ * Phase D-3.D-2 → P1-C1 라운드 14: 공통 SegmentControl 컴포넌트 사용.
+ * 자체 구현 제거, 동일 시각 패턴 (Figma 정합) 유지.
+ */
+function Segment<T extends string>(props: {
   value: T;
   options: { value: T; label: string; hint?: string }[];
   onChange: (v: T) => void;
   ariaLabel: string;
 }) {
-  return (
-    /* Phase D-3.D-2: SegmentedControl Figma 정합 (D-3.C-1 SegmentPills 와 동일 패턴) */
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className="inline-flex rounded-xl bg-surface-sunken p-1 gap-1"
-    >
-      {options.map(opt => {
-        const active = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            role="tab"
-            aria-selected={active}
-            title={opt.hint}
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              'h-7 px-2.5 text-base rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
-              active
-                ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
-                : 'text-fg-subtle font-semibold hover:text-fg-default',
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <SegmentControl {...props} />;
 }
 
 export function OpsFilterBar({ filters, onChange, orgs, disabled }: Props) {

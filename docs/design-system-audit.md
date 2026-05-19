@@ -87,11 +87,11 @@ Avatar, Badge, BottomSheet, Button, ButtonGroup, Chip, Control, DataTable, DateP
 3. ~~gray-005 토큰 정리~~ → **유지 결론**. review-mvp `gray-001 (#fcfdfd) = DS gray-010` (hex 동일, 명명만 다름). `gray-005 (#f0f3f4)` 는 DS 에 직접 매핑 없는 **별도 중간 톤** (113건 사용 중). DS scale 의 확장으로 유지. 폐기 시 시각 회귀 큼
 4. ✅ **MsButton `xxl` → `2xl`** — Size type + SIZE map key 변경. 외부 사용처 0건 (자체 사용만)
 
-### P2 (자체 구현 → DS 패턴으로 마이그레이션)
-5. **SegmentControl** — 자체 segmented control → DS SegmentControl 패턴 (size sm/md/lg + fullWidth). OpsFilterBar / ListToolbar / GuideSidebar nav 영향
-6. **Dialog ↔ ModalShell** — size 5단계 (xs/sm/md/lg/xl) 매핑. ModalShell 의 widthClass props 를 size prop 으로 표준화
-7. **Tab ↔ HeaderTab / HeaderTabsBar** — DS Tab API 검토 후 정합
-8. **DropdownList ↔ MsActionMenu** — DS DropdownList 표준 확인 후 API 정합
+### P2 (자체 구현 → DS 패턴으로 마이그레이션) — Phase DS-2 / P1-C 라운드 14 완료
+5. ✅ **SegmentControl** — `src/components/ui/SegmentControl.tsx` 신설. ListToolbar 의 SegmentPills + OpsFilterBar 의 Segment 자체구현 2종을 단일 컴포넌트로 통일. size sm/md/lg + fullWidth + count badge.
+6. ✅ **Dialog ↔ ModalShell** — ModalShell 에 `size?: ModalSize` prop 추가 (xs 320/sm 400/md 600/lg 800/xl 1200 → max-w-xs/md/xl/3xl/6xl 매핑). widthClass 는 backwards-compat 으로 유지 (deprecated).
+7. ✅ **Tab ↔ HeaderTab / ListToolbar tab strip** — `src/components/ui/Tab.tsx` 신설. HeaderTab 은 Tab 의 wrapper 로 정리. ListToolbar 안의 자체 tab strip 도 Tab 컴포넌트 사용. count badge 패턴 흡수.
+8. ✅ **DropdownList ↔ MsActionMenu** — 의미 정합. MsActionMenu 가 DS DropdownList 의 'icon-more' trigger 패턴으로 단일 재사용 컴포넌트 (사용처 13곳). 자체 구현 아님 — 별도 마이그레이션 불필요. 다른 trigger (button/text/select-like) 가 도메인에 필요해지면 trigger prop 확장으로 처리.
 
 ### P3 (DS 에 있고 review-mvp 누락 — 신설 검토)
 9. **Tooltip** — 사용 빈도 미세하나 키 안내 / 권한 hint 등에 유용

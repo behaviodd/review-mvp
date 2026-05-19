@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { MsInput } from './MsControl';
 import { MsChevronDownMonoIcon } from './MsIcons';
+import { SegmentControl } from './SegmentControl';
+import { Tab } from './Tab';
 
 /**
  * 리스트 페이지 공통 필터/툴바.
@@ -88,33 +90,16 @@ export function ListToolbar<T extends string = string>({
       {tabs && tabs.length > 0 && (
         <div className="flex gap-6 border-b border-gray-020 overflow-x-auto" role="tablist">
           {tabs.map(({ value, label, count }) => {
-            const isActive = activeTab === value;
+            // P1-C3 라운드 14 — 공통 Tab 컴포넌트 사용
             return (
-              <button
+              <Tab
                 key={value}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
+                active={activeTab === value}
+                count={count}
                 onClick={() => onTabChange?.(value)}
-                className={cn(
-                  'flex items-center gap-1.5 py-[10px] text-base font-bold tracking-[-0.3px] whitespace-nowrap transition-colors border-b-2 -mb-px',
-                  isActive
-                    ? 'border-gray-099 text-fg-default'
-                    : 'border-transparent text-gray-030 hover:text-fg-subtle',
-                )}
               >
                 {label}
-                {typeof count === 'number' && (
-                  <span
-                    className={cn(
-                      'text-xs font-bold px-1.5 py-0.5 rounded-full leading-none tabular-nums',
-                      isActive ? 'bg-gray-099 text-white' : 'bg-gray-010 text-gray-030',
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
+              </Tab>
             );
           })}
         </div>
@@ -172,40 +157,11 @@ interface SegmentPillsProps {
   ariaLabel?: string;
 }
 /**
- * Phase D-3.C-1: Figma SegmentedControl (1143:13490) 정합
- *  - Track: bg-surface-sunken rounded-xl p-1 gap-1
- *  - Indicator (활성): bg-surface-default rounded-lg + drop-shadow inline +
- *    h-7 px-2.5 text-base font-bold text-fg-default
- *  - SegmentItem (비활성): rounded-lg h-7 px-2.5 text-base font-semibold text-fg-subtle
- *  - drop-shadow 는 Figma 의 0 2px 4px rgba(76,90,102,0.16) 직접 inline (alias 추가 X)
+ * Phase D-3.C-1 → P1-C1 라운드 14: 공통 SegmentControl 컴포넌트로 추출.
+ * Figma SegmentedControl (1143:13490) 정합 패턴은 SegmentControl 에서 유지.
  */
 function SegmentPills({ options, value, onChange, ariaLabel }: SegmentPillsProps) {
-  return (
-    <div role="group" aria-label={ariaLabel} className="inline-flex rounded-xl bg-surface-sunken p-1 gap-1">
-      {options.map(opt => {
-        const active = value === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              'flex items-center gap-1 h-7 px-2.5 text-base rounded-lg tracking-[-0.3px] leading-5 transition-colors whitespace-nowrap',
-              active
-                ? 'bg-surface-default text-fg-default font-bold shadow-[0_2px_4px_rgba(76,90,102,0.16)]'
-                : 'text-fg-subtle font-semibold hover:text-fg-default',
-            )}
-          >
-            {opt.label}
-            {typeof opt.count === 'number' && (
-              <span className="text-xs tabular-nums opacity-70">{opt.count}</span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <SegmentControl options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />;
 }
 
 interface SegmentSelectProps {

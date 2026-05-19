@@ -2,6 +2,28 @@ import { type ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MsCancelIcon } from '../../ui/MsIcons';
 
+/**
+ * P1-C2 라운드 14 — Dialog/ModalShell size 표준화 (DS audit P2).
+ * DS Dialog 의 5단계 size 와 매핑:
+ *   xs ~320px → max-w-xs   (간단한 확인 모달)
+ *   sm ~400px → max-w-md   (기본 — 단일 폼 / 알림)
+ *   md ~600px → max-w-xl   (다단 폼)
+ *   lg ~800px → max-w-3xl  (복잡한 폼 / 리스트)
+ *   xl ~1200px → max-w-6xl (대형 — 미리보기 등)
+ *
+ * 기존 widthClass props 는 backwards-compat 으로 유지 (deprecated).
+ * size 가 제공되면 size 우선. 둘 다 없으면 sm.
+ */
+export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+const SIZE_TO_MAX_W: Record<ModalSize, string> = {
+  xs: 'max-w-xs',
+  sm: 'max-w-md',
+  md: 'max-w-xl',
+  lg: 'max-w-3xl',
+  xl: 'max-w-6xl',
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -9,7 +31,9 @@ interface Props {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  widthClass?: string;  // e.g. 'max-w-lg'
+  size?: ModalSize;
+  /** @deprecated size prop 사용 권장. 기존 호출처 호환용 */
+  widthClass?: string;
 }
 
 export function ModalShell({
@@ -19,8 +43,11 @@ export function ModalShell({
   description,
   children,
   footer,
-  widthClass = 'max-w-lg',
+  size,
+  widthClass,
 }: Props) {
+  // size 우선, 둘 다 없으면 sm 기본
+  const resolvedWidth = size ? SIZE_TO_MAX_W[size] : (widthClass ?? SIZE_TO_MAX_W.sm);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -36,7 +63,7 @@ export function ModalShell({
       <div
         role="dialog"
         aria-label={title}
-        className={`relative flex w-full ${widthClass} max-h-[90vh] flex-col rounded-2xl bg-white shadow-modal`}
+        className={`relative flex w-full ${resolvedWidth} max-h-[90vh] flex-col rounded-2xl bg-white shadow-modal`}
       >
         <header className="flex items-start justify-between gap-3 border-b border-gray-010 px-5 py-3">
           <div className="min-w-0">

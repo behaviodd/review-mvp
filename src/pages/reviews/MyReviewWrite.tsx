@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyModeBanner } from '../../components/review/ProxyModeBanner';
 import { PartyPopper, Lightbulb, Save } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
 } from '../../components/ui/MsIcons';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useReviewStore } from '../../stores/reviewStore';
+import { useShowToast } from '../../components/ui/Toast';
 import { useTeamStore } from '../../stores/teamStore';
 import { useAuthStore } from '../../stores/authStore';
 import { exportSubmissionToCSV } from '../../utils/exportUtils';
@@ -20,7 +21,7 @@ import { ReviewerReferenceRail } from '../../components/review/ReviewerReference
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatDate } from '../../utils/dateUtils';
-import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User } from '../../types';
+import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User, RefLink } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
 import { MsInput, MsTextarea } from '../../components/ui/MsControl';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -30,23 +31,40 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
   question: TemplateQuestion; selected: string[]; onChange: (v: string[]) => void; disabled?: boolean;
 }) {
   const opts = (question.options ?? []).filter(o => o.trim());
+  const showToast = useShowToast();
   if (opts.length === 0) return <p className="text-xs text-gray-030 italic">보기가 없습니다.</p>;
+  // QA 라운드 12 B3 — multiple_choice + allowMultiple + maxItems 시 차단 + 카운트 + 토스트
+  const max = (question.allowMultiple && question.maxItems && question.maxItems > 0) ? question.maxItems : undefined;
+  const atLimit = !!max && selected.length >= max;
   const toggle = (opt: string) => {
     if (question.allowMultiple) {
-      onChange(selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt]);
+      const isOn = selected.includes(opt);
+      if (!isOn && atLimit) {
+        showToast('error', `최대 ${max}개까지 선택할 수 있어요.`);
+        return;
+      }
+      onChange(isOn ? selected.filter(s => s !== opt) : [...selected, opt]);
     } else {
       onChange([opt]);
     }
   };
   return (
     <div className="space-y-2">
+      {max && (
+        <p className={`text-xs ${atLimit ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+          {selected.length}/{max} 선택{atLimit ? ' · 최대까지 선택했습니다' : ''}
+        </p>
+      )}
       {opts.map(opt => {
         const checked = selected.includes(opt);
+        const blocked = !!max && !checked && atLimit;
         return (
           <button key={opt} type="button" disabled={disabled} onClick={() => toggle(opt)}
+            aria-disabled={blocked || disabled}
             className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-base text-left transition-all ${
               checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium'
               : disabled ? 'border-gray-010 bg-gray-005 text-gray-030 cursor-not-allowed'
+              : blocked ? 'border-gray-010 bg-gray-005 text-gray-030 cursor-not-allowed'
               : 'border-gray-020 hover:border-pink-030 text-gray-070'
             }`}
           >
@@ -229,9 +247,8 @@ function FlatAnswerContent({ question, answer }: { question: TemplateQuestion; a
 }
 
 // ─── 참고자료 타입 ────────────────────────────────────────────────────────────
-type RefLink = { id: string; kind: 'link'; title: string; url: string };
-type RefFile = { id: string; kind: 'file'; name: string; size: string };
-type RefItem = RefLink | RefFile;
+// 라운드 11: RefLink 는 src/types 로 이동 (영속 + sync 위해). 파일 첨부는 폐기
+// (Sheets DB 정책상 파일 storage 없음 — 외부 링크로 첨부 가이드)
 
 // ─── 우측 패널 ────────────────────────────────────────────────────────────────
 const WRITING_TIPS = [
@@ -243,7 +260,7 @@ const WRITING_TIPS = [
 
 function RightPanel({
   cycle, isReadOnly, submission, template, currentUser,
-  completedCount, totalSections, refs, setRefs,
+  completedCount, totalSections, refs, onRefsChange,
   isDownward, reviewerId, users,
 }: {
   cycle: ReviewCycle | undefined;
@@ -253,15 +270,14 @@ function RightPanel({
   currentUser: User | null;
   completedCount: number;
   totalSections: number;
-  refs: RefItem[];
-  setRefs: React.Dispatch<React.SetStateAction<RefItem[]>>;
+  refs: RefLink[];
+  onRefsChange: (next: RefLink[]) => void;
   isDownward?: boolean;
   reviewerId?: string;
   users: User[];
 }) {
   const [tipsOpen, setTipsOpen] = useState(true);
   const [refsOpen, setRefsOpen] = useState(true);
-  const [refTab,   setRefTab]   = useState<'link' | 'file'>('link');
   const [linkUrl,  setLinkUrl]  = useState('');
   const [linkTitle, setLinkTitle] = useState('');
 
@@ -269,15 +285,10 @@ function RightPanel({
     const url = linkUrl.trim();
     if (!url) return;
     const safe = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-    setRefs(p => [...p, { id: crypto.randomUUID(), kind: 'link', title: linkTitle.trim() || safe, url: safe }]);
+    onRefsChange([...refs, { id: crypto.randomUUID(), kind: 'link', title: linkTitle.trim() || safe, url: safe }]);
     setLinkUrl(''); setLinkTitle('');
   };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    setRefs(p => [...p, ...files.map(f => ({ id: crypto.randomUUID(), kind: 'file' as const, name: f.name, size: f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB` }))]);
-    e.target.value = '';
-  };
-  const removeRef = (id: string) => setRefs(p => p.filter(r => r.id !== id));
+  const removeRef = (id: string) => onRefsChange(refs.filter(r => r.id !== id));
 
   return (
     <div className="hidden lg:flex w-72 bg-white border-l border-gray-010 flex-col flex-shrink-0 overflow-y-auto sticky top-0 h-full">
@@ -358,11 +369,9 @@ function RightPanel({
               <ul className="space-y-1.5">
                 {refs.map(item => (
                   <li key={item.id} className="flex items-center gap-2 group">
-                    {item.kind === 'link' ? <MsLinkIcon size={12} className="text-pink-040 flex-shrink-0" /> : <MsPaperclipIcon size={12} className="text-fg-subtlest flex-shrink-0" />}
+                    <MsLinkIcon size={12} className="text-pink-040 flex-shrink-0" />
                     <span className="flex-1 min-w-0 text-xs text-gray-060 truncate">
-                      {item.kind === 'link'
-                        ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-pink-050 hover:underline inline-flex items-center gap-0.5">{item.title}<MsOutlinkIcon size={12} className="ml-0.5" /></a>
-                        : item.name}
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-pink-050 hover:underline inline-flex items-center gap-0.5">{item.title}<MsOutlinkIcon size={12} className="ml-0.5" /></a>
                     </span>
                     {!isReadOnly && <button onClick={() => removeRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-fg-subtlest hover:text-red-050 transition-all flex-shrink-0"><MsCancelIcon size={12} /></button>}
                   </li>
@@ -370,28 +379,10 @@ function RightPanel({
               </ul>
             )}
             {!isReadOnly && (
-              <div className="space-y-2">
-                <div className="flex bg-gray-010 rounded-lg p-0.5">
-                  {(['link', 'file'] as const).map(tab => (
-                    <button key={tab} onClick={() => setRefTab(tab)} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${refTab === tab ? 'bg-white text-gray-080 shadow-sm' : 'text-fg-subtle'}`}>
-                      {tab === 'link' ? <MsLinkIcon size={12} /> : <MsPaperclipIcon size={12} />}
-                      {tab === 'link' ? '링크' : '파일'}
-                    </button>
-                  ))}
-                </div>
-                {refTab === 'link' ? (
-                  <div className="space-y-1.5">
-                    <MsInput size="sm" type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="https://..." />
-                    <MsInput size="sm" type="text" value={linkTitle} onChange={e => setLinkTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="제목 (선택)" />
-                    <MsButton onClick={addLink} disabled={!linkUrl.trim()} size="sm" className="w-full h-auto py-1.5" leftIcon={<MsPlusIcon size={12} />}>링크 추가</MsButton>
-                  </div>
-                ) : (
-                  <label className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border-2 border-dashed border-gray-020 rounded-lg hover:border-pink-030 hover:bg-pink-005/30 cursor-pointer transition-colors">
-                    <MsPaperclipIcon size={16} className="text-fg-subtlest" />
-                    <span className="text-xs text-fg-subtle font-medium">파일 선택</span>
-                    <input type="file" multiple className="hidden" onChange={handleFileChange} />
-                  </label>
-                )}
+              <div className="space-y-1.5">
+                <MsInput size="sm" type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="https://..." />
+                <MsInput size="sm" type="text" value={linkTitle} onChange={e => setLinkTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLink()} placeholder="제목 (선택)" />
+                <MsButton onClick={addLink} disabled={!linkUrl.trim()} size="sm" className="w-full h-auto py-1.5" leftIcon={<MsPlusIcon size={12} />}>링크 추가</MsButton>
               </div>
             )}
             {refs.length === 0 && isReadOnly && <p className="text-xs text-fg-subtlest text-center py-1">참고자료가 없습니다.</p>}
@@ -431,7 +422,7 @@ export function MyReviewWrite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
-  const { submissions, saveAnswer, submitSubmission, submitAsProxy, cycles, templates } = useReviewStore();
+  const { submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, submitAsProxy, cycles, templates } = useReviewStore();
   const { users } = useTeamStore();
   const isProxyMode = searchParams.get('proxy') === '1' && currentUser?.role === 'admin';
 
@@ -469,8 +460,15 @@ export function MyReviewWrite() {
   const [showConfirm,    setShowConfirm]    = useState(false);
   const [submitting,     setSubmitting]     = useState(false);
   const [showValidation, setShowValidation] = useState(false);
-  const [refs, setRefs] = useState<RefItem[]>([]);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const showToast = useShowToast();
+
+  // 라운드 11: 참고자료는 submission.references 에서 derive (local state X — 휘발 방지)
+  const refs = submission?.references ?? [];
+  const handleRefsChange = (next: RefLink[]) => {
+    if (!submission) return;
+    saveReferences(submission.id, next);
+  };
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
@@ -823,8 +821,11 @@ export function MyReviewWrite() {
                 className="w-full"
                 leftIcon={<Save className="w-4 h-4" />}
                 onClick={() => {
+                  // QA 라운드 12 — 디바운스 우회 즉시 sync + 토스트 + 저장시각 표시
+                  if (!submissionId) return;
+                  flushAnswerSync(submissionId);
                   setSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
-                  setTimeout(() => setSavedAt(null), 3000);
+                  showToast('success', '임시 저장되었습니다.');
                 }}
               >
                 {savedAt ? `✓ ${savedAt}에 저장됨` : '임시 저장'}
@@ -842,7 +843,7 @@ export function MyReviewWrite() {
         cycle={cycle} isReadOnly={isReadOnly} submission={submission}
         template={template} currentUser={currentUser ?? null}
         completedCount={completedCount} totalSections={totalSections}
-        refs={refs} setRefs={setRefs}
+        refs={refs} onRefsChange={handleRefsChange}
         isDownward={isDownward} reviewerId={submission.reviewerId} users={users}
       />
 

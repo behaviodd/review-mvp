@@ -6,6 +6,7 @@ import {
   MsCheckIcon, MsCheckCircleIcon, MsStarIcon, MsDownloadIcon, MsSearchIcon,
   MsChevronDownLineIcon, MsChevronRightLineIcon, MsChevronLeftLineIcon, MsCalendarIcon,
   MsShieldCheckIcon,
+  MsLinkIcon, MsOutlinkIcon, MsCancelIcon, MsPlusIcon, MsPaperclipIcon,
 } from '../../components/ui/MsIcons';
 import { useAuthStore } from '../../stores/authStore';
 import { useReviewStore } from '../../stores/reviewStore';
@@ -21,7 +22,7 @@ import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/dateUtils';
-import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit } from '../../types';
+import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit, RefLink } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
 import { MsInput, MsTextarea, MsSelect } from '../../components/ui/MsControl';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -80,6 +81,9 @@ function RightPanel({
   isAdmin,
   pastSubmissions,
   cycles,
+  isReadOnly,
+  myRefs,
+  onMyRefsChange,
 }: {
   reviewee: User;
   cycle: ReviewCycle;
@@ -90,8 +94,23 @@ function RightPanel({
   isAdmin: boolean;
   pastSubmissions: ReviewSubmission[];
   cycles: ReviewCycle[];
+  isReadOnly: boolean;
+  myRefs: RefLink[];
+  onMyRefsChange: (next: RefLink[]) => void;
 }) {
   const [histOpen, setHistOpen] = useState(true);
+  // 라운드 11: 내 참고자료 — MyReviewWrite 와 동일 패턴 (링크 only, 즉시 영속)
+  const [myRefsOpen, setMyRefsOpen] = useState(true);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const addMyLink = () => {
+    const url = linkUrl.trim();
+    if (!url) return;
+    const safe = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    onMyRefsChange([...myRefs, { id: crypto.randomUUID(), kind: 'link', title: linkTitle.trim() || safe, url: safe }]);
+    setLinkUrl(''); setLinkTitle('');
+  };
+  const removeMyRef = (id: string) => onMyRefsChange(myRefs.filter(r => r.id !== id));
 
   const privateCount = template?.questions.filter(q => q.isPrivate).length ?? 0;
   const selfSubmitted = selfSubmission?.status === 'submitted';
@@ -200,6 +219,59 @@ function RightPanel({
           <p className="text-xs font-semibold text-fg-default">참고자료</p>
         </div>
 
+        {/* 라운드 11: 내 참고자료 accordion — 작성자가 첨부한 링크 (영속). MyReviewWrite 와 동일 패턴 */}
+        <div className="border-b border-gray-010">
+          <button
+            onClick={() => setMyRefsOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-005 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MsPaperclipIcon size={12} className="text-fg-subtlest" />
+              <span className="text-xs font-medium text-gray-070">내 참고자료</span>
+              {myRefs.length > 0 && (
+                <span className="text-xs font-bold bg-pink-010 text-pink-050 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">
+                  {myRefs.length}
+                </span>
+              )}
+            </div>
+            {myRefsOpen
+              ? <MsChevronDownLineIcon size={12} className="text-fg-subtlest" />
+              : <MsChevronRightLineIcon size={12} className="text-fg-subtlest" />
+            }
+          </button>
+          {myRefsOpen && (
+            <div className="px-4 pb-3 space-y-3">
+              {myRefs.length > 0 && (
+                <ul className="space-y-1.5">
+                  {myRefs.map(item => (
+                    <li key={item.id} className="flex items-center gap-2 group">
+                      <MsLinkIcon size={12} className="text-pink-040 flex-shrink-0" />
+                      <span className="flex-1 min-w-0 text-xs text-gray-060 truncate">
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-pink-050 hover:underline inline-flex items-center gap-0.5">
+                          {item.title}<MsOutlinkIcon size={12} className="ml-0.5" />
+                        </a>
+                      </span>
+                      {!isReadOnly && (
+                        <button onClick={() => removeMyRef(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-fg-subtlest hover:text-red-050 transition-all flex-shrink-0">
+                          <MsCancelIcon size={12} />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!isReadOnly && (
+                <div className="space-y-1.5">
+                  <MsInput size="sm" type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addMyLink()} placeholder="https://..." />
+                  <MsInput size="sm" type="text" value={linkTitle} onChange={e => setLinkTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addMyLink()} placeholder="제목 (선택)" />
+                  <MsButton onClick={addMyLink} disabled={!linkUrl.trim()} size="sm" className="w-full h-auto py-1.5" leftIcon={<MsPlusIcon size={12} />}>링크 추가</MsButton>
+                </div>
+              )}
+              {myRefs.length === 0 && isReadOnly && <p className="text-xs text-fg-subtlest text-center py-1">참고자료가 없습니다.</p>}
+            </div>
+          )}
+        </div>
+
         {/* 이전 리뷰 accordion */}
         <div>
           <button
@@ -264,7 +336,7 @@ export function TeamReviewWrite() {
   const { currentUser } = useAuthStore();
   const showToast = useShowToast();
   const navigate = useNavigate();
-  const { cycles, submissions, saveAnswer, submitSubmission, upsertSubmission, templates } = useReviewStore();
+  const { cycles, submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, upsertSubmission, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
 
   const cycle = cycles.find(c => c.id === cycleId);
@@ -677,8 +749,9 @@ export function TeamReviewWrite() {
             </div>
           )}
 
-          {/* ── 자기평가 미제출 잠금 배너 ── */}
-          {!selfSubmitted && !isAdminObserver && (
+          {/* ── 자기평가 미제출 잠금 배너 (QA 라운드 12 B6/QA#21) ──
+              사이클 단계 전 배너와 동시 노출 시 1차 원인 해석 어려움 → 단계 통과 후에만 노출 */}
+          {!isPhaseBeforeManagerReview && !selfSubmitted && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
               <MsLockIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
@@ -857,29 +930,46 @@ export function TeamReviewWrite() {
                           (answer?.selectedOptions?.length ?? 0) > 0
                             ? <div className="flex flex-wrap gap-1.5">{(answer?.selectedOptions ?? []).map(o => <span key={o} className="text-xs px-2 py-1 bg-gray-010 text-gray-070 rounded-full">{o}</span>)}</div>
                             : <p className="text-base text-fg-subtlest italic">미응답</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {(q.options ?? []).filter(o => o.trim()).map(opt => {
-                              const sel = answer?.selectedOptions ?? [];
-                              const checked = sel.includes(opt);
-                              const toggle = () => {
-                                const next = q.allowMultiple
-                                  ? (checked ? sel.filter(s => s !== opt) : [...sel, opt])
-                                  : [opt];
-                                handleAnswerChange({ questionId: q.id, selectedOptions: next });
-                              };
-                              return (
-                                <button key={opt} type="button" onClick={toggle}
-                                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-base text-left transition-all ${checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium' : 'border-gray-020 hover:border-pink-030 text-gray-070'}`}>
-                                  <span className={`w-4 h-4 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${q.allowMultiple ? 'rounded' : 'rounded-full'} ${checked ? 'border-pink-040 bg-pink-040' : 'border-gray-030'}`}>
-                                    {checked && <span className="w-2 h-2 bg-white rounded-sm" />}
-                                  </span>
-                                  {opt}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )
+                        ) : (() => {
+                          // QA 라운드 12 B3 — maxItems 검증 + 카운트 + 토스트
+                          const sel = answer?.selectedOptions ?? [];
+                          const max = (q.allowMultiple && q.maxItems && q.maxItems > 0) ? q.maxItems : undefined;
+                          const atLimit = !!max && sel.length >= max;
+                          return (
+                            <div className="space-y-2">
+                              {max && (
+                                <p className={`text-xs ${atLimit ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+                                  {sel.length}/{max} 선택{atLimit ? ' · 최대까지 선택했습니다' : ''}
+                                </p>
+                              )}
+                              {(q.options ?? []).filter(o => o.trim()).map(opt => {
+                                const checked = sel.includes(opt);
+                                const blocked = !!max && !checked && atLimit;
+                                const toggle = () => {
+                                  if (blocked) { showToast('error', `최대 ${max}개까지 선택할 수 있어요.`); return; }
+                                  const next = q.allowMultiple
+                                    ? (checked ? sel.filter(s => s !== opt) : [...sel, opt])
+                                    : [opt];
+                                  handleAnswerChange({ questionId: q.id, selectedOptions: next });
+                                };
+                                return (
+                                  <button key={opt} type="button" onClick={toggle}
+                                    aria-disabled={blocked}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-base text-left transition-all ${
+                                      checked ? 'border-pink-040 bg-pink-005 text-pink-060 font-medium'
+                                      : blocked ? 'border-gray-010 bg-gray-005 text-gray-030 cursor-not-allowed'
+                                      : 'border-gray-020 hover:border-pink-030 text-gray-070'
+                                    }`}>
+                                    <span className={`w-4 h-4 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${q.allowMultiple ? 'rounded' : 'rounded-full'} ${checked ? 'border-pink-040 bg-pink-040' : 'border-gray-030'}`}>
+                                      {checked && <span className="w-2 h-2 bg-white rounded-sm" />}
+                                    </span>
+                                    {opt}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()
                       )}
                       {q.type === 'text' && (
                         (isReadOnly || submitted) ? (
@@ -914,9 +1004,20 @@ export function TeamReviewWrite() {
             </div>
           )}
 
-          {/* 하단 제출 바 */}
+          {/* 하단 제출 바 — QA 라운드 12: 임시 저장 버튼 추가 (MyReviewWrite 와 액션 통일) */}
           {!isAdmin && !isReadOnly && !submitted && (
-            <div className="flex items-center justify-end bg-white rounded-xl border border-gray-010 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
+            <div className="flex items-center justify-end gap-2 bg-white rounded-xl border border-gray-010 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
+              {mySubmissionId && (
+                <MsButton
+                  variant="outline-default"
+                  onClick={() => {
+                    flushAnswerSync(mySubmissionId);
+                    showToast('success', '임시 저장되었습니다.');
+                  }}
+                >
+                  임시 저장
+                </MsButton>
+              )}
               <MsButton
                 onClick={() => { if (selfSubmitted && canSubmit) setShowConfirm(true); }}
                 disabled={!selfSubmitted || !canSubmit}
@@ -944,6 +1045,9 @@ export function TeamReviewWrite() {
           isAdmin={isAdmin}
           pastSubmissions={pastSubmissions}
           cycles={cycles}
+          isReadOnly={isReadOnly}
+          myRefs={mySubmission?.references ?? []}
+          onMyRefsChange={(next) => mySubmission && saveReferences(mySubmission.id, next)}
         />
       )}
 

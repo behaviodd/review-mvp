@@ -400,9 +400,28 @@ export function TemplateBuilder() {
                           <MsCheckbox
                             size="md"
                             checked={q.allowMultiple ?? false}
-                            onChange={e => updateQ(q.id, { allowMultiple: e.target.checked })}
+                            onChange={e => updateQ(q.id, { allowMultiple: e.target.checked, maxItems: e.target.checked ? q.maxItems : undefined })}
                             label={<span className="text-xs text-gray-060 font-medium">복수 선택 가능</span>}
                           />
+                          {/* QA 라운드 12 B3 — 복수 선택 최대 개수 (선택, 미입력 시 무제한) */}
+                          {q.allowMultiple && (
+                            <div className="flex items-center gap-2 pl-6">
+                              <span className="text-xs text-gray-060">최대 선택 개수</span>
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="무제한"
+                                value={q.maxItems ?? ''}
+                                onChange={e => {
+                                  const v = e.target.value.trim();
+                                  const n = v ? parseInt(v, 10) : NaN;
+                                  updateQ(q.id, { maxItems: !isNaN(n) && n > 0 ? n : undefined });
+                                }}
+                                className="w-20 px-2 py-1 border border-gray-020 rounded-lg bg-white text-xs focus:outline-none focus:ring-2 focus:ring-pink-010"
+                              />
+                              <span className="text-xs text-fg-subtlest">개</span>
+                            </div>
+                          )}
                           <div className="space-y-1.5">
                             {(q.options ?? []).map((opt, oi) => (
                               <div key={oi} className="flex items-center gap-2">

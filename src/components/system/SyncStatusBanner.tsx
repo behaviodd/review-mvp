@@ -28,6 +28,16 @@ export function SyncStatusBanner() {
   const orgSyncErrorKind   = useSheetsSyncStore(s => s.orgSyncErrorKind);
   const orgLastSyncedAt    = useSheetsSyncStore(s => s.orgLastSyncedAt);
   const reviewLastSyncedAt = useSheetsSyncStore(s => s.reviewLastSyncedAt);
+  // QA 라운드 12 B4 — 제출 직후 N ms 동안 banner 일시 숨김 (성공 화면과의 동시 노출 충돌 방지)
+  const submitSuppressUntil = useSheetsSyncStore(s => s.submitSuppressUntil);
+  const [, force] = useState(0);
+  useEffect(() => {
+    const ms = submitSuppressUntil - Date.now();
+    if (ms <= 0) return;
+    const t = setTimeout(() => force(n => n + 1), ms + 50);
+    return () => clearTimeout(t);
+  }, [submitSuppressUntil]);
+  const suppressedBySubmit = submitSuppressUntil > Date.now();
 
   const showToast = useShowToast();
   const [retrying, setRetrying] = useState(false);
@@ -48,7 +58,7 @@ export function SyncStatusBanner() {
   const stateKey = `${reviewSyncError ?? ''}|${orgSyncError ?? ''}|${pendingOps.length}`;
   useEffect(() => { setDismissed(false); }, [stateKey]);
 
-  if ((!hasPending && !hasError) || dismissed) return null;
+  if ((!hasPending && !hasError) || dismissed || suppressedBySubmit) return null;
 
   const handleRetry = async () => {
     setRetrying(true);

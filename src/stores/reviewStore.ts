@@ -11,6 +11,15 @@ import { recordAudit } from '../utils/auditLog';
 import { resolveTargetMembers } from '../utils/resolveTargets';
 import { createCycleSubmissions } from '../utils/createCycleSubmissions';
 
+/**
+ * QA 라운드 12 — A3/B2 fix.
+ * saveAnswer 가 store 만 갱신하고 시트 sync 를 안 하던 버그로 인해 폴링 refetch 시 local 답변이 손실되던 문제.
+ * 해결: typing 마다 markWrite() 로 grace 즉시 활성화 + 디바운스 후 submissionWriter.upsert.
+ *      디바운스로 시트 호출 빈도 제한 (typing 폭주 보호). 임시저장 버튼은 flushAnswerSync 로 디바운스 우회 즉시 sync.
+ */
+const ANSWER_SYNC_DEBOUNCE_MS = 800;
+const answerSyncTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
 type PersistedState = {
   cycles: ReviewCycle[];
   templates: ReviewTemplate[];
@@ -33,6 +42,9 @@ interface ReviewState {
   deleteTemplate: (id: string) => void;
   upsertSubmission: (submission: ReviewSubmission) => void;
   saveAnswer: (submissionId: string, answer: Answer) => void;
+  /** QA 라운드 12 — '임시 저장' 버튼 등에서 디바운스 우회하고 즉시 sync */
+  flushAnswerSync: (submissionId: string) => void;
+  saveReferences: (submissionId: string, references: import('../types').RefLink[]) => void;
   submitSubmission: (submissionId: string, overallRating?: number) => void;
   getSubmission: (cycleId: string, reviewerId: string, revieweeId: string, type: ReviewKind) => ReviewSubmission | undefined;
   publishCycle: (cycleId: string, actorId: string) => { ok: boolean; error?: string };
@@ -133,7 +145,7 @@ export const useReviewStore = create<ReviewState>()(
         if (isReviewSyncEnabled()) submissionWriter.upsert(submission);
       },
 
-      saveAnswer: (submissionId, answer) =>
+      saveAnswer: (submissionId, answer) => {
         set(s => ({
           submissions: s.submissions.map(sub => {
             if (sub.id !== submissionId) return sub;
@@ -143,9 +155,58 @@ export const useReviewStore = create<ReviewState>()(
               : [...sub.answers, answer];
             return { ...sub, answers: newAnswers, status: 'in_progress', lastSavedAt: new Date().toISOString() };
           }),
-        })),
+        }));
+        // QA 라운드 12: typing 시점에 폴링 refetch 차단 (grace 활성화). 디바운스 후 실제 sync.
+        // 미적용 시 폴링이 sheet 빈 row 로 local 답변을 덮어쓰는 버그 (QA A3/B2).
+        if (isReviewSyncEnabled()) {
+          useSheetsSyncStore.getState().markWrite();
+          if (answerSyncTimers[submissionId]) clearTimeout(answerSyncTimers[submissionId]);
+          answerSyncTimers[submissionId] = setTimeout(() => {
+            const sub = get().submissions.find(x => x.id === submissionId);
+            delete answerSyncTimers[submissionId];
+            if (sub) submissionWriter.upsert(sub);
+          }, ANSWER_SYNC_DEBOUNCE_MS);
+        }
+      },
+
+      flushAnswerSync: (submissionId) => {
+        const timer = answerSyncTimers[submissionId];
+        if (timer) {
+          clearTimeout(timer);
+          delete answerSyncTimers[submissionId];
+        }
+        if (isReviewSyncEnabled()) {
+          useSheetsSyncStore.getState().markWrite();
+          const sub = get().submissions.find(x => x.id === submissionId);
+          if (sub) submissionWriter.upsert(sub);
+        }
+      },
+
+      /**
+       * 라운드 11: 참고자료 (링크) 저장.
+       * saveAnswer 와 달리 변경 빈도가 매우 낮아 (추가/삭제 시점 1회) 즉시 sync 한다.
+       * 부분 저장이라 status='in_progress' 로 전이하지 않음 — 답변과 무관한 메타 입력.
+       */
+      saveReferences: (submissionId, references) => {
+        set(s => ({
+          submissions: s.submissions.map(sub =>
+            sub.id === submissionId
+              ? { ...sub, references, lastSavedAt: new Date().toISOString() }
+              : sub,
+          ),
+        }));
+        if (isReviewSyncEnabled()) {
+          const sub = get().submissions.find(x => x.id === submissionId);
+          if (sub) submissionWriter.upsert(sub);
+        }
+      },
 
       submitSubmission: (submissionId, overallRating) => {
+        // QA 라운드 12: 미flush 디바운스 타이머가 제출 후 stale upsert 를 보내지 않도록 클리어
+        const timer = answerSyncTimers[submissionId];
+        if (timer) { clearTimeout(timer); delete answerSyncTimers[submissionId]; }
+        // QA 라운드 12 B4: 제출 성공 화면 노출 중 SyncStatusBanner 가 '저장 대기 중' 으로 동시 노출되는 것을 차단 (3s)
+        useSheetsSyncStore.getState().markSubmitSuppress(Date.now() + 3000);
         const submittedAt = new Date().toISOString();
         set(s => ({
           submissions: s.submissions.map(sub =>
@@ -155,6 +216,7 @@ export const useReviewStore = create<ReviewState>()(
           ),
         }));
         if (isReviewSyncEnabled()) {
+          useSheetsSyncStore.getState().markWrite();
           const sub = get().submissions.find(s => s.id === submissionId);
           if (sub) submissionWriter.upsert(sub);
         }
@@ -841,12 +903,37 @@ export const useReviewStore = create<ReviewState>()(
       },
 
       /* ── 시트 동기화 ──────────────────────────────────────────── */
+      /**
+       * QA 라운드 12 — A3/B2 fix.
+       * submissions 는 local-newer merge — local 의 lastSavedAt 이 sheet 보다 최신이면 local 유지.
+       * 디바운스 중인 미sync 답변이 폴링에 의해 덮어써지지 않도록 보호. local 에만 있고 sheet 에 없는 row 도 보존 (예: sync 누락 큐 대기).
+       * cycles/templates 는 단일 admin 작성이라 기존 덮어쓰기 유지.
+       */
       syncFromSheet: ({ cycles, templates, submissions }) =>
-        set(s => ({
-          cycles:      cycles      !== undefined ? cycles      : s.cycles,
-          templates:   templates   !== undefined ? templates   : s.templates,
-          submissions: submissions !== undefined ? submissions : s.submissions,
-        })),
+        set(s => {
+          const next: Partial<ReviewState> = {};
+          if (cycles    !== undefined) next.cycles    = cycles;
+          if (templates !== undefined) next.templates = templates;
+          if (submissions !== undefined) {
+            const remoteById = new Map(submissions.map(r => [r.id, r] as const));
+            const merged: ReviewSubmission[] = [];
+            const seenIds = new Set<string>();
+            for (const r of submissions) {
+              const l = s.submissions.find(x => x.id === r.id);
+              if (!l) { merged.push(r); seenIds.add(r.id); continue; }
+              const lTs = Date.parse(l.lastSavedAt) || 0;
+              const rTs = Date.parse(r.lastSavedAt) || 0;
+              merged.push(lTs > rTs ? l : r);
+              seenIds.add(r.id);
+            }
+            // local 에만 있고 remote 에 없는 row (sync 큐 대기 또는 미발행) 보존
+            for (const l of s.submissions) {
+              if (!seenIds.has(l.id) && !remoteById.has(l.id)) merged.push(l);
+            }
+            next.submissions = merged;
+          }
+          return next;
+        }),
 
       setLoading: (isLoading) => set({ isLoading }),
     }),

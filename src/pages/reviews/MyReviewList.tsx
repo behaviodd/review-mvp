@@ -7,9 +7,10 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ListToolbar } from '../../components/ui/ListToolbar';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsCircleIcon } from '../../components/ui/MsIcons';
+import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsCircleIcon, MsLockIcon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { useTeamStore } from '../../stores/teamStore';
+import { getDisplayStatus } from '../../utils/submissionStatus';
 
 type StatusFilter = 'all' | 'active' | 'done' | 'closed';
 type TypeFilter   = 'all' | 'scheduled' | 'adhoc';
@@ -38,6 +39,14 @@ function StatusDot({ status }: { status: string }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-pink-060">
         <MsClockIcon size={12} /> 작성 중
+      </span>
+    );
+  }
+  // QA 라운드 12 B1: 자기평가 기간 종료 (상세의 readOnly 상태와 일치)
+  if (status === 'past_self_deadline') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
+        <MsLockIcon size={12} /> 자기평가 기간 종료
       </span>
     );
   }
@@ -145,7 +154,7 @@ export function MyReviewList() {
               </p>
             </div>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <StatusDot status={sub.status} />
+              <StatusDot status={getDisplayStatus(sub, cycle)} />
               {cycle && (
                 <p className={`text-xs ${urgent && !isSubmitted ? 'text-pink-050 font-medium' : 'text-fg-subtlest'}`}>
                   {deadlineLabel(cycle.selfReviewDeadline)}
@@ -225,7 +234,7 @@ export function MyReviewList() {
           </div>
 
           <div className="w-24 flex-shrink-0 flex justify-end">
-            <StatusDot status={sub.status} />
+            <StatusDot status={getDisplayStatus(sub, cycle)} />
           </div>
 
           <div className="flex-shrink-0 w-24 flex justify-end">

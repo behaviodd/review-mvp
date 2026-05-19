@@ -154,6 +154,8 @@ export function submissionToRow(s: ReviewSubmission): Record<string, unknown> {
     '자동제외JSON': s.autoExcluded ? JSON.stringify(s.autoExcluded) : '',
     // R3: downward submission 의 평가자 차수 (1차/2차 등). 다른 type 은 빈값.
     '평가자차수':   s.reviewerRank != null ? String(s.reviewerRank) : '',
+    // 라운드 11: 참고자료 (링크 only). 빈 배열일 때도 '[]' 직렬화로 round-trip 안정.
+    '참고자료JSON': JSON.stringify(s.references ?? []),
   };
 }
 

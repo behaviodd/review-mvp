@@ -292,6 +292,11 @@ export interface TemplateQuestion {
   exampleAnswer?: string;
   options?: string[];
   allowMultiple?: boolean;
+  /**
+   * QA 라운드 12 — multiple_choice + allowMultiple 일 때 최대 선택 개수.
+   * 미지정 시 무제한. 0 또는 음수면 무제한 처리. UI 에서 차단 + 카운트 + 토스트 피드백.
+   */
+  maxItems?: number;
   order: number;
   sectionId?: string;
 }
@@ -395,6 +400,17 @@ export interface ReviewerChange {
   reason?: string;
 }
 
+/**
+ * 리뷰 작성 시 참고자료 — 라운드 11: 클라이언트 local state 휘발 버그 fix.
+ * 링크만 영속 (Sheets DB 정책상 파일 본체 storage 없음. 파일 첨부 UI 폐기).
+ */
+export interface RefLink {
+  id: string;
+  kind: 'link';
+  title: string;
+  url: string;
+}
+
 export interface ReviewSubmission {
   id: string;
   cycleId: string;
@@ -414,6 +430,8 @@ export interface ReviewSubmission {
   peerProposal?: PeerProposal;    // peer 타입 + leader_approves 방식에서만 사용
   // R3: downward submission 의 차수 (1차/2차 매니저 등). 다른 type 은 미사용.
   reviewerRank?: number;
+  // 라운드 11: 작성자(평가자)가 첨부한 참고 링크. 시트 '참고자료JSON' 컬럼 round-trip.
+  references?: RefLink[];
 }
 
 export type AuditAction =

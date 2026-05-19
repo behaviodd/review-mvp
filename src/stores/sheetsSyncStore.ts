@@ -43,6 +43,11 @@ interface SheetsSyncState {
   lastSuccessAt: string | null;
   // 최근 쓰기 타임스탬프 — OrgSync poll 의 stale-overwrite 방지용 (in-memory).
   lastWriteAt: number;
+  /**
+   * QA 라운드 12 B4 — 제출 성공 화면 노출 중 SyncStatusBanner 가 동시에 '저장 대기 중 1건'
+   * 으로 노출돼 혼란 유발. submit 시점에 일정 시간 banner 를 일시 숨기는 timestamp.
+   */
+  submitSuppressUntil: number;
 
   setScriptUrl: (url: string) => void;
   setEnabled: (v: boolean) => void;
@@ -55,6 +60,8 @@ interface SheetsSyncState {
   setReviewSyncError:    (msg: string | null, kind?: SyncErrorKind | null) => void;
   /** 쓰기 직전 호출 — useOrgSync 가 일정 시간 동안 poll 을 건너뛰어 stale 덮어쓰기 방지. */
   markWrite: () => void;
+  /** QA 라운드 12 B4 — submit 후 N ms 동안 SyncStatusBanner 일시 숨김 */
+  markSubmitSuppress: (untilMs: number) => void;
 
   // 큐 액션
   enqueueOp:    (op: Omit<PendingSyncOp, 'queuedAt' | 'tryCount'>) => void;
@@ -81,6 +88,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       pendingOps: [],
       lastSuccessAt: null,
       lastWriteAt: 0,
+      submitSuppressUntil: 0,
 
       setScriptUrl: (scriptUrl) => set({ scriptUrl }),
       setEnabled:   (enabled)  => set({ enabled }),
@@ -93,6 +101,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       setReviewLastSyncedAt: (reviewLastSyncedAt) => set({ reviewLastSyncedAt }),
       setReviewSyncError:    (reviewSyncError, kind = null) => set({ reviewSyncError, reviewSyncErrorKind: reviewSyncError ? kind : null }),
       markWrite: () => set({ lastWriteAt: Date.now() }),
+      markSubmitSuppress: (untilMs) => set({ submitSuppressUntil: untilMs }),
 
       enqueueOp: (op) => set(s => {
         const queuedAt = new Date().toISOString();

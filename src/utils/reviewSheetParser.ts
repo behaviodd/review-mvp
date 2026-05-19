@@ -3,7 +3,7 @@
  */
 import type {
   ReviewCycle, ReviewTemplate, TemplateQuestion, TemplateSection,
-  ReviewSubmission, Answer,
+  ReviewSubmission, Answer, RefLink,
 } from '../types';
 
 type Row = Record<string, unknown>;
@@ -57,6 +57,12 @@ export function parseSheetCycle(row: Row): ReviewCycle | null {
     downwardReviewerRanks: downwardReviewerRanks && downwardReviewerRanks.length > 0
       ? downwardReviewerRanks
       : undefined,
+    // QA 라운드 12 A1/A2 — templateSnapshot round-trip 누락 fix.
+    // writer 는 '템플릿스냅샷JSON' 컬럼에 저장하는데 parser 가 무시해
+    // 새로고침/폴링 시 cycle.templateSnapshot=undefined → getEffectiveTemplate 가 fallback 으로
+    // 빠지며 시간차로 다른 문항 수 노출되던 버그. 락 보장 위해 round-trip 복원.
+    templateSnapshot:   parseJSON<ReviewTemplate | null>(row['템플릿스냅샷JSON'], null) ?? undefined,
+    templateSnapshotAt: str(row['템플릿스냅샷일시']) || undefined,
   };
 }
 
@@ -105,6 +111,8 @@ export function parseSheetSubmission(row: Row): ReviewSubmission | null {
     lastSavedAt:  str(row['최종저장일시']),
     answers:      parseJSON<Answer[]>(row['답변JSON'], []),
     reviewerRank: reviewerRank && !isNaN(reviewerRank) ? reviewerRank : undefined,
+    // 라운드 11: 참고자료 round-trip. 시트에 컬럼 없거나 빈값이면 undefined (UI 에서 [] 로 처리)
+    references:   row['참고자료JSON'] ? parseJSON<RefLink[]>(row['참고자료JSON'], []) : undefined,
   };
 }
 

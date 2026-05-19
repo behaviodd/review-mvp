@@ -175,24 +175,28 @@ function AdminDashboard() {
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드 (TodayPanel 위에 우선 노출) */}
-      {mySelf && activeSelfCycle && (
-        <div className="border-l-4 border-fg-brand1 pl-5 py-1 mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-fg-brand1 mb-1">내 자기평가 — 진행 중</p>
-              <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeSelfCycle.title}</h2>
-              <div className="w-full sm:w-52">
-                <ProgressBar value={mySelf.answers.length} max={6} showPercent />
-                <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeSelfCycle.selfReviewDeadline)}</p>
+      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드 (TodayPanel 위에 우선 노출)
+          라운드 10: tint 배경 강조 추가 — Employee/Manager 와 동일 패턴 */}
+      {mySelf && activeSelfCycle && (() => {
+        const urgent = isUrgent(activeSelfCycle.selfReviewDeadline);
+        return (
+          <div className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 mb-6 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>내 자기평가 — 진행 중</p>
+                <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeSelfCycle.title}</h2>
+                <div className="w-full sm:w-52">
+                  <ProgressBar value={mySelf.answers.length} max={6} showPercent />
+                  <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeSelfCycle.selfReviewDeadline)}</p>
+                </div>
               </div>
+              <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
+                {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
+              </MsButton>
             </div>
-            <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
-              {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
-            </MsButton>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <TodayPanel variant="admin" />
 
@@ -356,35 +360,43 @@ function ManagerDashboard() {
       <div className="mt-6">
         <PeerPickReminder />
       </div>
+      {/* 라운드 10: '내가 시작해야 할 리뷰' 가시성 강화 — 좌측 막대 + tint 배경 통일.
+          종류 구분은 칩 색 (pink=자기평가 / green=팀원평가) 으로 유지, 컨테이너는 일관 brand 톤. */}
       <div className="border-t border-bd-default pt-6 mt-6">
         <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">할 일</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {mySelfs.some(s => s.status !== 'submitted') && (
-            <button
-              onClick={() => navigate('/reviews/me')}
-              className="p-4 rounded-lg border border-bd-default text-left hover:bg-interaction-hovered transition-colors group"
-            >
-              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
-                자기평가
-              </span>
-              <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
-              {activeCycle && <p className={`text-xs mt-1 ${isUrgent(activeCycle.selfReviewDeadline) ? 'text-fg-brand1 font-medium' : 'text-fg-subtle'}`}>
-                마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
-              </p>}
-            </button>
-          )}
-          {myDownwards.some(s => s.status !== 'submitted') && (
-            <button
-              onClick={() => navigate('/reviews/team')}
-              className="p-4 rounded-lg border border-bd-default text-left hover:bg-interaction-hovered transition-colors group"
-            >
-              <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
-              <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1">
-                {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
-              </p>
-              {activeCycle && <p className="text-xs mt-1 text-fg-subtle">마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
-            </button>
-          )}
+          {mySelfs.some(s => s.status !== 'submitted') && (() => {
+            const urgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
+            return (
+              <button
+                onClick={() => navigate('/reviews/me')}
+                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 text-left transition-colors group flex flex-col items-start ${urgent ? 'border-l-orange-060 bg-orange-005 hover:bg-orange-010' : 'border-l-fg-brand1 bg-gray-005 hover:bg-gray-010'}`}
+              >
+                <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
+                  자기평가
+                </span>
+                <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
+                {activeCycle && <p className={`text-xs mt-1 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+                  마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
+                </p>}
+              </button>
+            );
+          })()}
+          {myDownwards.some(s => s.status !== 'submitted') && (() => {
+            const urgent = !!activeCycle && isUrgent(activeCycle.managerReviewDeadline);
+            return (
+              <button
+                onClick={() => navigate('/reviews/team')}
+                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 text-left transition-colors group flex flex-col items-start ${urgent ? 'border-l-orange-060 bg-orange-005 hover:bg-orange-010' : 'border-l-fg-brand1 bg-gray-005 hover:bg-gray-010'}`}
+              >
+                <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
+                <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1">
+                  {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
+                </p>
+                {activeCycle && <p className={`text-xs mt-1 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
+              </button>
+            );
+          })()}
         </div>
       </div>
 
@@ -472,17 +484,17 @@ function EmployeeDashboard() {
 
   useSetPageHeader('홈', undefined, { subtitle: `안녕하세요, ${currentUser?.name}님 👋` });
 
-  /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음 */
+  /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음
+     라운드 10: '내가 시작해야 할 리뷰' 가시성 강화 — 좌측 막대 + tint 배경 + PeerPickReminder 위로 순서 교체 */
+  const selfUrgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      <PeerPickReminder />
-
-      {activeCycle && mySelf && mySelf.status !== 'submitted' && (
-        <div className="mt-6">
-          <div className="border-l-4 border-fg-brand1 pl-5 py-1">
+      <div className="flex flex-col gap-6">
+        {activeCycle && mySelf && mySelf.status !== 'submitted' && (
+          <div className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${selfUrgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-fg-brand1 mb-1">지금 진행 중</p>
+                <p className={`text-xs font-semibold mb-1 ${selfUrgent ? 'text-orange-070' : 'text-fg-brand1'}`}>지금 진행 중 — 내 자기평가</p>
                 <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeCycle.title}</h2>
                 <div className="w-full sm:w-52">
                   <ProgressBar value={mySelf.answers.length} max={6} showPercent />
@@ -494,8 +506,9 @@ function EmployeeDashboard() {
               </MsButton>
             </div>
           </div>
-        </div>
-      )}
+        )}
+        <PeerPickReminder />
+      </div>
 
       {pastSubmissions.length > 0 && (
         <div className="border-t border-bd-default pt-6 mt-6">

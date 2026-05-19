@@ -20,7 +20,7 @@ import { mapPreviousAnswers } from '../../utils/previousAnswers';
 import { ReviewerReferenceRail } from '../../components/review/ReviewerReferenceRail';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { ProgressBar } from '../../components/ui/ProgressBar';
-import { formatDate } from '../../utils/dateUtils';
+import { formatDate, timeAgo } from '../../utils/dateUtils';
 import type { TemplateQuestion, Answer, ReviewCycle, ReviewSubmission, ReviewTemplate, User, RefLink } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
 import { MsInput, MsTextarea } from '../../components/ui/MsControl';
@@ -32,6 +32,8 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
 }) {
   const opts = (question.options ?? []).filter(o => o.trim());
   const showToast = useShowToast();
+  // P1-B5 라운드 14 — 차단 시 카운트 flash. key 변경으로 animation 재 trigger
+  const [blockedTick, setBlockedTick] = useState(0);
   if (opts.length === 0) return <p className="text-xs text-gray-030 italic">보기가 없습니다.</p>;
   // QA 라운드 12 B3 — multiple_choice + allowMultiple + maxItems 시 차단 + 카운트 + 토스트
   const max = (question.allowMultiple && question.maxItems && question.maxItems > 0) ? question.maxItems : undefined;
@@ -41,6 +43,7 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
       const isOn = selected.includes(opt);
       if (!isOn && atLimit) {
         showToast('error', `최대 ${max}개까지 선택할 수 있어요.`);
+        setBlockedTick(t => t + 1);  // flash 재 trigger
         return;
       }
       onChange(isOn ? selected.filter(s => s !== opt) : [...selected, opt]);
@@ -51,7 +54,8 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
   return (
     <div className="space-y-2">
       {max && (
-        <p className={`text-xs ${atLimit ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+        <p key={blockedTick} className={`text-xs inline-block px-1.5 py-0.5 rounded ${atLimit ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}
+          style={blockedTick > 0 ? { animation: 'limitFlash 360ms ease-out' } : undefined}>
           {selected.length}/{max} 선택{atLimit ? ' · 최대까지 선택했습니다' : ''}
         </p>
       )}
@@ -347,6 +351,13 @@ function RightPanel({
             <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-2">작성 진행률</p>
             <ProgressBar value={completedCount} max={totalSections} showPercent />
             <p className="text-xs text-fg-subtlest mt-1.5">{completedCount}/{totalSections} 섹션 완료</p>
+            {/* P1-B6 라운드 14 — 자동저장 인라인 시각 */}
+            {submission?.lastSavedAt && (
+              <p className="text-xs text-green-060 mt-1 flex items-center gap-1">
+                <span aria-hidden>✓</span>
+                <span>{timeAgo(submission.lastSavedAt)} 자동 저장됨</span>
+              </p>
+            )}
           </div>
         )}
         {isReadOnly && currentUser?.role === 'admin' && submission && template && cycle && (
@@ -431,7 +442,7 @@ export function MyReviewWrite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
-  const { submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, submitAsProxy, cycles, templates } = useReviewStore();
+  const { submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, submitAsProxy, reopenSubmission, cycles, templates } = useReviewStore();
   const { users } = useTeamStore();
   const isProxyMode = searchParams.get('proxy') === '1' && currentUser?.role === 'admin';
 
@@ -549,8 +560,34 @@ export function MyReviewWrite() {
   }, [totalSections]);
 
   const handleBack = useCallback(() => navigate(-1), [navigate]);
+  // P1-B2 라운드 14 — 헤더에 상태 배지 통일 노출 (QA #4 상태 위치 통일)
+  // primitive dep 으로 useMemo cache 안정성 (mySubmission reference 변경마다 재계산 회피)
+  const headerStatus = submission?.status;
+  const headerStatusBadge = useMemo(() => {
+    if (!headerStatus) return undefined;
+    if (headerStatus === 'submitted') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-005 text-green-060 text-xs font-medium px-2 py-0.5 border border-green-010">
+          제출 완료
+        </span>
+      );
+    }
+    if (headerStatus === 'in_progress') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-pink-005 text-pink-060 text-xs font-medium px-2 py-0.5 border border-pink-010">
+          작성 중
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-gray-005 text-fg-subtle text-xs font-medium px-2 py-0.5 border border-gray-010">
+        미시작
+      </span>
+    );
+  }, [headerStatus]);
   useSetPageHeader(cycle?.title ?? '리뷰 작성', undefined, {
     onBack: handleBack,
+    statusBadge: headerStatusBadge,
   });
 
   if (!submission) {
@@ -588,6 +625,17 @@ export function MyReviewWrite() {
 
   // 빙의 상태에서도 리뷰 작성 허용 (사용자 결정) — 빙의 대상 명의로 작성/제출 가능.
   const isReadOnly = submission.status === 'submitted' || isDownwardViewingByReviewee || cyclePastSelfReview;
+
+  // P1-B1 라운드 14 — 제출 후 마감 전 수정 권한.
+  // 결정: leader/admin/본인 reviewer 모두 reopen 가능. 단 사이클 종료 전 + 단계 통과 전.
+  const isReviewerOwnerForReopen = submission.reviewerId === currentUser?.id;
+  const isAdminForReopen = currentUser?.role === 'admin';
+  const canReopen =
+    submission.status === 'submitted'
+    && cycle?.status !== 'closed'
+    && !cyclePastSelfReview
+    && !isDownwardViewingByReviewee
+    && (isReviewerOwnerForReopen || isAdminForReopen);
 
   const downwardVisibility = cycle?.visibility?.downwardToReviewee ?? 'cycle_close';
   const visibleToReviewee = downwardVisibility === 'submission' || cycle?.status === 'closed';
@@ -633,6 +681,18 @@ export function MyReviewWrite() {
     setShowConfirm(true);
   };
 
+  // P1-B1 라운드 14 — 제출 후 마감 전 수정 (reopen)
+  const handleReopen = () => {
+    if (!submissionId || !currentUser) return;
+    const result = reopenSubmission(submissionId, currentUser.id);
+    if (result.ok) {
+      setShowSuccess(false);
+      showToast('success', '수정 모드로 전환되었습니다. 변경 후 다시 제출해 주세요.');
+    } else {
+      showToast('error', result.error ?? '수정할 수 없습니다.');
+    }
+  };
+
   // ── 제출 완료 화면 ──
   if (showSuccess) {
     return (
@@ -644,7 +704,15 @@ export function MyReviewWrite() {
           <h1 className="text-2xl font-bold text-fg-default mb-3">수고하셨습니다! 🎉</h1>
           <p className="text-gray-060 mb-2">성장 돌아보기를 완료했습니다.</p>
           <p className="text-base text-fg-subtlest mb-8">리뷰가 안전하게 제출되었습니다.</p>
-          <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+            <MsButton onClick={() => navigate('/')} size="lg">대시보드로 돌아가기</MsButton>
+            {/* P1-B1 라운드 14 — 마감 전 수정 가능 */}
+            {canReopen && (
+              <MsButton variant="outline-default" size="lg" onClick={handleReopen}>
+                답변 수정하기
+              </MsButton>
+            )}
+          </div>
           <div className="mt-8 text-left space-y-2">
             <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider mb-3 text-center">다음으로 할 수 있는 것들</p>
             <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-4 p-4 border border-bd-default rounded-lg hover:border-pink-020 transition-colors text-left">
@@ -796,13 +864,18 @@ export function MyReviewWrite() {
             ))
           )}
 
-          {/* 제출 완료 배너 */}
+          {/* 제출 완료 배너 + P1-B1 라운드 14: 수정 버튼 */}
           {isReadOnly && (
-            <div className="flex items-center gap-2.5 p-4 bg-green-005 border border-green-010 rounded-xl">
+            <div className="flex items-center gap-3 p-4 bg-green-005 border border-green-010 rounded-xl flex-wrap">
               <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
-              <p className="text-base font-medium text-green-060">
+              <p className="text-base font-medium text-green-060 flex-1 min-w-0">
                 {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
               </p>
+              {canReopen && (
+                <MsButton variant="outline-default" size="sm" onClick={handleReopen}>
+                  수정하기
+                </MsButton>
+              )}
             </div>
           )}
 
@@ -856,16 +929,19 @@ export function MyReviewWrite() {
         isDownward={isDownward} reviewerId={submission.reviewerId} users={users}
       />
 
-      {/* 제출 확인 모달 */}
+      {/* 제출 확인 모달 — P1-B4 라운드 14: 분리감 강화 (dim 진하게 + scale-in + shadow 강화) */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-modal max-w-sm w-full p-6">
-            <div className="text-center mb-5">
-              <div className="w-12 h-12 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-3">
-                <MsCheckIcon size={24} className="text-pink-050" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fadeIn_120ms_ease-out]"
+          onClick={() => !submitting && setShowConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 max-w-sm w-full p-7 animate-[scaleIn_140ms_ease-out]"
+            onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MsCheckIcon size={28} className="text-pink-050" />
               </div>
               <h3 className="text-lg font-semibold text-fg-default mb-2">최종 제출하시겠습니까?</h3>
-              <p className="text-base text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
+              {/* B1 fix 와 정합 — 마감 전이면 수정 가능. 문구 보정 */}
+              <p className="text-base text-fg-subtle">제출 후에도 마감 전까지 수정할 수 있습니다.</p>
             </div>
             <div className="flex gap-3">
               <MsButton variant="outline-default" size="lg" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1">취소</MsButton>

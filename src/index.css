@@ -353,3 +353,18 @@ a, button, [role="button"], select, input, textarea {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* P1-B4 라운드 14 — 제출 확인 모달 분리감 강화 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+/* P1-B5 라운드 14 — 선택 제한 초과 시 카운트 영역 flash (scale + bg pulse) */
+@keyframes limitFlash {
+  0%   { transform: scale(1);   background-color: transparent; }
+  30%  { transform: scale(1.06); background-color: rgba(230, 25, 25, 0.12); }
+  100% { transform: scale(1);   background-color: transparent; }
+}

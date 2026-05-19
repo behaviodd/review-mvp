@@ -492,18 +492,19 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     <>
       {/* Phase D-2.4a-fix2: 검색 input + "구성원 추가" 버튼 모두 h-10 (40px) 정합
           MsButton size="lg" = h-10 (ui-tokens.md § 5), Figma "구성원 추가" h-40 와 동일 */}
+      {/* P1-B3 라운드 14 — 검색 input 폭/placeholder 강화 (QA #6 검색 진입점 강화) */}
       <MsInput
         type="text"
         value={search}
         onChange={e => { setSearch(e.target.value); clearSelection(); }}
-        placeholder="이름, 직책으로 검색"
-        leftSlot={<MsSearchIcon size={14} />}
+        placeholder="이름·직책·이메일·조직 검색"
+        leftSlot={<MsSearchIcon size={16} />}
         rightSlot={search ? (
           <button onClick={() => setSearch('')} className="text-fg-subtle hover:text-fg-default" aria-label="검색 지우기">
             <MsCancelIcon size={14} />
           </button>
         ) : undefined}
-        className="w-56 h-10"
+        className="w-64 md:w-80 h-10"
       />
       {canEdit && (
         <MsButton

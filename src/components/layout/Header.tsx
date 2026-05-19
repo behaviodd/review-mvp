@@ -16,7 +16,7 @@ import { cn } from '../ui/cn';
  */
 export function Header() {
   const { currentUser } = useAuthStore();
-  const { title, subtitle, actions, onBack, tabs, tabActions } = usePageHeader();
+  const { title, subtitle, actions, onBack, tabs, tabActions, statusBadge } = usePageHeader();
 
   if (!currentUser) return null;
 
@@ -41,12 +41,18 @@ export function Header() {
         </button>
       )}
       <div className="min-w-0 flex-1">
-        {title && (
-          <h1 className={cn(
-            'text-2xl font-bold text-fg-default tracking-[-0.3px] truncate',
-            subtitle ? 'leading-7' : 'leading-10',
-          )}>{title}</h1>
-        )}
+        <div className="flex items-center gap-2 min-w-0">
+          {title && (
+            <h1 className={cn(
+              'text-2xl font-bold text-fg-default tracking-[-0.3px] truncate',
+              subtitle ? 'leading-7' : 'leading-10',
+            )}>{title}</h1>
+          )}
+          {/* P1-B2 라운드 14 — 페이지 상태 배지 위치 통일 (제목 옆) */}
+          {statusBadge && (
+            <div className="flex-shrink-0">{statusBadge}</div>
+          )}
+        </div>
         {subtitle && (
           <div className="text-xs text-fg-subtlest mt-0.5 truncate">{subtitle}</div>
         )}

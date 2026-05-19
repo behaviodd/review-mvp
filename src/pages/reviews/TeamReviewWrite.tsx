@@ -21,7 +21,7 @@ import { DistributionProgress, validateDistribution } from '../../components/rev
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { formatDate } from '../../utils/dateUtils';
+import { formatDate, timeAgo } from '../../utils/dateUtils';
 import type { Answer, ReviewCycle, ReviewSubmission, User, ReviewTemplate, OrgUnit, RefLink } from '../../types';
 import { MsButton } from '../../components/ui/MsButton';
 import { MsInput, MsTextarea, MsSelect } from '../../components/ui/MsControl';
@@ -345,7 +345,7 @@ export function TeamReviewWrite() {
   const { currentUser } = useAuthStore();
   const showToast = useShowToast();
   const navigate = useNavigate();
-  const { cycles, submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, upsertSubmission, templates } = useReviewStore();
+  const { cycles, submissions, saveAnswer, flushAnswerSync, saveReferences, submitSubmission, upsertSubmission, reopenSubmission, templates } = useReviewStore();
   const { users, orgUnits } = useTeamStore();
 
   const cycle = cycles.find(c => c.id === cycleId);
@@ -512,6 +512,12 @@ export function TeamReviewWrite() {
   // 리뷰 작성/제출은 빙의 대상 명의로 가능.
   const isReadOnly = isAdminObserver || mySubmission?.status === 'submitted';
 
+  // P1-B1 라운드 14 — 제출 후 마감 전 수정. 본인 reviewer 또는 admin. 사이클 종료 전
+  const canReopen =
+    mySubmission?.status === 'submitted'
+    && cycle?.status !== 'closed'
+    && (mySubmission.reviewerId === currentUser?.id || isAdmin);
+
   // 조직장 리뷰 단계(manager_review, active)에서만 제출 가능
   const isManagerReviewPhase = cycle?.status === 'manager_review' || cycle?.status === 'active';
   const isPhaseBeforeManagerReview = cycle?.status === 'self_review' || cycle?.status === 'draft';
@@ -588,8 +594,35 @@ export function TeamReviewWrite() {
   };
 
   const handleBack = useCallback(() => navigate(-1), [navigate]);
+  // P1-B2 라운드 14 — 헤더 상태 배지 통일 (primitive dep 으로 reference 안정성)
+  const headerStatus = mySubmission?.status;
+  const headerStatusBadge = useMemo(() => {
+    if (!headerStatus) return undefined;
+    if (headerStatus === 'submitted') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-005 text-green-060 text-xs font-medium px-2 py-0.5 border border-green-010">
+          제출 완료
+        </span>
+      );
+    }
+    if (headerStatus === 'in_progress') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-pink-005 text-pink-060 text-xs font-medium px-2 py-0.5 border border-pink-010">
+          작성 중
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-gray-005 text-fg-subtle text-xs font-medium px-2 py-0.5 border border-gray-010">
+        미시작
+      </span>
+    );
+    // primitive dep 이지만 Compiler 가 const 변수의 안정성을 보장 못 하는 conservative 경고
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  }, [headerStatus]);
   useSetPageHeader(cycle?.title ? `${cycle.title} · 팀원 평가` : '팀원 평가', undefined, {
     onBack: handleBack,
+    statusBadge: headerStatusBadge,
   });
 
   if (!reviewee || !cycle) {
@@ -1005,11 +1038,24 @@ export function TeamReviewWrite() {
             })}
           </div>
 
-          {/* 제출 완료 배너 */}
+          {/* 제출 완료 배너 + P1-B1 라운드 14: 마감 전 수정 */}
           {(isReadOnly || submitted) && (
-            <div className="flex items-center gap-2.5 p-4 bg-green-005 border border-green-010 rounded-xl">
+            <div className="flex items-center gap-3 p-4 bg-green-005 border border-green-010 rounded-xl flex-wrap">
               <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
-              <p className="text-base font-medium text-green-060">{reviewee.name}님의 평가가 제출되었습니다.</p>
+              <p className="text-base font-medium text-green-060 flex-1 min-w-0">{reviewee.name}님의 평가가 제출되었습니다.</p>
+              {canReopen && mySubmissionId && (
+                <MsButton variant="outline-default" size="sm" onClick={() => {
+                  const result = reopenSubmission(mySubmissionId, currentUser!.id);
+                  if (result.ok) {
+                    setSubmitted(false);
+                    showToast('success', '수정 모드로 전환되었습니다.');
+                  } else {
+                    showToast('error', result.error ?? '수정할 수 없습니다.');
+                  }
+                }}>
+                  수정하기
+                </MsButton>
+              )}
             </div>
           )}
 
@@ -1023,6 +1069,12 @@ export function TeamReviewWrite() {
                 : null;
             return (
             <div className="flex items-center justify-end gap-3 bg-white rounded-xl border border-gray-010 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised flex-wrap">
+              {/* P1-B6 라운드 14 — 자동저장 시각 inline */}
+              {mySubmission?.lastSavedAt && !blockReason && (
+                <p className="text-xs text-green-060 flex-1 min-w-0">
+                  ✓ {timeAgo(mySubmission.lastSavedAt)} 자동 저장됨
+                </p>
+              )}
               {blockReason && (
                 <p className="text-xs text-fg-subtle flex-1 min-w-0">
                   <span className="font-medium text-orange-070">제출 차단:</span> {blockReason}
@@ -1071,19 +1123,23 @@ export function TeamReviewWrite() {
       )}
 
       {/* ── 제출 확인 모달 ── */}
+      {/* P1-B4 라운드 14: 모달 분리감 강화 (dim/blur + scale-in + shadow ring) */}
       {!isAdmin && showConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-modal max-w-sm w-full p-6">
-            <div className="text-center mb-5">
-              <div className="w-12 h-12 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-3">
-                <MsCheckIcon size={24} className="text-pink-050" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fadeIn_120ms_ease-out]"
+          onClick={() => setShowConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 max-w-sm w-full p-7 animate-[scaleIn_140ms_ease-out]"
+            onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-pink-005 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MsCheckIcon size={28} className="text-pink-050" />
               </div>
-              <h3 className="text-lg font-semibold text-fg-default mb-1">{reviewee.name}님의 평가를 제출할까요?</h3>
-              <p className="text-base text-fg-subtle">제출 후에는 수정할 수 없습니다.</p>
+              <h3 className="text-lg font-semibold text-fg-default mb-2">{reviewee.name}님의 평가를 제출할까요?</h3>
+              {/* B1 fix 와 정합 — 마감 전이면 수정 가능 */}
+              <p className="text-base text-fg-subtle">제출 후에도 마감 전까지 수정할 수 있습니다.</p>
             </div>
             <div className="flex gap-3">
-              <MsButton variant="default" onClick={() => setShowConfirm(false)} className="flex-1 h-auto py-2.5">취소</MsButton>
-              <MsButton onClick={handleSubmit} className="flex-1 h-auto py-2.5">제출</MsButton>
+              <MsButton variant="outline-default" size="lg" onClick={() => setShowConfirm(false)} className="flex-1">취소</MsButton>
+              <MsButton size="lg" onClick={handleSubmit} className="flex-1">제출</MsButton>
             </div>
           </div>
         </div>

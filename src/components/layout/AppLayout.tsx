@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { MsMenuIcon } from '../ui/MsIcons';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -24,6 +24,7 @@ export function AppLayout() {
   const { currentUser } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const showToast = useShowToast();
 
   // localStorage 용량 초과 시 사용자에게 한 번 알림
@@ -66,7 +67,8 @@ export function AppLayout() {
 
         {/* 모바일 전용 상단 바 */}
         <div className="md:hidden bg-white border-b border-gray-020 h-[56px] flex items-center justify-between px-4 flex-shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-2.5">
+          {/* P1-A1 라운드 14 — 로고/타이틀 클릭 시 홈 이동 */}
+          <button type="button" onClick={() => navigate('/')} aria-label="홈으로" className="flex items-center gap-2.5 cursor-pointer rounded-md hover:bg-gray-005 -ml-1 px-1 py-1 transition-colors">
             <svg className="size-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g clipPath="url(#ms-mob-clip)">
                 <path d="M0 6.4C0 4.15979 0 3.03968 0.435974 2.18404C0.819467 1.43139 1.43139 0.819467 2.18404 0.435974C3.03968 0 4.15979 0 6.4 0H17.6C19.8402 0 20.9603 0 21.816 0.435974C22.5686 0.819467 23.1805 1.43139 23.564 2.18404C24 3.03968 24 4.15979 24 6.4V17.6C24 19.8402 24 20.9603 23.564 21.816C23.1805 22.5686 22.5686 23.1805 21.816 23.564C20.9603 24 19.8402 24 17.6 24H6.4C4.15979 24 3.03968 24 2.18404 23.564C1.43139 23.1805 0.819467 22.5686 0.435974 21.816C0 20.9603 0 19.8402 0 17.6V6.4Z" fill="url(#ms-mob-grad)"/>
@@ -81,7 +83,7 @@ export function AppLayout() {
               </defs>
             </svg>
             <span className="text-base font-semibold text-fg-default">메이크스타 리뷰시스템</span>
-          </div>
+          </button>
           <button
             onClick={() => setMobileOpen(o => !o)}
             className="p-1.5 rounded-lg text-fg-subtle hover:text-fg-default hover:bg-gray-010 transition-colors"

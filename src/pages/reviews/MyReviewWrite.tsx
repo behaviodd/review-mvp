@@ -82,8 +82,9 @@ function MultipleChoiceSelector({ question, selected, onChange, disabled }: {
 }
 
 // ─── 별점 선택기 ──────────────────────────────────────────────────────────────
+// P1-A4 라운드 14: 점수 선택 후 해제 가능 — onChange 시그니처에 undefined 허용 + '지우기' 버튼
 function RatingSelector({ question: _q, value, onChange, disabled }: {
-  question: TemplateQuestion; value?: number; onChange: (v: number) => void; disabled?: boolean;
+  question: TemplateQuestion; value?: number; onChange: (v: number | undefined) => void; disabled?: boolean;
 }) {
   const LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
   return (
@@ -99,7 +100,15 @@ function RatingSelector({ question: _q, value, onChange, disabled }: {
           >{n}</button>
         ))}
       </div>
-      {value && <p className="text-xs text-pink-050 mt-1.5 font-medium">{LABELS[value]}</p>}
+      <div className="flex items-center gap-2 mt-1.5 min-h-[18px]">
+        {value && <p className="text-xs text-pink-050 font-medium">{LABELS[value]}</p>}
+        {!disabled && value && (
+          <button type="button" onClick={() => onChange(undefined)}
+            className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2">
+            지우기
+          </button>
+        )}
+      </div>
     </div>
   );
 }

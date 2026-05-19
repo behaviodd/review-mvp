@@ -37,8 +37,9 @@ interface OrgTreeNode {
 }
 
 // ─── 별점 입력 ────────────────────────────────────────────────────────────────
+// P1-A4 라운드 14: 점수 선택 후 해제 가능
 function RatingInput({ value, onChange, disabled }: {
-  value?: number; onChange: (v: number) => void; disabled?: boolean;
+  value?: number; onChange: (v: number | undefined) => void; disabled?: boolean;
 }) {
   const LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
   return (
@@ -62,7 +63,15 @@ function RatingInput({ value, onChange, disabled }: {
           </button>
         ))}
       </div>
-      {value && <p className="text-xs text-pink-050 mt-1.5 font-medium">{LABELS[value]}</p>}
+      <div className="flex items-center gap-2 mt-1.5 min-h-[18px]">
+        {value && <p className="text-xs text-pink-050 font-medium">{LABELS[value]}</p>}
+        {!disabled && value && (
+          <button type="button" onClick={() => onChange(undefined)}
+            className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2">
+            지우기
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1004,9 +1013,21 @@ export function TeamReviewWrite() {
             </div>
           )}
 
-          {/* 하단 제출 바 — QA 라운드 12: 임시 저장 버튼 추가 (MyReviewWrite 와 액션 통일) */}
-          {!isAdmin && !isReadOnly && !submitted && (
-            <div className="flex items-center justify-end gap-2 bg-white rounded-xl border border-gray-010 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised">
+          {/* 하단 제출 바 — QA 라운드 12: 임시 저장 버튼 / 라운드 14 P1-A5: 차단 사유 inline */}
+          {!isAdmin && !isReadOnly && !submitted && (() => {
+            // P1-A5 — tooltip 만으론 차단 사유 인지가 약함. 버튼 옆 inline 텍스트로 직접 노출
+            const blockReason = !selfSubmitted
+              ? `${reviewee.name}님의 자기평가 제출 후 가능`
+              : !canSubmit
+                ? '조직장 리뷰 단계 시작 후 가능'
+                : null;
+            return (
+            <div className="flex items-center justify-end gap-3 bg-white rounded-xl border border-gray-010 px-4 py-3 md:px-5 md:py-3.5 sticky bottom-4 shadow-raised flex-wrap">
+              {blockReason && (
+                <p className="text-xs text-fg-subtle flex-1 min-w-0">
+                  <span className="font-medium text-orange-070">제출 차단:</span> {blockReason}
+                </p>
+              )}
               {mySubmissionId && (
                 <MsButton
                   variant="outline-default"
@@ -1021,15 +1042,13 @@ export function TeamReviewWrite() {
               <MsButton
                 onClick={() => { if (selfSubmitted && canSubmit) setShowConfirm(true); }}
                 disabled={!selfSubmitted || !canSubmit}
-                title={
-                  !selfSubmitted ? '팀원의 자기평가 제출 후 평가를 제출할 수 있습니다.' :
-                  !canSubmit ? '조직장 리뷰 단계가 시작되면 제출할 수 있습니다.' : undefined
-                }
+                title={blockReason ?? undefined}
               >
                 평가 제출하기
               </MsButton>
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 

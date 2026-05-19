@@ -77,8 +77,6 @@ function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [submissions, cycles, currentUser?.id],
   );
-  const mySelf = mySelfActive[0]?.sub;
-  const activeSelfCycle = mySelfActive[0]?.cycle;
 
   // Dev 도구: 디자인 센터 하위 조직 멤버 list. import.meta.env.DEV 일 때만 노출.
   const designCenterMembers = useMemo(() => {
@@ -175,25 +173,58 @@ function AdminDashboard() {
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드 (TodayPanel 위에 우선 노출)
-          라운드 10: tint 배경 강조 추가 — Employee/Manager 와 동일 패턴 */}
-      {mySelf && activeSelfCycle && (() => {
-        const urgent = isUrgent(activeSelfCycle.selfReviewDeadline);
+      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드
+          라운드 14 P1-A3: 진행 중 N건 노출 (강조 카드 + compact + 'N건 더') */}
+      {mySelfActive.length > 0 && (() => {
+        const TOP_N = 3;
+        const top = mySelfActive.slice(0, TOP_N);
+        const more = Math.max(0, mySelfActive.length - TOP_N);
         return (
-          <div className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 mb-6 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>내 자기평가 — 진행 중</p>
-                <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeSelfCycle.title}</h2>
-                <div className="w-full sm:w-52">
-                  <ProgressBar value={mySelf.answers.length} max={6} showPercent />
-                  <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeSelfCycle.selfReviewDeadline)}</p>
-                </div>
-              </div>
-              <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
-                {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
-              </MsButton>
-            </div>
+          <div className="flex flex-col gap-3 mb-6">
+            {top.map((entry, i) => {
+              const urgent = isUrgent(entry.cycle.selfReviewDeadline);
+              if (i === 0) {
+                return (
+                  <div key={entry.sub.id}
+                    className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>내 자기평가 — 진행 중</p>
+                        <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{entry.cycle.title}</h2>
+                        <div className="w-full sm:w-52">
+                          <ProgressBar value={entry.sub.answers.length} max={6} showPercent />
+                          <p className="text-xs text-fg-subtle mt-1">{entry.sub.answers.length}/6 질문 완료 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}</p>
+                        </div>
+                      </div>
+                      <MsButton onClick={() => navigate(`/reviews/me/${entry.sub.id}`)} className="flex-shrink-0">
+                        {entry.sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
+                      </MsButton>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <button key={entry.sub.id}
+                  onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
+                  className={`text-left rounded-md border border-bd-default pl-5 pr-4 py-3 hover:bg-gray-005 transition-colors flex items-center gap-4 flex-wrap ${urgent ? 'border-l-4 border-l-orange-060' : 'border-l-4 border-l-fg-brand1'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
+                    <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+                      {entry.sub.answers.length}/6 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
+                    {entry.sub.status === 'not_started' ? '시작하기 →' : '이어서 작성 →'}
+                  </span>
+                </button>
+              );
+            })}
+            {more > 0 && (
+              <button onClick={() => navigate('/reviews/me')}
+                className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2 self-start">
+                +{more}건 더 — 내 리뷰 목록에서 보기
+              </button>
+            )}
           </div>
         );
       })()}
@@ -478,36 +509,65 @@ function EmployeeDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [submissions, cycles, currentUser?.id],
   );
-  const mySelf = mySelfActive[0]?.sub;
-  const activeCycle = mySelfActive[0]?.cycle;
   const pastSubmissions = submissions.filter(s => s.reviewerId === currentUser?.id && s.type === 'self' && s.status === 'submitted');
 
   useSetPageHeader('홈', undefined, { subtitle: `안녕하세요, ${currentUser?.name}님 👋` });
 
-  /* Phase D-3.A-fix3: full-bleed + 첫 padding/border-t 제거 — 헤더 line 과 직접 닿음
-     라운드 10: '내가 시작해야 할 리뷰' 가시성 강화 — 좌측 막대 + tint 배경 + PeerPickReminder 위로 순서 교체 */
-  const selfUrgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
+  // P1-A3 라운드 14 — 진행 중 N건 노출. 첫 카드는 강조, 2~3번째는 compact, 그 이상은 'N건 더'
+  const TOP_N = 3;
+  const topActive = mySelfActive.slice(0, TOP_N);
+  const remainingCount = Math.max(0, mySelfActive.length - TOP_N);
+
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      <div className="flex flex-col gap-6">
-        {activeCycle && mySelf && mySelf.status !== 'submitted' && (
-          <div className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${selfUrgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <p className={`text-xs font-semibold mb-1 ${selfUrgent ? 'text-orange-070' : 'text-fg-brand1'}`}>지금 진행 중 — 내 자기평가</p>
-                <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{activeCycle.title}</h2>
-                <div className="w-full sm:w-52">
-                  <ProgressBar value={mySelf.answers.length} max={6} showPercent />
-                  <p className="text-xs text-fg-subtle mt-1">{mySelf.answers.length}/6 질문 완료 · 마감 {deadlineLabel(activeCycle.selfReviewDeadline)}</p>
+      <div className="flex flex-col gap-3">
+        {topActive.map((entry, i) => {
+          const urgent = isUrgent(entry.cycle.selfReviewDeadline);
+          if (i === 0) {
+            // 강조 카드 (기존 패턴 유지)
+            return (
+              <div key={entry.sub.id}
+                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>지금 진행 중 — 내 자기평가</p>
+                    <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{entry.cycle.title}</h2>
+                    <div className="w-full sm:w-52">
+                      <ProgressBar value={entry.sub.answers.length} max={6} showPercent />
+                      <p className="text-xs text-fg-subtle mt-1">{entry.sub.answers.length}/6 질문 완료 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}</p>
+                    </div>
+                  </div>
+                  <MsButton onClick={() => navigate(`/reviews/me/${entry.sub.id}`)} className="flex-shrink-0">
+                    {entry.sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
+                  </MsButton>
                 </div>
               </div>
-              <MsButton onClick={() => navigate(`/reviews/me/${mySelf.id}`)} className="flex-shrink-0">
-                {mySelf.status === 'not_started' ? '시작하기' : '이어서 작성'}
-              </MsButton>
-            </div>
-          </div>
+            );
+          }
+          // compact row (2~3번째)
+          return (
+            <button key={entry.sub.id}
+              onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
+              className={`text-left rounded-md border border-bd-default pl-5 pr-4 py-3 hover:bg-gray-005 transition-colors flex items-center gap-4 flex-wrap ${urgent ? 'border-l-4 border-l-orange-060' : 'border-l-4 border-l-fg-brand1'}`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
+                <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
+                  {entry.sub.answers.length}/6 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                </p>
+              </div>
+              <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
+                {entry.sub.status === 'not_started' ? '시작하기 →' : '이어서 작성 →'}
+              </span>
+            </button>
+          );
+        })}
+        {remainingCount > 0 && (
+          <button onClick={() => navigate('/reviews/me')}
+            className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2 self-start">
+            +{remainingCount}건 더 — 내 리뷰 목록에서 보기
+          </button>
         )}
-        <PeerPickReminder />
+        <div className="mt-3"><PeerPickReminder /></div>
       </div>
 
       {pastSubmissions.length > 0 && (

@@ -205,15 +205,20 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
       {/* Phase D-2.1: ADM / LNB / Unit / Header — 로고 + User ID 통합 박스
           Figma: px-[14px] py-[16px] gap-[8px] flex-col items-start justify-center */}
       <div className="flex flex-col gap-2 items-start justify-center px-3.5 py-4 flex-shrink-0">
-        {/* Container/Subject — 로고 + 앱 이름 */}
-        <div className="flex gap-1 items-center w-[192px]">
+        {/* Container/Subject — 로고 + 앱 이름 (P1-A1 라운드 14: 클릭 시 홈 이동) */}
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          aria-label="홈으로"
+          className="flex gap-1 items-center w-[192px] rounded-md hover:bg-gray-005 -mx-1 px-1 py-0.5 transition-colors"
+        >
           <BrandIcon className="size-[34px] rounded-md flex-shrink-0" />
-          <div className="flex-1 min-w-0 p-1">
+          <div className="flex-1 min-w-0 p-1 text-left">
             <p className="text-sm font-bold text-fg-default tracking-[-0.3px] leading-5 truncate">
               메이크스타 리뷰시스템
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Container/Id — 이메일 + more 버튼 (박스 형태) */}
         {currentUser && (

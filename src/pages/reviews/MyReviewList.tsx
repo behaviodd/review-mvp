@@ -87,12 +87,17 @@ export function MyReviewList() {
   const filteredMySubmissions = mySubmissions.filter(s => typeMatch(s.cycleId));
   const filteredReceived      = receivedReviews.filter(s => typeMatch(s.cycleId));
 
+  // P1-A2 라운드 14 — 최신 저장순 정렬 (lastSavedAt desc).
+  // 사용자 결정: 가장 최근에 손댄 리뷰가 위로. 빈 lastSavedAt 은 epoch 0 으로 하단에 노출.
+  const byRecentSave = (a: typeof submissions[number], b: typeof submissions[number]) =>
+    (Date.parse(b.lastSavedAt) || 0) - (Date.parse(a.lastSavedAt) || 0);
+
   // 상태별 분류
-  const active  = filteredMySubmissions.filter(s => s.status !== 'submitted' && !closedCycleIds.has(s.cycleId));
-  const done    = filteredMySubmissions.filter(s => s.status === 'submitted'  && !closedCycleIds.has(s.cycleId));
-  const closedSelf     = filteredMySubmissions.filter(s => closedCycleIds.has(s.cycleId));
-  const closedReceived = filteredReceived.filter(s => closedCycleIds.has(s.cycleId));
-  const doneAll = [...done, ...filteredReceived.filter(s => !closedCycleIds.has(s.cycleId))];
+  const active  = filteredMySubmissions.filter(s => s.status !== 'submitted' && !closedCycleIds.has(s.cycleId)).sort(byRecentSave);
+  const done    = filteredMySubmissions.filter(s => s.status === 'submitted'  && !closedCycleIds.has(s.cycleId)).sort(byRecentSave);
+  const closedSelf     = filteredMySubmissions.filter(s => closedCycleIds.has(s.cycleId)).sort(byRecentSave);
+  const closedReceived = filteredReceived.filter(s => closedCycleIds.has(s.cycleId)).sort(byRecentSave);
+  const doneAll = [...done, ...filteredReceived.filter(s => !closedCycleIds.has(s.cycleId))].sort(byRecentSave);
 
   useSetPageHeader('내 작성', undefined, {
     subtitle: `진행 중 ${active.length} · 완료 ${doneAll.length} · 종료됨 ${closedSelf.length + closedReceived.length}`,

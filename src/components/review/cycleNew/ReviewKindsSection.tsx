@@ -137,7 +137,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
             >
               <option value="admin_assigns">관리자가 배정</option>
               <option value="reviewee_picks">대상자가 선택</option>
-              <option value="leader_approves">대상자 제안 → 리더 승인</option>
+              <option value="leader_approves">대상자 제안 → 조직장 승인</option>
             </MsSelect>
             <MsInput
               type="number"
@@ -161,7 +161,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
             {' · '}
             <strong>대상자가 선택</strong>: 피평가자 본인이 동료를 고릅니다.
             {' · '}
-            <strong>리더 승인</strong>: 대상자가 제안한 동료를 매니저가 승인·반려합니다.
+            <strong>조직장 승인</strong>: 대상자가 제안한 동료를 조직장이 승인·반려합니다.
           </p>
         </div>
       )}

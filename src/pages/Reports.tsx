@@ -65,7 +65,7 @@ export function Reports() {
     const mgRatings = managerSub?.answers.filter(a => a.ratingValue).map(a => a.ratingValue!) ?? [];
     const selfAvg = selfRatings.length ? selfRatings.reduce((s, v) => s + v, 0) / selfRatings.length : 0;
     const mgAvg = mgRatings.length ? mgRatings.reduce((s, v) => s + v, 0) / mgRatings.length : 0;
-    return { name: m.name, 자기평가: +selfAvg.toFixed(1), 매니저평가: +mgAvg.toFixed(1) };
+    return { name: m.name, 자기평가: +selfAvg.toFixed(1), 조직장평가: +mgAvg.toFixed(1) };
   });
 
   // Completion pie for manager
@@ -194,7 +194,7 @@ export function Reports() {
           {/* Self vs Manager comparison */}
           {teamData.some(d => d.자기평가 > 0) && (
             <div className="rounded-lg border border-bd-default p-5">
-              <h2 className="text-base font-semibold text-gray-070 mb-4">자기평가 vs 매니저평가 비교</h2>
+              <h2 className="text-base font-semibold text-gray-070 mb-4">자기평가 vs 조직장평가 비교</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={teamData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -203,7 +203,7 @@ export function Reports() {
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend iconType="circle" iconSize={8} />
                   <Bar dataKey="자기평가" fill="#1482b8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="매니저평가" fill="#20903c" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="조직장평가" fill="#20903c" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

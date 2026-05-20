@@ -31,7 +31,7 @@ const STATUS_CONFIG: Record<ReviewStatus, { label: string; dot: string; text: st
   draft:          { label: '초안',        dot: 'bg-gray-030',  text: 'text-fg-subtle' },
   active:         { label: '진행 중',     dot: 'bg-pink-040',  text: 'text-pink-060' },
   self_review:    { label: '자기평가 중', dot: 'bg-pink-040',  text: 'text-pink-060' },
-  manager_review: { label: '매니저 리뷰', dot: 'bg-pink-040',  text: 'text-pink-050' },
+  manager_review: { label: '조직장 리뷰', dot: 'bg-pink-040',  text: 'text-pink-050' },
   calibration:    { label: '조율 중',     dot: 'bg-pink-040',  text: 'text-pink-050' },
   closed:         { label: '완료',        dot: 'bg-green-040', text: 'text-green-060' },
 };

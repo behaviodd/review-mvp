@@ -67,7 +67,7 @@ export function ProfileFieldSettings() {
         <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">기본 정보</p>
         <p className="text-xs text-fg-subtle mb-4 leading-relaxed">
           이름·이메일은 모든 구성원에게 항상 노출되며 열람 권한을 변경할 수 없습니다.
-          그 외 항목은 본인·조직 리더·평가권자·모든 구성원 중 누구에게 보일지 선택하세요.
+          그 외 항목은 본인·조직장·평가권자·모든 구성원 중 누구에게 보일지 선택하세요.
           어드민은 모든 항목을 항상 열람할 수 있습니다.
         </p>
 

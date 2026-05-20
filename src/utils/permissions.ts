@@ -129,7 +129,7 @@ export function canReassignReviewer(ctx: PermissionContext): boolean {
 
 /**
  * 대리 작성 — cycles.manage 권한자만.
- * 평가권자/리더는 자기 권한 범위에서 직접 작성 가능하므로 대리 불요.
+ * 평가권자/조직장은 자기 권한 범위에서 직접 작성 가능하므로 대리 불요.
  */
 export function canProxyWrite(ctx: PermissionContext): boolean {
   if (!isCycleMutable(ctx.cycle)) return false;

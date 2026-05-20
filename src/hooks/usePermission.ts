@@ -10,7 +10,7 @@ import type { PermissionCode, UserRole } from '../types';
  * - admin role: 자동으로 모든 권한 (소유자 그룹)
  * - 그 외: PermissionGroup 멤버십 기반 권한 합집합
  * - 평가권자(rank≥1, 활성 ReviewerAssignment 보유): 팀 리뷰/하향 작성 가능
- * - 조직 리더(orgUnit.headId === currentUser.id): 자조직 멤버 관련 메뉴 가시
+ * - 조직장(orgUnit.headId === currentUser.id): 자조직 멤버 관련 메뉴 가시
  * - leader role: legacy 호환 — viewTeamReviews 와 동치
  */
 export function usePermission() {
@@ -28,7 +28,7 @@ export function usePermission() {
 
   const has = (code: PermissionCode) => hasPermission(currentUser, code, permissionGroups);
 
-  // 팀 리뷰 메뉴 가시성: 평가권자/조직 리더/leader role/cycles.manage 권한자
+  // 팀 리뷰 메뉴 가시성: 평가권자/조직장/leader role/cycles.manage 권한자
   const canSeeTeamView =
     role === 'admin' ||
     role === 'leader' ||

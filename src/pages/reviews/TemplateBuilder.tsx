@@ -26,7 +26,7 @@ const TYPES = [
 const TARGETS = [
   { val: 'both',   label: '공통'    },
   { val: 'self',   label: '자기평가' },
-  { val: 'leader', label: '매니저'  },
+  { val: 'leader', label: '조직장'  },
 ] as const;
 
 const typeInfo = (val: string) => TYPES.find(t => t.val === val) ?? TYPES[0];
@@ -486,7 +486,7 @@ export function TemplateBuilder() {
                           size="md"
                           checked={q.isPrivate}
                           onChange={e => updateQ(q.id, { isPrivate: e.target.checked })}
-                          label={<span className="flex items-center gap-1 text-xs text-gray-060"><MsLockIcon size={12} className="text-fg-subtlest" />매니저 전용</span>}
+                          label={<span className="flex items-center gap-1 text-xs text-gray-060"><MsLockIcon size={12} className="text-fg-subtlest" />조직장 전용</span>}
                         />
                         <div className="flex gap-1 ml-auto">
                           {TARGETS.map(({ val, label }) => (

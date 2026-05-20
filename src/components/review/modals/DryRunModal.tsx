@@ -119,7 +119,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
             { label: '대상자', value: `${dryRun.targets.length}명` },
             { label: '자기평가 생성', value: `${dryRun.selfCount}건` },
             { label: '조직장 리뷰', value: `${dryRun.downCount}건` },
-            { label: '매니저 없음', value: `${dryRun.managerMissing}명`, danger: dryRun.managerMissing > 0 },
+            { label: '조직장 없음', value: `${dryRun.managerMissing}명`, danger: dryRun.managerMissing > 0 },
           ].map(k => (
             <div key={k.label} className="rounded-lg border border-gray-010 bg-white px-3 py-2">
               <p className="text-[11px] text-fg-subtlest">{k.label}</p>
@@ -156,7 +156,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
                   <span className="truncate text-gray-060">{getSmallestOrg(r.user)}</span>
                   <span className="truncate text-gray-060">{r.user.position}</span>
                   <span className={r.managerMissing ? 'text-red-060 font-semibold' : 'text-gray-070'}>
-                    {r.managerMissing ? '매니저 없음' : (
+                    {r.managerMissing ? '조직장 없음' : (
                       r.reviewersByRank.length === 1
                         ? (r.reviewersByRank[0].name ?? '미배정')
                         : r.reviewersByRank.map(rb => `${rb.rank}차 ${rb.missing ? '미배정' : rb.name}`).join(' · ')

@@ -163,7 +163,7 @@ function RightPanel({
             <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
               <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-fg-subtlest">매니저 평가 마감</p>
+                <p className="text-xs text-fg-subtlest">조직장 평가 마감</p>
                 <p className="text-xs font-medium text-gray-070">{formatDate(cycle.managerReviewDeadline)}</p>
               </div>
             </div>
@@ -192,7 +192,7 @@ function RightPanel({
           <ul className="space-y-1">
             <li className="text-xs text-fg-subtle flex items-center gap-1.5">
               <span className="size-1 rounded-full bg-gray-040 flex-shrink-0" />
-              매니저 · 관리자만 결과 열람 가능
+              조직장 · 관리자만 결과 열람 가능
             </li>
             {privateCount > 0 && (
               <li className="text-xs text-fg-subtle flex items-center gap-1.5">
@@ -889,7 +889,7 @@ export function TeamReviewWrite() {
                     </p>
                   </div>
 
-                  {/* 셀프 / 매니저 셀 */}
+                  {/* 셀프 / 조직장 셀 */}
                   <div className="grid grid-cols-1 md:grid-cols-2">
                     {/* 셀프 리뷰 셀 */}
                     <div className={`px-5 py-4 bg-gray-005/40 md:bg-white md:border-r border-gray-010 ${!isLastRow ? 'border-b border-gray-010' : ''}`}>
@@ -899,7 +899,7 @@ export function TeamReviewWrite() {
                       {q.isPrivate ? (
                         <div className="flex items-center gap-2 text-gray-030">
                           <MsLockIcon size={16} className="flex-shrink-0" />
-                          <p className="text-xs">팀원에게 공유되지 않는 매니저 전용 질문입니다.</p>
+                          <p className="text-xs">팀원에게 공유되지 않는 조직장 전용 질문입니다.</p>
                         </div>
                       ) : !selfSubmitted ? (
                         <p className="text-xs text-gray-030 italic">아직 자기평가를 제출하지 않았습니다.</p>
@@ -938,7 +938,7 @@ export function TeamReviewWrite() {
                       )}
                     </div>
 
-                    {/* 매니저 입력 셀 */}
+                    {/* 조직장 입력 셀 */}
                     <div className={`px-5 py-4 bg-white ${!isLastRow ? 'border-b border-gray-010' : ''}`}>
                       <p className="text-xs font-semibold text-pink-040 uppercase tracking-wide mb-2 md:hidden">
                         {isAdmin ? `${actualManager?.name}님 평가` : '내 평가'}

@@ -753,7 +753,7 @@ export const useReviewStore = create<ReviewState>()(
         if (!cycle) return { created: 0, skipped: 0, error: '사이클을 찾을 수 없습니다.' };
         const policy = cycle.peerSelection;
         if (!policy || policy.method !== 'leader_approves') {
-          return { created: 0, skipped: 0, error: '리더 승인 방식이 아닙니다.' };
+          return { created: 0, skipped: 0, error: '조직장 승인 방식이 아닙니다.' };
         }
         if (peerIds.length < policy.minPeers || peerIds.length > policy.maxPeers) {
           return { created: 0, skipped: 0, error: `${policy.minPeers}–${policy.maxPeers}명 선택해 주세요.` };
@@ -797,7 +797,7 @@ export const useReviewStore = create<ReviewState>()(
             actorId: revieweeId,
             action: 'cycle.settings_updated',
             targetIds: newSubs.map(s => s.id),
-            summary: `동료 리뷰 제안 ${created}건 (리더 승인 대기)`,
+            summary: `동료 리뷰 제안 ${created}건 (조직장 승인 대기)`,
             meta: { revieweeId, peerIds },
           });
         }

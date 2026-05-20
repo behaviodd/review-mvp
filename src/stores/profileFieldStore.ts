@@ -16,7 +16,7 @@ export const PROFILE_FIELD_LABEL: Record<ProfileFieldKey, string> = {
 
 export const PROFILE_VIEWER_LABEL: Record<ProfileFieldViewer, string> = {
   self:       '본인',
-  orgLeader:  '조직 리더',
+  orgLeader:  '조직장',
   reviewer:   '평가권자',
   allMembers: '모든 구성원',
 };

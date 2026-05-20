@@ -119,7 +119,7 @@ export function PeerPickPage() {
       return;
     }
     showToast('success', isProposal
-      ? `${res.created}명 제안 완료 · 리더 승인 대기`
+      ? `${res.created}명 제안 완료 · 조직장 승인 대기`
       : `동료 ${res.created}명 선택 완료`);
     navigate('/reviews/me');
   };
@@ -138,7 +138,7 @@ export function PeerPickPage() {
         <h1 className="text-lg font-bold text-fg-default">{cycle.title}</h1>
         <p className="mt-1 text-xs text-fg-subtle">
           나를 평가할 동료 <strong>{min}–{max}명</strong>을 선택해 주세요.
-          {isProposal ? ' 선택 후 리더가 승인합니다.' : ' 선택 후 해당 동료에게 평가 작성이 요청됩니다.'}
+          {isProposal ? ' 선택 후 조직장이 승인합니다.' : ' 선택 후 해당 동료에게 평가 작성이 요청됩니다.'}
         </p>
         <div className="mt-3 rounded-lg bg-gray-001 px-3 py-2 text-xs">
           기존 배정 <strong>{existingPeerReviewerIds.size}명</strong> + 추가 <strong>{selected.size}명</strong> = 총 {total}명

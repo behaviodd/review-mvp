@@ -29,7 +29,7 @@ export function PeerApprovalPage() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('pending');
 
-  // 현재 사용자가 "리더"인 reviewee 집합
+  // 현재 사용자가 "조직장"인 reviewee 집합
   const leadeeIds = useMemo(() => {
     if (!currentUser) return new Set<string>();
     const byManager = users.filter(u => u.managerId === currentUser.id).map(u => u.id);
@@ -41,7 +41,7 @@ export function PeerApprovalPage() {
     return new Set([...byManager, ...byOrg]);
   }, [currentUser, users, orgUnits]);
 
-  // 리더가 결정해야 할 pending peer 제안들
+  // 조직장이 결정해야 할 pending peer 제안들
   const pending = useMemo(() => {
     return submissions
       .filter(s => s.type === 'peer' && s.peerProposal?.status === 'pending' && leadeeIds.has(s.revieweeId))

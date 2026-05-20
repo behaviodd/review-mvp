@@ -3,7 +3,7 @@ import type { ReviewTemplate } from '../types';
 export const DEFAULT_TEMPLATE: ReviewTemplate = {
   id: 'tpl_default',
   name: '기본 성과 리뷰 템플릿',
-  description: '자기평가와 매니저 평가에 사용되는 기본 템플릿입니다.',
+  description: '자기평가와 조직장 평가에 사용되는 기본 템플릿입니다.',
   isDefault: true,
   createdBy: 'system',
   createdAt: '2024-01-01T00:00:00.000Z',

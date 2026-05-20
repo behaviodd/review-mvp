@@ -74,7 +74,7 @@ export interface OrgUnit {
    *  Phase 3 에서 호출처 일괄 정리 후 optional → 제거. 마이그레이션 시 임시 타입 부여(depth 기반 매핑). */
   type: OrgUnitType;
   parentId?: string;          // null 또는 undefined = 루트
-  headId?: string;            // 조직 리더 (목표 승인 + 일부 UI 가시성)
+  headId?: string;            // 조직장 (목표 승인 + 일부 UI 가시성)
   order: number;
   // R7
   note?: string;
@@ -92,9 +92,9 @@ export interface PendingApproval {
   processedAt?: string;
 }
 
-// R1: 평가권 테이블. 조직 리더(orgUnit.headId)와 분리되어 별도 운영.
+// R1: 평가권 테이블. 조직장(orgUnit.headId)와 분리되어 별도 운영.
 export type ReviewerAssignmentSource =
-  | 'org_head_inherited'  // 조직 리더 자동 부여 (시드 시 사용)
+  | 'org_head_inherited'  // 조직장 자동 부여 (시드 시 사용)
   | 'manual'              // 직접 지정
   | 'excel_import';       // 엑셀 일괄 업로드
 
@@ -160,7 +160,7 @@ export type ProfileFieldKey =
 
 export type ProfileFieldViewer =
   | 'self'         // 본인
-  | 'orgLeader'    // 조직 리더
+  | 'orgLeader'    // 조직장
   | 'reviewer'     // 평가권자
   | 'allMembers';  // 모든 구성원
 

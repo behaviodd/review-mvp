@@ -150,7 +150,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError, previou
       {question.isPrivate && (
         <div className="flex items-center gap-1.5 mb-2">
           <MsLockIcon size={12} className="text-fg-subtlest" />
-          <span className="text-xs text-fg-subtlest">매니저 전용</span>
+          <span className="text-xs text-fg-subtlest">조직장 전용</span>
         </div>
       )}
       <div className="mb-3">
@@ -344,7 +344,7 @@ function RightPanel({
             <MsShieldCheckIcon size={14} className="text-fg-subtle" />
             <p className="text-xs font-semibold text-gray-060">개인정보 보호</p>
           </div>
-          <p className="text-xs text-fg-subtle leading-relaxed">작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 매니저와 관리자만 열람합니다.</p>
+          <p className="text-xs text-fg-subtle leading-relaxed">작성 내용은 제출 전까지 본인만 볼 수 있습니다. 제출 후에는 담당 조직장과 관리자만 열람합니다.</p>
         </div>
         {!isReadOnly && (
           <div>

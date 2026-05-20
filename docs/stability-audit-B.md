@@ -32,7 +32,7 @@
 | **B8** | 인사스냅샷 immutability | createSnapshot 이후 payloadJSON 변조 불가 (시점 일관성) | ✅ **append-only + 운영 가이드 (라운드 14)** — `upsertSnapshot` 액션 없음. 신설 `docs/operations-guide.md` 에 시트 권한 보호·변조 감지·복구 절차 명시. 시트 자체 보호 설정은 사용자 직접 적용 | 운영 가이드 적용 + 시트 보호 자동화 (Apps Script Protection API) 는 별도 phase | ~~P2~~ |
 | **B9** | redirect:'manual' POST 처리 | 302 location 추출 + 실제 doPost 호출 보장 | ✅ **B-2.3 적용됨** — 첫·둘째 fetch 별도 AbortController + 전체 budget 18s 동적 분배. `location` null 시 502 명시 에러. 잔여 budget < 1s 면 즉시 504 | (해소) | ~~P1~~ |
 | **B10** | `audit.append` 큐 중복 방지 | 같은 감사 이벤트는 한 번만 시트에 기록됨 | ✅ **B-2.4 적용됨** — `deriveAuditId` 가 (cycleId, actorId, action, targetIds, summary, 5초 버킷) djb2 hash 로 deterministic id 생성. in-memory store + 큐 op id + Apps Script 측 dedupe (defense in depth). 5초 윈도우는 재시도(~0.5~3s) 흡수 + 의도적 두 번째 액션 분리 | (해소) | ~~P1~~ |
-| **B11** | `_계정` 시트 deprecated 정책 | R7 이후 `_계정` 시트 동기화 중단 | ⚠️ **클라이언트 측 해소 (라운드 14)** — `initAccount`/`syncAccounts` 함수 no-op 화. Settings 의 '_계정 시트 동기화' UI 제거. 다만 Apps Script 의 `createUser` 분기는 여전히 `_계정` 시트 upsert (deploy 의존성). | Apps Script 분기 잔여는 deploy 시 정리 권장 (B-3.2). 클라이언트 호출 차단으로 신규 row 추가는 멤버 생성 시 createUser 호출 시점만 발생 | **P2** (잔여) |
+| **B11** | `_계정` 시트 deprecated 정책 | R7 이후 `_계정` 시트 동기화 중단 | ✅ **코드 완전 정리 (2026-05-20)** — 클라이언트(라운드 14): `initAccount`/`syncAccounts` no-op + Settings UI 제거. **Apps Script(2026-05-20, B-3.2)**: no-op 함수·doPost 분기·`createUser` upsert·`SHEET_ACCOUNTS`/`ACCOUNT_HEADERS` 상수·`migrate_addMissingColumns` ensureHeaders 모두 제거. 클라이언트도 no-op 함수 및 `teamStore` 호출 삭제. **`_계정`은 코드 어디서도 읽히지 않음**(로그인·권한은 `SHEET_USERS`) → write 제거가 로그인/권한에 무영향(검증) | 시트 자체 삭제만 잔여 — `Migrate_R7.migrateR7_cleanupDeadSheets()`(`deadSheets=['_계정']`) 준비됨. 운영 `_계정` 시트의 수동 데이터 확인 후 실행 권장. **Apps Script 변경은 사용자 수동 배포 필요** | ~~P2~~ (시트 삭제만 잔여) |
 | **B12** | `_invalidateBulkCache_` 정합성 | 쓰기 액션 후 다음 GET 이 fresh 시트 데이터를 반환 | ✅ **라운드 14 — 호출 정리** — BULK_CACHE_ENABLED_=false 라 모든 cache 헬퍼는 no-op. doPost 안의 2개 invalidate 호출 (BULK_AFFECTING_ACTIONS_, 자동 승인 경로) 을 명시 주석 + no-op 호출 제거. 헬퍼와 화이트리스트는 향후 재활성화 대비 보존 | (해소) | ~~P2~~ |
 
 ---
@@ -101,7 +101,7 @@
 ### Phase B-3 (P2, 개선) — 코드 부채 정리
 
 **B-3.1**: `markWrite` 다중 탭 공유 — `BroadcastChannel('sheets-sync')` 또는 storage event
-**B-3.2**: `_계정` 시트 동기화 코드 제거 (createUser/syncAccounts/initAccount 분기 정리)
+**B-3.2**: ✅ **완료 (2026-05-20)** — `_계정` 시트 동기화 코드 제거 (createUser/syncAccounts/initAccount 분기 + 상수 + ensureHeaders + 클라이언트 no-op 함수·호출 모두 제거). 시트 자체 삭제는 `migrateR7_cleanupDeadSheets()` 로 별도 (옵션 C, 운영 데이터 확인 후). **Apps Script 수동 배포 필요**
 **B-3.3**: `_invalidateBulkCache_` 호출 제거 (cache 비활성 상태) 또는 헬퍼 자체 삭제
 **B-3.4**: 인사스냅샷 시트 — 운영자 직접 편집 변조 방지 안내 (시트 보호 권한 + 감사로그)
 

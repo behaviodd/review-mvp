@@ -118,21 +118,3 @@ export async function rejectMember(input: { email: string; reason?: string; appr
   if (json.error) throw new Error(String(json.error));
   return { ok: json.ok === true };
 }
-
-/**
- * @deprecated B11 라운드 14 — R7 이후 `_계정` 시트 정책 폐기.
- * Google SSO 도입으로 권한관리 인덱스 시트 불필요 (시트 권한 + audit log 로 대체).
- * 함수는 호출 차단 위해 no-op 으로 유지 (호출처가 즉시 영향 받지 않도록).
- */
-export async function initAccount(_userId: string, _email: string): Promise<boolean> {
-  void _userId; void _email;  // no-op (deprecated)
-  return true;
-}
-
-/**
- * @deprecated B11 라운드 14 — `_계정` 시트 동기화 폐기.
- * UI 진입점 제거됨. 함수 자체는 backwards-compat 으로 no-op 유지.
- */
-export async function syncAccounts(): Promise<{ ok: boolean; created: number }> {
-  return { ok: true, created: 0 };
-}

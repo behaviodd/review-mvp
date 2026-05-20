@@ -7,7 +7,6 @@ import type {
 } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
-import { initAccount } from '../utils/authApi';
 import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
 
 const ALL_PERMISSIONS: PermissionCode[] = [
@@ -261,8 +260,6 @@ export const useTeamStore = create<TeamStore>()(
     const newUser: User = { id, ...member };
     if (!assignedId) sheetWriter.createWithId(newUser);
     set(s => ({ users: [...s.users, newUser] }));
-    // _계정 시트에 사번/이메일 인덱스 행 생성 (권한관리용)
-    initAccount(id, member.email).catch(e => console.error('[Auth] initAccount:', e));
     return id;
   },
 

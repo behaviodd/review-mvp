@@ -912,7 +912,28 @@ export const useReviewStore = create<ReviewState>()(
       syncFromSheet: ({ cycles, templates, submissions }) =>
         set(s => {
           const next: Partial<ReviewState> = {};
-          if (cycles    !== undefined) next.cycles    = cycles;
+          if (cycles !== undefined) {
+            // 발행된 cycle 의 templateSnapshot 은 immutable. 시트의 템플릿스냅샷JSON
+            // 셀이 비어 있으면 (P0-2 미복원분) parseSheetCycle 가 undefined 로 파싱하고,
+            // cycles 를 wholesale 교체하면 store 에서 snapshot 이 소실된다. 그러면
+            // getEffectiveTemplate 가 fallback(현 템플릿/DEFAULT) 으로 빠지면서 답변의
+            // questionId 와 불일치 → 자기평가/팀원평가 화면에서 답변이 "사라진" 것처럼
+            // 보인다 (시트의 답변JSON 은 정상). 단계 전환 시 발생하는 cycle write + 폴링이
+            // 이 소실을 트리거. 방어: remote 에 snapshot 이 없고 local 에 있으면 보존.
+            const localById = new Map(s.cycles.map(c => [c.id, c] as const));
+            next.cycles = cycles.map(rc => {
+              if (rc.templateSnapshot) return rc;
+              const lc = localById.get(rc.id);
+              if (lc?.templateSnapshot) {
+                return {
+                  ...rc,
+                  templateSnapshot:   lc.templateSnapshot,
+                  templateSnapshotAt: rc.templateSnapshotAt ?? lc.templateSnapshotAt,
+                };
+              }
+              return rc;
+            });
+          }
           if (templates !== undefined) next.templates = templates;
           if (submissions !== undefined) {
             const remoteById = new Map(submissions.map(r => [r.id, r] as const));

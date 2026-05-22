@@ -23,6 +23,13 @@ const TYPES = [
   { val: 'competency',      label: '역량',   icon: Brain,      color: 'text-purple-600', bg: 'bg-purple-50' },
 ] as const;
 
+/* 역량(competency) → 평점(rating) 흡수 (2026-05-22, 사용자 결정 = soft hide):
+   competency 는 평점과 동작이 동일한 1–5 척도 타입이라 별도 타입으로의 신규 생성을 중단.
+   - 선택 탭에서만 제외(SELECTABLE_TYPES) → 신규 문항은 더 이상 '역량' 으로 만들 수 없음.
+   - TYPES 자체는 유지 → typeInfo 가 기존 competency 문항의 배지/색을 정상 표시(데이터·렌더 보존).
+   완전 제거(타입 union·||competency 분기·시트 정규화)는 별도 phase 후보. */
+const SELECTABLE_TYPES = TYPES.filter(t => t.val !== 'competency');
+
 const TARGETS = [
   { val: 'both',   label: '공통'    },
   { val: 'self',   label: '자기평가' },
@@ -351,7 +358,7 @@ export function TemplateBuilder() {
                       </span>
                       {/* Type tabs */}
                       <div className="flex items-center gap-1 flex-1">
-                        {TYPES.map(({ val, label, icon: Icon }) => (
+                        {SELECTABLE_TYPES.map(({ val, label, icon: Icon }) => (
                           <button
                             key={val}
                             type="button"

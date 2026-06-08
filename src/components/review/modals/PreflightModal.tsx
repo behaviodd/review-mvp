@@ -39,7 +39,7 @@ export function PreflightModal({ open, onClose, onConfirm, result, cycleTitle, l
       onClose={onClose}
       title="사전 점검"
       description={`"${cycleTitle}" 발행 전 최종 확인`}
-      widthClass="max-w-xl"
+      size="md"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose} disabled={loading}>취소</MsButton>

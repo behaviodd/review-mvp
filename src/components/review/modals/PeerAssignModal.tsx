@@ -86,7 +86,7 @@ export function PeerAssignModal({ open, onClose, cycle, revieweeId, actorId, onA
       onClose={onClose}
       title="동료 리뷰 배정"
       description={`${reviewee.name} 님의 동료 작성자를 선택합니다. 권장 ${min}–${max}명`}
-      widthClass="max-w-xl"
+      size="md"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose}>취소</MsButton>

@@ -22,7 +22,7 @@ export function BulkMoveFolderModal({ open, onClose, count, onConfirm }: Props) 
       onClose={onClose}
       title="폴더로 이동"
       description={`선택한 ${count}개 사이클을 이동합니다.`}
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose}>취소</MsButton>

@@ -137,7 +137,7 @@ export function PermissionGroupDrawer({ group, open, onClose, isNew }: Props) {
         onClose={onClose}
         title={isNew ? '새 권한 그룹' : (group?.name ?? '권한 그룹')}
         description={isSystem ? '시스템 기본 그룹 — 이름/설명/권한은 잠겨 있습니다. 멤버만 변경 가능.' : undefined}
-        widthClass="max-w-2xl"
+        size="lg"
         footer={
           <>
             {!isNew && !isSystem && (

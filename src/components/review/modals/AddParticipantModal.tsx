@@ -88,7 +88,7 @@ export function AddParticipantModal({ cycleId, open, onClose }: Props) {
       onClose={handleClose}
       title="참가자 추가"
       description="중도 입사·신규 합류 인원을 진행 중인 사이클에 추가합니다."
-      widthClass="max-w-xl"
+      size="md"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={handleClose} disabled={submitting}>

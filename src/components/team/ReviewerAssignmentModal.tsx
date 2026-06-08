@@ -100,7 +100,7 @@ export function ReviewerAssignmentModal({ open, onClose, revieweeId }: Props) {
       onClose={onClose}
       title={`평가권자 배정 — ${reviewee.name}`}
       description="rank 별로 최대 1명 활성. 같은 rank 에 새로 지정하면 기존 활성 row 가 자동 종료됩니다."
-      widthClass="max-w-xl"
+      size="md"
       footer={<MsButton size="sm" variant="ghost" onClick={onClose}>닫기</MsButton>}
     >
       <div className="space-y-5">

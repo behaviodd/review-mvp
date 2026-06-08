@@ -74,7 +74,7 @@ export function QuickAddMemberDialog({
       showToast('success', `${form.name.trim()}님을 ${orgUnit.name}에 추가했습니다.`);
       reset();
       onClose();
-    } catch (err) {
+    } catch {
       showToast('error', '구성원 추가에 실패했습니다.');
     } finally {
       setSubmitting(false);
@@ -93,7 +93,7 @@ export function QuickAddMemberDialog({
       onClose={handleClose}
       title="구성원 추가"
       description={`${orgLabel}에 추가됩니다`}
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton type="button" variant="ghost" onClick={handleClose} disabled={submitting}>취소</MsButton>

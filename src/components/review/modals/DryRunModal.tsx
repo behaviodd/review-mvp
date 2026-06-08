@@ -23,7 +23,7 @@ function downloadCSV(filename: string, rows: string[][]) {
     return needsQuote ? `"${safe}"` : safe;
   };
   const csv = rows.map(r => r.map(c => escape(String(c ?? ''))).join(',')).join('\n');
-  const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -103,7 +103,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
       onClose={onClose}
       title="드라이런 프리뷰"
       description={`${title ?? cycle.title} · 발행 시 이 사이클이 만드는 제출 레코드를 미리 확인합니다.`}
-      widthClass="max-w-3xl"
+      size="lg"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose}>닫기</MsButton>

@@ -59,7 +59,7 @@ export function RemoveParticipantModal({ cycleId, userId, open, onClose }: Props
       onClose={handleClose}
       title="참가자 제외"
       description="평가 본체는 그대로 보존되며 운영 리스트에서만 숨김 처리됩니다."
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={handleClose} disabled={submitting}>

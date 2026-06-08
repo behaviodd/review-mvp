@@ -91,7 +91,7 @@ function MemberAddDialogContent({ context, onClose }: { context: MemberAddContex
       open={true}
       onClose={onClose}
       title="구성원 추가"
-      widthClass="max-w-2xl"
+      size="lg"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose} disabled={submitting}>취소</MsButton>

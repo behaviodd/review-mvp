@@ -89,7 +89,7 @@ export function OrgUnitDialog({
       open
       onClose={onClose}
       title={title}
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton type="button" variant="ghost" onClick={onClose}>취소</MsButton>

@@ -20,7 +20,7 @@ export function ProxyWriteConfirmModal({ open, onClose, onConfirm, revieweeName,
       description={stage === 'self'
         ? `${revieweeName ?? '대상자'}님 대신 자기평가를 작성합니다.`
         : `${reviewerName ?? '조직장'} → ${revieweeName ?? '대상자'} 리뷰를 대리 작성합니다.`}
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose}>취소</MsButton>

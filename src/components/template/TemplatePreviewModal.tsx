@@ -54,7 +54,7 @@ export function TemplatePreviewModal({ open, onClose, name, description, section
       onClose={onClose}
       title={`미리보기 — ${name.trim() || '제목 없음'}`}
       description={description.trim() || undefined}
-      widthClass="max-w-3xl"
+      size="lg"
       footer={<MsButton size="sm" variant="ghost" onClick={onClose}>닫기</MsButton>}
     >
       <div className="space-y-5">

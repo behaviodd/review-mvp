@@ -20,7 +20,7 @@ export function BulkAddTagModal({ open, onClose, count, suggestions, onConfirm }
       onClose={onClose}
       title="태그 추가"
       description={`선택한 ${count}개 사이클에 태그를 추가합니다. (중복 태그는 무시)`}
-      widthClass="max-w-md"
+      size="sm"
       footer={
         <>
           <MsButton variant="ghost" size="sm" onClick={onClose}>취소</MsButton>

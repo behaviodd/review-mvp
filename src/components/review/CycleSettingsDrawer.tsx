@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useShowToast } from '../ui/Toast';
@@ -10,6 +10,7 @@ import { PolicySection } from './cycleNew/PolicySection';
 import { AutomationSection } from './cycleNew/AutomationSection';
 import { recordAudit } from '../../utils/auditLog';
 import { isCycleEditLocked } from '../../utils/permissions';
+import { useStaleFormGuard } from '../../hooks/useStaleFormGuard';
 import type {
   AnonymityPolicy, AutoAdvanceRule, ReferenceInfoPolicy, ReminderRule, ReviewCycle, VisibilityPolicy,
 } from '../../types';
@@ -50,9 +51,17 @@ export function CycleSettingsDrawer({ cycle, open, onClose }: Props) {
   const [draft, setDraft] = useState<DraftState>(() => buildDraft(cycle));
   const [saving, setSaving] = useState(false);
 
+  // B2 — 폼이 열린 동안 다른 탭/운영자가 같은 사이클을 갱신하면 경고.
+  const staleGuard = useStaleFormGuard(open ? cycle : undefined);
+
+  // open 전환 시에만 draft 초기화. cycle 변경을 dep 로 두면 폴링 갱신 때 사용자 입력이 덮어써짐.
+  const cycleRef = useRef(cycle);
+  useEffect(() => { cycleRef.current = cycle; });
   useEffect(() => {
-    if (open) setDraft(buildDraft(cycle));
-  }, [open, cycle]);
+    if (open) {
+      setDraft(buildDraft(cycleRef.current));
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -113,6 +122,27 @@ export function CycleSettingsDrawer({ cycle, open, onClose }: Props) {
             <p className="text-xs text-gray-060">
               편집 잠금 상태입니다. 상세 화면에서 "잠금 해제" 후 수정할 수 있습니다.
             </p>
+          </div>
+        )}
+        {staleGuard.isStale && (
+          <div className="border-b border-orange-020 bg-orange-005 px-5 py-3 flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-semibold text-orange-070">다른 곳에서 이 리뷰의 설정이 변경되었어요.</p>
+              <p className="text-xs text-orange-070 mt-0.5">
+                저장하면 현재 화면의 값으로 덮어쓰여 다른 변경이 손실됩니다.
+              </p>
+            </div>
+            <MsButton
+              size="sm"
+              variant="outline-default"
+              onClick={() => {
+                setDraft(buildDraft(cycle));
+                staleGuard.acknowledgeReload();
+                showToast('info', '최신 정보로 다시 불러왔습니다. 변경 사항을 다시 입력해 주세요.');
+              }}
+            >
+              새로 불러오기
+            </MsButton>
           </div>
         )}
 

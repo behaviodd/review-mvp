@@ -10,6 +10,7 @@ import { MsCheckIcon } from '../../components/ui/MsIcons';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getDescendantOrgUnitIds } from '../../utils/userCompat';
 import { isCycleEditLocked } from '../../utils/permissions';
+import { useStaleFormGuard } from '../../hooks/useStaleFormGuard';
 
 export function CycleEdit() {
   const { cycleId } = useParams<{ cycleId: string }>();
@@ -19,6 +20,9 @@ export function CycleEdit() {
   const { users, orgUnits } = useTeamStore();
 
   const cycle = cycles.find(c => c.id === cycleId);
+
+  // B2 — 폼이 열린 동안 다른 탭/운영자가 같은 사이클을 갱신하면 경고.
+  const staleGuard = useStaleFormGuard(cycle);
 
   const handleBack = useCallback(() => {
     if (cycleId) navigate(`/cycles/${cycleId}`);
@@ -118,6 +122,35 @@ export function CycleEdit() {
 
   return (
     <div className="space-y-5 max-w-3xl">
+      {staleGuard.isStale && (
+        <div className="rounded-lg border border-orange-020 bg-orange-005 p-3 flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-orange-070">다른 곳에서 이 리뷰의 정보가 변경되었어요.</p>
+            <p className="text-xs text-orange-070 mt-0.5">
+              저장하면 현재 화면의 값으로 덮어쓰여 다른 변경이 손실됩니다. 최신 정보로 다시 불러올 수 있어요.
+            </p>
+          </div>
+          <MsButton
+            type="button"
+            size="sm"
+            variant="outline-default"
+            onClick={() => {
+              setForm({
+                title: cycle.title,
+                type: cycle.type,
+                templateId: cycle.templateId,
+                targetDepartments: [...cycle.targetDepartments],
+                selfReviewDeadline: toDateInput(cycle.selfReviewDeadline),
+                managerReviewDeadline: toDateInput(cycle.managerReviewDeadline),
+              });
+              staleGuard.acknowledgeReload();
+              showToast('info', '최신 정보로 다시 불러왔습니다. 변경 사항을 다시 입력해 주세요.');
+            }}
+          >
+            새로 불러오기
+          </MsButton>
+        </div>
+      )}
       <div className="py-2">
         <form onSubmit={handleSubmit} className="space-y-5">
           <section>

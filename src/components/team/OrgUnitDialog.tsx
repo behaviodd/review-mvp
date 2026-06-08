@@ -6,6 +6,7 @@ import { MsInput, MsSelect } from '../ui/MsControl';
 import { ModalShell } from '../review/modals/ModalShell';
 import { isUserActive } from '../../utils/userCompat';
 import { getOrgDepth, getOrgLevelLabel, getOrgLevelPlaceholder, validateOrgDepth } from '../../utils/teamUtils';
+import { useStaleFormGuard } from '../../hooks/useStaleFormGuard';
 import type { OrgUnit, OrgUnitType } from '../../types';
 
 export type OrgUnitDialogState =
@@ -34,6 +35,9 @@ export function OrgUnitDialog({
 
   const [name, setName] = useState(editing?.name ?? '');
   const [headId, setHeadId] = useState(editing?.headId ?? '');
+
+  // B2 — edit 모드에서 폼이 열린 동안 같은 조직 row 가 외부 갱신되면 경고.
+  const staleGuard = useStaleFormGuard(editing);
 
   // state 가 바뀌면 폼을 동기화 (다이얼로그가 다른 노드용으로 다시 열릴 때) — 의도된 prop sync.
   useEffect(() => {
@@ -96,6 +100,27 @@ export function OrgUnitDialog({
       }
     >
       <form id="org-unit-dialog-form" onSubmit={handleSubmit} className="space-y-3">
+        {staleGuard.isStale && editing && (
+          <div className="rounded-lg border border-orange-020 bg-orange-005 p-3 flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-semibold text-orange-070">다른 곳에서 이 조직의 정보가 변경되었어요.</p>
+              <p className="text-xs text-orange-070 mt-0.5">저장하면 현재 화면의 값으로 덮어쓰여 다른 변경이 손실됩니다.</p>
+            </div>
+            <MsButton
+              type="button"
+              size="sm"
+              variant="outline-default"
+              onClick={() => {
+                setName(editing.name);
+                setHeadId(editing.headId ?? '');
+                staleGuard.acknowledgeReload();
+                showToast('info', '최신 정보로 다시 불러왔습니다.');
+              }}
+            >
+              새로 불러오기
+            </MsButton>
+          </div>
+        )}
         <MsInput
           autoFocus
           label={`${levelLabel} 이름 *`}

@@ -83,7 +83,7 @@ interface SheetsSyncState {
 export const useSheetsSyncStore = create<SheetsSyncState>()(
   persist(
     (set) => ({
-      scriptUrl: import.meta.env.VITE_APPS_SCRIPT_URL ?? '',
+      scriptUrl: '',
       enabled: false,
       lastSyncAt: {},
       orgSyncEnabled: true,
@@ -162,13 +162,12 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
         pendingOps:        s.pendingOps,
         lastSuccessAt:     s.lastSuccessAt,
       }),
-      // localStorage에 빈 scriptUrl이 저장돼 있어도 env var로 채움
       merge: (persisted, current) => {
         const p = persisted as Partial<SheetsSyncState>;
         return {
           ...current,
           ...p,
-          scriptUrl: p.scriptUrl || (import.meta.env.VITE_APPS_SCRIPT_URL ?? '') || current.scriptUrl,
+          scriptUrl: p.scriptUrl || current.scriptUrl,
         };
       },
     },

@@ -21,7 +21,7 @@ const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 const FULL_BLEED_EXACT = ['/team', '/'];
 
 export function AppLayout() {
-  const { currentUser } = useAuthStore();
+  const { currentUser, logout, getValidIdToken, idToken } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,6 +35,18 @@ export function AppLayout() {
     window.addEventListener(QUOTA_EVENT, onQuota);
     return () => window.removeEventListener(QUOTA_EVENT, onQuota);
   }, [showToast]);
+
+  // idToken이 존재하는 경우에만 만료 체크 — 1분 간격으로 폴링
+  useEffect(() => {
+    if (!idToken) return;
+    const timer = setInterval(() => {
+      if (getValidIdToken() === null) {
+        logout();
+        navigate('/login', { replace: true });
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [idToken, getValidIdToken, logout, navigate]);
 
   if (!currentUser) return <Navigate to="/login" replace />;
 

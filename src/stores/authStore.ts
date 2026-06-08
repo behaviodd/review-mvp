@@ -12,8 +12,17 @@ interface AuthState {
   activeImpersonationLogId: string | null;   // 현재 활성 로그 id (endedAt 기록용)
   impersonationLogs: ImpersonationLog[];     // 세션 내 발생 기록 — 시트로 동기화
 
+  // Google ID Token — API 인증용. localStorage에 저장 안 함 (persist 제외)
+  idToken: string | null;
+  idTokenExp: number;                        // Unix epoch seconds
+
   login: (user: User) => void;
   logout: () => void;
+
+  setIdToken: (token: string, exp: number) => void;
+  clearIdToken: () => void;
+  /** 만료 30초 전 이전이면 토큰 반환, 만료됐으면 null */
+  getValidIdToken: () => string | null;
 
   startImpersonation: (target: User, reason?: string) => ImpersonationLog | null;
   endImpersonation: () => void;
@@ -27,6 +36,8 @@ export const useAuthStore = create<AuthState>()(
       originalUser: null,
       activeImpersonationLogId: null,
       impersonationLogs: [],
+      idToken: null,
+      idTokenExp: 0,
 
       login: (user) =>
         set({
@@ -41,7 +52,18 @@ export const useAuthStore = create<AuthState>()(
           impersonatingFromId: null,
           originalUser: null,
           activeImpersonationLogId: null,
+          idToken: null,
+          idTokenExp: 0,
         }),
+
+      setIdToken: (token, exp) => set({ idToken: token, idTokenExp: exp }),
+      clearIdToken: () => set({ idToken: null, idTokenExp: 0 }),
+      getValidIdToken: () => {
+        const { idToken, idTokenExp } = get();
+        if (!idToken) return null;
+        if (Date.now() / 1000 > idTokenExp - 30) return null; // 30초 여유
+        return idToken;
+      },
 
       startImpersonation: (target, reason) => {
         const state = get();
@@ -102,6 +124,8 @@ export const useAuthStore = create<AuthState>()(
         originalUser:              s.originalUser,
         activeImpersonationLogId:  s.activeImpersonationLogId,
         // impersonationLogs 는 persist 안 함 — 세션 단위, 시트로 push
+        // idToken / idTokenExp / setIdToken / clearIdToken / getValidIdToken 은
+        // 보안상 localStorage에 저장하지 않음 — 메모리에만 유지
       }),
     }
   )

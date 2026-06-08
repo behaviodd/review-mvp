@@ -9,14 +9,16 @@
  * POST { action, data } → Apps Script doPost
  *   - 18s 자체 timeout, **재시도 안 함** (멱등성 보호 — audit.append 등 중복 위험)
  *
- * 환경변수 APPS_SCRIPT_URL 필요
+ * 환경변수 APPS_SCRIPT_URL, GOOGLE_CLIENT_ID, ALLOWED_ORIGIN 필요
  */
+import { requireAuth } from './lib/auth';
+
 export const config = { runtime: 'edge' };
 
 const CORS = {
-  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Origin':  process.env.ALLOWED_ORIGIN ?? 'https://review.makestar.com',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 const UPSTREAM_TIMEOUT_MS = 18_000;
@@ -69,10 +71,11 @@ function classifyError(e: unknown): { status: number; message: string } {
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
-  const headerUrl = request.headers.get('X-Script-Url') ?? '';
-  const scriptUrl = process.env.APPS_SCRIPT_URL
-    || (headerUrl.startsWith('https://script.google.com/') ? headerUrl : '');
-  if (!scriptUrl) return json({ error: 'Apps Script URL이 설정되지 않았습니다. 설정 → Google Sheets 연동에서 URL을 입력해 주세요.' }, 500);
+  const auth = await requireAuth(request);
+  if (auth instanceof Response) return auth;
+
+  const scriptUrl = process.env.APPS_SCRIPT_URL ?? '';
+  if (!scriptUrl) return json({ error: 'APPS_SCRIPT_URL 환경변수가 Vercel에 설정되지 않았습니다.' }, 500);
 
   /* ── GET: 조직 데이터 읽기 (1회 재시도) ─────────────────────────── */
   if (request.method === 'GET') {

@@ -12,7 +12,7 @@ import { MsSettingIcon } from '../components/ui/MsIcons';
 const ALLOWED_DOMAIN = 'makestar.com';
 
 export function Login() {
-  const { login } = useAuthStore();
+  const { login, setIdToken } = useAuthStore();
   const { users, isLoading: usersLoading } = useTeamStore();
   const { scriptUrl } = useSheetsSyncStore();
   const navigate = useNavigate();
@@ -42,6 +42,7 @@ export function Login() {
       position: '관리자',
       avatarColor: '#4f46e5',
     };
+    if (claims?.exp) setIdToken(cred, Number(claims.exp));
     login(bootstrapAdmin);
     navigate('/settings');
   };
@@ -66,6 +67,8 @@ export function Login() {
           avatarColor: '#9ca3af',
           status: 'pending',
         };
+        const pendingClaims = decodeJwtPayload(cred);
+        if (pendingClaims?.exp) setIdToken(cred, Number(pendingClaims.exp));
         login(pendingUser);
         navigate('/pending-approval');
         return;
@@ -87,6 +90,8 @@ export function Login() {
         setError('구성원 데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
         return;
       }
+      const finalClaims = decodeJwtPayload(cred);
+      if (finalClaims?.exp) setIdToken(cred, Number(finalClaims.exp));
       login({ ...user, status: 'active' });
       navigate('/');
     } catch (e) {
@@ -198,7 +203,7 @@ export function Login() {
 }
 
 /** ID Token(JWT) payload base64url 디코드 — 부트스트랩 모드의 도메인 힌트 검증용. */
-function decodeJwtPayload(jwt: string): { email?: string; email_verified?: boolean; hd?: string; name?: string } | null {
+function decodeJwtPayload(jwt: string): { email?: string; email_verified?: boolean; hd?: string; name?: string; exp?: number } | null {
   try {
     const parts = jwt.split('.');
     if (parts.length !== 3) return null;

@@ -1,7 +1,7 @@
-import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
+import { useAuthStore } from '../stores/authStore';
 
-/** 저장된 Apps Script URL을 X-Script-Url 헤더로 반환 */
+/** API 요청에 포함할 인증 헤더 반환. 토큰 만료 시 빈 객체. */
 export function getScriptHeaders(): Record<string, string> {
-  const { scriptUrl } = useSheetsSyncStore.getState();
-  return scriptUrl ? { 'X-Script-Url': scriptUrl } : {};
+  const token = useAuthStore.getState().getValidIdToken();
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
 }

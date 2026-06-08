@@ -14,6 +14,7 @@ import { MsButton } from '../components/ui/MsButton';
 import { SyncRetryDrawer } from '../components/review/SyncRetryDrawer';
 import { timeAgo } from '../utils/dateUtils';
 import { getSetting, setSetting } from '../utils/settingsApi';
+import { getScriptHeaders } from '../utils/scriptHeaders';
 
 export function Settings() {
   const { currentUser } = useAuthStore();
@@ -74,10 +75,7 @@ export function Settings() {
   const handleTest = async () => {
     setTestState('testing');
     try {
-      const headers: Record<string, string> = {};
-      const url = urlDraft.trim();
-      if (url.startsWith('https://script.google.com/')) headers['X-Script-Url'] = url;
-      const res = await fetch('/api/org-sync?action=getOrg', { headers });
+      const res = await fetch('/api/org-sync?action=getOrg', { headers: getScriptHeaders() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as { rows?: unknown[]; users?: unknown[]; error?: string };
       if (data.error) throw new Error(data.error);

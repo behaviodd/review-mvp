@@ -36,9 +36,18 @@ export function AppLayout() {
     return () => window.removeEventListener(QUOTA_EVENT, onQuota);
   }, [showToast]);
 
-  // idToken이 존재하는 경우에만 만료 체크 — 1분 간격으로 폴링
+  // 토큰 없는 세션 감지 + 만료 체크
+  // - idToken null: currentUser는 localStorage 복원됐지만 토큰은 메모리 소실 (새로고침 / 재방문)
+  //   → 즉시 로그아웃. setTimeout(0) 으로 login 직후 setIdToken/login 순서 차이 방어
+  // - idToken 있음: 1분 인터벌로 만료 체크
   useEffect(() => {
-    if (!idToken) return;
+    if (!idToken) {
+      const t = setTimeout(() => {
+        logout();
+        navigate('/login', { replace: true });
+      }, 0);
+      return () => clearTimeout(t);
+    }
     const timer = setInterval(() => {
       if (getValidIdToken() === null) {
         logout();

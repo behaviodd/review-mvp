@@ -29,6 +29,7 @@ import { OrgUnitDialog, type OrgUnitDialogState } from '../components/team/OrgUn
 import { MemberAddDialog } from '../components/team/MemberAddDialog';
 import { MemberEditDialog } from '../components/team/MemberEditDialog';
 import { MemberProfileDrawer } from '../components/team/MemberProfileDrawer';
+import { AutoAssignModal } from '../components/team/AutoAssignModal';
 import { impersonationLogWriter } from '../utils/sheetWriter';
 import { HeaderTab } from '../components/layout/HeaderTab';
 
@@ -439,6 +440,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   // 구성원 정보 수정 팝업
   const [editUserId, setEditUserId] = useState<string | null>(null);
+  // 평가자 자동 지정 모달
+  const [autoAssignOpen, setAutoAssignOpen] = useState(false);
 
   /* ── deep-link 자동 진입 ──────────────────────────────────────────
    * /team?action=add → 추가 다이얼로그 자동 open
@@ -511,6 +514,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         ) : undefined}
         className="w-64 md:w-80 h-10"
       />
+      {canEdit && (
+        <MsButton
+          size="lg"
+          variant="outline-default"
+          onClick={() => setAutoAssignOpen(true)}
+        >
+          평가자 자동 지정
+        </MsButton>
+      )}
       {canEdit && (
         <MsButton
           size="lg"
@@ -1128,6 +1140,12 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       <MemberEditDialog
         userId={editUserId}
         onClose={() => setEditUserId(null)}
+      />
+
+      {/* 평가자 자동 지정 */}
+      <AutoAssignModal
+        open={autoAssignOpen}
+        onClose={() => setAutoAssignOpen(false)}
       />
 
       {/* 조직 추가·편집 */}

@@ -160,6 +160,10 @@ interface TeamStore {
     input: Omit<ReviewerAssignment, 'id' | 'createdAt'>,
   ) => ReviewerAssignment;
   endAssignment: (assignmentId: string, endDate?: string) => void;
+  /** 자동 지정 일괄 적용 — 각 입력에 대해 기존 동일 rank 활성 배정을 종료 후 신규 생성 */
+  bulkUpsertAssignments: (
+    inputs: Omit<ReviewerAssignment, 'id' | 'createdAt'>[],
+  ) => ReviewerAssignment[];
 
   // R1: 인사 스냅샷
   createSnapshot: (description: string, actorId: string) => OrgSnapshot;
@@ -419,6 +423,29 @@ export const useTeamStore = create<TeamStore>()(
         a.id === assignmentId ? { ...a, endDate: at } : a
       ),
     }));
+  },
+
+  bulkUpsertAssignments: (inputs) => {
+    const createdAt = new Date().toISOString();
+    const created: ReviewerAssignment[] = inputs.map(input => ({
+      id: `ra_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      createdAt,
+      ...input,
+    }));
+    set(state => {
+      let assignments = [...state.reviewerAssignments];
+      for (const a of created) {
+        // 동일 revieweeId + rank 활성 배정 종료
+        assignments = assignments.map(existing =>
+          existing.revieweeId === a.revieweeId && existing.rank === a.rank && !existing.endDate
+            ? { ...existing, endDate: createdAt }
+            : existing
+        );
+        assignments.push(a);
+      }
+      return { reviewerAssignments: assignments };
+    });
+    return created;
   },
 
   /* ── R1: 인사 스냅샷 ───────────────────────────────────────────── */

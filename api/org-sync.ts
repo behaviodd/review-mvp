@@ -71,8 +71,12 @@ function classifyError(e: unknown): { status: number; message: string } {
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
-  const auth = await requireAuth(request);
-  if (auth instanceof Response) return auth;
+  // GET: 로그인 페이지에서 members 데이터 로드에 필요 → 인증 불필요
+  // POST: 쓰기 작업 → 인증 필요
+  if (request.method === 'POST') {
+    const auth = await requireAuth(request);
+    if (auth instanceof Response) return auth;
+  }
 
   const scriptUrl = process.env.APPS_SCRIPT_URL ?? '';
   if (!scriptUrl) return json({ error: 'APPS_SCRIPT_URL 환경변수가 Vercel에 설정되지 않았습니다.' }, 500);

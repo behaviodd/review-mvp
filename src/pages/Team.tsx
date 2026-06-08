@@ -123,16 +123,17 @@ function OrgTreeNode({
     return treeMembers.size + secondaryExtra;
   }, [users, unit, allUnits, secondaryOrgs]);
 
-  // 평가자 미배정 구성원 수 (rank=1 활성 배정 없는 활성 구성원)
+  // 평가자 미배정 구성원 수 — ReviewerAssignment 레코드 OR managerId 둘 중 하나면 배정됨
   const noReviewerCount = useMemo(() => {
-    const treeIds = new Set(
-      getMembersInOrgTree(unit.id, users, allUnits).filter(isUserActive).map(u => u.id)
-    );
-    secondaryOrgs.filter(a => a.orgId === unit.id).forEach(a => treeIds.add(a.userId));
+    const treeMembers = getMembersInOrgTree(unit.id, users, allUnits).filter(isUserActive);
+    secondaryOrgs.filter(a => a.orgId === unit.id).forEach(a => {
+      const u = users.find(u2 => u2.id === a.userId);
+      if (u && isUserActive(u) && !treeMembers.some(m => m.id === u.id)) treeMembers.push(u);
+    });
     const assignedIds = new Set(
       reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
     );
-    return [...treeIds].filter(id => !assignedIds.has(id)).length;
+    return treeMembers.filter(u => !assignedIds.has(u.id) && !u.managerId).length;
   }, [users, unit, allUnits, secondaryOrgs, reviewerAssignments]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
@@ -869,11 +870,16 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
   // 평가자(rank=1) 미배정 구성원 ID Set — 필터·표시용
+  // ReviewerAssignment 레코드 OR user.managerId 둘 중 하나라도 있으면 배정됨으로 간주
   const noReviewerIds = useMemo(() => {
     const assignedIds = new Set(
       reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
     );
-    return new Set(activeUsers.filter(u => !assignedIds.has(u.id)).map(u => u.id));
+    return new Set(
+      activeUsers
+        .filter(u => !assignedIds.has(u.id) && !u.managerId)
+        .map(u => u.id)
+    );
   }, [activeUsers, reviewerAssignments]);
 
   // 재직상태 + 배정 필터 적용 헬퍼

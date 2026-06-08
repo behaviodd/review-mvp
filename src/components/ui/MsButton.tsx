@@ -23,9 +23,9 @@ const SIZE: Record<Size, { base: string; icon: number; spin: number }> = {
 
 const VARIANT: Record<Variant, string> = {
   brand1:         'bg-pink-040 text-white hover:bg-pink-050 disabled:bg-pink-020 disabled:text-white',
-  default:        'bg-[#c4cdd4] text-[#111417] hover:bg-[#b5c0c8] disabled:opacity-50',
-  ghost:          'bg-transparent text-[#111417] hover:bg-gray-010 disabled:opacity-50',
-  red:            'bg-[#e93939] text-white hover:bg-[#d42e2e] disabled:opacity-50',
+  default:        'bg-gray-020 text-fg-default hover:bg-gray-030 disabled:opacity-50',
+  ghost:          'bg-transparent text-fg-default hover:bg-gray-010 disabled:opacity-50',
+  red:            'bg-red-040 text-white hover:bg-red-050 disabled:opacity-50',
   'outline-brand1':  'bg-transparent border border-pink-040 text-pink-040 hover:bg-pink-005 disabled:opacity-50',
   'outline-default': 'bg-transparent border border-gray-020 text-gray-060 hover:bg-gray-005 disabled:opacity-50',
   'outline-red':     'bg-transparent border border-red-020 text-red-050 hover:bg-red-005 disabled:opacity-50',

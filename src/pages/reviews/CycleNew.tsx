@@ -1194,14 +1194,14 @@ export function CycleNew() {
                             <p className="text-base text-gray-080">{q.text}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                q.type === 'text' ? 'bg-blue-50 text-blue-600'
-                                : q.type === 'rating' ? 'bg-amber-50 text-amber-600'
-                                : q.type === 'competency' ? 'bg-purple-50 text-purple-600'
-                                : 'bg-green-50 text-green-600'
+                                q.type === 'text' ? 'bg-blue-005 text-blue-060'
+                                : q.type === 'rating' ? 'bg-orange-005 text-orange-050'
+                                : q.type === 'competency' ? 'bg-purple-005 text-purple-040'
+                                : 'bg-green-005 text-green-060'
                               }`}>
                                 {TYPE_LABEL[q.type] ?? q.type}
                               </span>
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-gray-010 text-fg-subtle' : q.target === 'leader' ? 'bg-orange-50 text-orange-600' : 'bg-teal-50 text-teal-600'}`}>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-gray-010 text-fg-subtle' : q.target === 'leader' ? 'bg-orange-005 text-orange-050' : 'bg-blue-005 text-blue-060'}`}>
                                 {q.target === 'self' ? '자기평가' : q.target === 'leader' ? '조직장 평가' : '공통'}
                               </span>
                               {q.isPrivate && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-010 text-fg-subtlest">비공개</span>}
@@ -1321,56 +1321,6 @@ export function CycleNew() {
         title={form.title || '새 리뷰'}
       />
 
-      {/* 레거시 발행 확인 (사전 점검 모달이 대체) */}
-      {false && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-005 rounded-full flex items-center justify-center flex-shrink-0">
-                <Rocket className="w-5 h-5 text-yellow-060" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-fg-default">리뷰를 발행하시겠습니까?</h3>
-                <p className="text-xs text-fg-subtle mt-0.5">발행 후에는 되돌릴 수 없습니다.</p>
-              </div>
-            </div>
-            <div className="bg-gray-005 rounded-xl p-4 space-y-2 text-base">
-              <div className="flex gap-3">
-                <span className="text-fg-subtlest w-28 flex-shrink-0">리뷰 이름</span>
-                <span className="font-medium text-gray-080">{form.title}</span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-fg-subtlest w-28 flex-shrink-0">대상 구성원</span>
-                <span className="font-medium text-gray-080">{targetMembers.length}명</span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-fg-subtlest w-28 flex-shrink-0">생성될 제출 건</span>
-                <span className="font-medium text-gray-080">자기평가 {selfCount}건 · 조직장 평가 {downCount}건</span>
-              </div>
-            </div>
-            <p className="text-xs text-red-050 bg-red-005 px-3 py-2 rounded-lg">
-              ⚠ 발행된 리뷰는 즉시 구성원에게 배정되며 수정이 불가합니다.
-            </p>
-            <div className="flex gap-3 pt-1">
-              <MsButton
-                variant="default"
-                className="flex-1"
-                onClick={() => setPreflightOpen(false)}
-              >
-                취소
-              </MsButton>
-              <MsButton
-                onClick={handlePublish}
-                loading={publishing}
-                className="flex-1 h-auto py-2.5 bg-green-060 hover:bg-green-060"
-                leftIcon={<Rocket className="w-4 h-4" />}
-              >
-                발행하기
-              </MsButton>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

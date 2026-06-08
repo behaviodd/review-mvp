@@ -30,7 +30,7 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
 
   const track = checked || indeterminate
     ? disabled ? 'bg-pink-010 opacity-50' : 'bg-pink-040 border-pink-040'
-    : disabled ? 'bg-[rgba(76,90,102,0.08)] border-[rgba(76,90,102,0.2)]' : 'bg-[#f8f9fa] border-[#dfe7e9]';
+    : disabled ? 'bg-[var(--token-bg-disabled)] border-[var(--token-border-disabled)]' : 'bg-[var(--token-bg-subtle)] border-bd-default';
 
   const iconSize = size === 'lg' ? 13 : 11;
 
@@ -86,7 +86,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
 
   const borderColor = checked
     ? disabled ? 'border-pink-020' : 'border-pink-040'
-    : disabled ? 'border-[rgba(76,90,102,0.2)]' : 'border-[#dfe7e9]';
+    : disabled ? 'border-[var(--token-border-disabled)]' : 'border-bd-default';
 
   const dotColor = checked
     ? disabled ? 'bg-pink-020' : 'bg-pink-040'
@@ -95,7 +95,7 @@ export function MsRadio({ size = 'md', label, className, disabled, checked, ...p
   return (
     <label className={cn('flex w-fit items-center gap-2 cursor-pointer', disabled && 'cursor-not-allowed', className)}>
       <span className={cn(
-        'relative inline-flex items-center justify-center flex-shrink-0 rounded-full border-2 bg-[#f8f9fa] transition-colors',
+        'relative inline-flex items-center justify-center flex-shrink-0 rounded-full border-2 bg-[var(--token-bg-subtle)] transition-colors',
         outer, borderColor,
         disabled && 'opacity-50',
       )}>
@@ -137,7 +137,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
 
   const trackColor = checked
     ? disabled ? 'bg-pink-010 opacity-50' : 'bg-pink-040'
-    : disabled ? 'bg-[rgba(76,90,102,0.08)]' : 'bg-[#dfe7e9]';
+    : disabled ? 'bg-[var(--token-bg-disabled)]' : 'bg-gray-010';
 
   return (
     <label className={cn('flex w-fit items-center gap-2 cursor-pointer', disabled && 'cursor-not-allowed', className)}>

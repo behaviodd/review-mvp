@@ -3,109 +3,261 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
-import { ProgressBar } from '../../components/ui/ProgressBar';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { ListToolbar } from '../../components/ui/ListToolbar';
-import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
-import { MsStarIcon, MsChevronRightLineIcon, MsCheckCircleIcon, MsClockIcon, MsWarningIcon, MsProfileIcon, MsCircleIcon, MsLockIcon } from '../../components/ui/MsIcons';
-import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { useTeamStore } from '../../stores/teamStore';
-import { getDisplayStatus } from '../../utils/submissionStatus';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { MsButton } from '../../components/ui/MsButton';
+import { MsStarIcon, MsUsersIcon, MsCalendarIcon } from '../../components/ui/MsIcons';
+import { PeerPickReminder } from '../../components/review/PeerPickReminder';
+import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
+import type { ReviewCycle, ReviewSubmission } from '../../types';
 
-type StatusFilter = 'all' | 'active' | 'done' | 'closed';
-type TypeFilter   = 'all' | 'scheduled' | 'adhoc';
+// ─── 헬퍼 ────────────────────────────────────────────────────────────────────
 
-function SectionHeader() {
+/** 사이클 기간: 생성일 ~ selfReviewDeadline */
+function formatPeriod(cycle: ReviewCycle) {
+  const start = new Date(cycle.createdAt);
+  const end   = new Date(cycle.selfReviewDeadline);
+  const fmt   = (d: Date) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`;
+  if (start.getFullYear() === end.getFullYear()) {
+    return `${fmt(start)} – ${end.getMonth() + 1}. ${end.getDate()}`;
+  }
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+/** 사이클의 리뷰 종류 서브텍스트 */
+function reviewKindLabel(cycle: ReviewCycle) {
+  const kinds = cycle.reviewKinds ?? ['self', 'downward'];
+  const labels: Record<string, string> = {
+    self: '셀프', downward: '하향', peer: '동료', upward: '상향',
+  };
+  return kinds.map(k => labels[k] ?? k).join('·') + ' 리뷰';
+}
+
+/** 리뷰 아이콘 색상 (submission type 또는 cycle 기반) */
+const ICON_STYLE: Record<string, string> = {
+  self:     'bg-pink-010 text-pink-060',
+  downward: 'bg-blue-005 text-blue-060',
+  peer:     'bg-purple-005 text-purple-040',
+  upward:   'bg-green-005 text-green-060',
+};
+
+function ReviewIcon({ type }: { type: string }) {
+  const icons: Record<string, string> = { self: 'S', downward: '↓', peer: 'P', upward: '↑' };
   return (
-    <div className="hidden md:flex items-center gap-5 px-5 py-2.5 border-b border-gray-010 bg-gray-005/50">
-      <div className="flex-1 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">리뷰</div>
-      <div className="w-32 text-xs font-semibold text-fg-subtlest uppercase tracking-wide">진행도</div>
-      <div className="w-28 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">마감</div>
-      <div className="w-24 text-right text-xs font-semibold text-fg-subtlest uppercase tracking-wide">상태</div>
-      <div className="w-24" />
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base font-bold ${ICON_STYLE[type] ?? 'bg-gray-010 text-fg-subtle'}`}>
+      {icons[type] ?? '?'}
     </div>
   );
 }
 
-function StatusDot({ status }: { status: string }) {
-  if (status === 'submitted') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-060">
-        <MsCheckCircleIcon size={12} /> 제출 완료
-      </span>
-    );
-  }
-  if (status === 'in_progress') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-pink-060">
-        <MsClockIcon size={12} /> 작성 중
-      </span>
-    );
-  }
-  // QA 라운드 12 B1: 자기평가 기간 종료 (상세의 readOnly 상태와 일치)
-  if (status === 'past_self_deadline') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
-        <MsLockIcon size={12} /> 자기평가 기간 종료
-      </span>
-    );
-  }
+// ─── 리뷰 행 ─────────────────────────────────────────────────────────────────
+
+function ReviewRow({
+  sub, cycle, onClick, showAction,
+}: {
+  sub: ReviewSubmission;
+  cycle: ReviewCycle | undefined;
+  onClick: () => void;
+  showAction?: boolean;
+}) {
+  const urgent = cycle ? isUrgent(cycle.selfReviewDeadline) : false;
+
+  // 참여자 수 (해당 사이클의 self submission 수)
+  const { submissions } = useReviewStore();
+  const participantCount = cycle
+    ? submissions.filter(s => s.cycleId === cycle.id && s.type === 'self').length
+    : 0;
+
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-subtlest">
-      <MsCircleIcon size={14} /> 미시작
-    </span>
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3 py-3.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+    >
+      <ReviewIcon type={sub.type} />
+
+      <div className="flex-1 min-w-0">
+        <p className={`text-base font-semibold truncate group-hover:text-fg-brand1 transition-colors ${
+          urgent && sub.status !== 'submitted' ? 'text-orange-060' : 'text-fg-default'
+        }`}>
+          {cycle?.title ?? '–'}
+        </p>
+        <p className="text-xs text-fg-subtle mt-0.5">
+          {cycle ? reviewKindLabel(cycle) : ''}
+          {sub.type !== 'self' && sub.type !== 'downward' && (
+            <span className="ml-1">· {sub.type === 'peer' ? '동료 평가' : '상향 평가'}</span>
+          )}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4 flex-shrink-0 text-xs text-fg-subtle">
+        {/* 참여자 수 */}
+        {participantCount > 0 && (
+          <span className="flex items-center gap-1">
+            <MsUsersIcon size={13} className="text-fg-subtlest" />
+            {participantCount}명
+          </span>
+        )}
+        {/* 기간 */}
+        {cycle && (
+          <span className="flex items-center gap-1 hidden md:flex">
+            <MsCalendarIcon size={13} className="text-fg-subtlest" />
+            {formatPeriod(cycle)}
+          </span>
+        )}
+        {/* 마감 (진행 중만) */}
+        {showAction && cycle && sub.status !== 'submitted' && (
+          <span className={`hidden md:block text-xs font-medium ${urgent ? 'text-orange-060' : 'text-fg-subtlest'}`}>
+            {deadlineLabel(cycle.selfReviewDeadline)}
+          </span>
+        )}
+      </div>
+
+      {/* 액션 버튼 (진행 중) */}
+      {showAction && sub.status !== 'submitted' && (
+        <MsButton
+          size="sm"
+          variant={urgent ? 'brand1' : 'outline-brand1'}
+          onClick={e => { e.stopPropagation(); onClick(); }}
+          className="flex-shrink-0 hidden md:inline-flex"
+        >
+          {sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
+        </MsButton>
+      )}
+    </div>
   );
 }
 
+/** 받은 리뷰 행 (downward — reviewee 기준) */
+function ReceivedRow({
+  sub, cycle, onClick,
+}: {
+  sub: ReviewSubmission;
+  cycle: ReviewCycle | undefined;
+  onClick: () => void;
+}) {
+  const { users } = useTeamStore();
+  const { submissions } = useReviewStore();
+  const reviewer = users.find(u => u.id === sub.reviewerId);
+  const participantCount = cycle
+    ? submissions.filter(s => s.cycleId === cycle.id && s.type === 'self').length
+    : 0;
+
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3 py-3.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+    >
+      <ReviewIcon type="downward" />
+
+      <div className="flex-1 min-w-0">
+        <p className="text-base font-semibold truncate text-fg-default group-hover:text-fg-brand1 transition-colors">
+          {cycle?.title ?? '–'}
+        </p>
+        <p className="text-xs text-fg-subtle mt-0.5">
+          {cycle ? reviewKindLabel(cycle) : ''}
+          {reviewer && <span className="ml-1">· {reviewer.name} 작성</span>}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4 flex-shrink-0 text-xs text-fg-subtle">
+        {participantCount > 0 && (
+          <span className="flex items-center gap-1">
+            <MsUsersIcon size={13} className="text-fg-subtlest" />
+            {participantCount}명
+          </span>
+        )}
+        {cycle && (
+          <span className="flex items-center gap-1 hidden md:flex">
+            <MsCalendarIcon size={13} className="text-fg-subtlest" />
+            {sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── 섹션 래퍼 ───────────────────────────────────────────────────────────────
+
+const PREVIEW_COUNT = 5;
+
+function ReviewSection({
+  title, count, children, total, onShowMore,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+  total: number;
+  onShowMore?: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs font-semibold text-fg-subtle">
+          {title} <span className="text-fg-subtlest">({count})</span>
+        </p>
+        {total > PREVIEW_COUNT && onShowMore && (
+          <button
+            onClick={onShowMore}
+            className="text-xs text-fg-brand1 hover:text-fg-brand1-bolder hover:underline"
+          >
+            더 보기
+          </button>
+        )}
+      </div>
+      <div className="divide-y divide-bd-default">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
+
+type Tab = 'active' | 'closed';
+
 export function MyReviewList() {
   const { currentUser } = useAuthStore();
-  const { cycles, submissions, templates } = useReviewStore();
-  const { users } = useTeamStore();
+  const { cycles, submissions } = useReviewStore();
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
 
-  // 종료된 사이클 ID 집합
+  const [tab, setTab] = useState<Tab>('active');
+  const [showAllReceived, setShowAllReceived] = useState(false);
+  const [showAllSent, setShowAllSent] = useState(false);
+
   const closedCycleIds = new Set(cycles.filter(c => c.status === 'closed').map(c => c.id));
 
-  // 내가 작성해야 하는 모든 유형 (self + peer + upward)
-  const mySubmissions = submissions.filter(
-    s => s.reviewerId === currentUser?.id && (s.type === 'self' || s.type === 'peer' || s.type === 'upward')
+  // 내가 작성해야 하는 submission (self / peer / upward)
+  const mySubs = submissions.filter(
+    s => s.reviewerId === currentUser?.id &&
+         (s.type === 'self' || s.type === 'peer' || s.type === 'upward'),
   );
 
-  const receivedReviews = submissions.filter(
-    s => s.revieweeId === currentUser?.id && s.type === 'downward' && s.status === 'submitted'
+  // 내가 받은 하향 평가 (submitted)
+  const receivedSubs = submissions.filter(
+    s => s.revieweeId === currentUser?.id && s.type === 'downward' && s.status === 'submitted',
   );
 
-  // 유형 필터 적용
-  const typeMatch = (cycleId: string) => {
-    if (typeFilter === 'all') return true;
-    const c = cycles.find(x => x.id === cycleId);
-    return c?.type === typeFilter;
-  };
+  // 탭 데이터
+  const activeSubs = mySubs
+    .filter(s => s.status !== 'submitted' && !closedCycleIds.has(s.cycleId))
+    .sort((a, b) => (Date.parse(b.lastSavedAt) || 0) - (Date.parse(a.lastSavedAt) || 0));
 
-  const filteredMySubmissions = mySubmissions.filter(s => typeMatch(s.cycleId));
-  const filteredReceived      = receivedReviews.filter(s => typeMatch(s.cycleId));
+  const closedSent = mySubs
+    .filter(s => s.status === 'submitted' || closedCycleIds.has(s.cycleId))
+    .sort((a, b) => (Date.parse(b.lastSavedAt) || 0) - (Date.parse(a.lastSavedAt) || 0));
 
-  // P1-A2 라운드 14 — 최신 저장순 정렬 (lastSavedAt desc).
-  // 사용자 결정: 가장 최근에 손댄 리뷰가 위로. 빈 lastSavedAt 은 epoch 0 으로 하단에 노출.
-  const byRecentSave = (a: typeof submissions[number], b: typeof submissions[number]) =>
-    (Date.parse(b.lastSavedAt) || 0) - (Date.parse(a.lastSavedAt) || 0);
+  const closedReceived = receivedSubs
+    .sort((a, b) => (Date.parse(b.submittedAt ?? b.lastSavedAt) || 0) - (Date.parse(a.submittedAt ?? a.lastSavedAt) || 0));
 
-  // 상태별 분류
-  const active  = filteredMySubmissions.filter(s => s.status !== 'submitted' && !closedCycleIds.has(s.cycleId)).sort(byRecentSave);
-  const done    = filteredMySubmissions.filter(s => s.status === 'submitted'  && !closedCycleIds.has(s.cycleId)).sort(byRecentSave);
-  const closedSelf     = filteredMySubmissions.filter(s => closedCycleIds.has(s.cycleId)).sort(byRecentSave);
-  const closedReceived = filteredReceived.filter(s => closedCycleIds.has(s.cycleId)).sort(byRecentSave);
-  const doneAll = [...done, ...filteredReceived.filter(s => !closedCycleIds.has(s.cycleId))].sort(byRecentSave);
+  useSetPageHeader('내 리뷰');
 
-  useSetPageHeader('내 작성', undefined, {
-    subtitle: `진행 중 ${active.length} · 완료 ${doneAll.length} · 종료됨 ${closedSelf.length + closedReceived.length}`,
-  });
+  const totalActive = activeSubs.length;
 
-  if (mySubmissions.length === 0 && receivedReviews.length === 0) {
+  if (mySubs.length === 0 && receivedSubs.length === 0) {
     return (
       <div className="space-y-5">
+        <PeerPickReminder />
         <EmptyState
           icon={MsStarIcon}
           title="아직 진행 중인 리뷰가 없습니다."
@@ -115,328 +267,114 @@ export function MyReviewList() {
     );
   }
 
-  const totalCount  = filteredMySubmissions.length + filteredReceived.length;
-  const closedCount = closedSelf.length + closedReceived.length;
-
-  // ── 셀프 리뷰 행 ─────────────────────────────────────────────────────────────
-  const ReviewRow = ({ sub }: { sub: typeof mySubmissions[number] }) => {
-    const cycle         = cycles.find(c => c.id === sub.cycleId);
-    const template      = templates.find(t => t.id === cycle?.templateId);
-    const urgent        = cycle ? isUrgent(cycle.selfReviewDeadline) : false;
-    const selfQCount    = template?.questions.filter(q => q.target !== 'leader').length ?? 1;
-    const progress      = Math.round((sub.answers.length / selfQCount) * 100);
-    const isSubmitted   = sub.status === 'submitted';
-    const managerEval   = isSubmitted
-      ? receivedReviews.find(r => r.cycleId === sub.cycleId)
-      : undefined;
-
-    const kindBadge = sub.type === 'peer'
-      ? <span className="inline-flex items-center rounded-full border border-purple-010 bg-purple-005 px-1.5 py-0.5 text-[10px] font-semibold text-purple-060">동료</span>
-      : sub.type === 'upward'
-        ? <span className="inline-flex items-center rounded-full border border-blue-020 bg-blue-005 px-1.5 py-0.5 text-[10px] font-semibold text-blue-070">상향</span>
-        : null;
-    const revieweeForOther = sub.type !== 'self' ? users.find(u => u.id === sub.revieweeId) : undefined;
-
-    return (
-      <div
-        onClick={() => navigate(`/reviews/me/${sub.id}`)}
-        className={`
-          group cursor-pointer transition-colors rounded-lg
-          ${urgent && !isSubmitted ? 'bg-pink-005/40 hover:bg-pink-005/70' : 'hover:bg-interaction-hovered'}
-        `}
-      >
-        {/* 모바일 */}
-        <div className="flex md:hidden items-start gap-3 px-4 py-3.5">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              {urgent && !isSubmitted && (
-                <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
-              )}
-              {kindBadge}
-              <p className={`text-base font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
-                {cycle?.title ?? '–'}
-                {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <StatusDot status={getDisplayStatus(sub, cycle)} />
-              {cycle && (
-                <p className={`text-xs ${urgent && !isSubmitted ? 'text-pink-050 font-medium' : 'text-fg-subtlest'}`}>
-                  {deadlineLabel(cycle.selfReviewDeadline)}
-                </p>
-              )}
-              {isSubmitted && (
-                managerEval
-                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-fg-subtlest"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
-              )}
-            </div>
-            {!isSubmitted && (
-              <div className="mt-2">
-                <ProgressBar value={progress} size="sm" />
-                <p className="text-xs text-fg-subtlest mt-1">{sub.answers.length}/{selfQCount} 완료</p>
-              </div>
-            )}
-          </div>
-          {!isSubmitted ? (
-            <span className={`
-              flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold mt-0.5
-              ${urgent ? 'bg-pink-040 text-white' : 'bg-pink-050 text-white'}
-            `}>
-              {sub.status === 'not_started' ? '시작' : '계속'}
-              <MsChevronRightLineIcon size={12} />
-            </span>
-          ) : (
-            <MsChevronRightLineIcon size={16} className="text-gray-030 mt-1 flex-shrink-0" />
-          )}
-        </div>
-
-        {/* 데스크톱 */}
-        <div className="hidden md:flex items-center gap-5 px-5 py-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              {urgent && !isSubmitted && (
-                <MsWarningIcon size={12} className="text-pink-040 flex-shrink-0" />
-              )}
-              {kindBadge}
-              <p className={`text-base font-semibold truncate ${urgent && !isSubmitted ? 'text-pink-060' : 'text-fg-default'} group-hover:text-pink-060`}>
-                {cycle?.title ?? '–'}
-                {revieweeForOther && <span className="ml-1 text-xs font-normal text-fg-subtle">· {revieweeForOther.name}</span>}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <p className="text-xs text-fg-subtlest">
-                {cycle?.type === 'scheduled' ? '정기 리뷰' : '수시 리뷰'}
-              </p>
-              {isSubmitted && (
-                managerEval
-                  ? <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050"><MsProfileIcon size={12} /> 조직장 평가 완료</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-010 text-fg-subtlest"><MsProfileIcon size={12} /> 조직장 평가 대기</span>
-              )}
-            </div>
-          </div>
-
-          <div className="w-32 flex-shrink-0">
-            {!isSubmitted ? (
-              <div>
-                <ProgressBar value={progress} size="sm" />
-                <p className="text-xs text-fg-subtlest mt-1">{sub.answers.length}/{selfQCount} 완료</p>
-              </div>
-            ) : (
-              <div className="h-1.5 rounded-full bg-green-020" />
-            )}
-          </div>
-
-          <div className="w-28 flex-shrink-0 text-right">
-            {cycle && (
-              <>
-                <p className={`text-xs font-medium ${urgent && !isSubmitted ? 'text-pink-050' : 'text-gray-060'}`}>
-                  {deadlineLabel(cycle.selfReviewDeadline)}
-                </p>
-                <p className="text-xs text-fg-subtlest mt-0.5">{formatDate(cycle.selfReviewDeadline)}</p>
-              </>
-            )}
-          </div>
-
-          <div className="w-24 flex-shrink-0 flex justify-end">
-            <StatusDot status={getDisplayStatus(sub, cycle)} />
-          </div>
-
-          <div className="flex-shrink-0 w-24 flex justify-end">
-            {!isSubmitted ? (
-              <span className={`
-                inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold
-                ${urgent
-                  ? 'bg-pink-040 text-white group-hover:bg-pink-050'
-                  : 'bg-pink-050 text-white group-hover:bg-pink-060'}
-                transition-colors
-              `}>
-                {sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
-                <MsChevronRightLineIcon size={12} />
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-fg-subtlest group-hover:text-gray-060">
-                결과 보기 <MsChevronRightLineIcon size={12} />
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── 조직장 하향 평가 행 ────────────────────────────────────────────────────────
-  const ReceivedReviewRow = ({ sub }: { sub: typeof receivedReviews[number] }) => {
-    const cycle    = cycles.find(c => c.id === sub.cycleId);
-    const reviewer = users.find(u => u.id === sub.reviewerId);
-
-    return (
-      <div
-        onClick={() => navigate(`/reviews/me/${sub.id}`)}
-        className="group cursor-pointer transition-colors rounded-lg hover:bg-interaction-hovered"
-      >
-        {/* 모바일 */}
-        <div className="flex md:hidden items-center gap-3 px-4 py-3.5">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-base font-semibold text-fg-default truncate group-hover:text-pink-060">
-                {cycle?.title ?? '–'}
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">
-                <MsProfileIcon size={12} /> 조직장 평가
-              </span>
-            </div>
-            <p className="text-xs text-fg-subtlest mt-0.5">{reviewer?.name} 작성</p>
-          </div>
-          <MsChevronRightLineIcon size={16} className="text-gray-030 flex-shrink-0" />
-        </div>
-
-        {/* 데스크톱 */}
-        <div className="hidden md:flex items-center gap-5 px-5 py-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-base font-semibold text-fg-default truncate group-hover:text-pink-060">
-                {cycle?.title ?? '–'}
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-pink-005 text-pink-050 flex-shrink-0">
-                <MsProfileIcon size={12} /> 조직장 평가
-              </span>
-            </div>
-            <p className="text-xs text-fg-subtlest mt-0.5">
-              {reviewer?.name} · {reviewer?.position}
-            </p>
-          </div>
-
-          <div className="w-32 flex-shrink-0">
-            <div className="h-1.5 rounded-full bg-blue-010" />
-          </div>
-
-          <div className="w-28 flex-shrink-0 text-right">
-            <p className="text-xs text-gray-060">
-              {sub.submittedAt ? formatDate(sub.submittedAt) : '—'}
-            </p>
-          </div>
-
-          <div className="w-24 flex-shrink-0 flex justify-end">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-060">
-              <MsCheckCircleIcon size={12} /> 완료
-            </span>
-          </div>
-
-          <div className="flex-shrink-0 w-24 flex justify-end">
-            <span className="inline-flex items-center gap-1 text-xs text-fg-subtlest group-hover:text-gray-060">
-              결과 보기 <MsChevronRightLineIcon size={12} />
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const isFilterEmpty =
-    (statusFilter === 'active' && active.length === 0) ||
-    (statusFilter === 'done'   && doneAll.length === 0) ||
-    (statusFilter === 'closed' && closedCount === 0)    ||
-    (statusFilter === 'all'    && totalCount === 0);
-
   return (
     <div className="space-y-5">
       <PeerPickReminder />
 
-      <ListToolbar
-        segments={[
-          {
-            kind: 'pills',
-            key: 'status',
-            ariaLabel: '상태 필터',
-            value: statusFilter,
-            onChange: v => setStatusFilter(v as StatusFilter),
-            options: [
-              { value: 'all',    label: '전체',    count: totalCount },
-              { value: 'active', label: '진행 중', count: active.length },
-              { value: 'done',   label: '완료',    count: doneAll.length },
-              { value: 'closed', label: '종료됨',  count: closedCount },
-            ],
-          },
-          {
-            kind: 'pills',
-            key: 'type',
-            ariaLabel: '유형 필터',
-            value: typeFilter,
-            onChange: v => setTypeFilter(v as TypeFilter),
-            options: [
-              { value: 'all',       label: '전체' },
-              { value: 'scheduled', label: '정기' },
-              { value: 'adhoc',     label: '수시' },
-            ],
-          },
-        ]}
-      />
+      {/* 탭 */}
+      <div className="flex border-b border-bd-default -mb-2">
+        {([
+          { key: 'active' as Tab, label: '진행 중인 리뷰', count: totalActive },
+          { key: 'closed' as Tab, label: '마감된 리뷰',    count: closedSent.length + closedReceived.length },
+        ] as const).map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-1 pb-2.5 mr-5 text-base font-semibold border-b-2 transition-colors ${
+              tab === key
+                ? 'border-fg-default text-fg-default'
+                : 'border-transparent text-fg-subtle hover:text-fg-default'
+            }`}
+          >
+            {label}
+            {count > 0 && (
+              <span className={`ml-1.5 text-xs font-bold ${tab === key ? 'text-fg-default' : 'text-fg-subtlest'}`}>
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-      {/* 빈 상태 */}
-      {isFilterEmpty ? (
-        <EmptyState
-          icon={MsStarIcon}
-          title={
-            statusFilter === 'active' ? '진행 중인 리뷰가 없습니다.' :
-            statusFilter === 'done'   ? '완료한 리뷰가 없습니다.' :
-            statusFilter === 'closed' ? '종료된 리뷰가 없습니다.' :
-            '아직 진행 중인 리뷰가 없습니다.'
-          }
-          description={
-            statusFilter === 'all' ? '관리자가 리뷰를 생성하면 여기에 나타납니다.' : '다른 필터를 선택해 보세요.'
-          }
-        />
-      ) : statusFilter === 'active' ? (
-        <div>
-          <SectionHeader />
-          {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-        </div>
-      ) : statusFilter === 'done' ? (
-        <div>
-          <SectionHeader />
-          {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-          {filteredReceived.filter(s => !closedCycleIds.has(s.cycleId)).map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
-        </div>
-      ) : statusFilter === 'closed' ? (
-        <div>
-          <SectionHeader />
-          {closedSelf.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-          {closedReceived.map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
-        </div>
+      {/* 탭 콘텐츠 */}
+      {tab === 'active' ? (
+        activeSubs.length === 0 ? (
+          <EmptyState
+            icon={MsStarIcon}
+            title="진행 중인 리뷰가 없습니다."
+            description="작성을 완료했거나 아직 리뷰가 배정되지 않았습니다."
+          />
+        ) : (
+          <div className="divide-y divide-bd-default">
+            {activeSubs.map(sub => {
+              const cycle = cycles.find(c => c.id === sub.cycleId);
+              return (
+                <ReviewRow
+                  key={sub.id}
+                  sub={sub}
+                  cycle={cycle}
+                  onClick={() => navigate(`/reviews/me/${sub.id}`)}
+                  showAction
+                />
+              );
+            })}
+          </div>
+        )
       ) : (
-        /* 전체: 섹션 분리 */
-        <>
-          {active.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">진행 중</p>
-              <div>
-                <SectionHeader />
-                {active.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-              </div>
-            </div>
+        /* 마감된 리뷰 탭 */
+        <div className="space-y-6">
+          {/* 받은 리뷰 */}
+          {closedReceived.length > 0 && (
+            <ReviewSection
+              title="받은 리뷰"
+              count={closedReceived.length}
+              total={closedReceived.length}
+              onShowMore={() => setShowAllReceived(v => !v)}
+            >
+              {(showAllReceived ? closedReceived : closedReceived.slice(0, PREVIEW_COUNT)).map(sub => {
+                const cycle = cycles.find(c => c.id === sub.cycleId);
+                return (
+                  <ReceivedRow
+                    key={sub.id}
+                    sub={sub}
+                    cycle={cycle}
+                    onClick={() => navigate(`/reviews/me/${sub.id}`)}
+                  />
+                );
+              })}
+            </ReviewSection>
           )}
-          {doneAll.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">완료</p>
-              <div>
-                <SectionHeader />
-                {done.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-                {filteredReceived.filter(s => !closedCycleIds.has(s.cycleId)).map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
-              </div>
-            </div>
+
+          {/* 보낸 리뷰 */}
+          {closedSent.length > 0 && (
+            <ReviewSection
+              title="보낸 리뷰"
+              count={closedSent.length}
+              total={closedSent.length}
+              onShowMore={() => setShowAllSent(v => !v)}
+            >
+              {(showAllSent ? closedSent : closedSent.slice(0, PREVIEW_COUNT)).map(sub => {
+                const cycle = cycles.find(c => c.id === sub.cycleId);
+                return (
+                  <ReviewRow
+                    key={sub.id}
+                    sub={sub}
+                    cycle={cycle}
+                    onClick={() => navigate(`/reviews/me/${sub.id}`)}
+                  />
+                );
+              })}
+            </ReviewSection>
           )}
-          {closedCount > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 px-1">종료됨</p>
-              <div>
-                <SectionHeader />
-                {closedSelf.map(sub => <ReviewRow key={sub.id} sub={sub} />)}
-                {closedReceived.map(sub => <ReceivedReviewRow key={sub.id} sub={sub} />)}
-              </div>
-            </div>
+
+          {closedReceived.length === 0 && closedSent.length === 0 && (
+            <EmptyState
+              icon={MsStarIcon}
+              title="마감된 리뷰가 없습니다."
+              description="완료된 리뷰가 생기면 여기에 표시됩니다."
+            />
           )}
-        </>
+        </div>
       )}
     </div>
   );

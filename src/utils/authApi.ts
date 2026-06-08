@@ -10,12 +10,16 @@
 
 import { getScriptHeaders } from './scriptHeaders';
 
-async function post(action: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
+// overrideToken: 로그인 전 호출(verifyGoogleLogin)에서 credential 자체를 Bearer로 전달
+async function post(action: string, data: Record<string, unknown>, overrideToken?: string): Promise<Record<string, unknown>> {
   let rawBody = '';
   try {
+    const authHeaders = overrideToken
+      ? { 'Authorization': `Bearer ${overrideToken}` }
+      : getScriptHeaders();
     const res = await fetch('/api/org-sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getScriptHeaders() },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({ action, data }),
     });
     rawBody = await res.text();
@@ -43,7 +47,8 @@ export type VerifyGoogleResult =
   | { status: 'pending'; userId: null;   email: string; name: string };
 
 export async function verifyGoogleLogin(idToken: string): Promise<VerifyGoogleResult> {
-  const json = await post('verifyGoogleLogin', { idToken });
+  // 로그인 전 호출 — 저장된 토큰 없으므로 credential을 직접 Bearer로 전달
+  const json = await post('verifyGoogleLogin', { idToken }, idToken);
   if (json.error) throw new Error(String(json.error));
   const status = String(json.status ?? 'active');
   const email = String(json.email ?? '');

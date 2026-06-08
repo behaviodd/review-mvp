@@ -32,7 +32,7 @@ export function Tab({ active, count, onClick, children, ariaLabel }: Props) {
         'flex items-center gap-1.5 py-2.5 -mb-px transition-colors border-b-2 whitespace-nowrap',
         active
           ? 'border-fg-default text-fg-default'
-          : 'border-transparent text-fg-subtle hover:text-fg-default',
+          : 'border-transparent text-fg-default opacity-50 hover:opacity-100',
       )}
     >
       <span className="text-base font-bold tracking-[-0.3px] leading-6">{children}</span>

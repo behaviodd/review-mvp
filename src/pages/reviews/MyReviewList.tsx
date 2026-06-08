@@ -4,9 +4,10 @@ import { useAuthStore } from '../../stores/authStore';
 import { useSetPageHeader } from '../../contexts/PageHeaderContext';
 import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
+import { useMemo } from 'react';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { MsButton } from '../../components/ui/MsButton';
-import { Tab } from '../../components/ui/Tab';
+import { HeaderTab } from '../../components/layout/HeaderTab';
 import { MsStarIcon, MsUsersIcon, MsCalendarIcon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
@@ -251,9 +252,21 @@ export function MyReviewList() {
   const closedReceived = receivedSubs
     .sort((a, b) => (Date.parse(b.submittedAt ?? b.lastSavedAt) || 0) - (Date.parse(a.submittedAt ?? a.lastSavedAt) || 0));
 
-  useSetPageHeader('내 리뷰');
+  const totalActive   = activeSubs.length;
+  const totalClosed   = closedSent.length + closedReceived.length;
 
-  const totalActive = activeSubs.length;
+  const headerTabs = useMemo(() => (
+    <>
+      <HeaderTab active={tab === 'active'} onClick={() => setTab('active')}>
+        진행 중인 리뷰{totalActive > 0 ? ` ${totalActive}` : ''}
+      </HeaderTab>
+      <HeaderTab active={tab === 'closed'} onClick={() => setTab('closed')}>
+        마감된 리뷰{totalClosed > 0 ? ` ${totalClosed}` : ''}
+      </HeaderTab>
+    </>
+  ), [tab, totalActive, totalClosed]);
+
+  useSetPageHeader('내 리뷰', undefined, { tabs: headerTabs });
 
   if (mySubs.length === 0 && receivedSubs.length === 0) {
     return (
@@ -271,12 +284,6 @@ export function MyReviewList() {
   return (
     <div className="space-y-5">
       <PeerPickReminder />
-
-      {/* 탭 — DS Tab 컴포넌트 (-mb-px 패턴으로 border-b 위에 겹침) */}
-      <div className="flex gap-6 border-b border-bd-default">
-        <Tab active={tab === 'active'} count={totalActive}                              onClick={() => setTab('active')}>진행 중인 리뷰</Tab>
-        <Tab active={tab === 'closed'} count={closedSent.length + closedReceived.length} onClick={() => setTab('closed')}>마감된 리뷰</Tab>
-      </div>
 
       {/* 탭 콘텐츠 */}
       {tab === 'active' ? (

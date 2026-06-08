@@ -95,7 +95,7 @@ function OrgTreeNode({
   dnd: DnDCallbacks;
   canEdit?: boolean;
 }) {
-  const { users, secondaryOrgs } = useTeamStore();
+  const { users, secondaryOrgs, reviewerAssignments } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
   const [hovered, setHovered] = useState(false);
 
@@ -122,6 +122,18 @@ function OrgTreeNode({
     const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !treeMembers.has(a.userId)).length;
     return treeMembers.size + secondaryExtra;
   }, [users, unit, allUnits, secondaryOrgs]);
+
+  // 평가자 미배정 구성원 수 (rank=1 활성 배정 없는 활성 구성원)
+  const noReviewerCount = useMemo(() => {
+    const treeIds = new Set(
+      getMembersInOrgTree(unit.id, users, allUnits).filter(isUserActive).map(u => u.id)
+    );
+    secondaryOrgs.filter(a => a.orgId === unit.id).forEach(a => treeIds.add(a.userId));
+    const assignedIds = new Set(
+      reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
+    );
+    return [...treeIds].filter(id => !assignedIds.has(id)).length;
+  }, [users, unit, allUnits, secondaryOrgs, reviewerAssignments]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
   // R7: depth+1 이 5단계(=MAX_ORG_DEPTH=4)를 초과하면 자식 추가 버튼 비활성화
@@ -231,6 +243,13 @@ function OrgTreeNode({
             {memberCount}
           </span>
         )}
+        {/* 평가자 미배정 경고 배지 */}
+        {noReviewerCount > 0 && !isSelected && (
+          <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-010 text-orange-060 text-[10px] font-bold flex items-center justify-center leading-none"
+            title={`평가자 미배정 ${noReviewerCount}명`}>
+            {noReviewerCount}
+          </span>
+        )}
 
         {/* action buttons (hover 시 보임, 14px icon) */}
         {canEdit && hovered && (
@@ -299,6 +318,7 @@ function MemberRow({
   user, onView, onEdit, onTerminate, onImpersonate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
   secondaryAssignmentHere, isOrgHeadHere = false, isAnyOrgHead = false,
+  hasReviewer,
 }: {
   user: User;
   onView: (u: User) => void;
@@ -312,6 +332,8 @@ function MemberRow({
   secondaryAssignmentHere?: SecondaryOrgAssignment;
   isOrgHeadHere?: boolean;
   isAnyOrgHead?: boolean;
+  /** undefined = 표시 안 함, true = 배정됨, false = 미배정 */
+  hasReviewer?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
   // 사용자 결정: admin 도 일반 구성원으로서 일괄 선택·일괄 작업 대상.
@@ -376,6 +398,13 @@ function MemberRow({
         )}
       </div>
 
+      {/* 평가자 미배정 인디케이터 */}
+      {hasReviewer === false && (
+        <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-orange-005 text-orange-060 border border-orange-020 whitespace-nowrap group-hover:hidden">
+          평가자 미배정
+        </span>
+      )}
+
       {/* Action buttons (hover 시 보임) */}
       <div
         className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
@@ -410,7 +439,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
-  const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
+  const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers, reviewerAssignments } = useTeamStore();
   // Phase D-2.4a: useSheetsSyncStore destructure 제거 — 동기화 배지를 헤더에서
   // 빼고 글로벌 SyncStatusBanner 가 처리 (사용자 결정 3.a)
   // Phase D-2.4a: terminatedUsers 정의를 위로 — headerTabActions useMemo 의
@@ -426,7 +455,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [showUnassigned, setShowUnassigned]      = useState(false);
   const [search, setSearch]                      = useState('');
   const [showTerminated, setShowTerminated]       = useState(false);
-  const [statusFilter, setStatusFilter]          = useState<'all' | 'active' | 'leave' | 'terminated'>('all');
+  const [statusFilter, setStatusFilter]          = useState<'all' | 'active' | 'leave' | 'terminated' | 'no_reviewer'>('all');
   // R5-b: 마스터 로그인 시작 확인
   const [impersonateTarget, setImpersonateTarget] = useState<User | null>(null);
 
@@ -543,10 +572,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   ), []);
 
   const STATUS_FILTER_LABELS = [
-    { key: 'all'        as const, label: '전체' },
-    { key: 'active'     as const, label: '재직' },
-    { key: 'leave'      as const, label: '휴직' },
-    { key: 'terminated' as const, label: '퇴사' },
+    { key: 'all'         as const, label: '전체' },
+    { key: 'active'      as const, label: '재직' },
+    { key: 'leave'       as const, label: '휴직' },
+    { key: 'terminated'  as const, label: '퇴사' },
+    { key: 'no_reviewer' as const, label: '평가자 미배정' },
   ];
 
   const headerTabActions = useMemo(() => (
@@ -838,12 +868,21 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
   }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
-  // 재직상태 필터 적용 헬퍼
+  // 평가자(rank=1) 미배정 구성원 ID Set — 필터·표시용
+  const noReviewerIds = useMemo(() => {
+    const assignedIds = new Set(
+      reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
+    );
+    return new Set(activeUsers.filter(u => !assignedIds.has(u.id)).map(u => u.id));
+  }, [activeUsers, reviewerAssignments]);
+
+  // 재직상태 + 배정 필터 적용 헬퍼
   const applyStatusFilter = (list: User[]) => {
-    if (statusFilter === 'all') return list;
-    if (statusFilter === 'active') return list.filter(u => !u.activityStatus || u.activityStatus === 'active');
-    if (statusFilter === 'leave')  return list.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long');
+    if (statusFilter === 'all')        return list;
+    if (statusFilter === 'active')     return list.filter(u => !u.activityStatus || u.activityStatus === 'active');
+    if (statusFilter === 'leave')      return list.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long');
     if (statusFilter === 'terminated') return list.filter(u => u.activityStatus === 'terminated');
+    if (statusFilter === 'no_reviewer') return list.filter(u => noReviewerIds.has(u.id));
     return list;
   };
 
@@ -854,6 +893,18 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [users, search, statusFilter]
   );
+
+  // 상태 필터 적용된 표시 목록 (panelUsers + statusFilter)
+  const displayedUsers = useMemo(() => applyStatusFilter(panelUsers), [panelUsers, statusFilter, noReviewerIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 선택 조직 요약 (Option B)
+  const orgSummary = useMemo(() => {
+    if (!selectedUnit) return null;
+    const orgHead = selectedUnit.headId ? users.find(u => u.id === selectedUnit.headId) : null;
+    const noReviewerInOrg = panelUsers.filter(u => noReviewerIds.has(u.id)).length;
+    const leaveInOrg = panelUsers.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long').length;
+    return { orgHead, noReviewerInOrg, leaveInOrg };
+  }, [selectedUnit, panelUsers, users, noReviewerIds]);
 
   // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)
   const secondaryMapHere = useMemo(() => {
@@ -929,7 +980,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   onEdit={canEdit ? goEditMember : null}
                   onTerminate={canEdit ? handleTerminate : undefined}
                   onImpersonate={can.impersonate ? handleImpersonate : undefined}
-                  isAnyOrgHead={headIdsAll.has(u.id)} />
+                  isAnyOrgHead={headIdsAll.has(u.id)}
+                  hasReviewer={isUserActive(u) ? !noReviewerIds.has(u.id) : undefined} />
               ))}
             </div>
           )}
@@ -987,6 +1039,40 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               )}
             </div>
 
+            {/* Option B — 조직 선택 시 요약 카드 */}
+            {orgSummary && selectedUnit && (
+              <div className="mb-3 px-3 py-3 rounded-lg border border-bd-default bg-gray-005 text-xs">
+                <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
+                  <span className="text-fg-subtle">
+                    총 <strong className="text-fg-default">{panelUsers.length}명</strong>
+                  </span>
+                  {orgSummary.orgHead ? (
+                    <span className="text-fg-subtle">
+                      조직장: <strong className="text-fg-default">{orgSummary.orgHead.name}</strong>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => openEditOrg(selectedUnit)}
+                      className="font-semibold text-orange-060 hover:underline"
+                    >
+                      조직장 미지정 → 지정하기
+                    </button>
+                  )}
+                  {orgSummary.noReviewerInOrg > 0 && (
+                    <button
+                      onClick={() => setStatusFilter('no_reviewer')}
+                      className="font-semibold text-orange-060 hover:underline"
+                    >
+                      평가자 미배정 {orgSummary.noReviewerInOrg}명
+                    </button>
+                  )}
+                  {orgSummary.leaveInOrg > 0 && (
+                    <span className="text-fg-subtle">휴직 {orgSummary.leaveInOrg}명</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Member list */}
             {isLoading && panelUsers.length === 0 ? (
               <div className="space-y-2 animate-pulse p-2">
@@ -1016,7 +1102,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               </div>
             ) : (
               <div className="space-y-1">
-                {panelUsers.map(u => (
+                {displayedUsers.map(u => (
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                     onView={goViewMember}
                     onEdit={canEdit ? goEditMember : null}
@@ -1027,7 +1113,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                     selectionActive={selectedIds.size > 0}
                     secondaryAssignmentHere={secondaryMapHere.get(u.id)}
                     isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
-                    isAnyOrgHead={headIdsAll.has(u.id)} />
+                    isAnyOrgHead={headIdsAll.has(u.id)}
+                    hasReviewer={showTerminated ? undefined : !noReviewerIds.has(u.id)} />
                 ))}
               </div>
             )}

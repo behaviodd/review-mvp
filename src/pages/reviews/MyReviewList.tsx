@@ -6,6 +6,7 @@ import { useReviewStore } from '../../stores/reviewStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { MsButton } from '../../components/ui/MsButton';
+import { Tab } from '../../components/ui/Tab';
 import { MsStarIcon, MsUsersIcon, MsCalendarIcon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
@@ -271,29 +272,10 @@ export function MyReviewList() {
     <div className="space-y-5">
       <PeerPickReminder />
 
-      {/* 탭 */}
-      <div className="flex border-b border-bd-default -mb-2">
-        {([
-          { key: 'active' as Tab, label: '진행 중인 리뷰', count: totalActive },
-          { key: 'closed' as Tab, label: '마감된 리뷰',    count: closedSent.length + closedReceived.length },
-        ] as const).map(({ key, label, count }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`px-1 pb-2.5 mr-5 text-base font-semibold border-b-2 transition-colors ${
-              tab === key
-                ? 'border-fg-default text-fg-default'
-                : 'border-transparent text-fg-subtle hover:text-fg-default'
-            }`}
-          >
-            {label}
-            {count > 0 && (
-              <span className={`ml-1.5 text-xs font-bold ${tab === key ? 'text-fg-default' : 'text-fg-subtlest'}`}>
-                {count}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* 탭 — DS Tab 컴포넌트 (-mb-px 패턴으로 border-b 위에 겹침) */}
+      <div className="flex gap-6 border-b border-bd-default">
+        <Tab active={tab === 'active'} count={totalActive}                              onClick={() => setTab('active')}>진행 중인 리뷰</Tab>
+        <Tab active={tab === 'closed'} count={closedSent.length + closedReceived.length} onClick={() => setTab('closed')}>마감된 리뷰</Tab>
       </div>
 
       {/* 탭 콘텐츠 */}

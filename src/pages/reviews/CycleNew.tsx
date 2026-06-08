@@ -434,7 +434,7 @@ export function CycleNew() {
     managerReviewDeadline: (v: unknown) => {
       if (!form.selfReviewDeadline || !v) return null;
       return new Date(v as string) <= new Date(form.selfReviewDeadline)
-        ? '조직장 리뷰 마감일은 자기평가 마감일 이후여야 합니다.'
+        ? '조직장 리뷰 마감일은 Self 리뷰 마감일 이후여야 합니다.'
         : null;
     },
   }), [form.selfReviewDeadline]);
@@ -679,10 +679,10 @@ export function CycleNew() {
         </div>
         <div className="bg-gray-005 rounded-lg p-5 text-left space-y-3">
           {[
-            { label: '자기평가 마감',    value: form.selfReviewDeadline },
+            { label: 'Self 리뷰 마감',    value: form.selfReviewDeadline },
             { label: '조직장 리뷰 마감', value: form.managerReviewDeadline },
             { label: '대상 구성원',      value: `${publishedCount.members}명` },
-            { label: '생성된 제출 건',   value: `자기평가 ${selfCount}건 · 조직장 평가 ${downCount}건` },
+            { label: '생성된 제출 건',   value: `Self 리뷰 ${selfCount}건 · 조직장 평가 ${downCount}건` },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center gap-3 text-base">
               <span className="text-fg-subtlest w-32 flex-shrink-0">{label}</span>
@@ -1117,7 +1117,7 @@ export function CycleNew() {
           <div className="space-y-5">
             <h2 className="text-lg font-semibold text-fg-default">일정을 설정하세요</h2>
             {[
-              { key: 'selfReviewDeadline',    label: '자기평가 마감일',       required: true  },
+              { key: 'selfReviewDeadline',    label: 'Self 리뷰 마감일',       required: true  },
               { key: 'managerReviewDeadline', label: '조직장 리뷰 마감일',    required: true  },
               { key: 'calibrationDeadline',   label: '조율 마감일 (선택)',    required: false },
             ].map(({ key, label, required }) => {
@@ -1161,9 +1161,9 @@ export function CycleNew() {
                 ...(form.targetTeams.length > 0 ? [{ label: '팀', value: form.targetTeams.join(', ') }] : []),
                 ...(form.targetSquads.length > 0 ? [{ label: '스쿼드', value: form.targetSquads.join(', ') }] : []),
                 { label: '대상 구성원', value: `${targetMembers.length}명` },
-                { label: '자기평가',         value: `${selfCount}건 생성` },
+                { label: 'Self 리뷰',         value: `${selfCount}건 생성` },
                 { label: '조직장 평가',      value: `${downCount}건 생성` },
-                { label: '자기평가 마감',    value: form.selfReviewDeadline },
+                { label: 'Self 리뷰 마감',    value: form.selfReviewDeadline },
                 { label: '조직장 평가 마감', value: form.managerReviewDeadline },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-010 last:border-0">
@@ -1202,7 +1202,7 @@ export function CycleNew() {
                                 {TYPE_LABEL[q.type] ?? q.type}
                               </span>
                               <span className={`text-xs px-1.5 py-0.5 rounded ${q.target === 'self' ? 'bg-gray-010 text-fg-subtle' : q.target === 'leader' ? 'bg-orange-005 text-orange-050' : 'bg-blue-005 text-blue-060'}`}>
-                                {q.target === 'self' ? '자기평가' : q.target === 'leader' ? '조직장 평가' : '공통'}
+                                {q.target === 'self' ? 'Self 리뷰' : q.target === 'leader' ? '조직장 평가' : '공통'}
                               </span>
                               {q.isPrivate && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-010 text-fg-subtlest">비공개</span>}
                               {q.isRequired && <span className="text-xs text-red-040">필수</span>}
@@ -1232,7 +1232,7 @@ export function CycleNew() {
                 <Rocket className="w-4 h-4" /> 발행하면 즉시 시작됩니다
               </p>
               <p className="text-xs text-pink-050">
-                {targetMembers.length}명의 자기평가 + {downCount}건의 조직장 평가가 자동으로 배정됩니다.
+                {targetMembers.length}명의 Self 리뷰 + {downCount}건의 조직장 평가가 자동으로 배정됩니다.
               </p>
             </div>
           </div>

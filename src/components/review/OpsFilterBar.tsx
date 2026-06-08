@@ -18,7 +18,7 @@ const PERSPECTIVE_OPTIONS: { value: OpsPerspective; label: string; hint: string 
 
 const STAGE_OPTIONS: { value: OpsStage; label: string }[] = [
   { value: 'all', label: '전체' },
-  { value: 'self', label: '자기평가' },
+  { value: 'self', label: 'Self 리뷰' },
   { value: 'manager', label: '조직장' },
   { value: 'peer', label: '동료' },
   { value: 'upward', label: '상향' },

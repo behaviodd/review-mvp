@@ -14,7 +14,7 @@ export function ProxyModeBanner({ reviewerName, revieweeName, stage }: Props) {
         <p className="font-semibold">대리 작성 모드</p>
         <p className="mt-0.5">
           {stage === 'self'
-            ? <>원 작성자: <strong>{revieweeName ?? '대상자'}</strong> — 본인을 대신하여 자기평가를 작성합니다.</>
+            ? <>원 작성자: <strong>{revieweeName ?? '대상자'}</strong> — 본인을 대신하여 Self 리뷰를 작성합니다.</>
             : <>원 작성자: <strong>{reviewerName ?? '조직장'}</strong> · 대상자: <strong>{revieweeName ?? '대상자'}</strong></>
           }
           {' '}제출 시 감사 로그에 대리 작성자 정보가 기록됩니다.

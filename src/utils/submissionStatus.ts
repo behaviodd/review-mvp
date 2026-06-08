@@ -5,7 +5,7 @@
  *
  * 이 헬퍼는 (submission, cycle) 쌍에서 표시용 상태를 계산한다.
  * - submitted: 그대로
- * - self 타입이고 cycle.status 가 manager_review/closed: 자기평가 기간 종료
+ * - self 타입이고 cycle.status 가 manager_review/closed: Self 리뷰 기간 종료
  * - 그 외: sub.status (in_progress / not_started)
  *
  * 상세 페이지의 isReadOnly 규칙 (`cyclePastSelfReview`) 과 일치.

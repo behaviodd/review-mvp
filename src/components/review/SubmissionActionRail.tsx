@@ -115,7 +115,7 @@ export function SubmissionActionRail({
             size="sm"
             onClick={() => setProxyConfirm('self')}
             leftIcon={<MsEditIcon />}
-            title="자기평가를 대신 작성합니다"
+            title="Self 리뷰를 대신 작성합니다"
           >
             대리 작성
           </MsButton>
@@ -127,7 +127,7 @@ export function SubmissionActionRail({
             onClick={() => handleReopen(selfSub.id)}
             leftIcon={<MsRefreshIcon />}
           >
-            자기평가 재오픈
+            Self 리뷰 재오픈
           </MsButton>
         )}
         {canReopenManager && managerSub && (

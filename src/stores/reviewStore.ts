@@ -250,7 +250,7 @@ export const useReviewStore = create<ReviewState>()(
           actorId,
           action: 'cycle.status_transition',
           targetIds: [cycleId],
-          summary: `발행 (초안 → 자기평가). 템플릿 스냅샷 저장`,
+          summary: `발행 (초안 → Self 리뷰). 템플릿 스냅샷 저장`,
           meta: { to: 'self_review', templateId: template.id },
         });
         return { ok: true };
@@ -917,7 +917,7 @@ export const useReviewStore = create<ReviewState>()(
             // 셀이 비어 있으면 (P0-2 미복원분) parseSheetCycle 가 undefined 로 파싱하고,
             // cycles 를 wholesale 교체하면 store 에서 snapshot 이 소실된다. 그러면
             // getEffectiveTemplate 가 fallback(현 템플릿/DEFAULT) 으로 빠지면서 답변의
-            // questionId 와 불일치 → 자기평가/팀원평가 화면에서 답변이 "사라진" 것처럼
+            // questionId 와 불일치 → Self 리뷰/팀원평가 화면에서 답변이 "사라진" 것처럼
             // 보인다 (시트의 답변JSON 은 정상). 단계 전환 시 발생하는 cycle write + 폴링이
             // 이 소실을 트리거. 방어: remote 에 snapshot 이 없고 local 에 있으면 보존.
             const localById = new Map(s.cycles.map(c => [c.id, c] as const));

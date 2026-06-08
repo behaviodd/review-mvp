@@ -30,7 +30,7 @@ import { cn } from '../../utils/cn';
 const STATUS_CONFIG: Record<ReviewStatus, { label: string; dot: string; text: string }> = {
   draft:          { label: '초안',        dot: 'bg-gray-030',  text: 'text-fg-subtle' },
   active:         { label: '진행 중',     dot: 'bg-pink-040',  text: 'text-pink-060' },
-  self_review:    { label: '자기평가 중', dot: 'bg-pink-040',  text: 'text-pink-060' },
+  self_review:    { label: 'Self 리뷰 중', dot: 'bg-pink-040',  text: 'text-pink-060' },
   manager_review: { label: '조직장 리뷰', dot: 'bg-pink-040',  text: 'text-pink-050' },
   calibration:    { label: '조율 중',     dot: 'bg-pink-040',  text: 'text-pink-050' },
   closed:         { label: '완료',        dot: 'bg-green-040', text: 'text-green-060' },
@@ -513,7 +513,7 @@ export function CycleList() {
 
                   <div className="w-24 flex-shrink-0 text-right">
                     <p className="text-xs text-gray-060">{formatDate(cycle.selfReviewDeadline)}</p>
-                    <p className="text-xs text-fg-subtlest mt-0.5">자기평가 마감</p>
+                    <p className="text-xs text-fg-subtlest mt-0.5">Self 리뷰 마감</p>
                   </div>
 
                   {/* Phase D-3.C-5: hover 액션 4개 → 더보기 메뉴 1개로 통합 (사용자 요청)

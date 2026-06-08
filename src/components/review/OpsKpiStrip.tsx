@@ -46,7 +46,7 @@ export function OpsKpiStrip({ kpis }: Props) {
 
   const cards: KpiCard[] = [
     { label: '전체 제출율', value: `${kpis.overallRate}%`, sub: `대상 ${kpis.totalPeople}명`, tone: 'brand' },
-    { label: '자기평가', value: `${kpis.selfRate}%`, tone: 'neutral' },
+    { label: 'Self 리뷰', value: `${kpis.selfRate}%`, tone: 'neutral' },
     { label: '조직장 리뷰', value: `${kpis.managerRate}%`, tone: 'neutral' },
     ...(kpis.hasPeer ? [{ label: '동료 리뷰', value: `${kpis.peerRate}%`, tone: 'neutral' as Tone }] : []),
     ...(kpis.hasUpward ? [{ label: '상향 리뷰', value: `${kpis.upwardRate}%`, tone: 'neutral' as Tone }] : []),

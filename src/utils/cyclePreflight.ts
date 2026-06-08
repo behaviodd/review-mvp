@@ -126,7 +126,7 @@ export function runPreflight(params: {
           id: `missing_reviewer_rank_${rank}`,
           severity: 'warn',
           title: `${rankLabel} 평가권자가 없는 대상자 존재`,
-          detail: `${missing.length}명에게 ${rankLabel} 평가권자가 배정되지 않았습니다. 해당 멤버는 ${rankLabel} 조직장 리뷰가 생성되지 않습니다 (자기평가 등 다른 종류는 정상 생성).`,
+          detail: `${missing.length}명에게 ${rankLabel} 평가권자가 배정되지 않았습니다. 해당 멤버는 ${rankLabel} 조직장 리뷰가 생성되지 않습니다 (Self 리뷰 등 다른 종류는 정상 생성).`,
           affectedIds: missing.map(u => u.id),
         });
       }
@@ -172,14 +172,14 @@ export function runPreflight(params: {
       id: 'schedule_order',
       severity: 'block',
       title: '일정 순서 오류',
-      detail: `자기평가 마감(${sd})이 조직장 리뷰 마감(${md})과 같거나 이후입니다.`,
+      detail: `Self 리뷰 마감(${sd})이 조직장 리뷰 마감(${md})과 같거나 이후입니다.`,
     });
   }
   if (sd && new Date(sd) < new Date(today)) {
     checks.push({
       id: 'schedule_past',
       severity: 'block',
-      title: '자기평가 마감이 과거 날짜',
+      title: 'Self 리뷰 마감이 과거 날짜',
       detail: `${sd}는 오늘 이전입니다. 미래 날짜로 수정하세요.`,
     });
   }
@@ -189,7 +189,7 @@ export function runPreflight(params: {
     checks.push({
       id: 'weekend_self',
       severity: 'warn',
-      title: '자기평가 마감이 주말',
+      title: 'Self 리뷰 마감이 주말',
       detail: `${sd}는 주말입니다. 제출율 저하 가능성.`,
     });
   }

@@ -12,7 +12,7 @@ const SUBMISSION_CONFIG: Record<SubmissionStatus, { label: string; color: BadgeC
 const REVIEW_CONFIG: Record<ReviewStatus, { label: string; color: BadgeColor }> = {
   draft:          { label: '초안',        color: 'zinc'    },
   active:         { label: '진행 중',     color: 'indigo'  },
-  self_review:    { label: '자기평가',    color: 'indigo'  },
+  self_review:    { label: 'Self 리뷰',    color: 'indigo'  },
   manager_review: { label: '조직장 평가', color: 'violet'  },
   calibration:    { label: '조율 중',     color: 'amber'   },
   closed:         { label: '완료',        color: 'emerald' },

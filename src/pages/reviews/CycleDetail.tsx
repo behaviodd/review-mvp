@@ -48,13 +48,13 @@ const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
     next: 'self_review',
     label: '사전 점검 후 발행',
     isDanger: false,
-    msg: '사전 점검을 통과하면 대상 구성원들이 자기평가를 시작할 수 있습니다.',
+    msg: '사전 점검을 통과하면 대상 구성원들이 Self 리뷰를 시작할 수 있습니다.',
   },
   self_review: {
     next: 'manager_review',
     label: '조직장 리뷰 시작',
     isDanger: false,
-    msg: '자기평가 단계를 마감하고 조직장 리뷰 단계로 전환합니다.',
+    msg: 'Self 리뷰 단계를 마감하고 조직장 리뷰 단계로 전환합니다.',
   },
   manager_review: {
     next: 'closed',
@@ -70,7 +70,7 @@ const STATUS_TRANSITIONS: Partial<Record<ReviewStatus, {
   },
 };
 
-// ─── 제출 리뷰 사이드 패널 (자기평가 ↔ 조직장 리뷰 병렬 비교) ─────────────────
+// ─── 제출 리뷰 사이드 패널 (Self 리뷰 ↔ 조직장 리뷰 병렬 비교) ─────────────────
 const RATING_LABELS = ['', '매우 미흡', '미흡', '보통', '우수', '매우 우수'];
 
 function AnswerView({ q, ans }: { q: ReviewTemplate['questions'][0]; ans: ReviewSubmission['answers'][0] | undefined }) {
@@ -195,7 +195,7 @@ function SubmissionViewPanel({
         {/* 컬럼 헤더 */}
         <div className="grid grid-cols-2 border-b border-gray-010 flex-shrink-0 divide-x divide-gray-010">
           <ColHeader
-            label="자기평가"
+            label="Self 리뷰"
             sub={selfSub}
             accent="bg-blue-005/60"
           />
@@ -702,7 +702,7 @@ export function CycleDetail() {
         <div className="grid grid-cols-3 md:divide-x md:divide-bd-default">
           {[
             { icon: MsUsersIcon, label: '총 대상', value: `${targetMembers.length}명`, sub: `${cycle.targetDepartments.join(', ')}` },
-            { icon: MsBarChart2Icon, label: '자기평가 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
+            { icon: MsBarChart2Icon, label: 'Self 리뷰 완료', value: `${selfSubmitted}/${targetMembers.length}`, sub: `${Math.round((selfSubmitted / (targetMembers.length || 1)) * 100)}%` },
             { icon: MsBarChart2Icon, label: '조직장 리뷰 완료', value: `${managerSubmitted}/${targetMembers.length}`, sub: `${Math.round((managerSubmitted / (targetMembers.length || 1)) * 100)}%` },
           ].map(({ icon: Icon, label, value, sub }) => (
             <div key={label} className="p-4">
@@ -721,7 +721,7 @@ export function CycleDetail() {
           <h2 className="text-base font-semibold text-fg-default mb-3 flex items-center gap-2"><MsCalendarIcon size={16} /> 일정</h2>
           <div>
             {[
-              { label: '자기평가 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
+              { label: 'Self 리뷰 마감', date: cycle.selfReviewDeadline, highlight: cycle.status === 'self_review' },
               { label: '조직장 리뷰 마감', date: cycle.managerReviewDeadline, highlight: cycle.status === 'manager_review' },
             ].map(({ label, date, highlight }) => (
               <div

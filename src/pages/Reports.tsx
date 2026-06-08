@@ -280,7 +280,7 @@ function LeaderReports() {
     { name: '미제출', value: teamMembers.length - submitted },
   ];
 
-  // 자기평가 vs 조직장평가 bar
+  // Self 리뷰 vs 조직장평가 bar
   const teamBarData = teamMembers.map(m => {
     const selfSub = submissions.find(s => s.revieweeId === m.id && s.type === 'self' && s.status === 'submitted');
     const mgSub   = submissions.find(s => s.revieweeId === m.id && s.type === 'downward' && s.reviewerId === currentUser?.id);
@@ -288,7 +288,7 @@ function LeaderReports() {
       const vals = (sub?.answers ?? []).filter(a => a.ratingValue).map(a => a.ratingValue!);
       return vals.length ? +(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1) : 0;
     };
-    return { name: m.name, 자기평가: avg(selfSub), 조직장평가: avg(mgSub) };
+    return { name: m.name, 'Self 리뷰': avg(selfSub), 조직장평가: avg(mgSub) };
   });
 
   return (
@@ -296,7 +296,7 @@ function LeaderReports() {
       {/* 팀 완료 현황 + 팀원 리스트 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="rounded-lg border border-bd-default p-5">
-          <h2 className="text-base font-semibold text-fg-default mb-3">자기평가 제출 현황</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-3">Self 리뷰 제출 현황</h2>
           {teamMembers.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -370,7 +370,7 @@ function LeaderReports() {
                 <PolarGrid stroke="#e1e6ea" />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: '#6d7f92' }} />
                 <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9, fill: '#a7b3be' }} tickCount={4} />
-                <Radar name="자기평가" dataKey="self" stroke="#1482b8" fill="#1482b8" fillOpacity={0.15} strokeWidth={2} />
+                <Radar name="Self 리뷰" dataKey="self" stroke="#1482b8" fill="#1482b8" fillOpacity={0.15} strokeWidth={2} />
                 <Radar name="조직장평가" dataKey="manager" stroke="#20903c" fill="#20903c" fillOpacity={0.15} strokeWidth={2} />
                 {hasPeer && <Radar name="동료평가" dataKey="peer" stroke="#863dff" fill="#863dff" fillOpacity={0.12} strokeWidth={2} />}
                 <Legend iconType="circle" iconSize={8} />
@@ -392,7 +392,7 @@ function LeaderReports() {
                     <span className="font-semibold text-fg-default">{top.subject}</span>
                     {' '}
                     <span className={top.gap > 0 ? 'text-blue-060' : 'text-green-060'}>
-                      {top.gap > 0 ? `자기평가 +${top.gap}점 높음` : `조직장평가 ${Math.abs(top.gap)}점 높음`}
+                      {top.gap > 0 ? `Self 리뷰 +${top.gap}점 높음` : `조직장평가 ${Math.abs(top.gap)}점 높음`}
                     </span>
                   </p>
                 </div>
@@ -404,10 +404,10 @@ function LeaderReports() {
         )}
       </div>
 
-      {/* 자기평가 vs 조직장평가 bar */}
-      {teamBarData.some(d => d.자기평가 > 0) && (
+      {/* Self 리뷰 vs 조직장평가 bar */}
+      {teamBarData.some(d => d['Self 리뷰'] > 0) && (
         <div className="rounded-lg border border-bd-default p-5">
-          <h2 className="text-base font-semibold text-fg-default mb-4">자기평가 vs 조직장평가 비교</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-4">Self 리뷰 vs 조직장평가 비교</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={teamBarData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -415,7 +415,7 @@ function LeaderReports() {
               <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: '#6d7f92' }} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend iconType="circle" iconSize={8} />
-              <Bar dataKey="자기평가"  fill="#1482b8" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Self 리뷰"  fill="#1482b8" radius={[4, 4, 0, 0]} />
               <Bar dataKey="조직장평가" fill="#20903c" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -440,7 +440,7 @@ function EmployeeReports() {
   const myReceived   = feedbacks.filter(f => f.toUserId === currentUser?.id);
   const mySent       = feedbacks.filter(f => f.fromUserId === currentUser?.id);
 
-  // 자기 객관화: 내 자기평가 vs 받은 조직장 평가 비교
+  // 자기 객관화: 내 Self 리뷰 vs 받은 조직장 평가 비교
   const selfVsMgr = useMemo(() => {
     const activeCycle = cycles.find(c => c.status !== 'draft' && c.status !== 'closed');
     if (!activeCycle) return [];
@@ -480,7 +480,7 @@ function EmployeeReports() {
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-0 md:divide-x md:divide-bd-default md:border md:border-bd-default md:rounded-lg">
         {[
-          { icon: MsStarIcon,   label: '제출한 자기평가', value: `${mySelfSubs.length}회`, action: () => navigate('/reviews/me'),  actionLabel: '내 리뷰 보기' },
+          { icon: MsStarIcon,   label: '제출한 Self 리뷰', value: `${mySelfSubs.length}회`, action: () => navigate('/reviews/me'),  actionLabel: '내 리뷰 보기' },
           { icon: MsMessageIcon, label: '받은 피드백',    value: `${myReceived.length}개`, action: () => navigate('/feedback'),   actionLabel: '확인하기' },
           { icon: TrendingUp,   label: '보낸 피드백',    value: `${mySent.length}개`,      action: () => navigate('/feedback'),   actionLabel: '보내기' },
         ].map(({ icon: Icon, label, value, action, actionLabel }) => (
@@ -498,28 +498,28 @@ function EmployeeReports() {
       {/* 자기 객관화 레이더 */}
       <div className="rounded-lg border border-bd-default p-5">
         <h2 className="text-base font-semibold text-fg-default mb-1">자기 객관화 진단</h2>
-        <p className="text-xs text-fg-subtle mb-4">내 자기평가와 조직장이 평가한 점수를 영역별로 비교합니다</p>
+        <p className="text-xs text-fg-subtle mb-4">내 Self 리뷰와 조직장이 평가한 점수를 영역별로 비교합니다</p>
         {selfVsMgr.length >= 3 ? (
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={selfVsMgr}>
               <PolarGrid stroke="#e1e6ea" />
               <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: '#6d7f92' }} />
               <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9, fill: '#a7b3be' }} tickCount={4} />
-              <Radar name="자기평가"  dataKey="self"    stroke="#1482b8" fill="#1482b8" fillOpacity={0.15} strokeWidth={2} />
+              <Radar name="Self 리뷰"  dataKey="self"    stroke="#1482b8" fill="#1482b8" fillOpacity={0.15} strokeWidth={2} />
               <Radar name="조직장평가" dataKey="manager" stroke="#20903c" fill="#20903c" fillOpacity={0.15} strokeWidth={2} />
               <Legend iconType="circle" iconSize={8} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v}점`, '']} />
             </RadarChart>
           </ResponsiveContainer>
         ) : (
-          <EmptyState icon={BarChart2} title="비교 데이터 부족" description="자기평가와 조직장 평가가 모두 제출되면 레이더가 표시됩니다." compact />
+          <EmptyState icon={BarChart2} title="비교 데이터 부족" description="Self 리뷰와 조직장 평가가 모두 제출되면 레이더가 표시됩니다." compact />
         )}
       </div>
 
       {/* 평가 추세 */}
       {trendData.length >= 2 && (
         <div className="rounded-lg border border-bd-default p-5">
-          <h2 className="text-base font-semibold text-fg-default mb-4">자기평가 점수 추세</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-4">Self 리뷰 점수 추세</h2>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e1e6ea" />
@@ -532,10 +532,10 @@ function EmployeeReports() {
         </div>
       )}
 
-      {/* 최근 자기평가 점수 */}
+      {/* 최근 Self 리뷰 점수 */}
       {myLatestSelf?.overallRating && (
         <div className="rounded-lg border border-bd-default p-5">
-          <h2 className="text-base font-semibold text-fg-default mb-1">최근 자기평가</h2>
+          <h2 className="text-base font-semibold text-fg-default mb-1">최근 Self 리뷰</h2>
           <p className="text-3xl font-bold text-pink-050">
             {myLatestSelf.overallRating.toFixed(1)}
             <span className="text-base font-normal text-fg-subtlest"> / 5.0</span>

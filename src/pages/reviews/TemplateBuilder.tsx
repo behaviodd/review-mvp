@@ -32,7 +32,7 @@ const SELECTABLE_TYPES = TYPES.filter(t => t.val !== 'competency');
 
 const TARGETS = [
   { val: 'both',   label: '공통'    },
-  { val: 'self',   label: '자기평가' },
+  { val: 'self',   label: 'Self 리뷰' },
   { val: 'leader', label: '조직장'  },
 ] as const;
 

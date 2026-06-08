@@ -118,11 +118,11 @@ export function AdminCycleWidget() {
     <div className="grid grid-cols-1 gap-3 md:gap-0 md:grid-cols-3 md:divide-x md:divide-bd-default">
       <Card
         title="D-7 이내 마감"
-        hint="자기평가 마감이 임박한 사이클"
+        hint="Self 리뷰 마감이 임박한 사이클"
         tone="warning"
         cycles={urgent}
         onClickAll={() => navWithFilter('deadline')}
-        row={c => <RowItem c={c} detail={`자기평가 마감 · ${formatDate(c.selfReviewDeadline)}`} tone="warning" />}
+        row={c => <RowItem c={c} detail={`Self 리뷰 마감 · ${formatDate(c.selfReviewDeadline)}`} tone="warning" />}
       />
       <Card
         title="지연"
@@ -130,7 +130,7 @@ export function AdminCycleWidget() {
         tone="danger"
         cycles={overdue}
         onClickAll={() => navWithFilter('overdue')}
-        row={c => <RowItem c={c} detail={`자기평가 마감 · ${formatDate(c.selfReviewDeadline)}`} tone="danger" />}
+        row={c => <RowItem c={c} detail={`Self 리뷰 마감 · ${formatDate(c.selfReviewDeadline)}`} tone="danger" />}
       />
       <Card
         title="예약 발행 대기"

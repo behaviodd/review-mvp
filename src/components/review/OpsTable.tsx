@@ -69,7 +69,7 @@ export function OpsTable({
   const someChecked = rows.some(r => selected.has(r.key));
   const showActionCol = !!onRowRemove;
 
-  // 열 구성: 기본 자기평가 + 조직장 (+ peer, upward 옵션) — CSS Grid 변수 기반
+  // 열 구성: 기본 Self 리뷰 + 조직장 (+ peer, upward 옵션) — CSS Grid 변수 기반
   const stageColsTemplate = [
     'minmax(0,1.1fr)',  // self
     'minmax(0,1.1fr)',  // manager
@@ -107,7 +107,7 @@ export function OpsTable({
         />
         <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">{perspectiveLabel}</span>
         <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">조직</span>
-        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">자기평가</span>
+        <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">Self 리뷰</span>
         <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">조직장 리뷰</span>
         {showPeer && <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">동료 리뷰</span>}
         {showUpward && <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">상향 리뷰</span>}

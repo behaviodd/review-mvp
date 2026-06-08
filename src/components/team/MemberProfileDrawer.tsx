@@ -51,7 +51,7 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
 
   const subtitle = target ? `${target.department}${target.position ? ` · ${target.position}` : ''}` : undefined;
 
-  // 평가 이력: 해당 구성원이 제출한 자기평가 + 받은 조직장 평가
+  // 평가 이력: 해당 구성원이 제출한 Self 리뷰 + 받은 조직장 평가
   const memberSubmissions = userId
     ? submissions.filter(s => s.revieweeId === userId && s.status === 'submitted')
         .sort((a, b) => new Date(b.submittedAt ?? b.lastSavedAt).getTime() - new Date(a.submittedAt ?? a.lastSavedAt).getTime())
@@ -220,7 +220,7 @@ function ReviewHistory({
       <EmptyState
         illustration="empty-list"
         title="평가 이력 없음"
-        description="제출된 자기평가 또는 조직장 평가가 없습니다."
+        description="제출된 Self 리뷰 또는 조직장 평가가 없습니다."
         compact
       />
     );
@@ -228,10 +228,10 @@ function ReviewHistory({
 
   return (
     <div className="space-y-6">
-      {/* 자기평가 이력 */}
+      {/* Self 리뷰 이력 */}
       {selfSubs.length > 0 && (
         <div>
-          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">자기평가</p>
+          <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">Self 리뷰</p>
           <div className="divide-y divide-bd-default border-t border-bd-default">
             {selfSubs.map(sub => {
               const cycle = cycles.find(c => c.id === sub.cycleId);

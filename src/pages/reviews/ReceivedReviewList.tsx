@@ -15,7 +15,7 @@ import type { ReviewKind, ReviewSubmission } from '../../types';
 type KindFilter = 'all' | ReviewKind;
 
 const KIND_LABEL: Record<ReviewKind, string> = {
-  self: '자기평가',
+  self: 'Self 리뷰',
   downward: '조직장',
   peer: '동료',
   upward: '상향',
@@ -43,7 +43,7 @@ export function ReceivedReviewList() {
       if (s.status !== 'submitted') return false;
       const cycle = cycles.find(c => c.id === s.cycleId);
       if (!cycle) return false;
-      // self는 본인이 쓴 것이지만 "내가 받은" 탭에서는 숨김 (자기평가는 별도 흐름)
+      // self는 본인이 쓴 것이지만 "내가 받은" 탭에서는 숨김 (Self 리뷰는 별도 흐름)
       if (s.type === 'self') return false;
 
       // 공개 범위 판정

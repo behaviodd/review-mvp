@@ -335,7 +335,7 @@ function RightPanel({
         <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
           <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs text-fg-subtlest">자기평가 마감</p>
+            <p className="text-xs text-fg-subtlest">Self 리뷰 마감</p>
             <p className="text-xs font-medium text-gray-070">{cycle ? formatDate(cycle.selfReviewDeadline) : '—'}</p>
           </div>
         </div>
@@ -508,7 +508,7 @@ export function MyReviewWrite() {
     : (template?.questions.filter(q => q.target !== 'self' && !q.isPrivate) ?? []);
 
   // 섹션 구성: template.sections 있으면 사용, 없으면 PAGE_SIZE 기반 fallback
-  const FALLBACK_SECTION_NAMES = ['성과 돌아보기', '역량 자기평가', '성장 계획'];
+  const FALLBACK_SECTION_NAMES = ['성과 돌아보기', '역량 Self 리뷰', '성장 계획'];
   const PAGE_SIZE = 2;
 
   type SectionGroup = { id: string; name: string; questions: TemplateQuestion[] };
@@ -771,12 +771,12 @@ export function MyReviewWrite() {
             />
           )}
 
-          {/* 자기평가 기간 마감 배너 */}
+          {/* Self 리뷰 기간 마감 배너 */}
           {cyclePastSelfReview && (
             <div className="flex items-start gap-3 p-4 bg-yellow-005 border border-yellow-060/30 rounded-xl">
               <MsLockIcon size={16} className="text-yellow-060 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-base font-semibold text-yellow-070">자기평가 기간이 종료되었습니다</p>
+                <p className="text-base font-semibold text-yellow-070">Self 리뷰 기간이 종료되었습니다</p>
                 <p className="text-xs text-yellow-060 mt-0.5">리뷰가 조직장 평가 단계로 전환되었습니다.</p>
               </div>
             </div>
@@ -787,13 +787,13 @@ export function MyReviewWrite() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-fg-default">리뷰 결과</h2>
-                <p className="text-base text-fg-subtlest mt-0.5">자기평가와 조직장 평가를 함께 확인하세요.</p>
+                <p className="text-base text-fg-subtlest mt-0.5">Self 리뷰와 조직장 평가를 함께 확인하세요.</p>
               </div>
               <div className="rounded-lg overflow-hidden border border-bd-default">
                 <div className="hidden md:grid md:grid-cols-2">
                   <div className="flex items-center gap-2.5 px-5 py-3 bg-gray-005 border-b border-r border-gray-010">
                     {currentUser && <UserAvatar user={currentUser} size="sm" />}
-                    <div><p className="text-xs font-semibold text-gray-070">내 자기평가</p><p className="text-xs text-fg-subtlest">읽기 전용</p></div>
+                    <div><p className="text-xs font-semibold text-gray-070">내 Self 리뷰</p><p className="text-xs text-fg-subtlest">읽기 전용</p></div>
                   </div>
                   <div className="flex items-center gap-2.5 px-5 py-3 bg-pink-005/60 border-b border-gray-010">
                     <UserAvatar user={managerUser} size="sm" anonymous={isManagerAnonymous} />
@@ -815,7 +815,7 @@ export function MyReviewWrite() {
                       </div>
                       <div className={`grid grid-cols-1 md:grid-cols-2 ${!isLast ? 'border-b border-gray-010' : ''}`}>
                         <div className="px-5 py-4 bg-gray-005/30 md:border-r border-gray-010">
-                          <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 md:hidden">내 자기평가</p>
+                          <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 md:hidden">내 Self 리뷰</p>
                           <InputAnswerContent question={q} answer={getAnswer(q.id)} />
                         </div>
                         <div className="px-5 py-4 bg-white">
@@ -869,7 +869,7 @@ export function MyReviewWrite() {
             <div className="flex items-center gap-3 p-4 bg-green-005 border border-green-010 rounded-xl flex-wrap">
               <MsCheckIcon size={20} className="text-green-060 flex-shrink-0" />
               <p className="text-base font-medium text-green-060 flex-1 min-w-0">
-                {isDownward ? '조직장이 작성한 평가입니다.' : '자기평가가 제출되었습니다.'}
+                {isDownward ? '조직장이 작성한 평가입니다.' : 'Self 리뷰가 제출되었습니다.'}
               </p>
               {canReopen && (
                 <MsButton variant="outline-default" size="sm" onClick={handleReopen}>

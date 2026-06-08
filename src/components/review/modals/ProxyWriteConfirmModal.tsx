@@ -18,7 +18,7 @@ export function ProxyWriteConfirmModal({ open, onClose, onConfirm, revieweeName,
       onClose={onClose}
       title="대리 작성 진입"
       description={stage === 'self'
-        ? `${revieweeName ?? '대상자'}님 대신 자기평가를 작성합니다.`
+        ? `${revieweeName ?? '대상자'}님 대신 Self 리뷰를 작성합니다.`
         : `${reviewerName ?? '조직장'} → ${revieweeName ?? '대상자'} 리뷰를 대리 작성합니다.`}
       size="sm"
       footer={

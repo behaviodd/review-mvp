@@ -99,7 +99,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-base text-gray-080">자동 단계 전환</p>
-          <p className="text-[11px] text-fg-subtlest mt-0.5">자기평가 마감 후 일정 시간과 제출율 조건이 만족되면 조직장 리뷰 단계로 자동 전환합니다.</p>
+          <p className="text-[11px] text-fg-subtlest mt-0.5">Self 리뷰 마감 후 일정 시간과 제출율 조건이 만족되면 조직장 리뷰 단계로 자동 전환합니다.</p>
         </div>
         <MsSwitch checked={!!form.autoAdvance} onChange={toggleAutoAdvance} />
       </div>
@@ -161,7 +161,7 @@ export function AutomationSection<F extends AutomationFormSlice>({ form, setForm
               <li key={r.id} className="text-[11px] text-fg-subtle">
                 • {r.trigger === 'before_deadline' ? `마감 ${r.offsetHours}시간 전` : `마감 후 ${r.offsetHours}시간`}
                 {' · '}
-                {r.stage === 'self' ? '자기평가' : r.stage === 'manager' ? '조직장 리뷰' : '양 단계'}
+                {r.stage === 'self' ? 'Self 리뷰' : r.stage === 'manager' ? '조직장 리뷰' : '양 단계'}
                 {' · '}
                 {r.audience === 'not_started' ? '미시작' : r.audience === 'in_progress' ? '작성 중' : '미제출 전체'}
               </li>

@@ -16,7 +16,7 @@ interface Props {
 type TargetFilter = 'self' | 'leader' | 'both';
 
 const TARGET_TABS: { val: TargetFilter; label: string; help: string }[] = [
-  { val: 'self',   label: '자기평가',  help: '평가 대상자 본인이 보는 화면 — self / both 질문' },
+  { val: 'self',   label: 'Self 리뷰',  help: '평가 대상자 본인이 보는 화면 — self / both 질문' },
   { val: 'leader', label: '조직장 평가', help: '평가권자가 보는 화면 — leader / both 질문 (비공개 포함)' },
   { val: 'both',   label: '전체',      help: '모든 질문 (target 무관)' },
 ];
@@ -170,7 +170,7 @@ function PreviewQuestion({ question }: { question: TemplateQuestion }) {
         {question.type === 'rating' && `평점 (1~5)`}
         {question.type === 'competency' && '역량 (1~5)'}
         {' · '}
-        {question.target === 'self' ? '자기평가' : question.target === 'leader' ? '조직장' : '공통'}
+        {question.target === 'self' ? 'Self 리뷰' : question.target === 'leader' ? '조직장' : '공통'}
         {RATING_LABELS.length > 0 && question.type === 'rating' && ` · ${RATING_LABELS[1]} ~ ${RATING_LABELS[5]}`}
       </p>
     </div>

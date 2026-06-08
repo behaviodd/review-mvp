@@ -55,7 +55,7 @@ function AdminDashboard() {
   const showToast = useShowToast();
   const navigate = useNavigate();
 
-  // Phase D-3.M-fix3: admin 도 본인이 사이클 reviewee 로 포함되면 자기평가 카드 노출
+  // Phase D-3.M-fix3: admin 도 본인이 사이클 reviewee 로 포함되면 Self 리뷰 카드 노출
   // (옵션 B 정책 — admin 도 평가 대상 가능)
   const adminActiveCycleIds = new Set(
     cycles.filter(c => c.status !== 'draft' && c.status !== 'closed').map(c => c.id),
@@ -144,13 +144,13 @@ function AdminDashboard() {
       if (s.status === 'submitted') {
         const ts = s.submittedAt ?? s.lastSavedAt;
         const text = s.type === 'self'
-          ? `${reviewee.name}님이 자기평가를 제출했습니다.`
+          ? `${reviewee.name}님이 Self 리뷰를 제출했습니다.`
           : `${reviewer?.name ?? '조직장'}님이 ${reviewee.name}님 팀원 평가를 제출했습니다.`;
         events.push({ key: `${s.id}_sub`, text, time: timeAgo(ts), timestamp: ts });
       } else if (s.status === 'in_progress') {
         const ts = s.lastSavedAt;
         const text = s.type === 'self'
-          ? `${reviewee.name}님이 자기평가를 작성 중입니다.`
+          ? `${reviewee.name}님이 Self 리뷰를 작성 중입니다.`
           : `${reviewer?.name ?? '조직장'}님이 ${reviewee.name}님 팀원 평가를 작성 중입니다.`;
         events.push({ key: `${s.id}_prog`, text, time: timeAgo(ts), timestamp: ts });
       }
@@ -177,7 +177,7 @@ function AdminDashboard() {
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 리스트 */}
+      {/* admin 본인이 사이클 reviewee 로 포함되면 Self 리뷰 리스트 */}
       {mySelfActive.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">내 리뷰 — 작성 필요</p>
@@ -190,7 +190,7 @@ function AdminDashboard() {
                   className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
                 >
                   <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
-                    자기평가
+                    Self 리뷰
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
@@ -386,7 +386,7 @@ function ManagerDashboard() {
                 className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
               >
                 <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
-                  자기평가
+                  Self 리뷰
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-medium text-fg-default truncate">{activeCycle?.title}</p>
@@ -478,7 +478,7 @@ function EmployeeDashboard() {
 
   // Phase D-3.M-fix2: 다중 활성 사이클 시 본인 미제출 self submission 이 있는 사이클을
   // 우선 노출. 기존엔 cycles.find 가 첫 번째만 반환해서 본인이 다른 사이클에 포함되어
-  // 있을 때 자기평가 카드가 hidden 되는 버그.
+  // 있을 때 Self 리뷰 카드가 hidden 되는 버그.
   const activeCycleIds = new Set(
     cycles.filter(c => c.status !== 'draft' && c.status !== 'closed').map(c => c.id),
   );
@@ -518,7 +518,7 @@ function EmployeeDashboard() {
                     className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
                   >
                     <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
-                      자기평가
+                      Self 리뷰
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>

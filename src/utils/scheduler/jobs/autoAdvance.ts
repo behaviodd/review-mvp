@@ -82,7 +82,7 @@ export function collectAutoAdvanceJobs(
           actorId: 'system',
           action: 'cycle.status_transition',
           targetIds: [c.id],
-          summary: `자동 단계 전환 (자기평가 → 조직장 리뷰) · 제출율 ${rate}%`,
+          summary: `자동 단계 전환 (Self 리뷰 → 조직장 리뷰) · 제출율 ${rate}%`,
           meta: { trigger: 'auto', from: 'self_review', to: 'manager_review', rate, threshold: rule.threshold },
         });
       },

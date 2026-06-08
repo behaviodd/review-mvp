@@ -83,7 +83,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
   const handleCSV = () => {
     const rankHeaders = dryRun.ranks.map(r => r === 1 ? '1차 평가권자' : `${r}차 평가권자`);
     const rows: string[][] = [
-      ['이름', '이메일', '조직', '직책', '자기평가', ...rankHeaders, '비고'],
+      ['이름', '이메일', '조직', '직책', 'Self 리뷰', ...rankHeaders, '비고'],
       ...dryRun.perMember.map(r => [
         r.user.name,
         r.user.email,
@@ -117,7 +117,7 @@ export function DryRunModal({ open, onClose, cycle, title }: Props) {
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {[
             { label: '대상자', value: `${dryRun.targets.length}명` },
-            { label: '자기평가 생성', value: `${dryRun.selfCount}건` },
+            { label: 'Self 리뷰 생성', value: `${dryRun.selfCount}건` },
             { label: '조직장 리뷰', value: `${dryRun.downCount}건` },
             { label: '조직장 없음', value: `${dryRun.managerMissing}명`, danger: dryRun.managerMissing > 0 },
           ].map(k => (

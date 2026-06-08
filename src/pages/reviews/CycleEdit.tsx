@@ -253,7 +253,7 @@ export function CycleEdit() {
             <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide mb-3">일정</p>
             <div className="grid grid-cols-2 gap-3">
               <MsInput
-                label="자기평가 마감일 *"
+                label="Self 리뷰 마감일 *"
                 type="date"
                 value={form.selfReviewDeadline}
                 onChange={e =>

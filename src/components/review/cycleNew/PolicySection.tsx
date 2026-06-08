@@ -60,7 +60,7 @@ export function PolicySection<F extends PolicyFormSlice>({ form, setForm }: Prop
           <MsCheckbox
             checked={!!form.anonymity?.self}
             onChange={e => updateAnonymity({ self: e.target.checked })}
-            label={<span className="text-base">자기평가 익명 <span className="text-[10px] text-fg-subtlest">(거의 사용 X)</span></span>}
+            label={<span className="text-base">Self 리뷰 익명 <span className="text-[10px] text-fg-subtlest">(거의 사용 X)</span></span>}
           />
         </div>
       </section>

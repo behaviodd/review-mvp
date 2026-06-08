@@ -101,7 +101,7 @@ export function ExtendDeadlineModal({
             <div>
               <p className="text-fg-subtlest">대상 요약</p>
               <p className="mt-1 font-semibold text-gray-080">
-                자기평가 {selfCount}건 · 조직장 {managerCount}건
+                Self 리뷰 {selfCount}건 · 조직장 {managerCount}건
               </p>
             </div>
             <div>
@@ -119,7 +119,7 @@ export function ExtendDeadlineModal({
             type="date"
             value={until}
             onChange={e => setUntil(e.target.value)}
-            hint={`현재 자기평가 마감: ${formatDate(cycle.selfReviewDeadline)} · 조직장: ${formatDate(cycle.managerReviewDeadline)}`}
+            hint={`현재 Self 리뷰 마감: ${formatDate(cycle.selfReviewDeadline)} · 조직장: ${formatDate(cycle.managerReviewDeadline)}`}
           />
         </div>
 

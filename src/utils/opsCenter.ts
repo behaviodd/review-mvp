@@ -70,7 +70,7 @@ export const DEFAULT_FILTERS: OpsFilters = {
 };
 
 function stageDeadline(cycle: ReviewCycle, kind: ReviewKind): string {
-  // peer / upward는 자기평가·조직장 마감을 상속 (3.3b-1 단순화).
+  // peer / upward는 Self 리뷰·조직장 마감을 상속 (3.3b-1 단순화).
   // peer: selfReview 기간 내 또는 manager_review 기간 내로 확장 가능; 현재는 managerReviewDeadline 사용.
   if (kind === 'self') return cycle.selfReviewDeadline;
   return cycle.managerReviewDeadline;

@@ -156,7 +156,7 @@ function RightPanel({
             <div className="flex items-start gap-2 p-2.5 bg-gray-005 rounded-lg">
               <MsCalendarIcon size={12} className="text-fg-subtlest mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-fg-subtlest">자기평가 마감</p>
+                <p className="text-xs text-fg-subtlest">Self 리뷰 마감</p>
                 <p className="text-xs font-medium text-gray-070">{formatDate(cycle.selfReviewDeadline)}</p>
               </div>
             </div>
@@ -170,9 +170,9 @@ function RightPanel({
           </div>
         </div>
 
-        {/* 자기평가 상태 */}
+        {/* Self 리뷰 상태 */}
         <div>
-          <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-1.5">자기평가 상태</p>
+          <p className="text-xs font-medium text-fg-subtlest uppercase tracking-wider mb-1.5">Self 리뷰 상태</p>
           <div className="flex items-center gap-2">
             <StatusBadge type="submission" value={selfSubmission?.status || 'not_started'} />
             {selfSubmitted && (
@@ -785,21 +785,21 @@ export function TeamReviewWrite() {
               <div>
                 <p className="text-base font-semibold text-gray-070">아직 조직장 리뷰 단계가 아닙니다</p>
                 <p className="text-xs text-fg-subtle mt-0.5">
-                  현재는 자기평가 단계입니다. 관리자가 조직장 리뷰를 시작하면 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
+                  현재는 Self 리뷰 단계입니다. 관리자가 조직장 리뷰를 시작하면 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
               </div>
             </div>
           )}
 
-          {/* ── 자기평가 미제출 잠금 배너 (QA 라운드 12 B6/QA#21) ──
+          {/* ── Self 리뷰 미제출 잠금 배너 (QA 라운드 12 B6/QA#21) ──
               사이클 단계 전 배너와 동시 노출 시 1차 원인 해석 어려움 → 단계 통과 후에만 노출 */}
           {!isPhaseBeforeManagerReview && !selfSubmitted && !isAdminObserver && (
             <div className="flex items-start gap-3 p-4 bg-gray-005 border border-gray-020 rounded-xl">
               <MsLockIcon size={16} className="text-fg-subtle mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-base font-semibold text-gray-070">{reviewee.name}님의 자기평가 대기 중</p>
+                <p className="text-base font-semibold text-gray-070">{reviewee.name}님의 Self 리뷰 대기 중</p>
                 <p className="text-xs text-fg-subtle mt-0.5">
-                  팀원이 자기평가를 제출하면 평가를 작성하고 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
+                  팀원이 Self 리뷰를 제출하면 평가를 작성하고 제출할 수 있습니다. 지금은 임시 저장만 가능합니다.
                 </p>
               </div>
             </div>
@@ -810,7 +810,7 @@ export function TeamReviewWrite() {
             <div className="flex items-start gap-3 p-4 bg-pink-005 border border-pink-020 rounded-xl">
               <MsWarningIcon size={16} className="text-pink-050 mt-0.5 flex-shrink-0" />
               <p className="text-base text-pink-060">
-                <strong>{reviewee.name}님의 자기평가</strong>와 현재 평가 간 점수 차이가 큽니다. 1:1 면담에서 논의해 보세요.
+                <strong>{reviewee.name}님의 Self 리뷰</strong>와 현재 평가 간 점수 차이가 큽니다. 1:1 면담에서 논의해 보세요.
               </p>
             </div>
           )}
@@ -850,7 +850,7 @@ export function TeamReviewWrite() {
               <div className="flex items-center gap-2.5 px-5 py-3 bg-gray-005 border-b border-r border-gray-010">
                 <UserAvatar user={reviewee} size="sm" />
                 <div>
-                  <p className="text-xs font-semibold text-gray-070">{reviewee.name}님의 자기평가</p>
+                  <p className="text-xs font-semibold text-gray-070">{reviewee.name}님의 Self 리뷰</p>
                   <p className="text-xs text-fg-subtlest">읽기 전용</p>
                 </div>
               </div>
@@ -894,7 +894,7 @@ export function TeamReviewWrite() {
                     {/* 셀프 리뷰 셀 */}
                     <div className={`px-5 py-4 bg-gray-005/40 md:bg-white md:border-r border-gray-010 ${!isLastRow ? 'border-b border-gray-010' : ''}`}>
                       <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wide mb-2 md:hidden">
-                        {reviewee.name}님 자기평가
+                        {reviewee.name}님 Self 리뷰
                       </p>
                       {q.isPrivate ? (
                         <div className="flex items-center gap-2 text-gray-030">
@@ -902,7 +902,7 @@ export function TeamReviewWrite() {
                           <p className="text-xs">팀원에게 공유되지 않는 조직장 전용 질문입니다.</p>
                         </div>
                       ) : !selfSubmitted ? (
-                        <p className="text-xs text-gray-030 italic">아직 자기평가를 제출하지 않았습니다.</p>
+                        <p className="text-xs text-gray-030 italic">아직 Self 리뷰를 제출하지 않았습니다.</p>
                       ) : !selfAnswer?.ratingValue && !selfAnswer?.textValue && !selfAnswer?.selectedOptions?.length ? (
                         <p className="text-xs text-gray-030 italic">이 질문에 답변하지 않았습니다.</p>
                       ) : (
@@ -1063,7 +1063,7 @@ export function TeamReviewWrite() {
           {!isAdmin && !isReadOnly && !submitted && (() => {
             // P1-A5 — tooltip 만으론 차단 사유 인지가 약함. 버튼 옆 inline 텍스트로 직접 노출
             const blockReason = !selfSubmitted
-              ? `${reviewee.name}님의 자기평가 제출 후 가능`
+              ? `${reviewee.name}님의 Self 리뷰 제출 후 가능`
               : !canSubmit
                 ? '조직장 리뷰 단계 시작 후 가능'
                 : null;

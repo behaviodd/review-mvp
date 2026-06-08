@@ -25,7 +25,7 @@ interface Props<F extends KindsFormSlice> {
 }
 
 const KIND_META: { value: ReviewKind; label: string; desc: string }[] = [
-  { value: 'self',     label: '자기평가', desc: '본인이 자신을 평가' },
+  { value: 'self',     label: 'Self 리뷰', desc: '본인이 자신을 평가' },
   { value: 'downward', label: '조직장 리뷰', desc: '조직장이 팀원을 평가' },
   { value: 'upward',   label: '상향 리뷰', desc: '팀원이 조직장을 평가' },
   { value: 'peer',     label: '동료 리뷰', desc: '동료 N명이 상호 평가' },
@@ -72,7 +72,7 @@ export function ReviewKindsSection<F extends KindsFormSlice>({ form, setForm }: 
     <div className="rounded-xl border border-gray-010 bg-white p-4 space-y-3">
       <header>
         <h3 className="text-base font-semibold text-gray-080">리뷰 유형</h3>
-        <p className="text-[11px] text-fg-subtlest">이 사이클에서 생성할 리뷰 종류를 선택합니다. 기본은 자기평가 + 조직장 리뷰.</p>
+        <p className="text-[11px] text-fg-subtlest">이 사이클에서 생성할 리뷰 종류를 선택합니다. 기본은 Self 리뷰 + 조직장 리뷰.</p>
       </header>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {KIND_META.map(opt => {

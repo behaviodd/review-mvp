@@ -6,7 +6,7 @@ import type {
   ReviewerAssignment, OrgSnapshot, PermissionGroup, PermissionCode,
 } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
-import { orgUnitWriter, secondaryOrgWriter } from '../utils/sheetWriter';
+import { orgUnitWriter, secondaryOrgWriter, reviewerAssignmentWriter } from '../utils/sheetWriter';
 import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
 
 const ALL_PERMISSIONS: PermissionCode[] = [
@@ -404,15 +404,19 @@ export const useTeamStore = create<TeamStore>()(
     const id = `ra_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const createdAt = new Date().toISOString();
     const newAssignment: ReviewerAssignment = { id, createdAt, ...input };
+    // 종료 대상 파악 (set 이전 current state 에서 읽음)
+    const toClose = get().reviewerAssignments.filter(
+      a => a.revieweeId === input.revieweeId && a.rank === input.rank && !a.endDate,
+    );
     set(state => {
-      // 기존 같은 revieweeId+rank 활성 항목이 있으면 endDate 마감
       const closed = state.reviewerAssignments.map(a =>
-        a.revieweeId === input.revieweeId && a.rank === input.rank && !a.endDate && a.id !== id
-          ? { ...a, endDate: createdAt }
-          : a
+        toClose.some(c => c.id === a.id) ? { ...a, endDate: createdAt } : a
       );
       return { reviewerAssignments: [...closed, newAssignment] };
     });
+    // 시트 동기화 — 기존 배정 종료 + 신규 배정 저장
+    toClose.forEach(a => void reviewerAssignmentWriter.end(a.id, createdAt));
+    void reviewerAssignmentWriter.upsert(newAssignment);
     return newAssignment;
   },
 
@@ -423,6 +427,8 @@ export const useTeamStore = create<TeamStore>()(
         a.id === assignmentId ? { ...a, endDate: at } : a
       ),
     }));
+    // 시트 동기화
+    void reviewerAssignmentWriter.end(assignmentId, at);
   },
 
   bulkUpsertAssignments: (inputs) => {
@@ -432,12 +438,19 @@ export const useTeamStore = create<TeamStore>()(
       createdAt,
       ...input,
     }));
+    // 종료 대상 파악 (set 이전 current state 에서 읽음)
+    const current = get().reviewerAssignments;
+    const toClose = created.flatMap(a =>
+      current.filter(
+        existing => existing.revieweeId === a.revieweeId && existing.rank === a.rank && !existing.endDate,
+      )
+    );
     set(state => {
       let assignments = [...state.reviewerAssignments];
       for (const a of created) {
         // 동일 revieweeId + rank 활성 배정 종료
         assignments = assignments.map(existing =>
-          existing.revieweeId === a.revieweeId && existing.rank === a.rank && !existing.endDate
+          toClose.some(c => c.id === existing.id) && existing.revieweeId === a.revieweeId
             ? { ...existing, endDate: createdAt }
             : existing
         );
@@ -445,6 +458,9 @@ export const useTeamStore = create<TeamStore>()(
       }
       return { reviewerAssignments: assignments };
     });
+    // 시트 동기화 — 종료 + 신규 일괄 저장
+    toClose.forEach(a => void reviewerAssignmentWriter.end(a.id, createdAt));
+    created.forEach(a => void reviewerAssignmentWriter.upsert(a));
     return created;
   },
 

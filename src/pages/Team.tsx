@@ -39,7 +39,11 @@ function matchesSearch(u: User, q: string) {
     u.name.toLowerCase().includes(lq) ||
     u.position.toLowerCase().includes(lq) ||
     (u.department ?? '').toLowerCase().includes(lq) ||
-    u.email.toLowerCase().includes(lq)
+    u.email.toLowerCase().includes(lq) ||
+    (u.jobFunction ?? '').toLowerCase().includes(lq) ||
+    (u.nameEn ?? '').toLowerCase().includes(lq) ||
+    (u.subOrg ?? '').toLowerCase().includes(lq) ||
+    (u.team ?? '').toLowerCase().includes(lq)
   );
 }
 
@@ -421,6 +425,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [showUnassigned, setShowUnassigned]      = useState(false);
   const [search, setSearch]                      = useState('');
   const [showTerminated, setShowTerminated]       = useState(false);
+  const [statusFilter, setStatusFilter]          = useState<'all' | 'active' | 'leave' | 'terminated'>('all');
   // R5-b: 마스터 로그인 시작 확인
   const [impersonateTarget, setImpersonateTarget] = useState<User | null>(null);
 
@@ -519,16 +524,38 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         </MsButton>
       )}
     </>
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [canEdit, selectedOrgId, orgUnits, search]);
 
   const headerTabs = useMemo(() => (
     <HeaderTab active>전체</HeaderTab>
   ), []);
 
+  const STATUS_FILTER_LABELS = [
+    { key: 'all'        as const, label: '전체' },
+    { key: 'active'     as const, label: '재직' },
+    { key: 'leave'      as const, label: '휴직' },
+    { key: 'terminated' as const, label: '퇴사' },
+  ];
+
   const headerTabActions = useMemo(() => (
     <>
-      {/* Phase D-2.4c: 정렬 버튼 (Figma 1143:13795 정합) — UI placeholder, 옵션 메뉴는 별도 phase */}
+      {/* 재직상태 필터 */}
+      <div className="flex items-center gap-1">
+        {STATUS_FILTER_LABELS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => { setStatusFilter(key); setShowTerminated(key === 'terminated'); clearSelection(); }}
+            className={`inline-flex items-center h-6 px-2 text-xs font-bold rounded-md border transition-colors ${
+              statusFilter === key
+                ? 'bg-interaction-pressed border-bd-primary text-fg-default'
+                : 'border-bd-primary text-fg-default hover:bg-interaction-hovered'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* 정렬 버튼 */}
       <button
         onClick={() => showToast('info', '정렬 옵션은 준비 중입니다')}
         className="inline-flex items-center gap-0.5 h-6 min-w-6 px-2 text-xs font-bold rounded-md border border-bd-primary text-fg-default hover:bg-interaction-hovered transition-colors"
@@ -536,18 +563,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       >
         <ArrowUpDown size={14} /> 정렬
       </button>
-      {terminatedUsers.length > 0 && (
-        <button onClick={() => { setShowTerminated(v => !v); setSelectedOrgId(null); setShowUnassigned(false); clearSelection(); }}
-          className={`inline-flex items-center gap-1 h-6 min-w-6 px-2 text-xs font-bold rounded-md border transition-colors ${
-            showTerminated
-              ? 'bg-interaction-pressed border-bd-primary text-fg-default'
-              : 'border-bd-primary text-fg-default hover:bg-interaction-hovered'
-          }`}>
-          <MsCancelIcon size={14} /> 퇴사자 {terminatedUsers.length}명
-        </button>
-      )}
     </>
-  ), [terminatedUsers.length, showTerminated, showToast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [terminatedUsers.length, showTerminated, statusFilter, showToast]);
 
   useSetPageHeader('구성원', headerActions, {
     tabs: headerTabs,
@@ -808,11 +826,21 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
   }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
+  // 재직상태 필터 적용 헬퍼
+  const applyStatusFilter = (list: User[]) => {
+    if (statusFilter === 'all') return list;
+    if (statusFilter === 'active') return list.filter(u => !u.activityStatus || u.activityStatus === 'active');
+    if (statusFilter === 'leave')  return list.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long');
+    if (statusFilter === 'terminated') return list.filter(u => u.activityStatus === 'terminated');
+    return list;
+  };
+
   const searchResults = useMemo(() =>
     search.trim()
-      ? activeUsers.filter(u => matchesSearch(u, search))
+      ? applyStatusFilter(users.filter(u => matchesSearch(u, search)))
       : [],
-    [activeUsers, search]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [users, search, statusFilter]
   );
 
   // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)

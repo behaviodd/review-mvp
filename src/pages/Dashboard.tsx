@@ -117,7 +117,11 @@ function AdminDashboard() {
     });
   }, [activeCycles, submissions, users]);
   const avgCompletion = Math.round(activeCycles.reduce((s, c) => s + c.completionRate, 0) / (activeCycles.length || 1));
-  const pendingCount = submissions.filter(s => s.status === 'not_started').length;
+  // A: 활성 사이클(non-draft·non-closed) + autoExcluded 제외 기준
+  const activeCycleIdSet = new Set(activeCycles.map(c => c.id));
+  const pendingCount = submissions.filter(
+    s => activeCycleIdSet.has(s.cycleId) && !s.autoExcluded && s.status === 'not_started',
+  ).length;
   const urgentCount = activeCycles.filter(c => isUrgent(c.selfReviewDeadline)).length;
 
   // DS: green-060 / blue-060 / red-050
@@ -173,44 +177,25 @@ function AdminDashboard() {
      TodayPanel 의 grid line 이 직접 닿음. 첫 horizontal border-t 제거 — 사용자 명시. */
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 카드
-          라운드 14 P1-A3: 진행 중 N건 노출 (강조 카드 + compact + 'N건 더') */}
-      {mySelfActive.length > 0 && (() => {
-        const TOP_N = 3;
-        const top = mySelfActive.slice(0, TOP_N);
-        const more = Math.max(0, mySelfActive.length - TOP_N);
-        return (
-          <div className="flex flex-col gap-3 mb-6">
-            {top.map((entry, i) => {
+      {/* admin 본인이 사이클 reviewee 로 포함되면 자기평가 리스트 */}
+      {mySelfActive.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">내 리뷰 — 작성 필요</p>
+          <div className="divide-y divide-bd-default border-t border-b border-bd-default">
+            {mySelfActive.slice(0, 5).map(entry => {
               const urgent = isUrgent(entry.cycle.selfReviewDeadline);
-              if (i === 0) {
-                return (
-                  <div key={entry.sub.id}
-                    className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>내 자기평가 — 진행 중</p>
-                        <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{entry.cycle.title}</h2>
-                        <div className="w-full sm:w-52">
-                          <ProgressBar value={entry.sub.answers.length} max={6} showPercent />
-                          <p className="text-xs text-fg-subtle mt-1">{entry.sub.answers.length}/6 질문 완료 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}</p>
-                        </div>
-                      </div>
-                      <MsButton onClick={() => navigate(`/reviews/me/${entry.sub.id}`)} className="flex-shrink-0">
-                        {entry.sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
-                      </MsButton>
-                    </div>
-                  </div>
-                );
-              }
               return (
                 <button key={entry.sub.id}
                   onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-                  className={`text-left rounded-md border border-bd-default pl-5 pr-4 py-3 hover:bg-gray-005 transition-colors flex items-center gap-4 flex-wrap ${urgent ? 'border-l-4 border-l-orange-060' : 'border-l-4 border-l-fg-brand1'}`}>
+                  className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                >
+                  <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
+                    자기평가
+                  </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
-                    <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
-                      {entry.sub.answers.length}/6 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                    <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                      마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
                     </p>
                   </div>
                   <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
@@ -219,15 +204,15 @@ function AdminDashboard() {
                 </button>
               );
             })}
-            {more > 0 && (
+            {mySelfActive.length > 5 && (
               <button onClick={() => navigate('/reviews/me')}
-                className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2 self-start">
-                +{more}건 더 — 내 리뷰 목록에서 보기
+                className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered">
+                +{mySelfActive.length - 5}건 더 보기
               </button>
             )}
           </div>
-        );
-      })()}
+        </div>
+      )}
 
       <TodayPanel variant="admin" />
 
@@ -391,40 +376,45 @@ function ManagerDashboard() {
       <div className="mt-6">
         <PeerPickReminder />
       </div>
-      {/* 라운드 10: '내가 시작해야 할 리뷰' 가시성 강화 — 좌측 막대 + tint 배경 통일.
-          종류 구분은 칩 색 (pink=자기평가 / green=팀원평가) 으로 유지, 컨테이너는 일관 brand 톤. */}
       <div className="border-t border-bd-default pt-6 mt-6">
-        <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">할 일</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">할 일</p>
+        <div className="divide-y divide-bd-default border-t border-b border-bd-default">
           {mySelfs.some(s => s.status !== 'submitted') && (() => {
             const urgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
             return (
-              <button
-                onClick={() => navigate('/reviews/me')}
-                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 text-left transition-colors group flex flex-col items-start ${urgent ? 'border-l-orange-060 bg-orange-005 hover:bg-orange-010' : 'border-l-fg-brand1 bg-gray-005 hover:bg-gray-010'}`}
+              <button onClick={() => navigate('/reviews/me')}
+                className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
               >
-                <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-pink-005 text-pink-060">
+                <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                   자기평가
                 </span>
-                <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1 line-clamp-1">{activeCycle?.title}</p>
-                {activeCycle && <p className={`text-xs mt-1 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
-                  마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
-                </p>}
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-medium text-fg-default truncate">{activeCycle?.title}</p>
+                  {activeCycle && <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                    마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
+                  </p>}
+                </div>
+                <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">작성하기 →</span>
               </button>
             );
           })()}
           {myDownwards.some(s => s.status !== 'submitted') && (() => {
             const urgent = !!activeCycle && isUrgent(activeCycle.managerReviewDeadline);
+            const remaining = myDownwards.filter(s => s.status !== 'submitted').length;
             return (
-              <button
-                onClick={() => navigate('/reviews/team')}
-                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 text-left transition-colors group flex flex-col items-start ${urgent ? 'border-l-orange-060 bg-orange-005 hover:bg-orange-010' : 'border-l-fg-brand1 bg-gray-005 hover:bg-gray-010'}`}
+              <button onClick={() => navigate('/reviews/team')}
+                className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
               >
-                <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold mb-2 bg-green-005 text-green-060">팀원 평가</span>
-                <p className="text-base font-semibold text-fg-default group-hover:text-fg-brand1">
-                  {myDownwards.filter(s => s.status !== 'submitted').length}명 남음
-                </p>
-                {activeCycle && <p className={`text-xs mt-1 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>마감 {deadlineLabel(activeCycle.managerReviewDeadline)}</p>}
+                <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-green-005 text-green-060'}`}>
+                  팀원 평가
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-medium text-fg-default">{remaining}명 남음</p>
+                  {activeCycle && <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                    마감 {deadlineLabel(activeCycle.managerReviewDeadline)}
+                  </p>}
+                </div>
+                <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">작성하기 →</span>
               </button>
             );
           })()}
@@ -513,61 +503,45 @@ function EmployeeDashboard() {
 
   useSetPageHeader('홈', undefined, { subtitle: `안녕하세요, ${currentUser?.name}님 👋` });
 
-  // P1-A3 라운드 14 — 진행 중 N건 노출. 첫 카드는 강조, 2~3번째는 compact, 그 이상은 'N건 더'
-  const TOP_N = 3;
-  const topActive = mySelfActive.slice(0, TOP_N);
-  const remainingCount = Math.max(0, mySelfActive.length - TOP_N);
-
   return (
     <div className="flex flex-col h-full overflow-y-auto px-6 pt-6">
-      <div className="flex flex-col gap-3">
-        {topActive.map((entry, i) => {
-          const urgent = isUrgent(entry.cycle.selfReviewDeadline);
-          if (i === 0) {
-            // 강조 카드 (기존 패턴 유지)
-            return (
-              <div key={entry.sub.id}
-                className={`rounded-md border-y border-r border-bd-default border-l-4 pl-6 pr-5 py-5 ${urgent ? 'border-l-orange-060 bg-orange-005' : 'border-l-fg-brand1 bg-gray-005'}`}>
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-semibold mb-1 ${urgent ? 'text-orange-070' : 'text-fg-brand1'}`}>지금 진행 중 — 내 자기평가</p>
-                    <h2 className="text-lg font-semibold text-fg-default mb-3 truncate">{entry.cycle.title}</h2>
-                    <div className="w-full sm:w-52">
-                      <ProgressBar value={entry.sub.answers.length} max={6} showPercent />
-                      <p className="text-xs text-fg-subtle mt-1">{entry.sub.answers.length}/6 질문 완료 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}</p>
+      <div className="flex flex-col gap-4">
+        {mySelfActive.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">작성해야 할 리뷰</p>
+            <div className="divide-y divide-bd-default border-t border-b border-bd-default">
+              {mySelfActive.slice(0, 5).map(entry => {
+                const urgent = isUrgent(entry.cycle.selfReviewDeadline);
+                return (
+                  <button key={entry.sub.id}
+                    onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
+                    className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                  >
+                    <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
+                      자기평가
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
+                      <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                        마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                      </p>
                     </div>
-                  </div>
-                  <MsButton onClick={() => navigate(`/reviews/me/${entry.sub.id}`)} className="flex-shrink-0">
-                    {entry.sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
-                  </MsButton>
-                </div>
-              </div>
-            );
-          }
-          // compact row (2~3번째)
-          return (
-            <button key={entry.sub.id}
-              onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-              className={`text-left rounded-md border border-bd-default pl-5 pr-4 py-3 hover:bg-gray-005 transition-colors flex items-center gap-4 flex-wrap ${urgent ? 'border-l-4 border-l-orange-060' : 'border-l-4 border-l-fg-brand1'}`}>
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
-                <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-070 font-medium' : 'text-fg-subtle'}`}>
-                  {entry.sub.answers.length}/6 · 마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
-                </p>
-              </div>
-              <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
-                {entry.sub.status === 'not_started' ? '시작하기 →' : '이어서 작성 →'}
-              </span>
-            </button>
-          );
-        })}
-        {remainingCount > 0 && (
-          <button onClick={() => navigate('/reviews/me')}
-            className="text-xs text-fg-subtle hover:text-fg-default underline underline-offset-2 self-start">
-            +{remainingCount}건 더 — 내 리뷰 목록에서 보기
-          </button>
+                    <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
+                      {entry.sub.status === 'not_started' ? '시작하기 →' : '이어서 작성 →'}
+                    </span>
+                  </button>
+                );
+              })}
+              {mySelfActive.length > 5 && (
+                <button onClick={() => navigate('/reviews/me')}
+                  className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered">
+                  +{mySelfActive.length - 5}건 더 보기
+                </button>
+              )}
+            </div>
+          </div>
         )}
-        <div className="mt-3"><PeerPickReminder /></div>
+        <div><PeerPickReminder /></div>
       </div>
 
       {pastSubmissions.length > 0 && (

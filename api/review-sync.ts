@@ -72,12 +72,16 @@ export default async function handler(request: Request): Promise<Response> {
   const scriptUrl = process.env.REVIEW_SCRIPT_URL ?? '';
   if (!scriptUrl) return json({ error: 'REVIEW_SCRIPT_URL 환경변수가 Vercel에 설정되지 않았습니다.' }, 500);
 
+  // Phase 2: Apps Script 내부 토큰
+  const internalToken = process.env.INTERNAL_TOKEN ?? '';
+
   /* ── GET (1회 재시도) ────────────────────────────────────────── */
   if (request.method === 'GET') {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') ?? 'getCycles';
+    const tokenQs = internalToken ? `&token=${encodeURIComponent(internalToken)}` : '';
     try {
-      const { res, attempts } = await callUpstream(`${scriptUrl}?action=${action}`, {
+      const { res, attempts } = await callUpstream(`${scriptUrl}?action=${action}${tokenQs}`, {
         headers:  { Accept: 'application/json' },
         redirect: 'follow',
       }, 1);
@@ -105,7 +109,10 @@ export default async function handler(request: Request): Promise<Response> {
     const ctrl1 = new AbortController();
     const timer1 = setTimeout(() => ctrl1.abort(), UPSTREAM_TIMEOUT_MS);
     try {
-      const payload = await request.text();
+      const rawPayload = await request.text();
+      const payload = internalToken
+        ? JSON.stringify({ ...JSON.parse(rawPayload), token: internalToken })
+        : rawPayload;
 
       // redirect:'follow' 는 302 를 GET 으로 변환하여 doPost 대신 doGet 이 호출됨.
       // redirect:'manual' 로 직접 302 Location 을 따라가야 doPost 가 올바르게 실행됨.

@@ -77,12 +77,16 @@ export default async function handler(request: Request): Promise<Response> {
   const scriptUrl = process.env.APPS_SCRIPT_URL ?? '';
   if (!scriptUrl) return json({ error: 'APPS_SCRIPT_URL 환경변수가 Vercel에 설정되지 않았습니다.' }, 500);
 
+  // Phase 2: Apps Script 내부 토큰 (Vercel env → Apps Script 스크립트 속성)
+  const internalToken = process.env.INTERNAL_TOKEN ?? '';
+
   /* ── GET: 조직 데이터 읽기 (1회 재시도) ─────────────────────────── */
   if (request.method === 'GET') {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') ?? 'getOrg';
     const etag   = searchParams.get('etag') ?? '';
-    const qs = etag ? `action=${action}&etag=${encodeURIComponent(etag)}` : `action=${action}`;
+    const tokenQs = internalToken ? `&token=${encodeURIComponent(internalToken)}` : '';
+    const qs = (etag ? `action=${action}&etag=${encodeURIComponent(etag)}` : `action=${action}`) + tokenQs;
     try {
       const { res, attempts } = await callUpstream(`${scriptUrl}?${qs}`, {
         headers:  { Accept: 'application/json' },
@@ -112,7 +116,11 @@ export default async function handler(request: Request): Promise<Response> {
     const ctrl1 = new AbortController();
     const timer1 = setTimeout(() => ctrl1.abort(), UPSTREAM_TIMEOUT_MS);
     try {
-      const payload = await request.text();
+      const rawPayload = await request.text();
+      // Phase 2: 내부 토큰을 body에 주입
+      const payload = internalToken
+        ? JSON.stringify({ ...JSON.parse(rawPayload), token: internalToken })
+        : rawPayload;
 
       // redirect:'follow' 는 302 를 GET 으로 변환하여 doPost 대신 doGet 이 호출됨.
       // redirect:'manual' 로 직접 302 Location 을 따라가야 doPost 가 올바르게 실행됨.

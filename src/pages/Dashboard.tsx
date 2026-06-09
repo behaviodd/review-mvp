@@ -181,20 +181,20 @@ function AdminDashboard() {
       {mySelfActive.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">내 리뷰 — 작성 필요</p>
-          <div className="divide-y divide-bd-default border-t border-b border-bd-default">
+          <div className="space-y-1">
             {mySelfActive.slice(0, 5).map(entry => {
               const urgent = isUrgent(entry.cycle.selfReviewDeadline);
               return (
                 <button key={entry.sub.id}
                   onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-                  className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                  className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
                 >
                   <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                     Self 리뷰
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
-                    <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{entry.cycle.title}</p>
+                    <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
                       마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
                     </p>
                   </div>
@@ -206,7 +206,7 @@ function AdminDashboard() {
             })}
             {mySelfActive.length > 5 && (
               <button onClick={() => navigate('/reviews/me')}
-                className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered">
+                className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered rounded-lg">
                 +{mySelfActive.length - 5}건 더 보기
               </button>
             )}
@@ -378,19 +378,19 @@ function ManagerDashboard() {
       </div>
       <div className="border-t border-bd-default pt-6 mt-6">
         <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">할 일</p>
-        <div className="divide-y divide-bd-default border-t border-b border-bd-default">
+        <div className="space-y-1">
           {mySelfs.some(s => s.status !== 'submitted') && (() => {
             const urgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
             return (
               <button onClick={() => navigate('/reviews/me')}
-                className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
               >
                 <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                   Self 리뷰
                 </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-medium text-fg-default truncate">{activeCycle?.title}</p>
-                  {activeCycle && <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{activeCycle?.title}</p>
+                  {activeCycle && <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
                     마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
                   </p>}
                 </div>
@@ -403,14 +403,14 @@ function ManagerDashboard() {
             const remaining = myDownwards.filter(s => s.status !== 'submitted').length;
             return (
               <button onClick={() => navigate('/reviews/team')}
-                className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
               >
                 <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-green-005 text-green-060'}`}>
                   팀원 평가
                 </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-medium text-fg-default">{remaining}명 남음</p>
-                  {activeCycle && <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <p className="text-base font-semibold tracking-[-0.3px] text-fg-default">{remaining}명 남음</p>
+                  {activeCycle && <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
                     마감 {deadlineLabel(activeCycle.managerReviewDeadline)}
                   </p>}
                 </div>
@@ -509,20 +509,20 @@ function EmployeeDashboard() {
         {mySelfActive.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-2">작성해야 할 리뷰</p>
-            <div className="divide-y divide-bd-default border-t border-b border-bd-default">
+            <div className="space-y-1">
               {mySelfActive.slice(0, 5).map(entry => {
                 const urgent = isUrgent(entry.cycle.selfReviewDeadline);
                 return (
                   <button key={entry.sub.id}
                     onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-                    className="w-full flex items-center gap-3 py-3 hover:bg-interaction-hovered transition-colors text-left"
+                    className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
                   >
                     <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                       Self 리뷰
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-medium text-fg-default truncate">{entry.cycle.title}</p>
-                      <p className={`text-xs mt-0.5 ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{entry.cycle.title}</p>
+                      <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
                         마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
                       </p>
                     </div>
@@ -534,7 +534,7 @@ function EmployeeDashboard() {
               })}
               {mySelfActive.length > 5 && (
                 <button onClick={() => navigate('/reviews/me')}
-                  className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered">
+                  className="w-full py-2.5 text-xs text-fg-subtle hover:text-fg-default text-center transition-colors hover:bg-interaction-hovered rounded-lg">
                   +{mySelfActive.length - 5}건 더 보기
                 </button>
               )}

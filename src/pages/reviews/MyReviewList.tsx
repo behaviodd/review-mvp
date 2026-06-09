@@ -197,7 +197,7 @@ function ReviewSection({
           </button>
         )}
       </div>
-      <div>
+      <div className="space-y-1">
         {children}
       </div>
     </div>
@@ -284,7 +284,7 @@ export function MyReviewList() {
             description="작성을 완료했거나 아직 리뷰가 배정되지 않았습니다."
           />
         ) : (
-          <div>
+          <div className="space-y-1">
             {activeSubs.map(sub => {
               const cycle = cycles.find(c => c.id === sub.cycleId);
               return (

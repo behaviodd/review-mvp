@@ -4,7 +4,7 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '../stores/authStore';
 import { useTeamStore } from '../stores/teamStore';
 import { useSheetsSyncStore } from '../stores/sheetsSyncStore';
-import { verifyGoogleLogin } from '../utils/authApi';
+import { verifyGoogleLogin, createSession } from '../utils/authApi';
 import type { User } from '../types';
 import { Loader2 } from 'lucide-react';
 import { MsSettingIcon } from '../components/ui/MsIcons';
@@ -43,6 +43,7 @@ export function Login() {
       avatarColor: '#4f46e5',
     };
     if (claims?.exp) setIdToken(cred, Number(claims.exp));
+    createSession(cred); // 세션 쿠키 비동기 발급 (부트스트랩)
     login(bootstrapAdmin);
     navigate('/settings');
   };
@@ -69,6 +70,7 @@ export function Login() {
         };
         const pendingClaims = decodeJwtPayload(cred);
         if (pendingClaims?.exp) setIdToken(cred, Number(pendingClaims.exp));
+        createSession(cred); // 세션 쿠키 비동기 발급 (pending)
         login(pendingUser);
         navigate('/pending-approval');
         return;
@@ -92,6 +94,7 @@ export function Login() {
       }
       const finalClaims = decodeJwtPayload(cred);
       if (finalClaims?.exp) setIdToken(cred, Number(finalClaims.exp));
+      await createSession(cred); // 세션 쿠키 발급 (정상 로그인)
       login({ ...user, status: 'active' });
       navigate('/');
     } catch (e) {

@@ -1,7 +1,12 @@
 /**
- * Google ID Token 검증 — Vercel Edge Runtime
+ * Google ID Token 검증 + 세션 쿠키 인증 — Vercel Edge Runtime
  * JWKS를 캐시해 매 요청 네트워크 없이 로컬 서명 검증.
+ *
+ * requireAuth() 우선순위:
+ *   1) session 쿠키 (로그인 유지 시)
+ *   2) Authorization: Bearer <Google ID Token> (최초 로그인 / 폴백)
  */
+import { getSessionToken, verifySession } from './session';
 const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const ALLOWED_DOMAIN  = 'makestar.com';
 
@@ -74,8 +79,22 @@ export async function verifyGoogleIdToken(
   }
 }
 
-/** Edge Function 핸들러에서 요청 인증. 실패 시 401 Response 반환. */
+/** Edge Function 핸들러에서 요청 인증. 실패 시 401 Response 반환.
+ *  쿠키 세션 → Bearer ID Token 순서로 시도. */
 export async function requireAuth(request: Request): Promise<{ email: string } | Response> {
+  // 1) 세션 쿠키 (새로고침 후에도 유효)
+  const cookieToken = getSessionToken(request);
+  if (cookieToken) {
+    const session = await verifySession(cookieToken);
+    if (session) return { email: session.sub };
+    // 쿠키가 있지만 만료/위조 → Bearer 폴백 없이 즉시 거부
+    return new Response(JSON.stringify({ error: '세션이 만료됐습니다. 다시 로그인해 주세요.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 2) Bearer Google ID Token (로그인 직후 최초 요청 또는 쿠키 없는 환경)
   const clientId = process.env.GOOGLE_CLIENT_ID ?? '';
   if (!clientId) {
     return new Response(JSON.stringify({ error: 'GOOGLE_CLIENT_ID 환경변수 미설정' }), {

@@ -10,6 +10,39 @@
 
 import { getScriptHeaders } from './scriptHeaders';
 
+// ── 세션 쿠키 API ──────────────────────────────────────────────────────────────
+
+/** 로그인 후 서버 세션 쿠키 발급. 실패해도 앱 로그인 흐름은 계속됨. */
+export async function createSession(idToken: string): Promise<void> {
+  try {
+    await fetch('/api/auth/login', {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ idToken }),
+    });
+  } catch { /* 세션 실패는 무시 — Bearer로 현재 요청 처리 */ }
+}
+
+/** 페이지 로드 시 세션 유효성 확인. 유효하면 email 반환, 아니면 null.
+ *  dev: dev_session 쿠키 / prod: session 쿠키 모두 동일 엔드포인트에서 처리. */
+export async function checkSession(): Promise<{ email: string } | null> {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!res.ok) return null;
+    return await res.json() as { email: string };
+  } catch {
+    return null;
+  }
+}
+
+/** 로그아웃 시 서버 세션 쿠키 삭제. */
+export async function destroySession(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch { /* 무시 */ }
+}
+
 // overrideToken: 로그인 전 호출(verifyGoogleLogin)에서 credential 자체를 Bearer로 전달
 async function post(action: string, data: Record<string, unknown>, overrideToken?: string): Promise<Record<string, unknown>> {
   let rawBody = '';

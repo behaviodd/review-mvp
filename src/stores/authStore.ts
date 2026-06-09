@@ -46,7 +46,9 @@ export const useAuthStore = create<AuthState>()(
           originalUser: null,
           activeImpersonationLogId: null,
         }),
-      logout: () =>
+      logout: () => {
+        // 세션 쿠키 삭제 (비동기, fire-and-forget)
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
         set({
           currentUser: null,
           impersonatingFromId: null,
@@ -54,7 +56,8 @@ export const useAuthStore = create<AuthState>()(
           activeImpersonationLogId: null,
           idToken: null,
           idTokenExp: 0,
-        }),
+        });
+      },
 
       setIdToken: (token, exp) => set({ idToken: token, idTokenExp: exp }),
       clearIdToken: () => set({ idToken: null, idTokenExp: 0 }),

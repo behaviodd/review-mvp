@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { HeaderTabsBar } from './HeaderTabsBar';
 import { useAuthStore } from '../../stores/authStore';
+import { checkSession, destroySession } from '../../utils/authApi';
 import { ToastContainer, useShowToast } from '../ui/Toast';
 import { PageHeaderProvider } from '../../contexts/PageHeaderContext';
 import { SyncStatusBanner } from '../system/SyncStatusBanner';
@@ -21,7 +22,7 @@ const FULL_BLEED_EXCLUDE = ['/reviews/team/peer-approvals'];
 const FULL_BLEED_EXACT = ['/team', '/'];
 
 export function AppLayout() {
-  const { currentUser, logout, getValidIdToken, idToken } = useAuthStore();
+  const { currentUser, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,26 +37,22 @@ export function AppLayout() {
     return () => window.removeEventListener(QUOTA_EVENT, onQuota);
   }, [showToast]);
 
-  // 토큰 없는 세션 감지 + 만료 체크
-  // - idToken null: currentUser는 localStorage 복원됐지만 토큰은 메모리 소실 (새로고침 / 재방문)
-  //   → 즉시 로그아웃. setTimeout(0) 으로 login 직후 setIdToken/login 순서 차이 방어
-  // - idToken 있음: 1분 인터벌로 만료 체크
+  // 세션 쿠키 유효성 확인 (마운트 시 1회 + 30분 인터벌)
+  // - 유효: 아무것도 하지 않음 (currentUser는 이미 localStorage에서 복원됨)
+  // - 만료/없음: 로그아웃 + 로그인 페이지 이동
   useEffect(() => {
-    if (!idToken) {
-      const t = setTimeout(() => {
-        logout();
-        navigate('/login', { replace: true });
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    const timer = setInterval(() => {
-      if (getValidIdToken() === null) {
+    const verify = async () => {
+      const session = await checkSession();
+      if (!session) {
+        await destroySession();
         logout();
         navigate('/login', { replace: true });
       }
-    }, 60_000);
+    };
+    verify();
+    const timer = setInterval(verify, 30 * 60 * 1000); // 30분
     return () => clearInterval(timer);
-  }, [idToken, getValidIdToken, logout, navigate]);
+  }, [logout, navigate]);
 
   if (!currentUser) return <Navigate to="/login" replace />;
 

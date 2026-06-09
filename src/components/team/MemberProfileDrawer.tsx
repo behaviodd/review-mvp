@@ -33,7 +33,6 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
   const fields = useProfileFieldStore(s => s.fields);
   const { cycles, submissions } = useReviewStore();
   const { isAdmin, can } = usePermission();
-  const canManageReviewerAssignments = can.manageReviewerAssignments;
 
   const [activeTab, setActiveTab] = useState<DrawerTab>('info');
 

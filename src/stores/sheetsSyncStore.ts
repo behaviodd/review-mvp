@@ -83,7 +83,7 @@ interface SheetsSyncState {
 export const useSheetsSyncStore = create<SheetsSyncState>()(
   persist(
     (set) => ({
-      scriptUrl: '',
+      scriptUrl: (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined) ?? '',
       enabled: false,
       lastSyncAt: {},
       orgSyncEnabled: true,
@@ -164,10 +164,12 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<SheetsSyncState>;
+        const envUrl = (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined) ?? '';
         return {
           ...current,
           ...p,
-          scriptUrl: p.scriptUrl || current.scriptUrl,
+          // persisted 값 우선, 없으면 env var fallback
+          scriptUrl: p.scriptUrl || envUrl || current.scriptUrl,
         };
       },
     },

@@ -32,6 +32,8 @@ import { MemberProfileDrawer } from '../components/team/MemberProfileDrawer';
 import { AutoAssignModal } from '../components/team/AutoAssignModal';
 import { impersonationLogWriter } from '../utils/sheetWriter';
 import { HeaderTab } from '../components/layout/HeaderTab';
+import { refetchOrg } from '../utils/syncControl';
+import { BulkManagerDialog } from '../components/team/BulkManagerDialog';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
 function matchesSearch(u: User, q: string) {
@@ -95,7 +97,7 @@ function OrgTreeNode({
   dnd: DnDCallbacks;
   canEdit?: boolean;
 }) {
-  const { users, secondaryOrgs, reviewerAssignments } = useTeamStore();
+  const { users, secondaryOrgs } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
   const [hovered, setHovered] = useState(false);
 
@@ -123,18 +125,15 @@ function OrgTreeNode({
     return treeMembers.size + secondaryExtra;
   }, [users, unit, allUnits, secondaryOrgs]);
 
-  // 평가자 미배정 구성원 수 — ReviewerAssignment 레코드 OR managerId 둘 중 하나면 배정됨
+  // 보고대상 미지정 구성원 수 (보고대상 = 평가자)
   const noReviewerCount = useMemo(() => {
     const treeMembers = getMembersInOrgTree(unit.id, users, allUnits).filter(isUserActive);
     secondaryOrgs.filter(a => a.orgId === unit.id).forEach(a => {
       const u = users.find(u2 => u2.id === a.userId);
       if (u && isUserActive(u) && !treeMembers.some(m => m.id === u.id)) treeMembers.push(u);
     });
-    const assignedIds = new Set(
-      reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
-    );
-    return treeMembers.filter(u => !assignedIds.has(u.id) && !u.managerId).length;
-  }, [users, unit, allUnits, secondaryOrgs, reviewerAssignments]);
+    return treeMembers.filter(u => !u.managerId).length;
+  }, [users, unit, allUnits, secondaryOrgs]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
   // R7: depth+1 이 5단계(=MAX_ORG_DEPTH=4)를 초과하면 자식 추가 버튼 비활성화
@@ -184,9 +183,9 @@ function OrgTreeNode({
           - 라벨 색: 모두 fg-default
           - 카운트: text-xs fg-subtlest */}
       <div
-        draggable={canEdit}
-        onDragStart={canEdit ? e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); } : undefined}
-        onDragOver={canEdit ? handleDragOver : undefined}
+        draggable={canEdit && !unit.isDerived}
+        onDragStart={canEdit && !unit.isDerived ? e => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(unit.id); } : undefined}
+        onDragOver={canEdit && !unit.isDerived ? handleDragOver : undefined}
         onDragLeave={canEdit ? e => {
           const rel = e.relatedTarget as Node | null;
           // Phase D-3.E-fix: 마우스가 element 외부로 나가면 dropTarget clear
@@ -227,9 +226,15 @@ function OrgTreeNode({
         </button>
 
         {/* name — depth 0 Bold, depth >= 1 SemiBold (Figma 정합) */}
-        <span className={`flex-1 text-base tracking-[-0.3px] leading-5 truncate text-fg-default ${depth === 0 ? 'font-bold' : 'font-semibold'}`}>
+        <span className={`flex-1 text-base tracking-[-0.3px] leading-5 truncate ${unit.isDerived ? 'text-fg-subtle' : 'text-fg-default'} ${depth === 0 ? 'font-bold' : 'font-semibold'}`}>
           {unit.name}
         </span>
+        {/* 자동 파생 조직 배지 */}
+        {unit.isDerived && (
+          <span className="flex-shrink-0 text-[9px] font-semibold text-fg-subtlest bg-gray-010 px-1 py-0.5 rounded" title="_조직구조에 등록하면 정식 조직이 됩니다">
+            자동
+          </span>
+        )}
 
         {/* R5-a: depth hint (4단계 이상에서 표시) */}
         {depth >= 4 && (
@@ -247,13 +252,14 @@ function OrgTreeNode({
         {/* 평가자 미배정 경고 배지 */}
         {noReviewerCount > 0 && !isSelected && (
           <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-010 text-orange-060 text-[10px] font-bold flex items-center justify-center leading-none"
-            title={`평가자 미배정 ${noReviewerCount}명`}>
+            title={`보고대상 없음 ${noReviewerCount}명`}>
             {noReviewerCount}
           </span>
         )}
 
         {/* action buttons (hover 시 보임, 14px icon) */}
-        {canEdit && hovered && (
+        {/* 자동 파생 조직은 편집/삭제 불가 — _조직구조에 등록해야 정식 조직이 됨 */}
+        {canEdit && hovered && !unit.isDerived && (
           <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button title="구성원 추가" onClick={() => onAddMember(unit.id)}
               className="p-1 rounded text-fg-subtlest hover:text-fg-brand1 hover:bg-bg-token-brand1-subtlest transition-colors">
@@ -399,10 +405,10 @@ function MemberRow({
         )}
       </div>
 
-      {/* 평가자 미배정 인디케이터 */}
+      {/* 보고대상 없음 인디케이터 */}
       {hasReviewer === false && (
         <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-orange-005 text-orange-060 border border-orange-020 whitespace-nowrap group-hover:hidden">
-          평가자 미배정
+          보고대상 없음
         </span>
       )}
 
@@ -440,7 +446,7 @@ function MemberRow({
 
 /* ── Admin View ─────────────────────────────────────────────────────── */
 function AdminView({ canEdit = false }: { canEdit?: boolean }) {
-  const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers, reviewerAssignments } = useTeamStore();
+  const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
   // Phase D-2.4a: useSheetsSyncStore destructure 제거 — 동기화 배지를 헤더에서
   // 빼고 글로벌 SyncStatusBanner 가 처리 (사용자 결정 3.a)
   // Phase D-2.4a: terminatedUsers 정의를 위로 — headerTabActions useMemo 의
@@ -451,6 +457,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const navigate = useNavigate();
   const startImpersonation = useAuthStore(s => s.startImpersonation);
   const showToast = useShowToast();
+
+  // Team 페이지 진입 시 즉시 org sync — 시트 변경 사항 바로 반영
+  useEffect(() => { void refetchOrg({ force: true }); }, []);
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
   const [showUnassigned, setShowUnassigned]      = useState(false);
@@ -472,6 +481,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [editUserId, setEditUserId] = useState<string | null>(null);
   // 평가자 자동 지정 모달
   const [autoAssignOpen, setAutoAssignOpen] = useState(false);
+  // 보고대상 일괄 변경 모달
+  const [bulkManagerOpen, setBulkManagerOpen] = useState(false);
 
   /* ── deep-link 자동 진입 ──────────────────────────────────────────
    * /team?action=add → 추가 다이얼로그 자동 open
@@ -550,7 +561,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           variant="outline-default"
           onClick={() => setAutoAssignOpen(true)}
         >
-          평가자 자동 지정
+          보고대상 자동 지정
         </MsButton>
       )}
       {canEdit && (
@@ -577,7 +588,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     { key: 'active'      as const, label: '재직' },
     { key: 'leave'       as const, label: '휴직' },
     { key: 'terminated'  as const, label: '퇴사' },
-    { key: 'no_reviewer' as const, label: '평가자 미배정' },
+    { key: 'no_reviewer' as const, label: '보고대상 없음' },
   ];
 
   const headerTabActions = useMemo(() => (
@@ -853,7 +864,13 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
     const legacyIds = activeUsers
-      .filter(u => u[legacyKey[selectedUnit.type]] === selectedUnit.name)
+      .filter(u => {
+        const primary = u[legacyKey[selectedUnit.type]];
+        if (primary === selectedUnit.name) return true;
+        // 사용자가 주조직(department)만 입력한 경우 — subOrg/team/squad 타입 조직에서도 매칭
+        if (selectedUnit.type !== 'mainOrg' && u.department === selectedUnit.name) return true;
+        return false;
+      })
       .map(u => u.id);
     const primaryIds = new Set([...treeIds, ...legacyIds]);
     // 겸임으로 이 조직에 소속된 구성원 추가
@@ -869,18 +886,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     });
   }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
 
-  // 평가자(rank=1) 미배정 구성원 ID Set — 필터·표시용
-  // ReviewerAssignment 레코드 OR user.managerId 둘 중 하나라도 있으면 배정됨으로 간주
-  const noReviewerIds = useMemo(() => {
-    const assignedIds = new Set(
-      reviewerAssignments.filter(a => a.rank === 1 && !a.endDate).map(a => a.revieweeId)
-    );
-    return new Set(
-      activeUsers
-        .filter(u => !assignedIds.has(u.id) && !u.managerId)
-        .map(u => u.id)
-    );
-  }, [activeUsers, reviewerAssignments]);
+  // 보고대상 미지정 구성원 ID Set — 필터·표시용 (보고대상 = 평가자)
+  const noReviewerIds = useMemo(
+    () => new Set(activeUsers.filter(u => !u.managerId).map(u => u.id)),
+    [activeUsers],
+  );
 
   // 재직상태 + 배정 필터 적용 헬퍼
   const applyStatusFilter = (list: User[]) => {
@@ -926,6 +936,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   );
 
   const handleDeleteUnit = (unit: OrgUnit) => {
+    if (unit.isDerived) return; // 자동 파생 조직은 삭제 불가
     if (confirm(`'${unit.name}' 및 모든 하위 조직을 삭제할까요?`)) deleteOrgUnit(unit.id);
   };
 
@@ -1003,18 +1014,23 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto px-6 py-4">
             {/* 소속 없음 inline 토글 (Phase D-2.4b — 사용자 결정 5.a) */}
             {unassignedUsers.length > 0 && (
-              <button
-                onClick={selectUnassigned}
-                className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg border text-base font-semibold transition-colors ${
-                  showUnassigned
-                    ? 'bg-bg-token-brand1-subtlest border-bd-primary text-fg-brand1'
-                    : 'bg-bg-token-default border-bd-primary text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default'
-                }`}
-              >
-                <MsWarningIcon size={16} className="text-yellow-050 flex-shrink-0" />
-                <span className="flex-1 text-left tracking-[-0.3px]">소속 없음</span>
-                <span className="text-xs font-bold text-yellow-050">{unassignedUsers.length}</span>
-              </button>
+              <div className="mb-3 space-y-1">
+                <button
+                  onClick={selectUnassigned}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-base font-semibold transition-colors ${
+                    showUnassigned
+                      ? 'bg-bg-token-brand1-subtlest border-bd-primary text-fg-brand1'
+                      : 'bg-bg-token-default border-bd-primary text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default'
+                  }`}
+                >
+                  <MsWarningIcon size={16} className="text-yellow-050 flex-shrink-0" />
+                  <span className="flex-1 text-left tracking-[-0.3px]">소속 없음</span>
+                  <span className="text-xs font-bold text-yellow-050">{unassignedUsers.length}</span>
+                </button>
+                <p className="px-1 text-xs text-fg-subtlest leading-relaxed">
+                  _조직구조 탭에 조직을 추가하면 구성원이 해당 조직으로 자동 배치됩니다.
+                </p>
+              </div>
             )}
 
             {/* Panel header (간소화 — 추가 버튼은 헤더로 옮겨짐) */}
@@ -1069,7 +1085,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                       onClick={() => setStatusFilter('no_reviewer')}
                       className="font-semibold text-orange-060 hover:underline"
                     >
-                      평가자 미배정 {orgSummary.noReviewerInOrg}명
+                      보고대상 없음 {orgSummary.noReviewerInOrg}명
                     </button>
                   )}
                   {orgSummary.leaveInOrg > 0 && (
@@ -1096,8 +1112,15 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               <div className="flex flex-col items-center gap-3 text-center py-12">
                 <Users className="size-8 text-fg-subtlest" />
                 <p className="text-base text-fg-subtle">
-                  {selectedUnit ? `${selectedUnit.name}에 구성원이 없습니다.` : '구성원이 없습니다.'}
+                  {selectedUnit
+                    ? `${selectedUnit.name}에 구성원이 없습니다.`
+                    : users.length > 0
+                      ? `활성 구성원이 없습니다. (전체 ${users.length}명 중 비활성)`
+                      : '구성원이 없습니다. 시트 동기화를 확인하세요.'}
                 </p>
+                {!selectedUnit && users.length > 0 && (
+                  <p className="text-xs text-fg-subtlest">_구성원 시트의 상태분류 컬럼 값을 확인하세요.</p>
+                )}
                 {canEdit && !showTerminated && (
                   <button
                     onClick={() => goAddMember(selectedOrgId ?? undefined)}
@@ -1131,6 +1154,13 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 <span className="text-base font-semibold text-fg-brand1">{selectedIds.size}명 선택됨</span>
                 <div className="flex items-center gap-2">
                   <MsButton variant="ghost" size="sm" onClick={clearSelection}>선택 해제</MsButton>
+                  <MsButton
+                    variant="outline-default"
+                    size="sm"
+                    onClick={() => setBulkManagerOpen(true)}
+                  >
+                    보고대상 변경
+                  </MsButton>
                   <MsButton
                     size="sm"
                     leftIcon={<MsChevronRightLineIcon size={12} />}
@@ -1239,6 +1269,18 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       <AutoAssignModal
         open={autoAssignOpen}
         onClose={() => setAutoAssignOpen(false)}
+      />
+
+      {/* 보고대상 일괄 변경 */}
+      <BulkManagerDialog
+        open={bulkManagerOpen}
+        selectedCount={selectedIds.size}
+        onClose={() => setBulkManagerOpen(false)}
+        onConfirm={(managerId) => {
+          bulkUpdateMembers([...selectedIds].map(id => ({ id, patch: { managerId } })));
+          clearSelection();
+          showToast('success', `${selectedIds.size}명의 보고대상을 변경했습니다.`);
+        }}
       />
 
       {/* 조직 추가·편집 */}

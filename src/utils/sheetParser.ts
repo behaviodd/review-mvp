@@ -17,9 +17,12 @@ function colorFromId(id: string): string {
 }
 
 /* ── 역할 파생 ────────────────────────────────────────────────────────── */
-// '역할' 컬럼이 자유 텍스트가 된 이후로는 admin 키워드만 감지.
-// 조직장(leader) 여부는 OrgUnit.headId 로만 결정.
+// '권한' 컬럼(admin/leader/member 영문 키워드) 우선.
+// '역할' 컬럼은 자유 텍스트 직책이지만, 아래 예약 키워드는 role 로도 파생.
+//   - 조직장 → leader  (OrgUnit.headId 도 syncFromSheet 에서 자동 세팅)
+//   - 대표이사/대표/CEO → admin
 const ADMIN_KEYWORDS = ['대표이사', '대표', 'CEO', 'ceo'];
+const ORG_HEAD_KEYWORDS = ['조직장'];
 const VALID_ROLES: UserRole[] = ['admin', 'leader', 'member'];
 
 function deriveRole(position: string): UserRole {
@@ -66,14 +69,16 @@ export function parseSheetUser(row: SheetRow): User | null {
   const position = VALID_ROLES.includes(rawPos as UserRole) ? '' : rawPos;
   const managerRaw = str(row['보고대상(사번)']);
 
-  // '권한' 전용 컬럼 우선 → 없으면 레거시 '역할' 컬럼 → 없으면 직책 키워드로 파생
+  // '권한' 전용 컬럼 우선 → 없으면 '역할' 영문 키워드 → 없으면 '역할' 예약어(조직장 등) → 없으면 직책 키워드 파생
   const permRaw = str(row['권한']);
   const roleRaw = str(row['역할']);
   const role: UserRole = VALID_ROLES.includes(permRaw as UserRole)
     ? (permRaw as UserRole)
     : VALID_ROLES.includes(roleRaw as UserRole)
       ? (roleRaw as UserRole)
-      : deriveRole(position);
+      : ORG_HEAD_KEYWORDS.some(k => roleRaw.includes(k))
+        ? 'leader'
+        : deriveRole(position);
 
   // R1: 신규 컬럼 (있으면 사용, 없으면 undefined)
   const orgUnitId      = str(row['주조직ID']) || undefined;
@@ -111,18 +116,31 @@ export function parseSheetUser(row: SheetRow): User | null {
 }
 
 /* ── 조직 단위 파싱 ──────────────────────────────────────────────────── */
+/* 조직유형 한국어 별칭 — 시트에 한국어로 작성해도 인식 */
+const ORG_TYPE_KO: Record<string, OrgUnitType> = {
+  '주조직': 'mainOrg', '본조직': 'mainOrg', '본부': 'mainOrg',
+  '부조직': 'subOrg',  '그룹': 'subOrg',
+  '팀':    'team',
+  '스쿼드': 'squad',   '분대': 'squad',
+};
+
 export function parseOrgUnit(row: SheetRow): OrgUnit | null {
   const id = str(row['조직ID']);
   const name = str(row['조직명']);
   if (!id || !name) return null;
   const validTypes: OrgUnitType[] = ['mainOrg', 'subOrg', 'team', 'squad'];
-  const rawType = str(row['조직유형']) as OrgUnitType;
-  const type: OrgUnitType = validTypes.includes(rawType) ? rawType : 'team';
+  const rawType = str(row['조직유형']);
+  const parentId = str(row['상위조직ID']) || undefined;
+  // 조직유형 미입력 또는 미인식 시: 상위조직이 없으면 mainOrg, 있으면 team
+  const type: OrgUnitType =
+    validTypes.includes(rawType as OrgUnitType) ? (rawType as OrgUnitType) :
+    ORG_TYPE_KO[rawType] ??
+    (parentId ? 'team' : 'mainOrg');
   return {
     id,
     name,
     type,
-    parentId: str(row['상위조직ID']) || undefined,
+    parentId,
     headId:   str(row['조직장사번']) || undefined,
     order:    parseInt(str(row['순서']), 10) || 0,
   };

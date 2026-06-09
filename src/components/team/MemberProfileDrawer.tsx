@@ -14,7 +14,6 @@ import { Pill } from '../ui/Pill';
 import { canViewField, getFieldValue, getViewerTypes } from '../../utils/profileFieldVisibility';
 import { formatDate } from '../../utils/dateUtils';
 import type { ProfileFieldKey } from '../../types';
-import { ReviewerAssignmentModal } from './ReviewerAssignmentModal';
 import { Tab } from '../ui/Tab';
 
 interface Props {
@@ -31,7 +30,6 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
   const { currentUser } = useAuthStore();
   const users = useTeamStore(s => s.users);
   const orgUnits = useTeamStore(s => s.orgUnits);
-  const reviewerAssignments = useTeamStore(s => s.reviewerAssignments);
   const fields = useProfileFieldStore(s => s.fields);
   const { cycles, submissions } = useReviewStore();
   const { isAdmin, can } = usePermission();
@@ -91,10 +89,10 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
                 currentUser={currentUser}
                 users={users}
                 orgUnits={orgUnits}
-                reviewerAssignments={reviewerAssignments}
                 fields={fields}
                 isAdmin={isAdmin}
-                canManageReviewerAssignments={canManageReviewerAssignments}
+                canEdit={can.manageOrg}
+                onEdit={onEdit}
               />
             )}
             {activeTab === 'review' && (
@@ -114,18 +112,18 @@ export function MemberProfileDrawer({ userId, onClose, onEdit }: Props) {
 
 // ─── 기본 정보 탭 ─────────────────────────────────────────────────────────────
 function ProfileBody({
-  target, currentUser, users, orgUnits, reviewerAssignments, fields, isAdmin, canManageReviewerAssignments,
+  target, currentUser, users, orgUnits, fields, isAdmin, canEdit, onEdit,
 }: {
   target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
   currentUser: ReturnType<typeof useAuthStore.getState>['currentUser'];
   users: ReturnType<typeof useTeamStore.getState>['users'];
   orgUnits: ReturnType<typeof useTeamStore.getState>['orgUnits'];
-  reviewerAssignments: ReturnType<typeof useTeamStore.getState>['reviewerAssignments'];
   fields: ReturnType<typeof useProfileFieldStore.getState>['fields'];
   isAdmin: boolean;
-  canManageReviewerAssignments: boolean;
+  canEdit: boolean;
+  onEdit?: (userId: string) => void;
 }) {
-  const viewerTypes = getViewerTypes(currentUser, target, orgUnits, reviewerAssignments);
+  const viewerTypes = getViewerTypes(currentUser, target, orgUnits);
   const sortedFields = [...fields].sort((a, b) => a.order - b.order);
   const visibleFields = sortedFields.filter(f => canViewField(viewerTypes, f, isAdmin));
 
@@ -195,12 +193,12 @@ function ProfileBody({
         )}
       </div>
 
-      {/* 평가권자 */}
+      {/* 보고대상 */}
       <ReviewerSection
         target={target}
-        reviewerAssignments={reviewerAssignments}
         users={users}
-        canManageReviewerAssignments={canManageReviewerAssignments}
+        canEdit={canEdit}
+        onEdit={onEdit}
       />
     </div>
   );
@@ -314,75 +312,41 @@ function ReviewHistory({
   );
 }
 
-// ─── 평가권자 섹션 ────────────────────────────────────────────────────────────
+// ─── 보고대상 섹션 ────────────────────────────────────────────────────────────
 function ReviewerSection({
-  target, reviewerAssignments, users, canManageReviewerAssignments,
+  target, users, canEdit, onEdit,
 }: {
   target: NonNullable<ReturnType<typeof useTeamStore.getState>['users'][number]>;
-  reviewerAssignments: ReturnType<typeof useTeamStore.getState>['reviewerAssignments'];
   users: ReturnType<typeof useTeamStore.getState>['users'];
-  canManageReviewerAssignments: boolean;
+  canEdit: boolean;
+  onEdit?: (userId: string) => void;
 }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const activeAssignments = reviewerAssignments
-    .filter(a => a.revieweeId === target.id && !a.endDate)
-    .sort((a, b) => a.rank - b.rank);
+  const manager = target.managerId ? users.find(u => u.id === target.managerId) : null;
 
   return (
     <div className="border-t border-bd-default pt-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">평가권자</p>
-        {canManageReviewerAssignments && (
-          <MsButton variant="outline-default" size="sm" leftIcon={<MsEditIcon size={12} />} onClick={() => setModalOpen(true)}>
+        <p className="text-[11px] font-semibold text-fg-subtlest uppercase tracking-wide">보고대상</p>
+        {canEdit && onEdit && (
+          <MsButton variant="outline-default" size="sm" leftIcon={<MsEditIcon size={12} />} onClick={() => onEdit(target.id)}>
             편집
           </MsButton>
         )}
       </div>
-      {activeAssignments.length === 0 ? (
-        <p className="text-base text-fg-subtlest py-2">배정된 평가권자가 없습니다.</p>
+      {!manager ? (
+        <p className="text-base text-fg-subtlest py-2">보고대상이 지정되지 않았습니다.</p>
       ) : (
-        <ul className="space-y-1">
-          {activeAssignments.map(a => {
-            const reviewer = users.find(u => u.id === a.reviewerId);
-            return (
-              <li key={a.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-interaction-hovered transition-colors">
-                <span className="inline-flex items-center justify-center min-w-[32px] h-5 px-1.5 rounded-full bg-pink-005 text-pink-060 text-xs font-semibold">
-                  {a.rank}차
-                </span>
-                {reviewer ? (
-                  <>
-                    <UserAvatar user={reviewer} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-medium text-fg-default truncate">{reviewer.name}</p>
-                      <p className="text-xs text-fg-subtlest truncate">{reviewer.position} · {reviewer.department}</p>
-                    </div>
-                  </>
-                ) : (
-                  <p className="flex-1 text-base text-fg-subtlest italic">알 수 없음 ({a.reviewerId})</p>
-                )}
-                <Pill tone={SOURCE_TONE[a.source]} size="xs">{SOURCE_LABEL[a.source]}</Pill>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {canManageReviewerAssignments && (
-        <ReviewerAssignmentModal open={modalOpen} onClose={() => setModalOpen(false)} revieweeId={target.id} />
+        <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-interaction-hovered transition-colors">
+          <UserAvatar user={manager} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-medium text-fg-default truncate">{manager.name}</p>
+            <p className="text-xs text-fg-subtlest truncate">{manager.position}{manager.department ? ` · ${manager.department}` : ''}</p>
+          </div>
+        </div>
       )}
     </div>
   );
 }
-
-const SOURCE_LABEL: Record<string, string> = {
-  org_head_inherited: '조직장 자동',
-  manual:             '수동 지정',
-  excel_import:       '엑셀 일괄',
-};
-const SOURCE_TONE: Record<string, 'info' | 'neutral' | 'success'> = {
-  org_head_inherited: 'info',
-  manual:             'neutral',
-  excel_import:       'success',
-};
 
 function FieldDisplay({ fieldKey, value }: { fieldKey: ProfileFieldKey; value: string }) {
   const display = !value

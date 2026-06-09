@@ -8,7 +8,7 @@
  *
  * 순수 함수: store 직접 호출 없음. 결과를 UI 에서 확인 후 store 에 일괄 적용.
  */
-import type { OrgUnit, ReviewerAssignment, ReviewerAssignmentSource, User } from '../types';
+import type { OrgUnit, ReviewerAssignmentSource, User } from '../types';
 import { isUserActive } from './userCompat';
 
 export interface AutoAssignCandidate {
@@ -47,25 +47,20 @@ function findNearestOrgHead(
 export function computeAutoAssignments(
   users: User[],
   orgUnits: OrgUnit[],
-  reviewerAssignments: ReviewerAssignment[],
 ): AutoAssignCandidate[] {
   const activeUsers = users.filter(u => isUserActive(u));
   const activeIds   = new Set(activeUsers.map(u => u.id));
 
   return activeUsers.map(u => {
-    const existing = reviewerAssignments.find(
-      a => a.revieweeId === u.id && a.rank === 1 && !a.endDate,
-    );
-
-    // 1순위: managerId
+    // 1순위: managerId (보고대상 = 평가자)
     if (u.managerId && activeIds.has(u.managerId) && u.managerId !== u.id) {
       return {
         revieweeId: u.id,
         reviewerId: u.managerId,
         source:     'manual' as const,
         reason:     'managerId' as const,
-        hasExisting: !!existing,
-        existingReviewerId: existing?.reviewerId,
+        hasExisting: !!u.managerId,
+        existingReviewerId: u.managerId,
       };
     }
 
@@ -78,8 +73,8 @@ export function computeAutoAssignments(
           reviewerId: headId,
           source:     'org_head_inherited' as const,
           reason:     'orgHead' as const,
-          hasExisting: !!existing,
-          existingReviewerId: existing?.reviewerId,
+          hasExisting: !!u.managerId,
+          existingReviewerId: u.managerId,
         };
       }
     }
@@ -95,8 +90,8 @@ export function computeAutoAssignments(
             reviewerId: headId,
             source:     'org_head_inherited' as const,
             reason:     'orgHead' as const,
-            hasExisting: !!existing,
-            existingReviewerId: existing?.reviewerId,
+            hasExisting: !!u.managerId,
+            existingReviewerId: u.managerId,
           };
         }
       }
@@ -107,8 +102,8 @@ export function computeAutoAssignments(
       reviewerId: null,
       source:     'manual' as const,
       reason:     'none' as const,
-      hasExisting: !!existing,
-      existingReviewerId: existing?.reviewerId,
+      hasExisting: !!u.managerId,
+      existingReviewerId: u.managerId,
     };
   });
 }

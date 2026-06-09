@@ -22,7 +22,7 @@ import { resilientFetch, SyncError } from '../utils/resilientFetch';
 import { registerOrgRefetch } from '../utils/syncControl';
 import { useShowToast } from '../components/ui/Toast';
 
-const POLL_MS = 60_000;
+const POLL_MS = 15_000;
 /** 연속 실패 N 회 이상이면 다음 polling 지연을 비례 확대 (cap 8x). */
 const BACKOFF_CAP = 8;
 /** 최근 쓰기 후 이 시간(ms) 안에는 자동 poll 을 건너뛴다 — Apps Script 의 비동기 쓰기와 다음 GET 의 race 방지. */
@@ -126,10 +126,15 @@ export function useOrgSync() {
             return;
           }
           if (bulk.etag) bulkEtagRef.current = bulk.etag;
-          const parsedUsers = parseSheetUsers(bulk.users ?? []);
+          const rawUsers = bulk.users ?? [];
+          const parsedUsers = parseSheetUsers(rawUsers);
+          const filteredOut = rawUsers.length - parsedUsers.length;
+          if (filteredOut > 0) {
+            console.warn(`[OrgSync] bulk: ${filteredOut}개 행 필터 제외 — 사번 또는 성명 컬럼이 비어 있을 수 있습니다.`);
+          }
           if (parsedUsers.length === 0) {
             // 시트가 비어 있으면 로컬 데이터 보존
-            console.warn(`[OrgSync] bulk: 시트의 구성원이 비어있습니다. 응답 row=${(bulk.users ?? []).length}, 파싱 후=0`);
+            console.warn(`[OrgSync] bulk: 유효한 구성원 없음 (응답 ${rawUsers.length}행). 사번·성명 컬럼을 확인하세요.`);
             markSuccess();
             return;
           }

@@ -112,6 +112,48 @@ function deriveTeams(users: User[]): Team[] {
   return depts.map(d => ({ id: d, name: d }));
 }
 
+/** _구성원의 주조직 값 중 _조직구조에 없는 것을 가상 OrgUnit 으로 파생.
+ *  isDerived=true 마킹 — 시트에 저장 안 되고 편집/삭제 불가. */
+function deriveOrgUnitsFromMembers(users: User[], existingOrgUnits: OrgUnit[]): OrgUnit[] {
+  const existingNames = new Set(existingOrgUnits.map(u => u.name));
+  const seen = new Set<string>();
+  const derived: OrgUnit[] = [];
+  let order = 900;
+  for (const user of users) {
+    const dept = user.department?.trim();
+    if (dept && !existingNames.has(dept) && !seen.has(dept)) {
+      seen.add(dept);
+      derived.push({ id: `__auto__${dept}`, name: dept, type: 'mainOrg', order: order++, isDerived: true });
+    }
+  }
+  return derived;
+}
+
+/** _구성원 역할='조직장' 사용자를 소속 OrgUnit 의 headId 로 반영.
+ *  _조직구조 시트에 이미 headId 가 명시된 경우는 건드리지 않음(명시값 우선). */
+function deriveHeadsFromMembers(users: User[], orgUnits: OrgUnit[]): OrgUnit[] {
+  const orgById   = new Map(orgUnits.map(u => [u.id, u]));
+  const orgByName = new Map(orgUnits.map(u => [u.name, u]));
+  const updates   = new Map<string, string>(); // orgUnit.id → headId
+
+  for (const user of users) {
+    if (user.role !== 'leader') continue;
+    // 같은 org 에 leader 가 여럿일 때 첫 번째만 사용 (이미 update 됐으면 skip)
+    const orgUnit =
+      (user.orgUnitId ? orgById.get(user.orgUnitId) : undefined) ??
+      (user.department ? orgByName.get(user.department.trim()) : undefined);
+    if (orgUnit && !orgUnit.headId && !updates.has(orgUnit.id)) {
+      updates.set(orgUnit.id, user.id);
+    }
+  }
+
+  if (updates.size === 0) return orgUnits;
+  return orgUnits.map(u => {
+    const headId = updates.get(u.id);
+    return headId ? { ...u, headId } : u;
+  });
+}
+
 function generateOrgUnitId(type: OrgUnitType, name: string): string {
   const prefix = { mainOrg: 'MO', subOrg: 'SO', team: 'TM', squad: 'SQ' }[type];
   const slug = name.replace(/\s+/g, '_').toUpperCase().slice(0, 8);
@@ -347,6 +389,7 @@ export const useTeamStore = create<TeamStore>()(
   },
 
   deleteOrgUnit: (id) => {
+    if (id.startsWith('__auto__')) return; // 자동 파생 조직은 삭제 불가
     // 하위 조직도 함께 삭제
     const allUnits = get().orgUnits;
     const getDescendantIds = (unitId: string): string[] => {
@@ -580,18 +623,27 @@ export const useTeamStore = create<TeamStore>()(
   },
 
   /* ── 시트 동기화 ─────────────────────────────────────────────────── */
-  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots, newPermissionGroups) =>
-    set(() => ({
+  syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots, newPermissionGroups) => {
+    // _조직구조에 없는 주조직 값은 가상 OrgUnit 으로 파생 — 편집/삭제 불가(isDerived=true)
+    // 이후 _구성원 역할='조직장' 사용자를 소속 OrgUnit.headId 로 반영
+    const augmentedOrgUnits = newOrgUnits !== undefined
+      ? deriveHeadsFromMembers(
+          newUsers,
+          [...newOrgUnits, ...deriveOrgUnitsFromMembers(newUsers, newOrgUnits)],
+        )
+      : undefined;
+    return set(() => ({
       users: newUsers,
       teams: deriveTeams(newUsers),
-      ...(newOrgUnits !== undefined ? { orgUnits: newOrgUnits } : {}),
+      ...(augmentedOrgUnits !== undefined ? { orgUnits: augmentedOrgUnits } : {}),
       ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
       ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
       ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
       ...(newPermissionGroups !== undefined
         ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, newUsers) }
         : {}),
-    })),
+    }));
+  },
 
   setLoading: (isLoading) => set({ isLoading }),
     }),

@@ -1,13 +1,12 @@
 /**
- * 평가자 자동 지정 모달.
+ * 보고대상 자동 지정 모달.
  *
  * 흐름:
- *   1. computeAutoAssignments() 로 후보 계산
+ *   1. computeAutoAssignments() 로 후보 계산 (보고대상=평가자 단일 기준)
  *   2. 결과 테이블 미리보기 (배정 가능 / 불가 / 이미 배정됨 구분)
- *   3. "기존 배정 덮어쓰기" 옵션 + 확인 시 bulkUpsertAssignments 일괄 적용
+ *   3. "기존 배정 덮어쓰기" 옵션 + 확인 시 bulkUpdateMembers 로 managerId 일괄 적용
  */
 import { useMemo, useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
@@ -35,16 +34,15 @@ const SOURCE_TONE: Record<string, string> = {
 };
 
 export function AutoAssignModal({ open, onClose }: Props) {
-  const { currentUser } = useAuthStore();
-  const { users, orgUnits, reviewerAssignments, bulkUpsertAssignments } = useTeamStore();
+  const { users, orgUnits, bulkUpdateMembers } = useTeamStore();
   const showToast = useShowToast();
 
   const [overwrite, setOverwrite] = useState(false);
   const [applying, setApplying]   = useState(false);
 
   const candidates = useMemo(
-    () => computeAutoAssignments(users, orgUnits, reviewerAssignments),
-    [users, orgUnits, reviewerAssignments],
+    () => computeAutoAssignments(users, orgUnits),
+    [users, orgUnits],
   );
 
   const assignable = candidates.filter(c => c.reviewerId !== null);
@@ -57,19 +55,13 @@ export function AutoAssignModal({ open, onClose }: Props) {
     : assignable.filter(c => c.hasExisting);
 
   const handleApply = () => {
-    if (!currentUser || toApply.length === 0) return;
+    if (toApply.length === 0) return;
     setApplying(true);
     try {
-      const inputs = toApply.map(c => ({
-        revieweeId: c.revieweeId,
-        reviewerId: c.reviewerId!,
-        rank:       1,
-        source:     c.source,
-        startDate:  new Date().toISOString(),
-        createdBy:  currentUser.id,
-      }));
-      bulkUpsertAssignments(inputs);
-      showToast('success', `${inputs.length}명의 평가자를 자동 지정했습니다.`);
+      bulkUpdateMembers(
+        toApply.map(c => ({ id: c.revieweeId, patch: { managerId: c.reviewerId! } }))
+      );
+      showToast('success', `${toApply.length}명의 보고대상을 자동 지정했습니다.`);
       onClose();
     } finally {
       setApplying(false);
@@ -80,8 +72,8 @@ export function AutoAssignModal({ open, onClose }: Props) {
     <ModalShell
       open={open}
       onClose={onClose}
-      title="평가자 자동 지정"
-      description="조직 구조(보고 대상 · 조직장)를 기반으로 rank 1 평가자를 일괄 배정합니다."
+      title="보고대상 자동 지정"
+      description="조직 구조(조직장 계층)를 기반으로 보고대상을 일괄 배정합니다."
       size="lg"
       footer={
         <>

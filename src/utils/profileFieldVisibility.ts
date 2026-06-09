@@ -3,7 +3,6 @@ import type {
   ProfileFieldConfig,
   ProfileFieldKey,
   ProfileFieldViewer,
-  ReviewerAssignment,
   User,
 } from '../types';
 import { PROFILE_FIELD_LOCKED } from '../stores/profileFieldStore';
@@ -16,7 +15,6 @@ export function getViewerTypes(
   currentUser: User | null,
   target: User,
   orgUnits: OrgUnit[],
-  reviewerAssignments: ReviewerAssignment[],
 ): Set<ProfileFieldViewer> {
   const types = new Set<ProfileFieldViewer>();
   if (!currentUser) return types;
@@ -28,9 +26,8 @@ export function getViewerTypes(
     types.add('orgLeader');
   }
 
-  if (reviewerAssignments.some(a =>
-    a.reviewerId === currentUser.id && a.revieweeId === target.id && !a.endDate
-  )) {
+  // 보고대상 = 평가자 — managerId 가 현재 사용자면 reviewer 권한
+  if (target.managerId === currentUser.id) {
     types.add('reviewer');
   }
 

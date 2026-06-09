@@ -78,6 +78,8 @@ export interface OrgUnit {
   order: number;
   // R7
   note?: string;
+  /** _구성원 주조직 값에서 자동 파생된 가상 조직. _조직구조 시트에 저장되지 않음. */
+  isDerived?: boolean;
 }
 
 // R7: Google SSO 신규 회원 승인 대기열 — `대기승인` 시트 매핑.

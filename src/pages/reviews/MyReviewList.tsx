@@ -7,8 +7,9 @@ import { useTeamStore } from '../../stores/teamStore';
 import { useMemo } from 'react';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { MsButton } from '../../components/ui/MsButton';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 import { HeaderTab } from '../../components/layout/HeaderTab';
-import { MsStarIcon, MsUsersIcon, MsCalendarIcon } from '../../components/ui/MsIcons';
+import { MsStarIcon, MsUsersIcon } from '../../components/ui/MsIcons';
 import { PeerPickReminder } from '../../components/review/PeerPickReminder';
 import { deadlineLabel, formatDate, isUrgent } from '../../utils/dateUtils';
 import type { ReviewCycle, ReviewSubmission } from '../../types';
@@ -26,14 +27,9 @@ function formatPeriod(cycle: ReviewCycle) {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-/** 사이클의 리뷰 종류 서브텍스트 */
-function reviewKindLabel(cycle: ReviewCycle) {
-  const kinds = cycle.reviewKinds ?? ['self', 'downward'];
-  const labels: Record<string, string> = {
-    self: '셀프', downward: '하향', peer: '동료', upward: '상향',
-  };
-  return kinds.map(k => labels[k] ?? k).join('·') + ' 리뷰';
-}
+const TYPE_LABEL: Record<string, string> = {
+  self: 'Self 리뷰', downward: '하향 평가', peer: '동료 평가', upward: '상향 평가',
+};
 
 /** 리뷰 아이콘 색상 (submission type 또는 cycle 기반) */
 const ICON_STYLE: Record<string, string> = {
@@ -63,68 +59,75 @@ function ReviewRow({
   showAction?: boolean;
 }) {
   const urgent = cycle ? isUrgent(cycle.selfReviewDeadline) : false;
-
-  // 참여자 수 (해당 사이클의 self submission 수)
   const { submissions } = useReviewStore();
+  const { users } = useTeamStore();
+
   const participantCount = cycle
     ? submissions.filter(s => s.cycleId === cycle.id && s.type === 'self').length
     : 0;
 
+  const reviewee = users.find(u => u.id === sub.revieweeId);
+  const showReviewee = (sub.type === 'peer' || sub.type === 'upward') && reviewee;
+
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 py-3.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+      className="flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
     >
       <ReviewIcon type={sub.type} />
 
-      <div className="flex-1 min-w-0">
-        <p className={`text-base font-semibold truncate group-hover:text-fg-brand1 transition-colors ${
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <p className={`text-base font-semibold tracking-[-0.3px] truncate group-hover:text-fg-brand1 transition-colors ${
           urgent && sub.status !== 'submitted' ? 'text-orange-060' : 'text-fg-default'
         }`}>
           {cycle?.title ?? '–'}
         </p>
-        <p className="text-xs text-fg-subtle mt-0.5">
-          {cycle ? reviewKindLabel(cycle) : ''}
-          {sub.type !== 'self' && sub.type !== 'downward' && (
-            <span className="ml-1">· {sub.type === 'peer' ? '동료 평가' : '상향 평가'}</span>
+        <p className="text-sm text-fg-subtle truncate">
+          {TYPE_LABEL[sub.type] ?? sub.type}
+          {showReviewee && (
+            <span className="text-fg-subtlest"> · {reviewee.name}</span>
           )}
         </p>
       </div>
 
-      <div className="flex items-center gap-4 flex-shrink-0 text-xs text-fg-subtle">
-        {/* 참여자 수 */}
-        {participantCount > 0 && (
-          <span className="flex items-center gap-1">
-            <MsUsersIcon size={13} className="text-fg-subtlest" />
-            {participantCount}명
-          </span>
-        )}
-        {/* 기간 */}
-        {cycle && (
-          <span className="flex items-center gap-1 hidden md:flex">
-            <MsCalendarIcon size={13} className="text-fg-subtlest" />
-            {formatPeriod(cycle)}
-          </span>
-        )}
-        {/* 마감 (진행 중만) */}
-        {showAction && cycle && sub.status !== 'submitted' && (
-          <span className={`hidden md:block text-xs font-medium ${urgent ? 'text-orange-060' : 'text-fg-subtlest'}`}>
-            {deadlineLabel(cycle.selfReviewDeadline)}
-          </span>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* 상태 배지 — 모바일에서 버튼 대신 표시 */}
+        <span className={showAction && sub.status !== 'submitted' ? 'md:hidden' : ''}>
+          <StatusBadge type="submission" value={sub.status} />
+        </span>
+
+        {/* 메타 정보 */}
+        <div className="hidden md:flex items-center gap-3 text-xs text-fg-subtle">
+          {participantCount > 0 && (
+            <span className="flex items-center gap-1">
+              <MsUsersIcon size={13} className="text-fg-subtlest" />
+              {participantCount}명
+            </span>
+          )}
+          {showAction && cycle && sub.status !== 'submitted' && (
+            <span className={`font-medium ${urgent ? 'text-orange-060' : 'text-fg-subtlest'}`}>
+              {deadlineLabel(cycle.selfReviewDeadline)}
+            </span>
+          )}
+          {!showAction && cycle && (
+            <span className="text-fg-subtlest">
+              {sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}
+            </span>
+          )}
+        </div>
+
+        {/* 액션 버튼 (진행 중, 데스크톱) */}
+        {showAction && sub.status !== 'submitted' && (
+          <MsButton
+            size="sm"
+            variant={urgent ? 'brand1' : 'outline-brand1'}
+            onClick={e => { e.stopPropagation(); onClick(); }}
+            className="flex-shrink-0 hidden md:inline-flex"
+          >
+            {sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
+          </MsButton>
         )}
       </div>
-
-      {/* 액션 버튼 (진행 중) */}
-      {showAction && sub.status !== 'submitted' && (
-        <MsButton
-          size="sm"
-          variant={urgent ? 'brand1' : 'outline-brand1'}
-          onClick={e => { e.stopPropagation(); onClick(); }}
-          className="flex-shrink-0 hidden md:inline-flex"
-        >
-          {sub.status === 'not_started' ? '시작하기' : '이어서 작성'}
-        </MsButton>
-      )}
     </div>
   );
 }
@@ -138,41 +141,28 @@ function ReceivedRow({
   onClick: () => void;
 }) {
   const { users } = useTeamStore();
-  const { submissions } = useReviewStore();
   const reviewer = users.find(u => u.id === sub.reviewerId);
-  const participantCount = cycle
-    ? submissions.filter(s => s.cycleId === cycle.id && s.type === 'self').length
-    : 0;
 
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 py-3.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+      className="flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
     >
       <ReviewIcon type="downward" />
 
-      <div className="flex-1 min-w-0">
-        <p className="text-base font-semibold truncate text-fg-default group-hover:text-fg-brand1 transition-colors">
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <p className="text-base font-semibold tracking-[-0.3px] truncate text-fg-default group-hover:text-fg-brand1 transition-colors">
           {cycle?.title ?? '–'}
         </p>
-        <p className="text-xs text-fg-subtle mt-0.5">
-          {cycle ? reviewKindLabel(cycle) : ''}
-          {reviewer && <span className="ml-1">· {reviewer.name} 작성</span>}
+        <p className="text-sm text-fg-subtle truncate">
+          {TYPE_LABEL.downward}
+          {reviewer && <span className="text-fg-subtlest"> · {reviewer.name} 작성</span>}
         </p>
       </div>
 
-      <div className="flex items-center gap-4 flex-shrink-0 text-xs text-fg-subtle">
-        {participantCount > 0 && (
-          <span className="flex items-center gap-1">
-            <MsUsersIcon size={13} className="text-fg-subtlest" />
-            {participantCount}명
-          </span>
-        )}
+      <div className="hidden md:flex items-center gap-3 flex-shrink-0 text-xs text-fg-subtlest">
         {cycle && (
-          <span className="flex items-center gap-1 hidden md:flex">
-            <MsCalendarIcon size={13} className="text-fg-subtlest" />
-            {sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}
-          </span>
+          <span>{sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}</span>
         )}
       </div>
     </div>
@@ -207,7 +197,7 @@ function ReviewSection({
           </button>
         )}
       </div>
-      <div className="divide-y divide-bd-default">
+      <div>
         {children}
       </div>
     </div>
@@ -294,7 +284,7 @@ export function MyReviewList() {
             description="작성을 완료했거나 아직 리뷰가 배정되지 않았습니다."
           />
         ) : (
-          <div className="divide-y divide-bd-default">
+          <div>
             {activeSubs.map(sub => {
               const cycle = cycles.find(c => c.id === sub.cycleId);
               return (

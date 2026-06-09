@@ -195,7 +195,7 @@ function AdminDashboard() {
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{entry.cycle.title}</p>
                     <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
-                      마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                      {deadlineLabel(entry.cycle.selfReviewDeadline)}
                     </p>
                   </div>
                   <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">
@@ -391,7 +391,7 @@ function ManagerDashboard() {
                 <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                   <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{activeCycle?.title}</p>
                   {activeCycle && <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
-                    마감 {deadlineLabel(activeCycle.selfReviewDeadline)}
+                    {deadlineLabel(activeCycle.selfReviewDeadline)}
                   </p>}
                 </div>
                 <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">작성하기 →</span>
@@ -411,7 +411,7 @@ function ManagerDashboard() {
                 <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                   <p className="text-base font-semibold tracking-[-0.3px] text-fg-default">{remaining}명 남음</p>
                   {activeCycle && <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
-                    마감 {deadlineLabel(activeCycle.managerReviewDeadline)}
+                    {deadlineLabel(activeCycle.managerReviewDeadline)}
                   </p>}
                 </div>
                 <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">작성하기 →</span>
@@ -523,7 +523,7 @@ function EmployeeDashboard() {
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                       <p className="text-base font-semibold tracking-[-0.3px] text-fg-default truncate">{entry.cycle.title}</p>
                       <p className={`text-sm ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtle'}`}>
-                        마감 {deadlineLabel(entry.cycle.selfReviewDeadline)}
+                        {deadlineLabel(entry.cycle.selfReviewDeadline)}
                       </p>
                     </div>
                     <span className="text-xs font-medium text-fg-brand1 flex-shrink-0">

@@ -5,8 +5,9 @@ import type { IncomingMessage, ServerResponse } from 'http';
 
 /** 로컬 개발용 org-sync 미들웨어 플러그인
  *  GET: redirect:'follow' / POST: redirect:'manual' + 재POST (Vercel edge와 동일 로직)
+ *  Phase 2: INTERNAL_TOKEN을 GET 쿼리스트링 / POST body에 자동 주입 (Vercel Edge와 동일)
  */
-function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
+function orgSyncDevPlugin(scriptUrl: string, internalToken: string, path = '/api/org-sync'): Plugin {
   return {
     name: `sync-dev-${path}`,
     configureServer(server) {
@@ -23,7 +24,8 @@ function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
             /* ── GET ──────────────────────────────────────────────────── */
             if (req.method === 'GET') {
               const qs = req.url?.split('?')[1] ?? '';
-              const up = await fetch(`${scriptUrl}?${qs}`, {
+              const tokenQs = internalToken ? `&token=${encodeURIComponent(internalToken)}` : '';
+              const up = await fetch(`${scriptUrl}?${qs}${tokenQs}`, {
                 redirect: 'follow',
                 headers:  { Accept: 'application/json' },
               });
@@ -40,7 +42,10 @@ function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
                 req.on('data', (c: Buffer) => chunks.push(c));
                 req.on('end', resolve);
               });
-              const payload = Buffer.concat(chunks).toString();
+              const rawPayload = Buffer.concat(chunks).toString();
+              const payload = internalToken
+                ? JSON.stringify({ ...JSON.parse(rawPayload), token: internalToken })
+                : rawPayload;
 
               // Apps Script POST-Redirect-GET 패턴:
               //   1) POST /exec  → Apps Script가 doPost 실행 후 302 반환
@@ -80,15 +85,16 @@ function orgSyncDevPlugin(scriptUrl: string, path = '/api/org-sync'): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env            = loadEnv(mode, process.cwd(), '');
-  const orgScriptUrl   = env.APPS_SCRIPT_URL    ?? '';
-  const reviewScriptUrl = env.REVIEW_SCRIPT_URL ?? '';
+  const env             = loadEnv(mode, process.cwd(), '');
+  const orgScriptUrl    = env.APPS_SCRIPT_URL    ?? '';
+  const reviewScriptUrl = env.REVIEW_SCRIPT_URL  ?? '';
+  const internalToken   = env.INTERNAL_TOKEN     ?? '';
 
   return {
     plugins: [
       react(),
-      ...(orgScriptUrl    ? [orgSyncDevPlugin(orgScriptUrl,    '/api/org-sync')]    : []),
-      ...(reviewScriptUrl ? [orgSyncDevPlugin(reviewScriptUrl, '/api/review-sync')] : []),
+      ...(orgScriptUrl    ? [orgSyncDevPlugin(orgScriptUrl,    internalToken, '/api/org-sync')]    : []),
+      ...(reviewScriptUrl ? [orgSyncDevPlugin(reviewScriptUrl, internalToken, '/api/review-sync')] : []),
     ],
   };
 });

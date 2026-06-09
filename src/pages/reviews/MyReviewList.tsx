@@ -72,7 +72,7 @@ function ReviewRow({
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+      className="flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
     >
       <ReviewIcon type={sub.type} />
 
@@ -87,16 +87,27 @@ function ReviewRow({
           {showReviewee && (
             <span className="text-fg-subtlest"> · {reviewee.name}</span>
           )}
+          {/* 모바일: 마감일 또는 제출일 인라인 표시 */}
+          {showAction && sub.status !== 'submitted' && cycle && (
+            <span className={`md:hidden ${urgent ? 'text-orange-060 font-medium' : 'text-fg-subtlest'}`}>
+              {' · '}{deadlineLabel(cycle.selfReviewDeadline)}
+            </span>
+          )}
+          {!showAction && cycle && (
+            <span className="md:hidden text-fg-subtlest">
+              {' · '}{sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}
+            </span>
+          )}
         </p>
       </div>
 
       <div className="flex items-center gap-3 flex-shrink-0">
-        {/* 상태 배지 — 모바일에서 버튼 대신 표시 */}
+        {/* 상태 배지 — 모바일: 항상 / 데스크톱: 액션 버튼 없을 때만 */}
         <span className={showAction && sub.status !== 'submitted' ? 'md:hidden' : ''}>
           <StatusBadge type="submission" value={sub.status} />
         </span>
 
-        {/* 메타 정보 */}
+        {/* 메타 정보 (데스크톱) */}
         <div className="hidden md:flex items-center gap-3 text-xs text-fg-subtle">
           {participantCount > 0 && (
             <span className="flex items-center gap-1">
@@ -146,7 +157,7 @@ function ReceivedRow({
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
+      className="flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors cursor-pointer group"
     >
       <ReviewIcon type="downward" />
 
@@ -157,6 +168,12 @@ function ReceivedRow({
         <p className="text-sm text-fg-subtle truncate">
           {TYPE_LABEL.downward}
           {reviewer && <span className="text-fg-subtlest"> · {reviewer.name} 작성</span>}
+          {/* 모바일: 날짜 인라인 표시 */}
+          {cycle && (
+            <span className="md:hidden text-fg-subtlest">
+              {' · '}{sub.submittedAt ? formatDate(sub.submittedAt) : formatPeriod(cycle)}
+            </span>
+          )}
         </p>
       </div>
 

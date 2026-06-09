@@ -187,7 +187,7 @@ function AdminDashboard() {
               return (
                 <button key={entry.sub.id}
                   onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-                  className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
+                  className="w-full flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
                 >
                   <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                     Self 리뷰
@@ -383,7 +383,7 @@ function ManagerDashboard() {
             const urgent = !!activeCycle && isUrgent(activeCycle.selfReviewDeadline);
             return (
               <button onClick={() => navigate('/reviews/me')}
-                className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
+                className="w-full flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
               >
                 <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                   Self 리뷰
@@ -403,7 +403,7 @@ function ManagerDashboard() {
             const remaining = myDownwards.filter(s => s.status !== 'submitted').length;
             return (
               <button onClick={() => navigate('/reviews/team')}
-                className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
+                className="w-full flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
               >
                 <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-green-005 text-green-060'}`}>
                   팀원 평가
@@ -515,7 +515,7 @@ function EmployeeDashboard() {
                 return (
                   <button key={entry.sub.id}
                     onClick={() => navigate(`/reviews/me/${entry.sub.id}`)}
-                    className="w-full flex items-center gap-3 min-h-[52px] py-1.5 px-2 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
+                    className="w-full flex items-center gap-3 min-h-[66px] py-3 px-3 rounded-lg hover:bg-interaction-hovered transition-colors text-left"
                   >
                     <span className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-semibold ${urgent ? 'bg-orange-005 text-orange-060' : 'bg-pink-005 text-pink-060'}`}>
                       Self 리뷰

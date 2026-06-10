@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter, reviewerAssignmentWriter } from '../utils/sheetWriter';
+import { useSheetsSyncStore } from './sheetsSyncStore';
 import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
 
 const ALL_PERMISSIONS: PermissionCode[] = [
@@ -624,6 +625,8 @@ export const useTeamStore = create<TeamStore>()(
 
   /* ── 시트 동기화 ─────────────────────────────────────────────────── */
   syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots, newPermissionGroups) => {
+    const pendingIds = useSheetsSyncStore.getState().pendingWriteIds;
+
     // _조직구조에 없는 주조직 값은 가상 OrgUnit 으로 파생 — 편집/삭제 불가(isDerived=true)
     // 이후 _구성원 역할='조직장' 사용자를 소속 OrgUnit.headId 로 반영
     const augmentedOrgUnits = newOrgUnits !== undefined
@@ -632,17 +635,42 @@ export const useTeamStore = create<TeamStore>()(
           [...newOrgUnits, ...deriveOrgUnitsFromMembers(newUsers, newOrgUnits)],
         )
       : undefined;
-    return set(() => ({
-      users: newUsers,
-      teams: deriveTeams(newUsers),
-      ...(augmentedOrgUnits !== undefined ? { orgUnits: augmentedOrgUnits } : {}),
-      ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
-      ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
-      ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
-      ...(newPermissionGroups !== undefined
-        ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, newUsers) }
-        : {}),
-    }));
+
+    if (pendingIds.size === 0) {
+      // 빠른 경로: 진행 중인 쓰기 없음 — 기존 하드 오버라이트 유지
+      return set(() => ({
+        users: newUsers,
+        teams: deriveTeams(newUsers),
+        ...(augmentedOrgUnits !== undefined ? { orgUnits: augmentedOrgUnits } : {}),
+        ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
+        ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
+        ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
+        ...(newPermissionGroups !== undefined
+          ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, newUsers) }
+          : {}),
+      }));
+    }
+
+    // 보호 경로: pending ID 는 시트 데이터 대신 현재 로컬 상태 유지 (optimistic 보존)
+    return set(state => {
+      const mergedUsers = newUsers.map(u =>
+        pendingIds.has(u.id) ? (state.users.find(c => c.id === u.id) ?? u) : u
+      );
+      const mergedOrgUnits = augmentedOrgUnits?.map(u =>
+        pendingIds.has(u.id) ? (state.orgUnits.find(c => c.id === u.id) ?? u) : u
+      );
+      return {
+        users: mergedUsers,
+        teams: deriveTeams(mergedUsers),
+        ...(mergedOrgUnits !== undefined ? { orgUnits: mergedOrgUnits } : {}),
+        ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
+        ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
+        ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
+        ...(newPermissionGroups !== undefined
+          ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, mergedUsers) }
+          : {}),
+      };
+    });
   },
 
   setLoading: (isLoading) => set({ isLoading }),

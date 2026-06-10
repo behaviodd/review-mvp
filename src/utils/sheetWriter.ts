@@ -30,12 +30,26 @@ const WRITE_TIMEOUT_MS = 25_000;
  * 시트 쓰기 직전·직후 모두 호출되는 grace 마커.
  *  - **직전 호출**: 진행 중인 polling 이 stale 시트를 읽어 optimistic 상태를 덮어쓰는 race 차단
  *  - **직후 호출**: Apps Script 의 시트 반영이 비동기일 수 있어, write 완료 후에도
- *    WRITE_GRACE_MS(4s) 동안 다음 polling 을 미뤄 stale read 흡수
+ *    WRITE_GRACE_MS 동안 다음 polling 을 미뤄 stale read 흡수
  *  - write 가 길어지면(예: 25s timeout) 직후 호출이 grace 를 갱신해 정확성 유지
  *  - 단순 시각 갱신이라 idempotent — 두 번 호출해도 안전
  */
 function markPendingWrite() {
   try { useSheetsSyncStore.getState().markWrite(); } catch { /* SSR / 초기화 전 안전 */ }
+}
+
+/**
+ * 쓰기 시작 전 ID 를 pendingWriteIds 에 등록하고, 완료(성공/실패) 후 해제.
+ * syncFromSheet 가 pending ID 는 덮어쓰지 않아 optimistic 상태가 보존된다.
+ */
+async function withPendingWrite<T>(id: string, fn: () => Promise<T>): Promise<T> {
+  const store = useSheetsSyncStore.getState();
+  store.addPendingWrite(id);
+  try {
+    return await fn();
+  } finally {
+    useSheetsSyncStore.getState().removePendingWrite(id);
+  }
 }
 
 /* ── 사번 자동 생성 ────────────────────────────────────────────────── */
@@ -216,18 +230,21 @@ async function postPayload(payload: PostPayload): Promise<void> {
 /* ── 공개 API ─────────────────────────────────────────────────────── */
 export const orgUnitWriter = {
   upsert: (unit: OrgUnit) =>
-    post('upsertOrgUnit', orgUnitToRow(unit)).catch(e => console.error('[Sheet] orgUnit upsert:', e)),
+    withPendingWrite(unit.id, () => post('upsertOrgUnit', orgUnitToRow(unit)))
+      .catch(e => console.error('[Sheet] orgUnit upsert:', e)),
   delete: (id: string) =>
-    post('deleteOrgUnit', { '조직ID': id }).catch(e => console.error('[Sheet] orgUnit delete:', e)),
+    withPendingWrite(id, () => post('deleteOrgUnit', { '조직ID': id }))
+      .catch(e => console.error('[Sheet] orgUnit delete:', e)),
   /**
    * N개 OrgUnit 을 1 HTTP 로 일괄 upsert.
    * Apps Script 에 `batchUpsertOrgUnits` 액션이 미배포면 N개 병렬 fallback.
    */
   batchUpsert: async (units: OrgUnit[]) => {
     if (units.length === 0) return;
-    if (units.length === 1) {
-      return orgUnitWriter.upsert(units[0]);
-    }
+    if (units.length === 1) return orgUnitWriter.upsert(units[0]);
+    const ids = units.map(u => u.id);
+    const store = useSheetsSyncStore.getState();
+    ids.forEach(id => store.addPendingWrite(id));
     try {
       await postPayload({ action: 'batchUpsertOrgUnits', rows: units.map(orgUnitToRow) });
     } catch (e) {
@@ -238,6 +255,8 @@ export const orgUnitWriter = {
       } else {
         console.error('[Sheet] orgUnit batchUpsert:', msg);
       }
+    } finally {
+      ids.forEach(id => store.removePendingWrite(id));
     }
   },
 };
@@ -252,7 +271,8 @@ export const secondaryOrgWriter = {
 export const sheetWriter = {
   /** 기존 구성원 정보 수정 */
   update: (user: User) =>
-    post('updateUser', toSheetRow(user, user.isActive ?? true)).catch(e => console.error('[Sheet] update:', e)),
+    withPendingWrite(user.id, () => post('updateUser', toSheetRow(user, user.isActive ?? true)))
+      .catch(e => console.error('[Sheet] update:', e)),
 
   /**
    * 신규 구성원 추가.
@@ -273,19 +293,26 @@ export const sheetWriter = {
 
   /** 사번이 이미 확정된 구성원을 시트에 기록 (클라이언트 폴백 전용) */
   createWithId: (user: User) =>
-    post('createUser', toSheetRow(user)).catch(e => console.error('[Sheet] createWithId:', e)),
+    withPendingWrite(user.id, () => post('createUser', toSheetRow(user)))
+      .catch(e => console.error('[Sheet] createWithId:', e)),
 
   /** 재직 여부 false 처리 (soft delete) */
   remove: (userId: string) =>
-    post('deleteUser', { '사번': userId }).catch(e => console.error('[Sheet] remove:', e)),
+    withPendingWrite(userId, () => post('deleteUser', { '사번': userId }))
+      .catch(e => console.error('[Sheet] remove:', e)),
 
   /**
    * 여러 구성원을 한 번의 HTTP 요청으로 일괄 upsert.
    * Apps Script 측에서 탭당 1회 읽기 후 일괄 쓰기.
    */
-  batchUpsert: (users: User[]) =>
-    postPayload({ action: 'batchUpsertUsers', rows: users.map(u => toSheetRow(u)) })
-      .catch(e => console.error('[Sheet] batchUpsert:', e)),
+  batchUpsert: (users: User[]) => {
+    const ids = users.map(u => u.id);
+    const store = useSheetsSyncStore.getState();
+    ids.forEach(id => store.addPendingWrite(id));
+    return postPayload({ action: 'batchUpsertUsers', rows: users.map(u => toSheetRow(u)) })
+      .catch(e => console.error('[Sheet] batchUpsert:', e))
+      .finally(() => ids.forEach(id => store.removePendingWrite(id)));
+  },
 };
 
 /* ── R1: 평가권 시트 ──────────────────────────────────────────────── */

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTeamStore } from '../../stores/teamStore';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
-import { MsInput, MsSelect } from '../ui/MsControl';
+import { MsInput } from '../ui/MsControl';
+import { UserSearchSelect } from '../ui/UserSearchSelect';
 import { ModalShell } from '../review/modals/ModalShell';
 import { isUserActive } from '../../utils/userCompat';
 import { getOrgDepth, getOrgLevelLabel, getOrgLevelPlaceholder, validateOrgDepth } from '../../utils/teamUtils';
@@ -129,10 +130,12 @@ export function OrgUnitDialog({
           onChange={e => setName(e.target.value)}
           placeholder={getOrgLevelPlaceholder(depth)}
         />
-        <MsSelect label="조직장" value={headId} onChange={e => setHeadId(e.target.value)}>
-          <option value="">미지정</option>
-          {eligibleHeads.map(u => <option key={u.id} value={u.id}>{u.name} · {u.position}</option>)}
-        </MsSelect>
+        <UserSearchSelect
+          label="조직장"
+          value={headId}
+          onChange={setHeadId}
+          users={eligibleHeads}
+        />
       </form>
     </ModalShell>
   );

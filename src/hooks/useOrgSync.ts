@@ -25,10 +25,13 @@ import { useShowToast } from '../components/ui/Toast';
 const POLL_MS = 15_000;
 /** 연속 실패 N 회 이상이면 다음 polling 지연을 비례 확대 (cap 8x). */
 const BACKOFF_CAP = 8;
-/** 최근 쓰기 후 이 시간(ms) 안에는 자동 poll 을 건너뛴다 — Apps Script 의 비동기 쓰기와 다음 GET 의 race 방지. */
-const WRITE_GRACE_MS = 4_000;
-/** 쓰기 직후 자동으로 한 번 fetch 를 예약하는 지연 — 시트에 반영된 최신값으로 fingerprint 갱신. */
-const WRITE_REFRESH_MS = 2_000;
+/** 최근 쓰기 후 이 시간(ms) 안에는 자동 poll 을 건너뛴다.
+ *  Apps Script 쓰기는 보통 3~8초 걸리므로 12s 로 여유를 둠.
+ *  Phase B의 pendingWriteIds 가 추가되면 이 값은 보조 안전장치로만 동작. */
+const WRITE_GRACE_MS = 12_000;
+/** 쓰기 직후 한 번 fetch 를 예약하는 지연.
+ *  WRITE_GRACE_MS 보다 충분히 길게 — 쓰기가 완료된 뒤 시트 상태를 읽어야 함. */
+const WRITE_REFRESH_MS = 12_000;
 
 interface SheetResponse {
   rows?: Record<string, unknown>[];

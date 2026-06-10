@@ -53,6 +53,11 @@ interface SheetsSyncState {
   // 최근 쓰기 타임스탬프 — OrgSync poll 의 stale-overwrite 방지용 (in-memory).
   lastWriteAt: number;
   /**
+   * 현재 시트 쓰기가 진행 중인 엔티티 ID Set (in-memory, 비영속).
+   * syncFromSheet 가 이 ID 들은 덮어쓰지 않아 optimistic 상태를 보존.
+   */
+  pendingWriteIds: Set<string>;
+  /**
    * QA 라운드 12 B4 — 제출 성공 화면 노출 중 SyncStatusBanner 가 동시에 '저장 대기 중 1건'
    * 으로 노출돼 혼란 유발. submit 시점에 일정 시간 banner 를 일시 숨기는 timestamp.
    */
@@ -69,6 +74,10 @@ interface SheetsSyncState {
   setReviewSyncError:    (msg: string | null, kind?: SyncErrorKind | null) => void;
   /** 쓰기 직전 호출 — useOrgSync 가 일정 시간 동안 poll 을 건너뛰어 stale 덮어쓰기 방지. */
   markWrite: () => void;
+  /** 쓰기 시작 시 ID 등록 — syncFromSheet 가 해당 ID 를 덮어쓰지 않음. */
+  addPendingWrite: (id: string) => void;
+  /** 쓰기 완료(성공/실패) 시 ID 해제. */
+  removePendingWrite: (id: string) => void;
   /** QA 라운드 12 B4 — submit 후 N ms 동안 SyncStatusBanner 일시 숨김 */
   markSubmitSuppress: (untilMs: number) => void;
 
@@ -97,6 +106,7 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
       pendingOps: [],
       lastSuccessAt: null,
       lastWriteAt: 0,
+      pendingWriteIds: new Set<string>(),
       submitSuppressUntil: 0,
 
       setScriptUrl: (scriptUrl) => set({ scriptUrl }),
@@ -115,6 +125,14 @@ export const useSheetsSyncStore = create<SheetsSyncState>()(
         // B7 — 다른 탭에 broadcast (자신은 onmessage 안 받음, 같은 탭은 직접 set 으로 처리됨)
         broadcastChannel?.postMessage({ type: 'markWrite', at: now });
       },
+      addPendingWrite: (id) =>
+        set(s => ({ pendingWriteIds: new Set([...s.pendingWriteIds, id]) })),
+      removePendingWrite: (id) =>
+        set(s => {
+          const next = new Set(s.pendingWriteIds);
+          next.delete(id);
+          return { pendingWriteIds: next };
+        }),
       markSubmitSuppress: (untilMs) => set({ submitSuppressUntil: untilMs }),
 
       enqueueOp: (op) => set(s => {

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTeamStore } from '../../stores/teamStore';
 import { isUserActive } from '../../utils/userCompat';
 import { MsButton } from '../ui/MsButton';
-import { MsSelect } from '../ui/MsControl';
+import { UserSearchSelect } from '../ui/UserSearchSelect';
 
 interface Props {
   open: boolean;
@@ -47,18 +47,13 @@ export function BulkManagerDialog({ open, selectedCount, onConfirm, onClose }: P
         </div>
 
         <div className="px-6 py-4">
-          <MsSelect
+          <UserSearchSelect
             label="새 보고대상"
             value={managerId}
-            onChange={e => setManagerId(e.target.value)}
-          >
-            <option value="">없음 (보고대상 해제)</option>
-            {managerOptions.map(u => (
-              <option key={u.id} value={u.id}>
-                {u.name}{u.position ? ` · ${u.position}` : ''}
-              </option>
-            ))}
-          </MsSelect>
+            onChange={setManagerId}
+            users={managerOptions}
+            clearLabel="없음 (보고대상 해제)"
+          />
         </div>
 
         <div className="px-6 pb-6 flex justify-end gap-2">

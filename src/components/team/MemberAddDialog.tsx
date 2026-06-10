@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useTeamStore } from '../../stores/teamStore';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
-import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
+import { MsCheckbox, MsInput } from '../ui/MsControl';
+import { UserSearchSelect } from '../ui/UserSearchSelect';
 import { ModalShell } from '../review/modals/ModalShell';
 import { OrgSelector } from './OrgSelector';
 import { AVATAR_COLORS, buildInitOrgSel, resolveOrgNamesFromSel } from '../../utils/teamUtils';
@@ -136,12 +137,13 @@ function MemberAddDialogContent({ context, onClose }: { context: MemberAddContex
               </div>
             </div>
             <div className="col-span-2">
-              <MsSelect label="보고 대상" value={form.managerId} onChange={f('managerId')}>
-                <option value="">없음 (자동 배정)</option>
-                {allLeaders.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} · {m.position}</option>
-                ))}
-              </MsSelect>
+              <UserSearchSelect
+                label="보고 대상"
+                value={form.managerId}
+                onChange={id => setForm(prev => ({ ...prev, managerId: id }))}
+                users={allLeaders}
+                clearLabel="없음 (자동 배정)"
+              />
             </div>
             {hasOrgUnits && (
               <OrgSelector orgUnits={orgUnits} value={orgSel} onChange={setOrgSel} />

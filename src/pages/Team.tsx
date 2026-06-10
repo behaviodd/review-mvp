@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useSetPageHeader } from '../contexts/PageHeaderContext';
@@ -80,10 +80,12 @@ interface DnDCallbacks {
   onDrop:      (targetId: string) => void;
 }
 
+interface ForceExpandCmd { key: number; expand: boolean }
+
 function OrgTreeNode({
   unit, allUnits, selectedId, onSelect,
   onEditUnit, onDeleteUnit, onAddChild, onAddMember,
-  depth, dnd, canEdit = false,
+  depth, dnd, canEdit = false, forceExpandCmd,
 }: {
   unit: OrgUnit;
   allUnits: OrgUnit[];
@@ -96,9 +98,20 @@ function OrgTreeNode({
   depth: number;
   dnd: DnDCallbacks;
   canEdit?: boolean;
+  /** 외부에서 일괄 펼치기/접기 시 새 key 로 교체 → useEffect 가 정확히 한 번 실행 */
+  forceExpandCmd?: ForceExpandCmd;
 }) {
   const { users, secondaryOrgs } = useTeamStore();
   const [expanded, setExpanded] = useState(depth === 0);
+
+  // 외부 "모두 펼치기/접기" 신호 동기화 — key 변경 시에만 실행
+  const prevKeyRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (forceExpandCmd && forceExpandCmd.key !== prevKeyRef.current) {
+      prevKeyRef.current = forceExpandCmd.key;
+      setExpanded(forceExpandCmd.expand);
+    }
+  }, [forceExpandCmd]);
   const [hovered, setHovered] = useState(false);
 
   const children = allUnits
@@ -305,6 +318,7 @@ function OrgTreeNode({
               depth={depth + 1}
               dnd={dnd}
               canEdit={canEdit}
+              forceExpandCmd={forceExpandCmd}
             />
           ))}
         </div>
@@ -343,19 +357,18 @@ function MemberRow({
   hasReviewer?: boolean;
 }) {
   const mySecondary = secondaryOrgs.filter(a => a.userId === user.id);
-  // 사용자 결정: admin 도 일반 구성원으로서 일괄 선택·일괄 작업 대상.
-  // 권한 자체는 권한그룹/role 으로 별도 관리되며, 체크박스/조직 변경/프로필 수정에는 영향 없음.
   const canSelect = !!onToggle;
   const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
-  // sub 텍스트: 직무/겸임role + 마지막 하위 조직 (Figma `{직무}•{마지막 하위조직}`)
-  const roleText = secondaryAssignmentHere?.role || user.position || '';
-  const lastOrg = user.squad || user.team || user.subOrg || user.department || '';
-  const subText = [roleText, lastOrg].filter(Boolean).join(' · ');
+  // Flex 패턴: 직위(position) = 이름 아래 좌측, 소속 경로 = "{조직} · {역할}" 우측 정렬
+  const positionLabel = user.position || '';
+  const orgName = user.squad || user.team || user.subOrg || user.department || '';
+  const roleLabel = secondaryAssignmentHere?.role || '';
+  const orgTag = [orgName, roleLabel || positionLabel].filter(Boolean).join(' · ');
 
   return (
     <div
-      className={`flex items-center gap-3 min-h-[52px] px-2 py-1.5 rounded-lg group transition-colors ${
+      className={`flex items-center gap-3 min-h-[60px] px-2 py-3 rounded-lg group transition-colors ${
         selected ? 'bg-bg-token-brand1-subtlest' : 'hover:bg-interaction-hovered'
       } ${canSelect ? 'cursor-pointer' : ''}`}
       onClick={canSelect ? () => onToggle!(user.id) : undefined}
@@ -373,7 +386,7 @@ function MemberRow({
       {/* Avatar 40px (LeftItem) */}
       <UserAvatar user={user} className="size-10 rounded-full" />
 
-      {/* Contents — name 16 SemiBold + sub 14 Regular subtle */}
+      {/* 이름 + 배지 (좌측) */}
       <div className="flex flex-col flex-1 min-w-0 justify-center gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -398,12 +411,19 @@ function MemberRow({
             </span>
           )}
         </div>
-        {subText && (
-          <p className="text-base font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
-            {subText}
+        {positionLabel && (
+          <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
+            {positionLabel}
           </p>
         )}
       </div>
+
+      {/* 소속 경로 — "{조직} · {역할}" 우측 정렬 (Flex 패턴) */}
+      {orgTag && (
+        <span className="text-sm text-fg-subtle whitespace-nowrap flex-shrink-0 hidden md:block">
+          {orgTag}
+        </span>
+      )}
 
       {/* 보고대상 없음 인디케이터 */}
       {hasReviewer === false && (
@@ -458,8 +478,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const startImpersonation = useAuthStore(s => s.startImpersonation);
   const showToast = useShowToast();
 
-  // Team 페이지 진입 시 즉시 org sync — 시트 변경 사항 바로 반영
-  useEffect(() => { void refetchOrg({ force: true }); }, []);
+  // Team 페이지 진입 시 org sync. force: false — 최근 쓰기 grace 를 존중해 optimistic 상태 보호.
+  useEffect(() => { void refetchOrg({ force: false }); }, []);
 
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
   const [showUnassigned, setShowUnassigned]      = useState(false);
@@ -483,6 +503,13 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [autoAssignOpen, setAutoAssignOpen] = useState(false);
   // 보고대상 일괄 변경 모달
   const [bulkManagerOpen, setBulkManagerOpen] = useState(false);
+  // 조직도 트리 펼치기/접기 — key 교체로 OrgTreeNode useEffect 를 정확히 한 번 트리거
+  const [treeExpandCmd, setTreeExpandCmd] = useState<ForceExpandCmd | undefined>(undefined);
+  const treeIsExpanded = treeExpandCmd?.expand ?? false;
+  const handleTreeExpandToggle = () =>
+    setTreeExpandCmd(prev => ({ key: (prev?.key ?? 0) + 1, expand: !treeIsExpanded }));
+  // 하위 조직 포함 여부
+  const [includeSubOrgs, setIncludeSubOrgs] = useState(true);
 
   /* ── deep-link 자동 진입 ──────────────────────────────────────────
    * /team?action=add → 추가 다이얼로그 자동 open
@@ -858,20 +885,26 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     if (showUnassigned) return unassignedUsers;
     if (!selectedUnit) return [...activeUsers].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-    // R7: orgUnitId 트리 기반 우선 + legacy 4단계 이름 매칭 폴백.
-    const treeIds = getMembersInOrgTree(selectedUnit.id, activeUsers, orgUnits).map(u => u.id);
+    // orgUnitId 트리 기반 우선 + legacy 4단계 이름 매칭 폴백.
+    // includeSubOrgs=false 이면 해당 조직 직접 소속만 표시.
+    const treeIds = includeSubOrgs
+      ? getMembersInOrgTree(selectedUnit.id, activeUsers, orgUnits).map(u => u.id)
+      : activeUsers.filter(u => u.orgUnitId === selectedUnit.id).map(u => u.id);
     const legacyKey: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
-    const legacyIds = activeUsers
-      .filter(u => {
-        const primary = u[legacyKey[selectedUnit.type]];
-        if (primary === selectedUnit.name) return true;
-        // 사용자가 주조직(department)만 입력한 경우 — subOrg/team/squad 타입 조직에서도 매칭
-        if (selectedUnit.type !== 'mainOrg' && u.department === selectedUnit.name) return true;
-        return false;
-      })
-      .map(u => u.id);
+    const legacyIds = includeSubOrgs
+      ? activeUsers
+          .filter(u => {
+            const primary = u[legacyKey[selectedUnit.type]];
+            if (primary === selectedUnit.name) return true;
+            if (selectedUnit.type !== 'mainOrg' && u.department === selectedUnit.name) return true;
+            return false;
+          })
+          .map(u => u.id)
+      : activeUsers
+          .filter(u => u[legacyKey[selectedUnit.type]] === selectedUnit.name)
+          .map(u => u.id);
     const primaryIds = new Set([...treeIds, ...legacyIds]);
     // 겸임으로 이 조직에 소속된 구성원 추가
     const secondaryIds = new Set(
@@ -884,7 +917,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       if (b.id === selectedUnit.headId) return 1;
       return a.name.localeCompare(b.name, 'ko');
     });
-  }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs]);
+  }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs, includeSubOrgs]);
 
   // 보고대상 미지정 구성원 ID Set — 필터·표시용 (보고대상 = 평가자)
   const noReviewerIds = useMemo(
@@ -990,7 +1023,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
           {searchResults.length === 0 ? (
             <p className="text-base text-fg-subtle text-center py-12">검색 결과가 없습니다.</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {searchResults.map(u => (
                 <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                   onView={goViewMember}
@@ -1130,7 +1163,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 )}
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {displayedUsers.map(u => (
                   <MemberRow key={u.id} user={u} secondaryOrgs={secondaryOrgs}
                     onView={goViewMember}
@@ -1173,34 +1206,35 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             )}
           </div>
 
-          {/* Right: 조직도 패널 (Figma 1143:13876 정합, Phase D-2.4c) — 자체 스크롤 */}
-          <div className="w-[366px] flex-shrink-0 border-l border-bd-default overflow-y-auto px-6 py-4 flex flex-col">
-            {/* 헤더 — "조직도" 16 Bold + "전체(N)명" 14 subtle (Figma 정합 — selectAll 트리거) */}
-            <div className="flex items-start justify-between mb-3 flex-shrink-0">
-              <button
-                onClick={selectAll}
-                className="flex flex-col items-start gap-0.5 -mx-2 px-2 py-1 rounded-md hover:bg-interaction-hovered transition-colors text-left"
-              >
-                {/* 활성 표시는 분홍 bg 제거 (사용자 명시) — 텍스트 색만 brand1 으로 */}
-                <p className={`text-base font-bold tracking-[-0.3px] leading-6 ${
-                  !selectedOrgId && !showTerminated && !showUnassigned ? 'text-fg-brand1' : 'text-fg-default'
-                }`}>조직도</p>
-                <p className="text-base text-fg-subtle tracking-[-0.3px] leading-5">
-                  전체({totalActive})명
-                </p>
-              </button>
-              {canEdit && (
-                <button onClick={() => openAddOrg('mainOrg')}
-                  title="주조직 추가"
-                  className="p-1 rounded-md text-fg-subtle hover:text-fg-default hover:bg-interaction-hovered transition-colors flex-shrink-0 mt-1"
+          {/* Right: 조직도 패널 — flex-col, 트리만 스크롤, 헤더·푸터 고정 */}
+          <div className="w-[366px] flex-shrink-0 border-l border-bd-default flex flex-col">
+            {/* 헤더 (고정) */}
+            <div className="flex-shrink-0 px-6 pt-4 pb-3">
+              <div className="flex items-start justify-between">
+                <button
+                  onClick={selectAll}
+                  className="flex flex-col items-start gap-0.5 -mx-2 px-2 py-1 rounded-md hover:bg-interaction-hovered transition-colors text-left"
                 >
-                  <MsPlusIcon size={16} />
+                  <p className={`text-base font-bold tracking-[-0.3px] leading-6 ${
+                    !selectedOrgId && !showTerminated && !showUnassigned ? 'text-fg-brand1' : 'text-fg-default'
+                  }`}>조직도</p>
+                  <p className="text-base text-fg-subtle tracking-[-0.3px] leading-5">
+                    전체({totalActive})명
+                  </p>
                 </button>
-              )}
+                {canEdit && (
+                  <button onClick={() => openAddOrg('mainOrg')}
+                    title="주조직 추가"
+                    className="p-1 rounded-md text-fg-subtle hover:text-fg-default hover:bg-interaction-hovered transition-colors flex-shrink-0 mt-1"
+                  >
+                    <MsPlusIcon size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* 트리 본문 */}
-            <div className="flex-1">
+            {/* 트리 본문 (개별 스크롤) */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-2">
               {orgUnits.length === 0 ? (
                 <div className="px-3 py-6 text-center">
                   <p className="text-xs text-fg-subtle mb-2">조직 구조가 없습니다.</p>
@@ -1230,11 +1264,31 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                       depth={0}
                       dnd={dnd}
                       canEdit={canEdit}
+                      forceExpandCmd={treeExpandCmd}
                     />
                   ))}
                 </div>
               )}
             </div>
+
+            {/* 푸터 (고정) — 트리 밖, 항상 패널 하단에 표시 */}
+            {orgUnits.length > 0 && (
+              <div className="flex-shrink-0 border-t border-bd-default px-6 py-3 flex items-center justify-between gap-2">
+                <label className="flex items-center gap-1.5 text-xs text-fg-subtle cursor-pointer select-none">
+                  <MsCheckbox
+                    checked={includeSubOrgs}
+                    onChange={() => setIncludeSubOrgs(v => !v)}
+                  />
+                  하위 조직 포함 선택하기
+                </label>
+                <button
+                  onClick={handleTreeExpandToggle}
+                  className="text-xs text-fg-subtle hover:text-fg-default transition-colors flex-shrink-0 whitespace-nowrap"
+                >
+                  {treeIsExpanded ? '모두 접기' : '모두 펼치기'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

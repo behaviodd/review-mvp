@@ -5,6 +5,7 @@ import type { User } from '../../types';
 import { useShowToast } from '../ui/Toast';
 import { MsButton } from '../ui/MsButton';
 import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
+import { UserSearchSelect } from '../ui/UserSearchSelect';
 import { MsCancelIcon } from '../ui/MsIcons';
 import { ModalShell } from '../review/modals/ModalShell';
 import { OrgSelector } from './OrgSelector';
@@ -229,12 +230,13 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
               </div>
             </div>
             <div className="col-span-2">
-              <MsSelect label="보고 대상" value={form.managerId} onChange={f('managerId')}>
-                <option value="">없음</option>
-                {allLeaders.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} · {m.position}</option>
-                ))}
-              </MsSelect>
+              <UserSearchSelect
+                label="보고 대상"
+                value={form.managerId}
+                onChange={id => setForm(prev => ({ ...prev, managerId: id }))}
+                users={allLeaders}
+                clearLabel="없음"
+              />
             </div>
             {!hasOrgUnits && (
               <MsInput label="주조직" type="text" value={form.department} onChange={f('department')} />

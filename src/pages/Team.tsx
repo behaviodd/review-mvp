@@ -7,6 +7,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useShowToast } from '../components/ui/Toast';
 import { usePendingApprovalsStore } from '../stores/pendingApprovalsStore';
 import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
+import { orgNameEquals, orgNameKey } from '../utils/normalizeOrgName';
 import {
   ORG_TYPE_NEXT,
   MAX_ORG_DEPTH, getOrgDepth, getOrgLevelLabel,
@@ -131,7 +132,7 @@ function OrgTreeNode({
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
     const legacyIds = users
-      .filter(u => u[key[unit.type]] === unit.name && isUserActive(u))
+      .filter(u => orgNameEquals(u[key[unit.type]] as string | undefined, unit.name) && isUserActive(u))
       .map(u => u.id);
     legacyIds.forEach(id => treeMembers.add(id));
     const secondaryExtra = secondaryOrgs.filter(a => a.orgId === unit.id && !treeMembers.has(a.userId)).length;
@@ -864,17 +865,17 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 사용자.
      R7: orgUnitId 우선 + legacy 폴백 — 마이그레이션 전후 모두 정확히 분류. */
   const allOrgIds   = useMemo(() => new Set(orgUnits.map(u => u.id)), [orgUnits]);
-  const allOrgNames = useMemo(() => new Set(orgUnits.map(u => u.name)), [orgUnits]);
+  const allOrgNameKeys = useMemo(() => new Set(orgUnits.map(u => orgNameKey(u.name))), [orgUnits]);
   const isUserAssigned = (u: User) => {
     if (u.orgUnitId && allOrgIds.has(u.orgUnitId)) return true;
-    // legacy 폴백: 4단계 이름 중 하나라도 등록된 OrgUnit 이름과 일치
-    return [u.department, u.subOrg, u.team, u.squad].some(n => n && allOrgNames.has(n));
+    // legacy 폴백: 4단계 이름 중 하나라도 등록된 OrgUnit 이름과 일치 (정규화 비교)
+    return [u.department, u.subOrg, u.team, u.squad].some(n => n && allOrgNameKeys.has(orgNameKey(n)));
   };
   const unassignedUsers = useMemo(() =>
     activeUsers.filter(u => !isUserAssigned(u))
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeUsers, allOrgIds, allOrgNames]
+    [activeUsers, allOrgIds, allOrgNameKeys]
   );
 
   /* 선택된 조직의 구성원 */
@@ -896,14 +897,14 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     const legacyIds = includeSubOrgs
       ? activeUsers
           .filter(u => {
-            const primary = u[legacyKey[selectedUnit.type]];
-            if (primary === selectedUnit.name) return true;
-            if (selectedUnit.type !== 'mainOrg' && u.department === selectedUnit.name) return true;
+            const primary = u[legacyKey[selectedUnit.type]] as string | undefined;
+            if (orgNameEquals(primary, selectedUnit.name)) return true;
+            if (selectedUnit.type !== 'mainOrg' && orgNameEquals(u.department, selectedUnit.name)) return true;
             return false;
           })
           .map(u => u.id)
       : activeUsers
-          .filter(u => u[legacyKey[selectedUnit.type]] === selectedUnit.name)
+          .filter(u => orgNameEquals(u[legacyKey[selectedUnit.type]] as string | undefined, selectedUnit.name))
           .map(u => u.id);
     const primaryIds = new Set([...treeIds, ...legacyIds]);
     // 겸임으로 이 조직에 소속된 구성원 추가

@@ -9,6 +9,8 @@ import { sheetWriter, generateEmployeeId } from '../utils/sheetWriter';
 import { orgUnitWriter, secondaryOrgWriter, reviewerAssignmentWriter } from '../utils/sheetWriter';
 import { useSheetsSyncStore } from './sheetsSyncStore';
 import { migrateToR1, isMigrationApplied, type SchemaVersion } from '../utils/migrations/r1_org_redesign';
+import { resolveOrgUnitIds } from '../utils/resolveOrgUnitIds';
+import { orgNameKey } from '../utils/normalizeOrgName';
 
 const ALL_PERMISSIONS: PermissionCode[] = [
   'cycles.manage',
@@ -116,14 +118,15 @@ function deriveTeams(users: User[]): Team[] {
 /** _구성원의 주조직 값 중 _조직구조에 없는 것을 가상 OrgUnit 으로 파생.
  *  isDerived=true 마킹 — 시트에 저장 안 되고 편집/삭제 불가. */
 function deriveOrgUnitsFromMembers(users: User[], existingOrgUnits: OrgUnit[]): OrgUnit[] {
-  const existingNames = new Set(existingOrgUnits.map(u => u.name));
+  const existingKeys = new Set(existingOrgUnits.map(u => orgNameKey(u.name)));
   const seen = new Set<string>();
   const derived: OrgUnit[] = [];
   let order = 900;
   for (const user of users) {
     const dept = user.department?.trim();
-    if (dept && !existingNames.has(dept) && !seen.has(dept)) {
-      seen.add(dept);
+    const deptKey = orgNameKey(dept);
+    if (dept && deptKey && !existingKeys.has(deptKey) && !seen.has(deptKey)) {
+      seen.add(deptKey);
       derived.push({ id: `__auto__${dept}`, name: dept, type: 'mainOrg', order: order++, isDerived: true });
     }
   }
@@ -133,16 +136,16 @@ function deriveOrgUnitsFromMembers(users: User[], existingOrgUnits: OrgUnit[]): 
 /** _구성원 역할='조직장' 사용자를 소속 OrgUnit 의 headId 로 반영.
  *  _조직구조 시트에 이미 headId 가 명시된 경우는 건드리지 않음(명시값 우선). */
 function deriveHeadsFromMembers(users: User[], orgUnits: OrgUnit[]): OrgUnit[] {
-  const orgById   = new Map(orgUnits.map(u => [u.id, u]));
-  const orgByName = new Map(orgUnits.map(u => [u.name, u]));
-  const updates   = new Map<string, string>(); // orgUnit.id → headId
+  const orgById      = new Map(orgUnits.map(u => [u.id, u]));
+  const orgByNameKey = new Map(orgUnits.map(u => [orgNameKey(u.name), u]));
+  const updates      = new Map<string, string>(); // orgUnit.id → headId
 
   for (const user of users) {
     if (user.role !== 'leader') continue;
     // 같은 org 에 leader 가 여럿일 때 첫 번째만 사용 (이미 update 됐으면 skip)
     const orgUnit =
       (user.orgUnitId ? orgById.get(user.orgUnitId) : undefined) ??
-      (user.department ? orgByName.get(user.department.trim()) : undefined);
+      (user.department ? orgByNameKey.get(orgNameKey(user.department)) : undefined);
     if (orgUnit && !orgUnit.headId && !updates.has(orgUnit.id)) {
       updates.set(orgUnit.id, user.id);
     }
@@ -173,6 +176,8 @@ interface TeamStore {
   permissionGroups: PermissionGroup[];
   schemaVersion: SchemaVersion;
   isLoading: boolean;
+  /** 안정성 관측성(C): 동기화 시 orgUnitId 를 끝내 배치 못한 구성원 id. 빈 배열이면 정상. */
+  unplacedMemberIds: string[];
 
   // 구성원 CRUD
   createTeam: (name: string) => void;
@@ -256,6 +261,7 @@ export const useTeamStore = create<TeamStore>()(
   permissionGroups: [],
   schemaVersion: 'pre-r1' as SchemaVersion,
   isLoading: false,
+  unplacedMemberIds: [],
 
   /* ── 구성원 ──────────────────────────────────────────────────────── */
   createTeam: (name) =>
@@ -627,33 +633,50 @@ export const useTeamStore = create<TeamStore>()(
   syncFromSheet: (newUsers, newOrgUnits, newSecondaryOrgs, newReviewerAssignments, newOrgSnapshots, newPermissionGroups) => {
     const pendingIds = useSheetsSyncStore.getState().pendingWriteIds;
 
+    // 안정성 보강(A+C): 빈/무효 orgUnitId 를 이름경로로 런타임 해석 — 신규 구성원이
+    // 시트에 ID 없이 추가돼도 자가복구. 끝내 못 배치한 구성원은 경고 + state 노출(C).
+    let resolvedUsers = newUsers;
+    let unplacedIds: string[] = [];
+    if (newOrgUnits !== undefined) {
+      const res = resolveOrgUnitIds(newUsers, newOrgUnits);
+      resolvedUsers = res.users;
+      unplacedIds = res.unresolved.map(u => u.id);
+      if (res.unresolved.length > 0) {
+        console.warn(
+          `[orgSync] orgUnitId 미배치 구성원 ${res.unresolved.length}명 — 시트 주조직/부조직/팀/스쿼드 값 확인 필요`,
+          res.unresolved.map(u => ({ id: u.id, name: u.name, dept: u.department })),
+        );
+      }
+    }
+
     // _조직구조에 없는 주조직 값은 가상 OrgUnit 으로 파생 — 편집/삭제 불가(isDerived=true)
     // 이후 _구성원 역할='조직장' 사용자를 소속 OrgUnit.headId 로 반영
     const augmentedOrgUnits = newOrgUnits !== undefined
       ? deriveHeadsFromMembers(
-          newUsers,
-          [...newOrgUnits, ...deriveOrgUnitsFromMembers(newUsers, newOrgUnits)],
+          resolvedUsers,
+          [...newOrgUnits, ...deriveOrgUnitsFromMembers(resolvedUsers, newOrgUnits)],
         )
       : undefined;
 
     if (pendingIds.size === 0) {
       // 빠른 경로: 진행 중인 쓰기 없음 — 기존 하드 오버라이트 유지
       return set(() => ({
-        users: newUsers,
-        teams: deriveTeams(newUsers),
+        users: resolvedUsers,
+        teams: deriveTeams(resolvedUsers),
+        ...(newOrgUnits !== undefined ? { unplacedMemberIds: unplacedIds } : {}),
         ...(augmentedOrgUnits !== undefined ? { orgUnits: augmentedOrgUnits } : {}),
         ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
         ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),
         ...(newOrgSnapshots !== undefined ? { orgSnapshots: newOrgSnapshots } : {}),
         ...(newPermissionGroups !== undefined
-          ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, newUsers) }
+          ? { permissionGroups: ensureSystemPermissionGroups(newPermissionGroups, resolvedUsers) }
           : {}),
       }));
     }
 
     // 보호 경로: pending ID 는 시트 데이터 대신 현재 로컬 상태 유지 (optimistic 보존)
     return set(state => {
-      const mergedUsers = newUsers.map(u =>
+      const mergedUsers = resolvedUsers.map(u =>
         pendingIds.has(u.id) ? (state.users.find(c => c.id === u.id) ?? u) : u
       );
       const mergedOrgUnits = augmentedOrgUnits?.map(u =>
@@ -662,6 +685,7 @@ export const useTeamStore = create<TeamStore>()(
       return {
         users: mergedUsers,
         teams: deriveTeams(mergedUsers),
+        ...(newOrgUnits !== undefined ? { unplacedMemberIds: unplacedIds } : {}),
         ...(mergedOrgUnits !== undefined ? { orgUnits: mergedOrgUnits } : {}),
         ...(newSecondaryOrgs !== undefined ? { secondaryOrgs: newSecondaryOrgs } : {}),
         ...(newReviewerAssignments !== undefined ? { reviewerAssignments: newReviewerAssignments } : {}),

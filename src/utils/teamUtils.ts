@@ -1,4 +1,5 @@
 import type { OrgUnit, OrgUnitType, User } from '../types';
+import { orgNameEquals } from './normalizeOrgName';
 
 /* ── R7: 조직 균일 5단계 ─────────────────────────────────────────────
  *   depth 0 = 주조직, depth 1~4 = 하위 조직 1~4. 최대 5단계.
@@ -101,12 +102,12 @@ export function buildInitOrgSel(orgId: string | undefined, orgUnits: OrgUnit[]):
 }
 
 export function buildOrgSelFromMember(member: User, orgUnits: OrgUnit[]): OrgSel {
-  const mainOrg = orgUnits.find(u => u.type === 'mainOrg' && u.name === member.department);
+  const mainOrg = orgUnits.find(u => u.type === 'mainOrg' && orgNameEquals(u.name, member.department));
   const subOrg  = mainOrg && member.subOrg
-    ? orgUnits.find(u => u.type === 'subOrg' && u.parentId === mainOrg.id && u.name === member.subOrg)
+    ? orgUnits.find(u => u.type === 'subOrg' && u.parentId === mainOrg.id && orgNameEquals(u.name, member.subOrg))
     : undefined;
-  const team    = member.team  ? orgUnits.find(u => u.type === 'team'  && u.name === member.team)  : undefined;
-  const squad   = member.squad ? orgUnits.find(u => u.type === 'squad' && u.name === member.squad) : undefined;
+  const team    = member.team  ? orgUnits.find(u => u.type === 'team'  && orgNameEquals(u.name, member.team))  : undefined;
+  const squad   = member.squad ? orgUnits.find(u => u.type === 'squad' && orgNameEquals(u.name, member.squad)) : undefined;
   return { mainOrgId: mainOrg?.id ?? '', subOrgId: subOrg?.id ?? '', teamId: team?.id ?? '', squadId: squad?.id ?? '' };
 }
 

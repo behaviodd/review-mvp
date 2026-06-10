@@ -1,6 +1,7 @@
 import type { OrgUnit, ReviewCycle, ReviewTemplate, ReviewerAssignment, User } from '../types';
 import { resolveTargetMembers, resolveTargetIds } from './resolveTargets';
 import { isUserActive, shouldAutoExcludeFromCycle } from './userCompat';
+import { orgNameEquals } from './normalizeOrgName';
 
 export type PreflightSeverity = 'block' | 'warn';
 
@@ -67,10 +68,10 @@ function resolveReviewerByRankForPreflight(
   const memberOrg = orgUnits.find(o =>
     o.headId &&
     o.headId !== member.id &&
-    (o.name === member.department ||
-     o.name === member.subOrg ||
-     o.name === member.team ||
-     o.name === member.squad)
+    (orgNameEquals(o.name, member.department) ||
+     orgNameEquals(o.name, member.subOrg) ||
+     orgNameEquals(o.name, member.team) ||
+     orgNameEquals(o.name, member.squad))
   );
   if (memberOrg?.headId) {
     mgr = allUsers.find(u => u.id === memberOrg.headId);

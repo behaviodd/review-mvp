@@ -1,4 +1,5 @@
 import type { ReviewCycle, User } from '../types';
+import { orgNameKey } from './normalizeOrgName';
 
 export type TargetCriteria = Pick<
   ReviewCycle,
@@ -26,9 +27,8 @@ export function resolveTargetMembers(
     return users.filter(u => set.has(u.id));
   }
 
-  return users.filter(u =>
-    cycle.targetDepartments.includes(u.department ?? ''),
-  );
+  const targetKeys = new Set(cycle.targetDepartments.map(orgNameKey));
+  return users.filter(u => targetKeys.has(orgNameKey(u.department)));
 }
 
 /** 현재 대상자 id 집합을 반환 (중복·교집합 체크용) */

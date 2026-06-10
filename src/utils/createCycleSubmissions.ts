@@ -1,4 +1,5 @@
 import type { OrgUnit, ReviewCycle, ReviewKind, ReviewSubmission, ReviewerAssignment, User } from '../types';
+import { orgNameEquals } from './normalizeOrgName';
 
 function makeId() {
   return `sub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -58,10 +59,10 @@ function resolveReviewerByRank(
     const memberOrg = orgUnits.find(o =>
       o.headId &&
       o.headId !== member.id &&
-      (o.name === member.department ||
-       o.name === member.subOrg ||
-       o.name === member.team ||
-       o.name === member.squad)
+      (orgNameEquals(o.name, member.department) ||
+       orgNameEquals(o.name, member.subOrg) ||
+       orgNameEquals(o.name, member.team) ||
+       orgNameEquals(o.name, member.squad))
     );
     if (memberOrg?.headId) manager = allUsers.find(u => u.id === memberOrg.headId);
   }

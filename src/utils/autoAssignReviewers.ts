@@ -10,6 +10,7 @@
  */
 import type { OrgUnit, ReviewerAssignmentSource, User } from '../types';
 import { isUserActive } from './userCompat';
+import { orgNameEquals } from './normalizeOrgName';
 
 export interface AutoAssignCandidate {
   revieweeId:   string;
@@ -81,7 +82,7 @@ export function computeAutoAssignments(
 
     // legacy: department 이름으로 orgUnit 역탐색
     if (u.department) {
-      const mainOrg = orgUnits.find(o => o.type === 'mainOrg' && o.name === u.department);
+      const mainOrg = orgUnits.find(o => o.type === 'mainOrg' && orgNameEquals(o.name, u.department));
       if (mainOrg) {
         const headId = findNearestOrgHead(mainOrg.id, orgUnits, activeIds, u.id);
         if (headId) {

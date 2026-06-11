@@ -59,11 +59,11 @@ export function ModalShell({
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-overlay-048" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-overlay-048 animate-[fadeIn_120ms_ease-out]" onClick={onClose} aria-hidden />
       <div
         role="dialog"
         aria-label={title}
-        className={`relative flex w-full ${resolvedWidth} max-h-[90vh] flex-col rounded-2xl bg-white shadow-modal`}
+        className={`relative flex w-full ${resolvedWidth} max-h-[90vh] flex-col rounded-2xl bg-white shadow-modal animate-[scaleIn_140ms_ease-out]`}
       >
         <header className="flex items-start justify-between gap-3 border-b border-gray-010 px-5 py-3">
           <div className="min-w-0">

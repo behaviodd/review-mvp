@@ -89,7 +89,7 @@ export function MsActionMenu({
         <MsMoreIcon size={triggerSize} />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 min-w-[140px] rounded-md border border-bd-default bg-surface-overlay shadow-md py-1 z-50">
+        <div role="menu" className="absolute right-0 top-full mt-1 min-w-[140px] rounded-md border border-bd-default bg-surface-overlay shadow-md py-1 z-50 origin-top-right animate-[fadeSlideDown_0.15s_ease]">
           {visible.map((item, i) => (
             <button
               key={i}

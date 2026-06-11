@@ -48,7 +48,7 @@ export function SideDrawer({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-40 bg-overlay-048"
+        className="fixed inset-0 z-40 bg-overlay-048 animate-[fadeIn_120ms_ease-out]"
         onClick={lockBackdrop ? undefined : onClose}
         aria-hidden
       />
@@ -57,7 +57,7 @@ export function SideDrawer({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'fixed right-0 top-0 z-50 flex h-full w-full flex-col bg-white shadow-modal',
+          'fixed right-0 top-0 z-50 flex h-full w-full flex-col bg-white shadow-modal animate-[slideInRight_180ms_ease-out]',
           WIDTH[width],
         )}
       >

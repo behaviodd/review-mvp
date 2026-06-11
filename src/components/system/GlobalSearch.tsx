@@ -102,12 +102,12 @@ export function GlobalSearch() {
 
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-start justify-center pt-24 p-4">
-      <div className="absolute inset-0 bg-overlay-048" onClick={() => setOpen(false)} aria-hidden />
+      <div className="absolute inset-0 bg-overlay-048 animate-[fadeIn_120ms_ease-out]" onClick={() => setOpen(false)} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="전역 검색"
-        className="relative w-full max-w-xl rounded-2xl bg-white shadow-modal overflow-hidden"
+        className="relative w-full max-w-xl rounded-2xl bg-white shadow-modal overflow-hidden animate-[fadeSlideDown_0.15s_ease-out]"
       >
         <div className="flex items-center gap-2 border-b border-gray-010 px-4 py-2.5">
           <MsArticleIcon size={14} className="text-fg-subtlest" />

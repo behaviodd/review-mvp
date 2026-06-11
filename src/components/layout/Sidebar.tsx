@@ -237,7 +237,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: Props) {
             </div>
 
             {menuOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-bd-default rounded-lg shadow-overlay z-50 overflow-hidden py-1">
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-bd-default rounded-lg shadow-overlay z-50 overflow-hidden py-1 origin-top animate-[fadeSlideDown_0.15s_ease]">
                 <button
                   onClick={() => { setMenuOpen(false); navigate('/settings'); onMobileClose(); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default transition-colors"

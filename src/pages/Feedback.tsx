@@ -257,7 +257,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 leftSlot={<MsSearchIcon size={16} />}
               />
               {mobileSearchOpen && filteredRecipients.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-020 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-020 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto origin-top animate-[fadeSlideDown_0.15s_ease]">
                   {filteredRecipients.map(u => (
                     <button
                       key={u.id}

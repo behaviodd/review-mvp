@@ -137,7 +137,7 @@ export function UserSearchSelect({
     <div
       id="uss-portal-root"
       style={dropdownStyle}
-      className="rounded-xl border border-bd-default bg-bg-token-default shadow-lg overflow-hidden flex flex-col"
+      className="rounded-xl border border-bd-default bg-bg-token-default shadow-lg overflow-hidden flex flex-col animate-[fadeSlideDown_0.15s_ease]"
     >
       {/* 검색 입력 */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-bd-default flex-shrink-0">

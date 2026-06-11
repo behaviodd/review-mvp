@@ -51,7 +51,7 @@ export function ConfirmDialog({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-overlay-048"
+        className="absolute inset-0 bg-overlay-048 animate-[fadeIn_120ms_ease-out]"
         onClick={loading ? undefined : onClose}
         aria-hidden
       />
@@ -59,7 +59,7 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-modal"
+        className="relative w-full max-w-md rounded-2xl bg-white shadow-modal animate-[scaleIn_140ms_ease-out]"
       >
         <header className="flex items-start gap-3 px-5 py-4">
           <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', iconTone)}>

@@ -32,9 +32,9 @@ export function BulkManagerDialog({ open, selectedCount, onConfirm, onClose }: P
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-[fadeIn_120ms_ease-out]" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4"
+        className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 animate-[scaleIn_140ms_ease-out]"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-6 pt-6 pb-2">

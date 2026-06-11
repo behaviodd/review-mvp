@@ -362,9 +362,23 @@ a, button, [role="button"], select, input, textarea {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
+/* 드로어/슬라이드오버 — 우측에서 슬라이드 인 */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 /* P1-B5 라운드 14 — 선택 제한 초과 시 카운트 영역 flash (scale + bg pulse) */
 @keyframes limitFlash {
   0%   { transform: scale(1);   background-color: transparent; }
   30%  { transform: scale(1.06); background-color: rgba(230, 25, 25, 0.12); }
   100% { transform: scale(1);   background-color: transparent; }
+}
+
+/* 모션 최소화 선호 사용자는 진입 애니메이션 비활성화 (접근성) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

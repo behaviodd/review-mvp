@@ -404,9 +404,11 @@ function MemberRow({
   const canSelect = !!onToggle;
   const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
-  // Flex 패턴: 직위(position) = 이름 아래 좌측에 1회만. 우측엔 소속 경로(조직)만 표시.
-  // (직책/역할을 우측 orgTag 에도 넣으면 좌측 직책 텍스트·조직장 배지와 중복되므로 제거)
+  // Flex 패턴: 이름 아래 좌측에 "직책 · 직무" 1회만. 우측엔 소속 경로(조직)만 표시.
+  // (직책/역할을 우측 orgTag 에도 넣으면 좌측 텍스트·조직장 배지와 중복되므로 제거)
   const positionLabel = user.position || '';
+  const jobLabel = user.jobFunction || '';
+  const subText = [positionLabel, jobLabel].filter(Boolean).join(' · ');
   const orgName = user.squad || user.team || user.subOrg || user.department || '';
   const orgTag = orgName;
 
@@ -455,9 +457,9 @@ function MemberRow({
             </span>
           )}
         </div>
-        {positionLabel && (
+        {subText && (
           <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
-            {positionLabel}
+            {subText}
           </p>
         )}
       </div>

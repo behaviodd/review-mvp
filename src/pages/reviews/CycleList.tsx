@@ -22,7 +22,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { HeaderTab } from '../../components/layout/HeaderTab';
 import {
   DEFAULT_CYCLE_FILTERS, applyCycleFilters, filtersToParams, paramsToFilters,
-  type CycleFilters, type CycleSort,
+  STATUS_PRESETS, type StatusPreset, type CycleFilters, type CycleSort,
 } from '../../utils/cycleFilter';
 import type { ReviewStatus, ReviewType } from '../../types';
 import { cn } from '../../utils/cn';
@@ -46,16 +46,10 @@ function StatusChip({ status }: { status: ReviewStatus }) {
   );
 }
 
-type StatusPreset = 'all' | 'draft' | 'in_progress' | 'closed';
-const STATUS_PRESET: Record<StatusPreset, ReviewStatus[]> = {
-  all: [],
-  draft: ['draft'],
-  in_progress: ['self_review', 'manager_review', 'calibration', 'active'],
-  closed: ['closed'],
-};
+// StatusPreset / STATUS_PRESETS 는 cycleFilter.ts 로 이동(대시보드 링크와 단일 진실 공유).
 function detectPreset(statuses: ReviewStatus[]): StatusPreset {
   if (statuses.length === 0) return 'all';
-  const keys = Object.entries(STATUS_PRESET) as [StatusPreset, ReviewStatus[]][];
+  const keys = Object.entries(STATUS_PRESETS) as [StatusPreset, ReviewStatus[]][];
   for (const [k, arr] of keys) {
     if (k === 'all') continue;
     if (arr.length === statuses.length && arr.every(s => statuses.includes(s))) return k;
@@ -88,7 +82,7 @@ export function CycleList() {
   };
 
   const preset = detectPreset(filters.statuses);
-  const setPreset = (p: StatusPreset) => update({ statuses: STATUS_PRESET[p] });
+  const setPreset = (p: StatusPreset) => update({ statuses: STATUS_PRESETS[p] });
 
   const allTags = useMemo(
     () => Array.from(new Set(cycles.flatMap(c => c.tags ?? []))).sort(),

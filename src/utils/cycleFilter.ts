@@ -31,6 +31,21 @@ export const DEFAULT_CYCLE_FILTERS: CycleFilters = {
   folder: { kind: 'all' },
 };
 
+/** 유효한 ReviewStatus 값 — URL param 검증용(잘못된/레거시 값 무시). */
+export const VALID_REVIEW_STATUSES: ReviewStatus[] =
+  ['draft', 'active', 'self_review', 'manager_review', 'calibration', 'closed'];
+
+/** UI 상태 프리셋 → 실제 ReviewStatus 묶음. 단일 진실(CycleList 세그먼트 + 대시보드 링크 공용).
+ *  주의: 'in_progress' 등 프리셋 키는 ReviewStatus 가 아니다 — status URL param 에 그대로
+ *  넣으면 어떤 사이클과도 매칭되지 않으므로, 링크 생성 시 반드시 이 매핑으로 변환할 것. */
+export type StatusPreset = 'all' | 'draft' | 'in_progress' | 'closed';
+export const STATUS_PRESETS: Record<StatusPreset, ReviewStatus[]> = {
+  all: [],
+  draft: ['draft'],
+  in_progress: ['self_review', 'manager_review', 'calibration', 'active'],
+  closed: ['closed'],
+};
+
 function quarterRange(d: Date = new Date()): { from: string; to: string } {
   const y = d.getFullYear();
   const q = Math.floor(d.getMonth() / 3);
@@ -156,7 +171,8 @@ export function filtersToParams(f: CycleFilters): URLSearchParams {
 export function paramsToFilters(p: URLSearchParams): CycleFilters {
   return {
     query: p.get(KEY.q) ?? '',
-    statuses: p.getAll(KEY.status) as ReviewStatus[],
+    // 잘못된/레거시 status 값(예: preset 키 'in_progress')은 무시 — 전체가 비어 보이는 것 방지.
+    statuses: (p.getAll(KEY.status) as ReviewStatus[]).filter(s => VALID_REVIEW_STATUSES.includes(s)),
     types: p.getAll(KEY.type) as ReviewType[],
     tags: p.getAll(KEY.tag),
     includeArchived: p.get(KEY.archived) === '1',

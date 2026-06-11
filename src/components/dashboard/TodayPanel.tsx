@@ -7,6 +7,7 @@ import { cn } from '../../utils/cn';
 import { MsAlertIcon, MsProfileIcon, MsSendIcon, MsCheckCircleIcon, MsChevronRightLineIcon } from '../ui/MsIcons';
 import { Pill } from '../ui/Pill';
 import { daysUntil } from '../../utils/dateUtils';
+import { filtersToParams, DEFAULT_CYCLE_FILTERS, STATUS_PRESETS } from '../../utils/cycleFilter';
 import { validateDistribution } from '../review/DistributionProgress';
 
 type Variant = 'admin' | 'leader';
@@ -131,7 +132,9 @@ export function TodayPanel({ variant }: Props) {
       count: closingCount,
       tone: 'info',
       icon: MsProfileIcon,
-      onClick: () => navigate('/cycles?status=in_progress&sort=deadline_asc'),
+      // '진행중' 은 preset 키 — status param 엔 실제 ReviewStatus 묶음을 넣어야 한다
+      // (preset 키 'in_progress' 를 그대로 넣으면 매칭 0건 → 빈 목록 버그).
+      onClick: () => navigate(`/cycles?${filtersToParams({ ...DEFAULT_CYCLE_FILTERS, statuses: STATUS_PRESETS.in_progress, sort: 'deadline_asc' })}`),
       show: closingCount > 0,
     },
   ] satisfies Card[]).filter(c => c.show);

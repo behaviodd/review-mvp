@@ -122,6 +122,10 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
       position:       form.position.trim(),
       jobFunction:    form.jobFunction.trim() || undefined,
       department, subOrg, team, squad,
+      // 소속(조직)의 정식 링크. legacy 이름 4종만 갱신하면 orgUnitId 가 옛 조직에
+      // 남아 조직도/트리(=orgUnitId 기준)에서 위치가 안 바뀐다 → 선택한 가장 깊은
+      // 조직 id 를 함께 저장. (조직 데이터가 있고 선택이 있을 때만 — 비파괴)
+      ...(hasOrgUnits && mostSpecificOrgId ? { orgUnitId: mostSpecificOrgId } : {}),
       // '보고대상 지정하지 않음' 체크 시 managerId 는 비우고 의도 플래그만 저장.
       managerId:      form.noManagerByDesign ? undefined : (form.managerId || undefined),
       noManagerByDesign: form.noManagerByDesign || undefined,

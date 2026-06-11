@@ -81,6 +81,8 @@ function toSheetRow(user: User, active = true): Record<string, string> {
     '이메일':         user.email,
     '재직 여부':      active ? 'true' : 'false',
     '보고대상(사번)':  user.managerId     ?? '',
+    // 보고대상을 의도적으로 두지 않음 (true/'')
+    '보고대상지정안함': user.noManagerByDesign ? 'true' : '',
     // R1: 신규 컬럼
     '주조직ID':       user.orgUnitId     ?? '',
     '상태분류':       user.activityStatus ?? '',

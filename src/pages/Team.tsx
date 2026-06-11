@@ -6,7 +6,7 @@ import { usePermission } from '../hooks/usePermission';
 import { useTeamStore } from '../stores/teamStore';
 import { useShowToast } from '../components/ui/Toast';
 import { usePendingApprovalsStore } from '../stores/pendingApprovalsStore';
-import { isUserActive, getMembersInOrgTree } from '../utils/userCompat';
+import { isUserActive, getMembersInOrgTree, userIsWorking, userIsOnLeave, userIsTerminated } from '../utils/userCompat';
 import { orgNameEquals, orgNameKey } from '../utils/normalizeOrgName';
 import {
   ORG_TYPE_NEXT,
@@ -24,6 +24,7 @@ import {
 import type { User, OrgUnit, OrgUnitType, SecondaryOrgAssignment } from '../types';
 import { MsButton } from '../components/ui/MsButton';
 import { MsCheckbox, MsInput } from '../components/ui/MsControl';
+import { MsActionMenu } from '../components/ui/MsActionMenu';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { QuickAddMemberDialog } from '../components/team/QuickAddMemberDialog';
 import { OrgUnitDialog, type OrgUnitDialogState } from '../components/team/OrgUnitDialog';
@@ -38,16 +39,58 @@ import { BulkManagerDialog } from '../components/team/BulkManagerDialog';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
 function matchesSearch(u: User, q: string) {
-  const lq = q.toLowerCase();
+  // NFC 정규화 — 시트/IME 출처에 따라 한글이 NFD(자모 분해)로 들어와도 매칭되도록.
+  const lq = q.normalize('NFC').toLowerCase();
+  const has = (s?: string | null) => (s ?? '').normalize('NFC').toLowerCase().includes(lq);
   return (
-    u.name.toLowerCase().includes(lq) ||
-    u.position.toLowerCase().includes(lq) ||
-    (u.department ?? '').toLowerCase().includes(lq) ||
-    u.email.toLowerCase().includes(lq) ||
-    (u.jobFunction ?? '').toLowerCase().includes(lq) ||
-    (u.nameEn ?? '').toLowerCase().includes(lq) ||
-    (u.subOrg ?? '').toLowerCase().includes(lq) ||
-    (u.team ?? '').toLowerCase().includes(lq)
+    has(u.name) || has(u.position) || has(u.department) ||
+    has(u.email) || has(u.jobFunction) || has(u.nameEn) ||
+    has(u.subOrg) || has(u.team)
+  );
+}
+
+/**
+ * 구성원 검색 입력 — 한글 IME 조합(composition) 보호.
+ *
+ * 이 입력은 `useSetPageHeader`(context + useEffect)를 거쳐 렌더되므로, value 갱신이
+ * 한 박자 늦게 돌아온다. 이 지연이 한글 IME 조합 버퍼를 끊어 자모가 분리되는 원인.
+ * → 표시값은 자체 local state 로 동기 갱신하고, 조합 중에는 부모 필터(onChange)를
+ *   건드리지 않다가 조합 종료 시 1회만 커밋한다. (영문/숫자는 composition 이벤트가
+ *   없어 매 입력마다 즉시 커밋 — 기존 동작 유지)
+ */
+function MemberSearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [local, setLocal] = useState(value);
+  const composing = useRef(false);
+
+  // 외부에서 value 가 바뀐 경우(프로그램적 초기화 등)만 동기화. 조합 중에는 무시.
+  useEffect(() => {
+    if (!composing.current && value !== local) setLocal(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <MsInput
+      type="text"
+      value={local}
+      onChange={e => {
+        const v = e.target.value;
+        setLocal(v);
+        if (!composing.current) onChange(v);
+      }}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={e => {
+        composing.current = false;
+        onChange(e.currentTarget.value);
+      }}
+      placeholder="이름·직책·이메일·조직 검색"
+      leftSlot={<MsSearchIcon size={16} />}
+      rightSlot={local ? (
+        <button onClick={() => { setLocal(''); onChange(''); }} className="text-fg-subtle hover:text-fg-default" aria-label="검색 지우기">
+          <MsCancelIcon size={14} />
+        </button>
+      ) : undefined}
+      className="w-64 md:w-80 h-10"
+    />
   );
 }
 
@@ -146,7 +189,7 @@ function OrgTreeNode({
       const u = users.find(u2 => u2.id === a.userId);
       if (u && isUserActive(u) && !treeMembers.some(m => m.id === u.id)) treeMembers.push(u);
     });
-    return treeMembers.filter(u => !u.managerId).length;
+    return treeMembers.filter(u => !u.managerId && !u.noManagerByDesign).length;
   }, [users, unit, allUnits, secondaryOrgs]);
 
   const nextType = ORG_TYPE_NEXT[unit.type];
@@ -361,11 +404,11 @@ function MemberRow({
   const canSelect = !!onToggle;
   const goToProfile = (e: React.MouseEvent) => { e.stopPropagation(); onView(user); };
 
-  // Flex 패턴: 직위(position) = 이름 아래 좌측, 소속 경로 = "{조직} · {역할}" 우측 정렬
+  // Flex 패턴: 직위(position) = 이름 아래 좌측에 1회만. 우측엔 소속 경로(조직)만 표시.
+  // (직책/역할을 우측 orgTag 에도 넣으면 좌측 직책 텍스트·조직장 배지와 중복되므로 제거)
   const positionLabel = user.position || '';
   const orgName = user.squad || user.team || user.subOrg || user.department || '';
-  const roleLabel = secondaryAssignmentHere?.role || '';
-  const orgTag = [orgName, roleLabel || positionLabel].filter(Boolean).join(' · ');
+  const orgTag = orgName;
 
   return (
     <div
@@ -428,39 +471,22 @@ function MemberRow({
 
       {/* 보고대상 없음 인디케이터 */}
       {hasReviewer === false && (
-        <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-orange-005 text-orange-060 border border-orange-020 whitespace-nowrap group-hover:hidden">
+        <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-orange-005 text-orange-060 border border-orange-020 whitespace-nowrap">
           보고대상 없음
         </span>
       )}
 
-      {/* Action buttons (hover 시 보임) */}
-      <div
-        className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-        onClick={e => e.stopPropagation()}
-      >
-        <button onClick={goToProfile} title="프로필 보기"
-          className="p-1.5 rounded-md text-fg-subtlest hover:text-fg-default hover:bg-interaction-hovered transition-colors">
-          <MsProfileIcon size={14} />
-        </button>
-        {onEdit && (
-          <button onClick={() => onEdit(user)} title="정보 수정"
-            className="p-1.5 rounded-md text-fg-subtlest hover:text-fg-brand1 hover:bg-bg-token-brand1-subtlest transition-colors">
-            <MsEditIcon size={14} />
-          </button>
-        )}
-        {onImpersonate && user.role !== 'admin' && isUserActive(user) && (
-          <button onClick={() => onImpersonate(user)} title="마스터 로그인 (조회 전용)"
-            className="p-1.5 rounded-md text-fg-subtlest hover:text-orange-070 hover:bg-orange-005 transition-colors">
-            <MsLogoutIcon size={14} />
-          </button>
-        )}
-        {onTerminate && user.role !== 'admin' && (
-          <button onClick={() => onTerminate(user)} title="퇴사 처리"
-            className="p-1.5 rounded-md text-fg-subtlest hover:text-red-050 hover:bg-red-005 transition-colors">
-            <MsCancelIcon size={14} />
-          </button>
-        )}
-      </div>
+      {/* 행 액션 — hover 시 노출되는 더보기(more) 메뉴 */}
+      <MsActionMenu
+        className="flex-shrink-0"
+        triggerVisibility="hover"
+        items={[
+          { label: '프로필 보기', icon: <MsProfileIcon size={12} />, onClick: () => onView(user) },
+          { label: '정보 수정', icon: <MsEditIcon size={12} />, onClick: () => onEdit?.(user), hidden: !onEdit },
+          { label: '마스터 로그인', icon: <MsLogoutIcon size={12} />, onClick: () => onImpersonate?.(user), hidden: !onImpersonate || user.role === 'admin' || !isUserActive(user) },
+          { label: '퇴사 처리', icon: <MsCancelIcon size={12} />, onClick: () => onTerminate?.(user), variant: 'danger', hidden: !onTerminate || user.role === 'admin' },
+        ]}
+      />
     </div>
   );
 }
@@ -470,10 +496,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const { users, orgUnits, deleteOrgUnit, isLoading, terminateMember, bulkUpdateOrgUnits, bulkUpdateMembers } = useTeamStore();
   // Phase D-2.4a: useSheetsSyncStore destructure 제거 — 동기화 배지를 헤더에서
   // 빼고 글로벌 SyncStatusBanner 가 처리 (사용자 결정 3.a)
-  // Phase D-2.4a: terminatedUsers 정의를 위로 — headerTabActions useMemo 의
-  // dependency 라 use-before-declaration 회피
+  // activeUsers = isUserActive 통과(재직·단기휴직·기타). 소속없음/보고대상없음 산출 기준.
+  // ⚠️ 상태 필터(재직/휴직/퇴사)는 activeUsers 가 아니라 userIsWorking/OnLeave/Terminated 사용.
   const activeUsers     = useMemo(() => users.filter(u => isUserActive(u)), [users]);
-  const terminatedUsers = useMemo(() => users.filter(u => !isUserActive(u)), [users]);
   const { can } = usePermission();
   const navigate = useNavigate();
   const startImpersonation = useAuthStore(s => s.startImpersonation);
@@ -485,8 +510,10 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(null);
   const [showUnassigned, setShowUnassigned]      = useState(false);
   const [search, setSearch]                      = useState('');
-  const [showTerminated, setShowTerminated]       = useState(false);
   const [statusFilter, setStatusFilter]          = useState<'all' | 'active' | 'leave' | 'terminated' | 'no_reviewer'>('all');
+  // 퇴사자 보기 = 퇴사 필터 선택 상태에서 파생 (별도 state 와의 desync 제거).
+  // 편집/선택/추가 액션 숨김 등 UI affordance 분기에만 사용.
+  const showTerminated = statusFilter === 'terminated';
   // R5-b: 마스터 로그인 시작 확인
   const [impersonateTarget, setImpersonateTarget] = useState<User | null>(null);
 
@@ -556,9 +583,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
 
   const clearSelection = () => setSelectedIds(new Set());
 
-  const selectAll = () => { setSelectedOrgId(null); setShowUnassigned(false); setShowTerminated(false); clearSelection(); };
-  const selectUnassigned = () => { setSelectedOrgId(null); setShowUnassigned(true); setShowTerminated(false); clearSelection(); };
-  const selectOrg = (id: string) => { setSelectedOrgId(id); setShowUnassigned(false); setShowTerminated(false); clearSelection(); };
+  const selectAll = () => { setSelectedOrgId(null); setShowUnassigned(false); setStatusFilter('all'); clearSelection(); };
+  const selectUnassigned = () => { setSelectedOrgId(null); setShowUnassigned(true); clearSelection(); };
+  const selectOrg = (id: string) => { setSelectedOrgId(id); setShowUnassigned(false); clearSelection(); };
 
   // Phase D-2.4a: PageHeader 슬롯 활용
   // - actions: 검색 input + "구성원 추가" 버튼 (사용자 결정 2.b)
@@ -570,19 +597,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       {/* Phase D-2.4a-fix2: 검색 input + "구성원 추가" 버튼 모두 h-10 (40px) 정합
           MsButton size="lg" = h-10 (ui-tokens.md § 5), Figma "구성원 추가" h-40 와 동일 */}
       {/* P1-B3 라운드 14 — 검색 input 폭/placeholder 강화 (QA #6 검색 진입점 강화) */}
-      <MsInput
-        type="text"
-        value={search}
-        onChange={e => { setSearch(e.target.value); clearSelection(); }}
-        placeholder="이름·직책·이메일·조직 검색"
-        leftSlot={<MsSearchIcon size={16} />}
-        rightSlot={search ? (
-          <button onClick={() => setSearch('')} className="text-fg-subtle hover:text-fg-default" aria-label="검색 지우기">
-            <MsCancelIcon size={14} />
-          </button>
-        ) : undefined}
-        className="w-64 md:w-80 h-10"
-      />
+      {/* 한글 IME 조합 보호를 위해 자체 local state 컴포넌트로 분리 (자모 분리 버그 수정) */}
+      <MemberSearchInput value={search} onChange={v => { setSearch(v); clearSelection(); }} />
       {canEdit && (
         <MsButton
           size="lg"
@@ -626,7 +642,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
         {STATUS_FILTER_LABELS.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => { setStatusFilter(key); setShowTerminated(key === 'terminated'); clearSelection(); }}
+            onClick={() => { setStatusFilter(key); clearSelection(); }}
             className={`inline-flex items-center h-6 px-2 text-xs font-bold rounded-md border transition-colors ${
               statusFilter === key
                 ? 'bg-interaction-pressed border-bd-primary text-fg-default'
@@ -647,7 +663,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       </button>
     </>
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [terminatedUsers.length, showTerminated, statusFilter, showToast]);
+  ), [statusFilter, showToast]);
 
   useSetPageHeader('구성원', headerActions, {
     tabs: headerTabs,
@@ -856,10 +872,9 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     onDrop: handleDrop,
   };
 
-  // Phase D-2.4a: activeUsers / terminatedUsers 정의는 위로 이동됨 (use-before-declaration 회피).
   // R7: 관리자도 구성원에 포함. 사이클 참여 분류(isSystemOperator)는 별도 의미로 유지.
-  // totalLeaders 는 Stats 카드 삭제로 unused — 제거.
-  const totalActive   = activeUsers.length;
+  // 트리 '전체 구성원' 카운트 = 재직만 (기본 'all' 필터가 재직만 보이므로 일치).
+  const totalActive   = useMemo(() => users.filter(userIsWorking).length, [users]);
   const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
 
   /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 사용자.
@@ -881,21 +896,23 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   /* 선택된 조직의 구성원 */
   const { secondaryOrgs } = useTeamStore();
   const selectedUnit = selectedOrgId ? orgUnits.find(u => u.id === selectedOrgId) : null;
+  // panelUsers = 현재 scope(소속없음/전체/조직)의 모집단. 재직상태 필터는 적용하지 않는다
+  // (퇴사·휴직 포함 전원). 상태 narrowing 은 아래 displayedUsers(applyStatusFilter)가 담당 —
+  // 이렇게 분리해야 '퇴사'/'장기휴직' 필터가 선택 조직 안에서도 정확히 동작한다.
   const panelUsers = useMemo(() => {
-    if (showTerminated) return terminatedUsers;
     if (showUnassigned) return unassignedUsers;
-    if (!selectedUnit) return [...activeUsers].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    if (!selectedUnit) return [...users].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     // orgUnitId 트리 기반 우선 + legacy 4단계 이름 매칭 폴백.
     // includeSubOrgs=false 이면 해당 조직 직접 소속만 표시.
     const treeIds = includeSubOrgs
-      ? getMembersInOrgTree(selectedUnit.id, activeUsers, orgUnits).map(u => u.id)
-      : activeUsers.filter(u => u.orgUnitId === selectedUnit.id).map(u => u.id);
+      ? getMembersInOrgTree(selectedUnit.id, users, orgUnits).map(u => u.id)
+      : users.filter(u => u.orgUnitId === selectedUnit.id).map(u => u.id);
     const legacyKey: Record<OrgUnitType, keyof User> = {
       mainOrg: 'department', subOrg: 'subOrg', team: 'team', squad: 'squad',
     };
     const legacyIds = includeSubOrgs
-      ? activeUsers
+      ? users
           .filter(u => {
             const primary = u[legacyKey[selectedUnit.type]] as string | undefined;
             if (orgNameEquals(primary, selectedUnit.name)) return true;
@@ -903,7 +920,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             return false;
           })
           .map(u => u.id)
-      : activeUsers
+      : users
           .filter(u => orgNameEquals(u[legacyKey[selectedUnit.type]] as string | undefined, selectedUnit.name))
           .map(u => u.id);
     const primaryIds = new Set([...treeIds, ...legacyIds]);
@@ -911,29 +928,35 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     const secondaryIds = new Set(
       secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => a.userId)
     );
-    const members = activeUsers.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
+    const members = users.filter(u => primaryIds.has(u.id) || secondaryIds.has(u.id));
     // 조직장 맨 위, 이후 가나다/abc 순
     return members.sort((a, b) => {
       if (a.id === selectedUnit.headId) return -1;
       if (b.id === selectedUnit.headId) return 1;
       return a.name.localeCompare(b.name, 'ko');
     });
-  }, [selectedUnit, activeUsers, orgUnits, terminatedUsers, showTerminated, showUnassigned, unassignedUsers, secondaryOrgs, includeSubOrgs]);
+  }, [selectedUnit, users, orgUnits, showUnassigned, unassignedUsers, secondaryOrgs, includeSubOrgs]);
 
-  // 보고대상 미지정 구성원 ID Set — 필터·표시용 (보고대상 = 평가자)
+  // 보고대상 미지정 구성원 ID Set — 필터·표시용 (보고대상 = 평가자).
+  // noManagerByDesign(의도적 무보고대상, 최상위 등)은 경고/배지 대상에서 제외.
   const noReviewerIds = useMemo(
-    () => new Set(activeUsers.filter(u => !u.managerId).map(u => u.id)),
+    () => new Set(activeUsers.filter(u => !u.managerId && !u.noManagerByDesign).map(u => u.id)),
     [activeUsers],
   );
 
-  // 재직상태 + 배정 필터 적용 헬퍼
+  // 재직상태 + 배정 필터 적용 헬퍼. 모집단(panelUsers)에서 상태별로 narrowing.
+  // - all: 재직만 (휴직·퇴사는 각 카테고리에서만 노출 — 사용자 결정)
+  // - active: 재직            - leave: 단기+장기 휴직       - terminated: 퇴사
+  // - no_reviewer: 보고대상 없는 재직중 인원
   const applyStatusFilter = (list: User[]) => {
-    if (statusFilter === 'all')        return list;
-    if (statusFilter === 'active')     return list.filter(u => !u.activityStatus || u.activityStatus === 'active');
-    if (statusFilter === 'leave')      return list.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long');
-    if (statusFilter === 'terminated') return list.filter(u => u.activityStatus === 'terminated');
-    if (statusFilter === 'no_reviewer') return list.filter(u => noReviewerIds.has(u.id));
-    return list;
+    switch (statusFilter) {
+      case 'active':      return list.filter(userIsWorking);
+      case 'leave':       return list.filter(userIsOnLeave);
+      case 'terminated':  return list.filter(userIsTerminated);
+      case 'no_reviewer': return list.filter(u => userIsWorking(u) && noReviewerIds.has(u.id));
+      case 'all':
+      default:            return list.filter(userIsWorking);
+    }
   };
 
   const searchResults = useMemo(() =>
@@ -951,9 +974,11 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const orgSummary = useMemo(() => {
     if (!selectedUnit) return null;
     const orgHead = selectedUnit.headId ? users.find(u => u.id === selectedUnit.headId) : null;
+    // panelUsers 는 휴직·퇴사 포함 모집단 → 조직 '총원'은 재직만 집계(휴직은 별도 표기).
+    const total = panelUsers.filter(userIsWorking).length;
     const noReviewerInOrg = panelUsers.filter(u => noReviewerIds.has(u.id)).length;
-    const leaveInOrg = panelUsers.filter(u => u.activityStatus === 'leave_short' || u.activityStatus === 'leave_long').length;
-    return { orgHead, noReviewerInOrg, leaveInOrg };
+    const leaveInOrg = panelUsers.filter(userIsOnLeave).length;
+    return { orgHead, total, noReviewerInOrg, leaveInOrg };
   }, [selectedUnit, panelUsers, users, noReviewerIds]);
 
   // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)
@@ -1083,14 +1108,14 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                 ) : (
                   <h2 className="text-base font-bold text-fg-default tracking-[-0.3px] leading-6">전체 구성원</h2>
                 )}
-                <p className="text-base text-fg-subtle mt-0.5">{panelUsers.length}명</p>
+                <p className="text-base text-fg-subtle mt-0.5">{displayedUsers.length}명</p>
               </div>
-              {canEdit && !showTerminated && panelUsers.length > 0 && (
+              {canEdit && !showTerminated && displayedUsers.length > 0 && (
                 <MsCheckbox
                   title="전체 선택"
-                  checked={panelUsers.every(u => selectedIds.has(u.id))}
-                  indeterminate={panelUsers.some(u => selectedIds.has(u.id)) && !panelUsers.every(u => selectedIds.has(u.id))}
-                  onChange={() => toggleSelectAll(panelUsers)}
+                  checked={displayedUsers.every(u => selectedIds.has(u.id))}
+                  indeterminate={displayedUsers.some(u => selectedIds.has(u.id)) && !displayedUsers.every(u => selectedIds.has(u.id))}
+                  onChange={() => toggleSelectAll(displayedUsers)}
                 />
               )}
             </div>
@@ -1100,7 +1125,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
               <div className="mb-3 px-3 py-3 rounded-lg border border-bd-default bg-gray-005 text-xs">
                 <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
                   <span className="text-fg-subtle">
-                    총 <strong className="text-fg-default">{panelUsers.length}명</strong>
+                    총 <strong className="text-fg-default">{orgSummary.total}명</strong>
                   </span>
                   {orgSummary.orgHead ? (
                     <span className="text-fg-subtle">
@@ -1130,7 +1155,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             )}
 
             {/* Member list */}
-            {isLoading && panelUsers.length === 0 ? (
+            {isLoading && displayedUsers.length === 0 ? (
               <div className="space-y-2 animate-pulse p-2">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="flex items-center gap-3 py-2">
@@ -1142,14 +1167,27 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   </div>
                 ))}
               </div>
-            ) : panelUsers.length === 0 ? (
+            ) : displayedUsers.length === 0 && panelUsers.length > 0 ? (
+              /* 모집단엔 구성원이 있으나 현재 상태 필터에 걸리는 사람이 없음 */
+              <div className="flex flex-col items-center gap-3 text-center py-12">
+                <Users className="size-8 text-fg-subtlest" />
+                <p className="text-base text-fg-subtle">
+                  {`'${STATUS_FILTER_LABELS.find(f => f.key === statusFilter)?.label ?? ''}' 상태의 구성원이 없습니다.`}
+                </p>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className="text-base font-semibold text-fg-brand1 hover:text-fg-brand1-bolder transition-colors">
+                  필터 초기화
+                </button>
+              </div>
+            ) : displayedUsers.length === 0 ? (
               <div className="flex flex-col items-center gap-3 text-center py-12">
                 <Users className="size-8 text-fg-subtlest" />
                 <p className="text-base text-fg-subtle">
                   {selectedUnit
                     ? `${selectedUnit.name}에 구성원이 없습니다.`
                     : users.length > 0
-                      ? `활성 구성원이 없습니다. (전체 ${users.length}명 중 비활성)`
+                      ? `표시할 구성원이 없습니다. (전체 ${users.length}명)`
                       : '구성원이 없습니다. 시트 동기화를 확인하세요.'}
                 </p>
                 {!selectedUnit && users.length > 0 && (

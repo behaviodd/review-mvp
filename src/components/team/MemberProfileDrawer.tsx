@@ -333,7 +333,9 @@ function ReviewerSection({
         )}
       </div>
       {!manager ? (
-        <p className="text-base text-fg-subtlest py-2">보고대상이 지정되지 않았습니다.</p>
+        <p className="text-base text-fg-subtlest py-2">
+          {target.noManagerByDesign ? '보고대상 없음 (지정하지 않음)' : '보고대상이 지정되지 않았습니다.'}
+        </p>
       ) : (
         <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-interaction-hovered transition-colors">
           <UserAvatar user={manager} size="sm" />

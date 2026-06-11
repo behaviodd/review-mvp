@@ -107,6 +107,27 @@ export function shouldAutoExcludeFromCycle(user: User): boolean {
   return user.isActive === false;
 }
 
+// ─────── 재직상태 필터 분류 (구성원 페이지 재직/휴직/퇴사 필터의 단일 진실) ───────
+//
+// ⚠️ isUserActive() 는 leave_long(장기휴직)을 '비활동'으로 묶으므로 UI 상태 필터에는
+//    부적합하다. 필터는 휴직(단기+장기)/퇴사/재직을 명확히 구분해야 하므로 아래를 사용.
+//    activityStatus 기준, 미설정(legacy)은 isActive 폴백.
+
+/** 퇴사 (legacy: isActive=false). */
+export function userIsTerminated(user: User): boolean {
+  return user.activityStatus ? user.activityStatus === 'terminated' : user.isActive === false;
+}
+
+/** 휴직 (단기 + 장기). */
+export function userIsOnLeave(user: User): boolean {
+  return user.activityStatus === 'leave_short' || user.activityStatus === 'leave_long';
+}
+
+/** 재직 (휴직·퇴사 아님). 'other' 및 legacy active 포함. */
+export function userIsWorking(user: User): boolean {
+  return !userIsTerminated(user) && !userIsOnLeave(user);
+}
+
 // ─────── 평가권 헬퍼 ───────
 
 /**

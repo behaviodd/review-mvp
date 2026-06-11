@@ -65,6 +65,8 @@ export interface User {
   leaveDate?: string;
   /** @deprecated R3 에서 제거. ReviewerAssignment(rank=1) 로 이전됨. */
   managerId?: string;
+  /** 보고대상을 의도적으로 두지 않음(최상위 등). true 면 '보고대상 없음' 경고/배지에서 제외. */
+  noManagerByDesign?: boolean;
 }
 
 export interface OrgUnit {

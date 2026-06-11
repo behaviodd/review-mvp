@@ -89,6 +89,7 @@ export function parseSheetUser(row: SheetRow): User | null {
     : undefined;
   const statusChangedAt = str(row['상태변경일시']) || undefined;
   const statusReason    = str(row['상태사유']) || undefined;
+  const noManagerByDesign = str(row['보고대상지정안함']).toLowerCase() === 'true' || undefined;
 
   return {
     id,
@@ -101,6 +102,7 @@ export function parseSheetUser(row: SheetRow): User | null {
     position,
     role,
     managerId:  managerRaw || undefined,
+    noManagerByDesign,
     avatarColor: colorFromId(id),
     nameEn:          str(row['영문이름']) || undefined,
     phone:           str(row['연락처'])   || undefined,

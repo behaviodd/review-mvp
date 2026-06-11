@@ -83,6 +83,7 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
     jobFunction:    member?.jobFunction    ?? '',
     department:     member?.department     ?? '',
     managerId:      member?.managerId      ?? '',
+    noManagerByDesign: member?.noManagerByDesign ?? false,
     activityStatus: member?.activityStatus ?? 'active',
     statusReason:   member?.statusReason   ?? '',
   }));
@@ -121,7 +122,9 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
       position:       form.position.trim(),
       jobFunction:    form.jobFunction.trim() || undefined,
       department, subOrg, team, squad,
-      managerId:      form.managerId || undefined,
+      // '보고대상 지정하지 않음' 체크 시 managerId 는 비우고 의도 플래그만 저장.
+      managerId:      form.noManagerByDesign ? undefined : (form.managerId || undefined),
+      noManagerByDesign: form.noManagerByDesign || undefined,
       activityStatus: form.activityStatus as User['activityStatus'],
       statusReason:   form.statusReason.trim() || undefined,
       ...(activityStatusChanged ? { statusChangedAt: new Date().toISOString() } : {}),
@@ -230,12 +233,25 @@ function MemberEditDialogContent({ userId, onClose }: { userId: string; onClose:
               </div>
             </div>
             <div className="col-span-2">
-              <UserSearchSelect
-                label="보고 대상"
-                value={form.managerId}
-                onChange={id => setForm(prev => ({ ...prev, managerId: id }))}
-                users={allLeaders}
-                clearLabel="없음"
+              <div className={form.noManagerByDesign ? 'opacity-50 pointer-events-none' : ''}>
+                <UserSearchSelect
+                  label="보고 대상"
+                  value={form.managerId}
+                  onChange={id => setForm(prev => ({ ...prev, managerId: id }))}
+                  users={allLeaders}
+                  clearLabel="없음"
+                />
+              </div>
+              <MsCheckbox
+                size="md"
+                className="mt-2"
+                checked={form.noManagerByDesign}
+                onChange={e => setForm(prev => ({
+                  ...prev,
+                  noManagerByDesign: e.target.checked,
+                  managerId: e.target.checked ? '' : prev.managerId,
+                }))}
+                label={<span className="text-xs font-medium text-gray-060">보고대상 지정하지 않음 (최상위 등 — ‘보고대상 없음’ 경고에서 제외)</span>}
               />
             </div>
             {!hasOrgUnits && (

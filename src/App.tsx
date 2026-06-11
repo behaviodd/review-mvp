@@ -32,6 +32,7 @@ import { CycleArchive } from './pages/reviews/CycleArchive';
 import { TemplateList } from './pages/reviews/TemplateList';
 import { TemplateBuilder } from './pages/reviews/TemplateBuilder';
 import { Team } from './pages/Team';
+import { OrgChart } from './pages/OrgChart';
 import { Settings } from './pages/Settings';
 import { Permissions } from './pages/Permissions';
 import { ProfileFieldSettings } from './pages/ProfileFieldSettings';
@@ -355,6 +356,7 @@ export default function App() {
 
             {/* Other pages */}
             <Route path="team" element={<RouteBoundary><Team /></RouteBoundary>} />
+            <Route path="team/org-chart" element={<RouteBoundary><OrgChart /></RouteBoundary>} />
             <Route
               path="team/profile-fields"
               element={

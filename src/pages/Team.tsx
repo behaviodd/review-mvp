@@ -36,6 +36,7 @@ import { impersonationLogWriter } from '../utils/sheetWriter';
 import { HeaderTab } from '../components/layout/HeaderTab';
 import { refetchOrg } from '../utils/syncControl';
 import { BulkManagerDialog } from '../components/team/BulkManagerDialog';
+import { TeamViewToggle } from '../components/team/TeamViewToggle';
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
 function matchesSearch(u: User, q: string) {
@@ -513,6 +514,8 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   const [showUnassigned, setShowUnassigned]      = useState(false);
   const [search, setSearch]                      = useState('');
   const [statusFilter, setStatusFilter]          = useState<'all' | 'active' | 'leave' | 'terminated' | 'no_reviewer'>('all');
+  // 퇴사/보고대상 없음 필터 기본 숨김 — '더보기' 토글로 펼침.
+  const [showMoreFilters, setShowMoreFilters]    = useState(false);
   // 퇴사자 보기 = 퇴사 필터 선택 상태에서 파생 (별도 state 와의 desync 제거).
   // 편집/선택/추가 액션 숨김 등 UI affordance 분기에만 사용.
   const showTerminated = statusFilter === 'terminated';
@@ -629,19 +632,28 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     <HeaderTab active>전체</HeaderTab>
   ), []);
 
+  // advanced=true 인 필터(휴직/퇴사/보고대상 없음)는 기본 숨김 — '더보기' 토글 또는
+  // 해당 필터가 활성일 때만 노출. 자주 쓰는 전체/재직만 기본 노출.
   const STATUS_FILTER_LABELS = [
     { key: 'all'         as const, label: '전체' },
     { key: 'active'      as const, label: '재직' },
-    { key: 'leave'       as const, label: '휴직' },
-    { key: 'terminated'  as const, label: '퇴사' },
-    { key: 'no_reviewer' as const, label: '보고대상 없음' },
+    { key: 'leave'       as const, label: '휴직',          advanced: true },
+    { key: 'terminated'  as const, label: '퇴사',          advanced: true },
+    { key: 'no_reviewer' as const, label: '보고대상 없음', advanced: true },
   ];
+
+  // 숨겨진 필터가 현재 활성이면 자동으로 펼쳐 보이게 (advanced 목록에서 파생).
+  const advancedActive = STATUS_FILTER_LABELS.some(f => f.advanced && f.key === statusFilter);
+  const showAdvancedFilters = showMoreFilters || advancedActive;
 
   const headerTabActions = useMemo(() => (
     <>
+      {/* 리스트 ↔ 조직도 뷰 전환 */}
+      <TeamViewToggle current="list" />
+      <span className="w-px h-4 bg-bd-default mx-0.5" aria-hidden />
       {/* 재직상태 필터 */}
       <div className="flex items-center gap-1">
-        {STATUS_FILTER_LABELS.map(({ key, label }) => (
+        {STATUS_FILTER_LABELS.filter(f => !f.advanced || showAdvancedFilters).map(({ key, label }) => (
           <button
             key={key}
             onClick={() => { setStatusFilter(key); clearSelection(); }}
@@ -654,6 +666,17 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
             {label}
           </button>
         ))}
+        {/* 더보기 토글 — 추가 상태 필터 펼침/접기 (활성 중이면 이미 노출되므로 숨김) */}
+        {!advancedActive && (
+          <button
+            onClick={() => setShowMoreFilters(v => !v)}
+            className="inline-flex items-center gap-0.5 h-6 px-2 text-xs font-bold rounded-md border border-bd-primary text-fg-subtle hover:bg-interaction-hovered hover:text-fg-default transition-colors"
+            title={showMoreFilters ? '추가 필터 접기' : '추가 필터 더보기'}
+            aria-expanded={showMoreFilters}
+          >
+            {showMoreFilters ? '접기' : '더보기'}
+          </button>
+        )}
       </div>
       {/* 정렬 버튼 */}
       <button
@@ -665,7 +688,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
       </button>
     </>
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [statusFilter, showToast]);
+  ), [statusFilter, showToast, showAdvancedFilters, advancedActive, showMoreFilters]);
 
   useSetPageHeader('구성원', headerActions, {
     tabs: headerTabs,

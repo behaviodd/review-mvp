@@ -1,30 +1,57 @@
 /**
- * 사용자 검색+선택 드롭다운.
- * 이름·직위·이메일로 실시간 필터링, 키보드 탐색 지원.
+ * 조직 검색+선택 드롭다운.
+ * 조직명·상위경로로 실시간 필터링, 키보드 탐색 지원. 계층 순서(DFS)로 정렬.
  * 드롭다운은 Portal로 body에 마운트해 모달 overflow clip 우회.
+ * (UserSearchSelect 와 동일한 UX 패턴)
  */
-import { useState, useRef, useEffect, useId } from 'react';
+import { useState, useRef, useEffect, useId, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import type { User } from '../../types';
-import { UserAvatar } from './UserAvatar';
+import type { OrgUnit } from '../../types';
+import { getOrgDepth, getOrgLevelLabel } from '../../utils/teamUtils';
 import { MsSearchIcon, MsCancelIcon } from './MsIcons';
 
 interface Props {
   label?: string;
-  value: string;          // selected User.id, '' = 미지정
-  onChange: (userId: string) => void;
-  users: User[];
+  value: string;          // selected OrgUnit.id, '' = 미지정
+  onChange: (orgId: string) => void;
+  orgUnits: OrgUnit[];
   placeholder?: string;
   clearLabel?: string;
 }
 
-export function UserSearchSelect({
+/** 계층 순서(루트→자식 DFS, 각 단계는 order 순)로 평탄화 */
+function flattenOrgs(units: OrgUnit[]): OrgUnit[] {
+  const byParent = new Map<string, OrgUnit[]>();
+  const roots: OrgUnit[] = [];
+  for (const u of units) {
+    if (u.parentId) {
+      const arr = byParent.get(u.parentId) ?? [];
+      arr.push(u);
+      byParent.set(u.parentId, arr);
+    } else {
+      roots.push(u);
+    }
+  }
+  const sortFn = (a: OrgUnit, b: OrgUnit) => (a.order - b.order) || a.name.localeCompare(b.name);
+  const out: OrgUnit[] = [];
+  const visit = (u: OrgUnit) => {
+    out.push(u);
+    (byParent.get(u.id) ?? []).slice().sort(sortFn).forEach(visit);
+  };
+  roots.slice().sort(sortFn).forEach(visit);
+  // 부모가 누락된 고아 노드는 끝에 보존
+  const seen = new Set(out.map(u => u.id));
+  for (const u of units) if (!seen.has(u.id)) out.push(u);
+  return out;
+}
+
+export function OrgSearchSelect({
   label,
   value,
   onChange,
-  users,
-  placeholder = '조직장 검색…',
-  clearLabel = '미지정',
+  orgUnits,
+  placeholder = '조직 검색…',
+  clearLabel = '선택 안 함',
 }: Props) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -34,30 +61,41 @@ export function UserSearchSelect({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef     = useRef<HTMLInputElement>(null);
-  const listRef      = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
-  const selectedUser = users.find(u => u.id === value) ?? null;
+  const byId = useMemo(() => new Map(orgUnits.map(u => [u.id, u])), [orgUnits]);
+  const ordered = useMemo(() => flattenOrgs(orgUnits), [orgUnits]);
 
-  // 필터링
+  const selectedOrg = byId.get(value) ?? null;
+
+  // 상위 경로 (루트 → 부모, self 제외)
+  const pathOf = (u: OrgUnit): string => {
+    const names: string[] = [];
+    let cur = u.parentId ? byId.get(u.parentId) : undefined;
+    let guard = 0;
+    while (cur && guard++ < 20) {
+      names.unshift(cur.name);
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+    }
+    return names.join(' › ');
+  };
+
+  const levelOf = (u: OrgUnit): string => getOrgLevelLabel(getOrgDepth(u, orgUnits));
+
+  // 필터링 — 조직명 또는 상위경로 매칭
   const filtered = query.trim()
-    ? users.filter(u => {
+    ? ordered.filter(u => {
         const q = query.toLowerCase();
-        return (
-          u.name.toLowerCase().includes(q) ||
-          (u.position ?? '').toLowerCase().includes(q) ||
-          (u.email ?? '').toLowerCase().includes(q) ||
-          (u.department ?? '').toLowerCase().includes(q)
-        );
+        return u.name.toLowerCase().includes(q) || pathOf(u).toLowerCase().includes(q);
       })
-    : users;
+    : ordered;
 
-  // 트리거 위치 계산 → portal 드롭다운 좌표 설정
   const calcPosition = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const dropHeight = Math.min(260, spaceBelow - 8);
+    const dropHeight = Math.min(300, spaceBelow - 8);
     setDropdownStyle({
       position: 'fixed',
       top: rect.bottom + 4,
@@ -68,7 +106,6 @@ export function UserSearchSelect({
     });
   };
 
-  // 드롭다운 열기
   const openDropdown = () => {
     calcPosition();
     setQuery('');
@@ -77,27 +114,24 @@ export function UserSearchSelect({
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  // 선택
-  const select = (userId: string) => {
-    onChange(userId);
+  const select = (orgId: string) => {
+    onChange(orgId);
     setOpen(false);
     setQuery('');
   };
 
-  // 바깥 클릭 → 닫기 (portal이 containerRef 밖이므로 document-level 처리)
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
       const inTrigger = containerRef.current?.contains(target);
-      const inPortal  = (document.getElementById('uss-portal-root'))?.contains(target);
+      const inPortal = document.getElementById('oss-portal-root')?.contains(target);
       if (!inTrigger && !inPortal) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // 스크롤/리사이즈 시 위치 보정
   useEffect(() => {
     if (!open) return;
     const update = () => calcPosition();
@@ -109,13 +143,11 @@ export function UserSearchSelect({
     };
   }, [open]);
 
-  // 하이라이트 스크롤
   useEffect(() => {
     const el = listRef.current?.children[highlightIdx] as HTMLElement | undefined;
     el?.scrollIntoView({ block: 'nearest' });
   }, [highlightIdx]);
 
-  // 키보드 탐색
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const total = filtered.length + 1;
     if (e.key === 'ArrowDown') {
@@ -135,11 +167,10 @@ export function UserSearchSelect({
 
   const dropdown = open ? createPortal(
     <div
-      id="uss-portal-root"
+      id="oss-portal-root"
       style={dropdownStyle}
       className="rounded-xl border border-bd-default bg-bg-token-default shadow-lg overflow-hidden flex flex-col animate-[fadeSlideDown_0.15s_ease]"
     >
-      {/* 검색 입력 */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-bd-default flex-shrink-0">
         <MsSearchIcon size={14} className="text-fg-subtlest flex-shrink-0" />
         <input
@@ -162,9 +193,7 @@ export function UserSearchSelect({
         )}
       </div>
 
-      {/* 목록 */}
       <ul ref={listRef} className="overflow-y-auto py-1">
-        {/* 미지정 */}
         <li>
           <button
             type="button"
@@ -186,6 +215,7 @@ export function UserSearchSelect({
         ) : (
           filtered.map((u, i) => {
             const idx = i + 1;
+            const path = pathOf(u);
             return (
               <li key={u.id}>
                 <button
@@ -196,11 +226,13 @@ export function UserSearchSelect({
                     highlightIdx === idx ? 'bg-interaction-hovered' : 'hover:bg-interaction-hovered'
                   } ${value === u.id ? 'text-fg-brand1' : 'text-fg-default'}`}
                 >
-                  <UserAvatar user={u} className="size-6 rounded-full flex-shrink-0" />
                   <span className="flex-1 min-w-0 text-left">
-                    <span className="font-medium">{u.name}</span>
-                    {u.position && (
-                      <span className="text-fg-subtle ml-1">· {u.position}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-medium truncate">{u.name}</span>
+                      <span className="px-1 py-0.5 text-[10px] font-medium bg-gray-010 text-fg-subtlest rounded flex-shrink-0">{levelOf(u)}</span>
+                    </span>
+                    {path && (
+                      <span className="block text-[11px] text-fg-subtlest truncate">{path}</span>
                     )}
                   </span>
                   {value === u.id && (
@@ -228,7 +260,6 @@ export function UserSearchSelect({
         </label>
       )}
 
-      {/* 트리거 */}
       <button
         ref={triggerRef}
         id={id}
@@ -236,14 +267,11 @@ export function UserSearchSelect({
         onClick={openDropdown}
         className="w-full flex items-center gap-2 h-10 px-3 rounded-lg border border-bd-default bg-bg-token-default text-left hover:border-bd-focused focus:outline-none focus:ring-2 focus:ring-bd-focused transition-colors"
       >
-        {selectedUser ? (
-          <>
-            <UserAvatar user={selectedUser} className="size-6 rounded-full flex-shrink-0" />
-            <span className="flex-1 text-sm text-fg-default truncate">
-              {selectedUser.name}
-              {selectedUser.position ? <span className="text-fg-subtle ml-1">· {selectedUser.position}</span> : null}
-            </span>
-          </>
+        {selectedOrg ? (
+          <span className="flex-1 flex items-center gap-1.5 min-w-0">
+            <span className="text-sm text-fg-default truncate">{selectedOrg.name}</span>
+            <span className="px-1 py-0.5 text-[10px] font-medium bg-gray-010 text-fg-subtlest rounded flex-shrink-0">{levelOf(selectedOrg)}</span>
+          </span>
         ) : (
           <span className="flex-1 text-sm text-fg-subtlest">{clearLabel}</span>
         )}

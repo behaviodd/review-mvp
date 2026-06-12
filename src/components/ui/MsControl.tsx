@@ -25,8 +25,8 @@ export function MsCheckbox({ size = 'md', indeterminate, label, className, disab
   }, [indeterminate]);
 
   const box = size === 'lg'
-    ? 'size-6 rounded-[4px]'
-    : 'size-5 rounded-[3px]';
+    ? 'size-6 rounded-sm'
+    : 'size-5 rounded-sm';
 
   const track = checked || indeterminate
     ? disabled ? 'bg-pink-010 opacity-50' : 'bg-pink-040 border-pink-040'
@@ -127,8 +127,8 @@ interface MsSwitchProps {
 
 export function MsSwitch({ checked, onChange, disabled, size = 'md', label, className, 'aria-label': ariaLabel }: MsSwitchProps) {
   const track = size === 'lg'
-    ? 'h-6 w-[38px] rounded-[12px]'
-    : 'h-5 w-8 rounded-[10px]';
+    ? 'h-6 w-[38px] rounded-full'
+    : 'h-5 w-8 rounded-full';
 
   const thumbSize = size === 'lg' ? 'size-[18px]' : 'size-[14px]';
   const thumbTranslate = size === 'lg'
@@ -150,7 +150,7 @@ export function MsSwitch({ checked, onChange, disabled, size = 'md', label, clas
         onClick={() => onChange(!checked)}
         className={cn(
           'relative inline-flex flex-shrink-0 items-center transition-colors duration-200',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-040 focus-visible:ring-offset-2',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-focused focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed',
           track, trackColor,
         )}
@@ -178,7 +178,7 @@ interface MsInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size
 
 const INPUT_BASE =
   'w-full border bg-gray-005 text-fg-default placeholder:text-fg-subtlest transition-colors ' +
-  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'focus:outline-none focus:ring-2 focus:ring-bd-focused focus:border-bd-focused focus:bg-white ' +
   'disabled:bg-gray-005 disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 const INPUT_SIZE = {
@@ -246,7 +246,7 @@ interface MsTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 const TEXTAREA_BASE =
   'w-full border bg-gray-005 text-fg-default placeholder:text-fg-subtlest transition-colors resize-y ' +
-  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'focus:outline-none focus:ring-2 focus:ring-bd-focused focus:border-bd-focused focus:bg-white ' +
   'disabled:bg-gray-005 disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 const TEXTAREA_SIZE = {
@@ -340,7 +340,7 @@ interface MsSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 const SELECT_BASE =
   'w-full appearance-none px-3 py-2 pr-8 text-base rounded-lg border bg-gray-005 text-fg-default transition-colors ' +
-  'focus:outline-none focus:ring-4 focus:ring-gray-010 focus:border-gray-030 focus:bg-white ' +
+  'focus:outline-none focus:ring-2 focus:ring-bd-focused focus:border-bd-focused focus:bg-white ' +
   'disabled:text-fg-subtlest disabled:cursor-not-allowed';
 
 export function MsSelect({

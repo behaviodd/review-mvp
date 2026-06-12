@@ -340,7 +340,7 @@ export function OrgChart() {
                         {n.unit.name}
                       </span>
                       {n.unit.isDerived && (
-                        <span className="flex-shrink-0 text-[9px] font-semibold text-fg-subtlest bg-gray-010 px-1 py-0.5 rounded" title="_조직구조에 등록하면 정식 조직이 됩니다">
+                        <span className="flex-shrink-0 text-[10px] font-semibold text-fg-subtlest bg-gray-010 px-1 py-0.5 rounded" title="_조직구조에 등록하면 정식 조직이 됩니다">
                           자동
                         </span>
                       )}
@@ -350,7 +350,7 @@ export function OrgChart() {
                     <div className="flex items-center gap-1.5 min-w-0 h-5">
                       {n.head ? (
                         <>
-                          <UserAvatar user={n.head} className="size-5 text-[9px]" />
+                          <UserAvatar user={n.head} className="size-5 text-[10px]" />
                           <span className="truncate text-xs text-fg-subtle">{n.head.name}</span>
                         </>
                       ) : (

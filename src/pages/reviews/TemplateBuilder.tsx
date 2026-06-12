@@ -314,7 +314,7 @@ export function TemplateBuilder() {
                       onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === 'Escape') setEditingSectionId(null);
                       }}
-                      className="text-base font-semibold text-fg-default bg-white border border-pink-040 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-010 w-64"
+                      className="text-base font-semibold text-fg-default bg-white border border-pink-040 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-bd-focused w-64"
                     />
                   ) : (
                     <button
@@ -424,7 +424,7 @@ export function TemplateBuilder() {
                                   const n = v ? parseInt(v, 10) : NaN;
                                   updateQ(q.id, { maxItems: !isNaN(n) && n > 0 ? n : undefined });
                                 }}
-                                className="w-20 px-2 py-1 border border-gray-020 rounded-lg bg-white text-xs focus:outline-none focus:ring-2 focus:ring-pink-010"
+                                className="w-20 px-2 py-1 border border-gray-020 rounded-lg bg-white text-xs focus:outline-none focus:ring-2 focus:ring-bd-focused"
                               />
                               <span className="text-xs text-fg-subtlest">개</span>
                             </div>
@@ -442,7 +442,7 @@ export function TemplateBuilder() {
                                     updateQ(q.id, { options: next });
                                   }}
                                   placeholder={`보기 ${oi + 1}`}
-                                  className="flex-1 px-3 py-1.5 border border-gray-020 rounded-lg bg-gray-005 text-xs focus:outline-none focus:ring-2 focus:ring-pink-010 focus:bg-white"
+                                  className="flex-1 px-3 py-1.5 border border-gray-020 rounded-lg bg-gray-005 text-xs focus:outline-none focus:ring-2 focus:ring-bd-focused focus:bg-white"
                                 />
                                 {(q.options ?? []).length > 2 && (
                                   <button

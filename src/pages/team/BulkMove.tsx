@@ -73,7 +73,7 @@ export function BulkMove() {
             {selectedUsers.map(u => (
               <span key={u.id} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-white border border-gray-020 rounded-full text-gray-070 font-medium">
                 <span
-                  className="size-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                  className="size-4 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                   style={{ backgroundColor: u.avatarColor }}
                 >
                   {u.name[0]}

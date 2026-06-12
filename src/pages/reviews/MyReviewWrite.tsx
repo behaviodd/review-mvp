@@ -205,7 +205,7 @@ function QuestionCard({ question, answer, onChange, readOnly, showError, previou
               placeholder="구체적인 사례와 수치를 포함해 작성하세요."
             />
             <div className="flex justify-between mt-1">
-              {answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">💡 좀 더 구체적으로 작성하면 더 좋아요!</p>}
+              {answer?.textValue && answer.textValue.length < 50 && <p className="text-xs text-pink-050">좀 더 구체적으로 작성하면 더 좋아요!</p>}
               {answer?.textValue && answer.textValue.length >= 50 && <p className="text-xs text-green-060">잘 작성하고 계십니다!</p>}
               {!answer?.textValue && <span />}
               <p className="text-xs text-fg-subtlest ml-auto">{(answer?.textValue || '').length}/1000</p>
@@ -701,7 +701,7 @@ export function MyReviewWrite() {
           <div className="w-20 h-20 bg-green-005 rounded-full flex items-center justify-center mx-auto mb-6">
             <PartyPopper className="w-10 h-10 text-green-050" />
           </div>
-          <h1 className="text-2xl font-bold text-fg-default mb-3">수고하셨습니다! 🎉</h1>
+          <h1 className="text-2xl font-bold text-fg-default mb-3">수고하셨습니다!</h1>
           <p className="text-gray-060 mb-2">성장 돌아보기를 완료했습니다.</p>
           <p className="text-base text-fg-subtlest mb-8">리뷰가 안전하게 제출되었습니다.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2">

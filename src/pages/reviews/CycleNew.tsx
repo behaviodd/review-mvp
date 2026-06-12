@@ -1064,7 +1064,7 @@ export function CycleNew() {
                                               (teamFullCheck || teamIndeterm) ? 'bg-pink-040' : 'border-2 border-gray-030 bg-white'
                                             }`}>
                                               {teamFullCheck && <MsCheckIcon size={8} className="text-white" />}
-                                              {teamIndeterm  && <span className="text-white font-bold text-[9px] leading-none select-none">−</span>}
+                                              {teamIndeterm  && <span className="text-white font-bold text-[10px] leading-none select-none">−</span>}
                                             </div>
                                             <span className={`flex-1 text-xs ${teamSelected ? 'text-gray-070' : 'text-gray-030'}`}>{team.name}</span>
                                             <span className="text-[11px] text-fg-subtlest">{teamCount}명</span>

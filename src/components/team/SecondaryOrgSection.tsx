@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTeamStore } from '../../stores/teamStore';
 import { MsButton } from '../ui/MsButton';
-import { MsCheckbox, MsInput, MsSelect } from '../ui/MsControl';
+import { MsCheckbox, MsInput } from '../ui/MsControl';
 import { MsPlusIcon, MsDeleteIcon } from '../ui/MsIcons';
-import { getOrgDepth, getOrgLevelLabel } from '../../utils/teamUtils';
+import { OrgSearchSelect } from '../ui/OrgSearchSelect';
 import type { SecondaryOrgAssignment } from '../../types';
 
 export function SecondaryOrgSection({ userId }: { userId: string }) {
@@ -14,7 +14,8 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
   const [editingRole, setEditingRole] = useState('');
   const [form, setForm] = useState({ orgId: '', role: '', isHead: false, startDate: '', endDate: '', ratio: '' });
 
-  const allOrgs = orgUnits.filter(u => u.type !== 'squad');
+  // 겸임 조직은 모든 계층 선택 가능 (스쿼드 포함) — '통합 어드민 스쿼드' 같은 leaf 조직 겸임 지원
+  const allOrgs = orgUnits;
 
   const handleAdd = () => {
     if (!form.orgId) return;
@@ -108,14 +109,14 @@ export function SecondaryOrgSection({ userId }: { userId: string }) {
         <div className="p-3 rounded-lg border border-pink-010 bg-pink-005/40 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2">
-              <MsSelect
+              <OrgSearchSelect
                 label="겸임 조직"
+                orgUnits={allOrgs}
                 value={form.orgId}
-                onChange={e => setForm(f => ({ ...f, orgId: e.target.value }))}
-              >
-                <option value="">선택</option>
-                {allOrgs.map(u => <option key={u.id} value={u.id}>{u.name} ({getOrgLevelLabel(getOrgDepth(u, orgUnits))})</option>)}
-              </MsSelect>
+                onChange={orgId => setForm(f => ({ ...f, orgId }))}
+                placeholder="조직명 검색…"
+                clearLabel="선택"
+              />
             </div>
             <div className="col-span-2">
               <div className="flex items-center gap-3">

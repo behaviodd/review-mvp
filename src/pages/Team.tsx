@@ -289,7 +289,7 @@ function OrgTreeNode({
         </span>
         {/* 자동 파생 조직 배지 */}
         {unit.isDerived && (
-          <span className="flex-shrink-0 text-[9px] font-semibold text-fg-subtlest bg-gray-010 px-1 py-0.5 rounded" title="_조직구조에 등록하면 정식 조직이 됩니다">
+          <span className="flex-shrink-0 text-[10px] font-semibold text-fg-subtlest bg-gray-010 px-1 py-0.5 rounded" title="_조직구조에 등록하면 정식 조직이 됩니다">
             자동
           </span>
         )}
@@ -383,7 +383,7 @@ function OrgTreeNode({
 function MemberRow({
   user, onView, onEdit, onTerminate, onImpersonate, secondaryOrgs,
   selected = false, onToggle, selectionActive = false,
-  secondaryAssignmentHere, isOrgHeadHere = false, isAnyOrgHead = false,
+  isOrgHeadHere = false,
   hasReviewer,
 }: {
   user: User;
@@ -395,9 +395,7 @@ function MemberRow({
   selected?: boolean;
   onToggle?: (id: string) => void;
   selectionActive?: boolean;
-  secondaryAssignmentHere?: SecondaryOrgAssignment;
   isOrgHeadHere?: boolean;
-  isAnyOrgHead?: boolean;
   /** undefined = 표시 안 함, true = 배정됨, false = 미배정 */
   hasReviewer?: boolean;
 }) {
@@ -412,6 +410,11 @@ function MemberRow({
   const subText = [positionLabel, jobLabel].filter(Boolean).join(' · ');
   const orgName = user.squad || user.team || user.subOrg || user.department || '';
   const orgTag = orgName;
+  // 주조직 + 겸임 조직 전체를 dot(·) 으로 구분 (배지 미사용)
+  const orgLabels = [orgTag, ...mySecondary.map(a => a.orgName ?? a.orgId)].filter(Boolean);
+  const orgTitle = mySecondary.length > 0
+    ? [orgTag, ...mySecondary.map(a => `${a.orgName ?? a.orgId}${a.role ? ` · ${a.role}` : ''} (겸임)`)].filter(Boolean).join(' / ')
+    : undefined;
 
   return (
     <div
@@ -445,18 +448,9 @@ function MemberRow({
           </button>
           {user.role === 'admin'
             ? <StatusBadge type="role" value="admin" />
-            : (isOrgHeadHere || isAnyOrgHead)
+            : isOrgHeadHere
               ? <StatusBadge type="role" value="leader" />
               : null}
-          {secondaryAssignmentHere ? (
-            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-010 text-purple-060 rounded border border-purple-010">
-              겸임{secondaryAssignmentHere.role ? ` · ${secondaryAssignmentHere.role}` : ''}
-            </span>
-          ) : mySecondary.length > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-005 text-purple-050 rounded border border-purple-010">
-              겸임 {mySecondary.length}
-            </span>
-          )}
         </div>
         {subText && (
           <p className="text-sm font-normal text-fg-subtle leading-5 tracking-[-0.3px] truncate">
@@ -465,10 +459,13 @@ function MemberRow({
         )}
       </div>
 
-      {/* 소속 경로 — "{조직} · {역할}" 우측 정렬 (Flex 패턴) */}
-      {orgTag && (
-        <span className="text-sm text-fg-subtle whitespace-nowrap flex-shrink-0 hidden md:block">
-          {orgTag}
+      {/* 소속 — 우측 정렬: 주조직 + 겸임 조직 전체를 dot(·) 으로 구분 */}
+      {orgLabels.length > 0 && (
+        <span
+          title={orgTitle}
+          className="text-sm text-fg-subtle truncate flex-shrink-0 hidden md:block max-w-[45%]"
+        >
+          {orgLabels.join(' · ')}
         </span>
       )}
 
@@ -900,7 +897,6 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
   // R7: 관리자도 구성원에 포함. 사이클 참여 분류(isSystemOperator)는 별도 의미로 유지.
   // 트리 '전체 구성원' 카운트 = 재직만 (기본 'all' 필터가 재직만 보이므로 일치).
   const totalActive   = useMemo(() => users.filter(userIsWorking).length, [users]);
-  const headIdsAll    = useMemo(() => new Set(orgUnits.map(u => u.headId).filter(Boolean)), [orgUnits]);
 
   /* 소속 없는 구성원: orgUnitId 도 없고, legacy 4단계 이름 어디에도 안 잡히는 활성 사용자.
      R7: orgUnitId 우선 + legacy 폴백 — 마이그레이션 전후 모두 정확히 분류. */
@@ -1006,14 +1002,6 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
     return { orgHead, total, noReviewerInOrg, leaveInOrg };
   }, [selectedUnit, panelUsers, users, noReviewerIds]);
 
-  // 현재 선택된 조직의 겸임 구성원 맵 (userId → assignment)
-  const secondaryMapHere = useMemo(() => {
-    if (!selectedUnit) return new Map<string, SecondaryOrgAssignment>();
-    return new Map(
-      secondaryOrgs.filter(a => a.orgId === selectedUnit.id).map(a => [a.userId, a])
-    );
-  }, [secondaryOrgs, selectedUnit]);
-
   const mainOrgs = useMemo(() =>
     orgUnits.filter(u => u.type === 'mainOrg').sort((a, b) => a.order - b.order),
     [orgUnits]
@@ -1081,7 +1069,6 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                   onEdit={canEdit ? goEditMember : null}
                   onTerminate={canEdit ? handleTerminate : undefined}
                   onImpersonate={can.impersonate ? handleImpersonate : undefined}
-                  isAnyOrgHead={headIdsAll.has(u.id)}
                   hasReviewer={isUserActive(u) ? !noReviewerIds.has(u.id) : undefined} />
               ))}
             </div>
@@ -1237,9 +1224,7 @@ function AdminView({ canEdit = false }: { canEdit?: boolean }) {
                     selected={selectedIds.has(u.id)}
                     onToggle={canEdit && !showTerminated ? toggleMember : undefined}
                     selectionActive={selectedIds.size > 0}
-                    secondaryAssignmentHere={secondaryMapHere.get(u.id)}
-                    isOrgHeadHere={!secondaryMapHere.has(u.id) && selectedUnit?.headId === u.id}
-                    isAnyOrgHead={headIdsAll.has(u.id)}
+                    isOrgHeadHere={selectedUnit?.headId === u.id}
                     hasReviewer={showTerminated ? undefined : !noReviewerIds.has(u.id)} />
                 ))}
               </div>

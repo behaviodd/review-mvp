@@ -18,13 +18,13 @@ import { MsButton } from '../components/ui/MsButton';
 import { MsCheckbox, MsInput, MsTextarea } from '../components/ui/MsControl';
 
 const TYPE_CONFIG: Record<FeedbackType, {
-  label: string; emoji: string;
+  label: string;
   icon: typeof Heart;
   activeClass: string; badgeClass: string;
 }> = {
-  praise:     { label: '칭찬',   emoji: '🌟', icon: Heart,     activeClass: 'border-green-040 bg-green-005 text-green-060', badgeClass: 'bg-green-005 text-green-060' },
-  suggestion: { label: '제안',   emoji: '💡', icon: Lightbulb, activeClass: 'border-blue-040 bg-blue-005 text-blue-060',   badgeClass: 'bg-blue-005 text-blue-060'   },
-  note:       { label: '일반',   emoji: '📝', icon: ThumbsUp,  activeClass: 'border-gray-040 bg-gray-010 text-gray-070',   badgeClass: 'bg-gray-010 text-gray-060'   },
+  praise:     { label: '칭찬',   icon: Heart,     activeClass: 'border-green-040 bg-green-005 text-green-060', badgeClass: 'bg-green-005 text-green-060' },
+  suggestion: { label: '제안',   icon: Lightbulb, activeClass: 'border-blue-040 bg-blue-005 text-blue-060',   badgeClass: 'bg-blue-005 text-blue-060'   },
+  note:       { label: '일반',   icon: ThumbsUp,  activeClass: 'border-gray-040 bg-gray-010 text-gray-070',   badgeClass: 'bg-gray-010 text-gray-060'   },
 };
 
 const FEEDBACK_TIPS = [
@@ -68,7 +68,7 @@ function FeedbackCard({ fb, mode, onQuickWrite }: {
           </div>
         </div>
         <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
-          {cfg.emoji} {cfg.label}
+          <cfg.icon className="size-3" aria-hidden /> {cfg.label}
         </span>
       </div>
       <p className="text-base text-gray-070 leading-relaxed">{fb.content}</p>
@@ -135,7 +135,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
       isAnonymous,
       createdAt: new Date().toISOString(),
     });
-    showToast('success', '피드백을 전달했습니다! 🎉');
+    showToast('success', '피드백을 전달했습니다!');
     onSent();
   };
 
@@ -215,7 +215,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                 return (
                   <div key={fb.id} className="p-2 bg-gray-005 rounded-lg">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-xs">{cfg.emoji}</span>
+                      <cfg.icon className="size-3.5 text-fg-subtle" aria-hidden />
                       <span className={`text-xs font-medium ${isMine ? 'text-pink-050' : 'text-fg-subtle'}`}>
                         {isMine ? '내가 보냄' : '받음'}
                       </span>
@@ -308,7 +308,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
                       isActive ? cfg.activeClass : 'border-gray-020 text-fg-subtle hover:border-gray-030 bg-white'
                     }`}
                   >
-                    <span className="text-xl">{cfg.emoji}</span>
+                    <cfg.icon className="size-6" aria-hidden />
                     <span>{cfg.label}</span>
                   </button>
                 );
@@ -355,7 +355,7 @@ function WriteView({ initialToUserId, onBack, onSent }: {
         <div className="sticky bottom-0 px-6 pb-6 max-w-2xl mx-auto">
           <div className="bg-white rounded-xl border border-gray-010 px-4 py-3 shadow-raised flex items-center justify-between">
             <p className="text-xs text-fg-subtlest">
-              {selectedUser ? `${selectedUser.name}님에게 ${TYPE_CONFIG[type].emoji} ${TYPE_CONFIG[type].label} 피드백` : '받는 사람을 선택하세요'}
+              {selectedUser ? `${selectedUser.name}님에게 ${TYPE_CONFIG[type].label} 피드백` : '받는 사람을 선택하세요'}
             </p>
             <MsButton onClick={handleSubmit} disabled={!toUserId || content.trim().length < 10} leftIcon={<MsSendIcon size={16} />}>피드백 보내기</MsButton>
           </div>
@@ -397,11 +397,11 @@ function WriteView({ initialToUserId, onBack, onSent }: {
           <p className="text-xs font-semibold text-fg-subtlest uppercase tracking-wider">유형별 예시</p>
           <div className="space-y-2.5">
             <div className="p-2.5 bg-green-005 rounded-lg">
-              <p className="text-xs font-semibold text-green-060 mb-1">🌟 칭찬 예시</p>
+              <p className="text-xs font-semibold text-green-060 mb-1">칭찬 예시</p>
               <p className="text-xs text-green-050 leading-relaxed">"지난 스프린트에서 API 병목 문제를 신속하게 발견하고 해결해 팀 전체 일정을 지킬 수 있었습니다."</p>
             </div>
             <div className="p-2.5 bg-blue-005 rounded-lg">
-              <p className="text-xs font-semibold text-blue-060 mb-1">💡 제안 예시</p>
+              <p className="text-xs font-semibold text-blue-060 mb-1">제안 예시</p>
               <p className="text-xs text-blue-050 leading-relaxed">"회의 전 안건을 미리 공유해 주시면 더 효율적인 논의가 될 것 같습니다."</p>
             </div>
           </div>
